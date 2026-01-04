@@ -208,7 +208,7 @@ async function saveJpgToDriveApi(quoteId: string, dataUrl: string) {
   return await gasCall<any>("listSaveJpgToDrive", [quoteId, dataUrl]);
 }
 
-export default function QuoteListPage() {
+export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   const [q, setQ] = useState("");
   const [list, setList] = useState<QuoteRow[]>([]);
   const [loading, setLoading] = useState(false);
