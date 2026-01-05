@@ -233,6 +233,12 @@ hr {
   margin-top: 16px;
 }
 
+/* A4 모바일 축소 컨테이너 */
+.a4ScaleWrap {
+  display: inline-block;
+  width: 100%;
+}
+
 /* =====================
    MOBILE RESPONSIVE
    ===================== */
@@ -246,6 +252,25 @@ hr {
   
   .card {
     padding: 14px;
+  }
+}
+
+@media (max-width: 850px) {
+  .a4Wrap {
+    overflow-x: auto !important;
+    padding: 10px !important;
+  }
+  
+  .a4ScaleWrap {
+    transform: scale(0.5);
+    transform-origin: top left;
+    width: 200%;
+    height: 560px;
+  }
+  
+  .a4Sheet {
+    width: 794px !important;
+    min-height: 1123px !important;
   }
 }
 
@@ -277,7 +302,7 @@ hr {
   
   .row input, .row select {
     padding: 12px;
-    font-size: 16px; /* iOS zoom 방지 */
+    font-size: 16px;
   }
   
   .btn {
@@ -317,42 +342,6 @@ hr {
     font-size: 16px;
   }
   
-  /* A4 미리보기 모바일 */
-  .a4Wrap {
-    padding: 8px !important;
-    overflow-x: auto !important;
-  }
-  
-  .a4Sheet {
-    width: 100% !important;
-    min-width: 360px !important;
-    min-height: auto !important;
-    padding: 12px !important;
-    font-size: 11px !important;
-  }
-  
-  .a4Header {
-    flex-direction: column;
-    gap: 8px;
-    text-align: center;
-  }
-  
-  .a4HeaderCenter {
-    font-size: 24px !important;
-    letter-spacing: 3px !important;
-  }
-  
-  .a4Logo {
-    width: 80px !important;
-  }
-  
-  .a4Info th, .a4Info td,
-  .a4Items th, .a4Items td,
-  .a4Bottom th, .a4Bottom td {
-    padding: 4px 6px !important;
-    font-size: 11px !important;
-  }
-  
   /* 모달 모바일 */
   .modal {
     padding: 8px !important;
@@ -371,6 +360,14 @@ hr {
   
   .modalBody input {
     font-size: 16px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .a4ScaleWrap {
+    transform: scale(0.42);
+    width: 238%;
+    height: 470px;
   }
 }
 
@@ -400,14 +397,13 @@ hr {
   .itemInputRow {
     grid-template-columns: 1fr;
   }
-  
-  .a4HeaderCenter {
-    font-size: 20px !important;
-    letter-spacing: 2px !important;
-  }
-  
-  .a4Logo {
-    width: 60px !important;
+}
+
+@media (max-width: 400px) {
+  .a4ScaleWrap {
+    transform: scale(0.36);
+    width: 278%;
+    height: 400px;
   }
 }
 
