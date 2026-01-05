@@ -1817,213 +1817,6 @@ const css = `
   .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
   .modalBody{padding:12px;}
 
-  /* A4 견적서 스타일 (App.tsx와 동일) */
-  .a4Wrap{
-    display:flex;
-    justify-content:center;
-    padding: 14px 0;
-    background:#f5f6f8;
-  }
-  .a4Sheet{
-    width: 794px;
-    min-height: 1123px;
-    background:#fff;
-    border:1px solid #cfd3d8;
-    padding: 16px;
-    box-sizing:border-box;
-  }
-
-  .a4Header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding: 6px 2px 10px;
-    border-bottom: 2px solid #2e5b86;
-    margin-bottom: 10px;
-  }
-  .a4HeaderLeft{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-  }
-  .a4Logo{ width: 110px; height:auto; }
-  .a4BrandEn{
-    font-size: 12px;
-    line-height:1.15;
-    font-weight:700;
-    letter-spacing:0.3px;
-  }
-  .a4HeaderCenter{
-    flex:1;
-    text-align:center;
-    font-size: 34px;
-    font-weight: 900;
-    letter-spacing: 6px;
-  }
-  .a4HeaderRight{ width: 140px; }
-
-  table{ width:100%; border-collapse: collapse; table-layout: fixed; }
-  .a4Info, .a4Items, .a4Bottom{
-    table-layout: fixed;
-    border: 1px solid #333;
-    margin-top: 8px;
-  }
-  .a4Info th, .a4Info td,
-  .a4Items th, .a4Items td,
-  .a4Bottom th, .a4Bottom td{
-    border: 1px solid #333;
-    padding: 6px 8px;
-    font-size: 13px;
-    vertical-align: middle;
-  }
-
-  .k{ background:#fff; font-weight: 900; }
-  .v{ background:#fff; }
-  .center{ text-align:center; }
-  .right{ text-align:right; }
-
-  .msg{
-    font-size: 13px;
-    font-weight: 700;
-    text-align:center;
-    background:#fff;
-  }
-  .sum{
-    font-size: 14px;
-    font-weight: 900;
-    background:#fff;
-  }
-
-  .a4Items thead th{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-  }
-  
-  .h{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-  }
-
-  .a4Items tbody td{ 
-    background:#fff;
-    padding: 6px 8px;
-    vertical-align: middle;
-    min-height: 28px;
-  }
-  
-  .a4Items tbody td.c{
-    /* 모든 셀 기본 스타일 */
-  }
-  
-  .a4Items tbody td.wrap{
-    /* 품목명 셀만 줄바꿈 허용 */
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.3;
-    vertical-align: top;
-  }
-
-  .a4Bottom .sumRow td{
-    background:#e6e6e6;
-    font-weight:900;
-  }
-  .a4Bottom .sumLeft{
-    text-align:left;
-  }
-  .a4Bottom .sumNum{
-    text-align:right;
-  }
-  .a4Bottom .label{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-  }
-  .a4Bottom .text{
-    font-size: 12px;
-    line-height:1.55;
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap:anywhere;
-  }
-
-  @media print{
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: auto;
-    }
-    
-    .app { display: block !important; }
-    .panel { display: none !important; }
-    .actions { display: none !important; }
-    button { display: none !important; }
-    .right { display: block !important; }
-    .previewWrap { border: none !important; }
-    .previewInner { padding: 0 !important; }
-    
-    /* 인라인 스타일 A4 컨테이너 */
-    .previewInner > div {
-      background: #fff !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      zoom: 0.95 !important;
-    }
-    
-    .previewInner > div > div {
-      border: none !important;
-      width: 210mm !important;
-      min-height: auto !important;
-      padding: 10mm !important;
-      margin: 0 !important;
-      box-shadow: none !important;
-    }
-    
-    * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-  }
-
-const css = `
-  .app{display:grid;grid-template-columns: 360px 1fr; height:100vh; gap:12px; padding:12px; box-sizing:border-box;}
-  .panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:hidden; display:flex; flex-direction:column;}
-  .hdr{padding:12px 12px; border-bottom:1px solid #eef0f3; display:flex; gap:10px; align-items:center;}
-  .hdr h1{font-size:14px;margin:0;}
-  .search{padding:10px 12px;border-bottom:1px solid #eef0f3;}
-  .search input{width:100%; padding:10px 12px;border:1px solid #d7dbe2;border-radius:10px; outline:none;}
-  .list{overflow:auto;}
-  .item{padding:10px 12px;border-bottom:1px solid #f0f2f6; cursor:pointer;}
-  .item:hover{background:#fafbff;}
-  .item .top{display:flex;justify-content:space-between;gap:10px;font-size:12px;}
-  .item .mid{margin-top:4px;font-size:13px;font-weight:700;}
-  .item .bot{margin-top:4px;font-size:12px;color:#666;display:flex;justify-content:space-between;gap:10px;}
-  .badge{font-size:11px;padding:2px 8px;border:1px solid #d7dbe2;border-radius:999px;color:#444;background:#fff;}
-  .right{display:flex;flex-direction:column; gap:12px;}
-  .actions{padding:10px 12px;border:1px solid #e5e7eb;border-radius:14px;background:#fff;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;}
-  button{padding:9px 12px;border:1px solid #d7dbe2;border-radius:10px;background:#fff;cursor:pointer;font-weight:700;font-size:12px;}
-  button:hover{background:#f7f8fd;}
-  button.primary{background:#111;color:#fff;border-color:#111;}
-  button.primary:hover{background:#222;}
-  .content{flex:1; display:grid; grid-template-columns: 1fr; gap:12px;}
-  .previewWrap{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:auto;}
-  .previewInner{padding:14px; min-height:400px;}
-  .muted{color:#666;font-size:12px;}
-  .row{display:flex;gap:8px;align-items:center;}
-  .spacer{flex:1;}
-  .toast{position:fixed;right:16px;bottom:16px;background:#111;color:#fff;padding:10px 12px;border-radius:12px;font-size:12px;display:none;max-width:340px;z-index:9999;}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:12px;z-index:9998;}
-  .modalCard{width:min(980px, 96vw); max-height:92vh; overflow:auto; background:#fff;border-radius:14px;border:1px solid #e5e7eb;}
-  .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
-  .modalBody{padding:12px;}
-
   .a4Wrap{
     display:flex;
     justify-content:center;
@@ -2232,13 +2025,12 @@ const css = `
       overflow: hidden !important;
       position: relative !important;
       min-height: 520px !important;
-      max-height: 70vh !important;
     }
     
     .previewInner {
       transform: scale(0.42) !important;
       transform-origin: top left !important;
-      width: 260% !important;
+      width: 238% !important;
       padding: 0 !important;
     }
     
@@ -2286,6 +2078,7 @@ const css = `
   @media (max-width: 400px) {
     .previewInner {
       transform: scale(0.35) !important;
+      width: 285% !important;
     }
     
     .previewWrap {
