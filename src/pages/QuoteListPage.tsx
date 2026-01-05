@@ -1992,8 +1992,32 @@ const css = `
     }
   }
 
-  @media (max-width:520px){
-    .app{grid-template-columns: 1fr; height:auto;}
-    .a4Sheet{width:100%;min-height:auto;padding:12px;}
+ @media (max-width: 768px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
   }
-`;
+  
+  .panel {
+    max-height: 300px; /* 목록 높이 제한 */
+  }
+  
+  .previewInner > div > div {
+    transform: scale(0.42);
+    transform-origin: top left;
+  }
+  
+  .previewWrap {
+    min-height: 500px;
+  }
+  
+  .actions {
+    flex-wrap: wrap;
+  }
+  
+  .actions button {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+}
+';
