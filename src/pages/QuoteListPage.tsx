@@ -1780,78 +1780,58 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
         </div>
       )}
 
-      <div className="toast" ref={toastRef} />
+ <div className="toast" ref={toastRef} />
     </div>
   );
 }
-@media (max-width:520px){
+
+const css = `
+  .app{display:grid;grid-template-columns: 360px 1fr; height:100vh; gap:12px; padding:12px; box-sizing:border-box;}
+  .panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:hidden; display:flex; flex-direction:column;}
+  .hdr{padding:12px 12px; border-bottom:1px solid #eef0f3; display:flex; gap:10px; align-items:center;}
+  .hdr h1{font-size:14px;margin:0;}
+  .search{padding:10px 12px;border-bottom:1px solid #eef0f3;}
+  .search input{width:100%; padding:10px 12px;border:1px solid #d7dbe2;border-radius:10px; outline:none;}
+  .list{overflow:auto;}
+  .item{padding:10px 12px;border-bottom:1px solid #f0f2f6; cursor:pointer;}
+  .item:hover{background:#fafbff;}
+  .item .top{display:flex;justify-content:space-between;gap:10px;font-size:12px;}
+  .item .mid{margin-top:4px;font-size:13px;font-weight:700;}
+  .item .bot{margin-top:4px;font-size:12px;color:#666;display:flex;justify-content:space-between;gap:10px;}
+  .badge{font-size:11px;padding:2px 8px;border:1px solid #d7dbe2;border-radius:999px;color:#444;background:#fff;}
+  .right{display:flex;flex-direction:column; gap:12px;}
+  .actions{padding:10px 12px;border:1px solid #e5e7eb;border-radius:14px;background:#fff;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;}
+  button{padding:9px 12px;border:1px solid #d7dbe2;border-radius:10px;background:#fff;cursor:pointer;font-weight:700;font-size:12px;}
+  button:hover{background:#f7f8fd;}
+  button.primary{background:#111;color:#fff;border-color:#111;}
+  button.primary:hover{background:#222;}
+  .content{flex:1; display:grid; grid-template-columns: 1fr; gap:12px;}
+  .previewWrap{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:auto;}
+  .previewInner{padding:14px; min-height:400px;}
+  .muted{color:#666;font-size:12px;}
+  .row{display:flex;gap:8px;align-items:center;}
+  .spacer{flex:1;}
+  .toast{position:fixed;right:16px;bottom:16px;background:#111;color:#fff;padding:10px 12px;border-radius:12px;font-size:12px;display:none;max-width:340px;z-index:9999;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:12px;z-index:9998;}
+  .modalCard{width:min(980px, 96vw); max-height:92vh; overflow:auto; background:#fff;border-radius:14px;border:1px solid #e5e7eb;}
+  .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
+  .modalBody{padding:12px;}
+  .a4Wrap{display:flex;justify-content:center;padding: 14px 0;background:#f5f6f8;}
+  .a4Sheet{width: 794px;min-height: 1123px;background:#fff;border:1px solid #cfd3d8;padding: 16px;box-sizing:border-box;}
+  @media print{
+    @page { size: A4; margin: 0; }
+    html, body { margin: 0; padding: 0; overflow: hidden; }
+    .app { display: block !important; }
+    .panel { display: none !important; }
+    .actions { display: none !important; }
+    button { display: none !important; }
+    .right { display: block !important; }
+    .previewWrap { border: none !important; }
+    .previewInner { padding: 0 !important; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width:520px){
     .app{grid-template-columns: 1fr; height:auto;}
     .a4Sheet{width:100%;min-height:auto;padding:12px;}
-  @media (max-width: 768px) {
-    .app {
-      grid-template-columns: 1fr !important;
-      height: auto !important;
-      padding: 8px !important;
-      gap: 8px !important;
-    }
-    
-    .panel {
-      max-height: 50vh;
-    }
-    
-    .actions {
-      flex-direction: column !important;
-      padding: 8px !important;
-    }
-    
-    .actions button {
-      width: 100% !important;
-      padding: 12px !important;
-    }
-    
-    .previewWrap {
-      overflow-x: auto !important;
-    }
-    
-    .previewInner {
-      min-width: 360px !important;
-    }
-    
-    .modalCard {
-      width: 100% !important;
-      max-height: 90vh !important;
-    }
-    
-    .modalBody {
-      padding: 10px !important;
-    }
-    
-    .row {
-      flex-direction: column !important;
-      gap: 6px !important;
-    }
-    
-    .row input {
-      font-size: 16px !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .app {
-      padding: 4px !important;
-    }
-    
-    .hdr h1 {
-      font-size: 12px !important;
-    }
-    
-    .item .mid {
-      font-size: 12px !important;
-    }
-    
-    .search input {
-      font-size: 16px !important;
-      padding: 12px !important;
-    }
   }
 `;
