@@ -1824,10 +1824,6 @@ const css = `
     padding: 14px 0;
     background:#f5f6f8;
   }
-  .a4ScaleWrap{
-    display: inline-block;
-    width: 100%;
-  }
   .a4Sheet{
     width: 794px;
     min-height: 1123px;
@@ -1962,214 +1958,6 @@ const css = `
     overflow-wrap:anywhere;
   }
 
-  /* =====================
-     MOBILE RESPONSIVE
-     ===================== */
-
-  @media (max-width: 1024px) {
-    .app {
-      grid-template-columns: 300px 1fr;
-      padding: 10px;
-      gap: 10px;
-    }
-  }
-
-  @media (max-width: 850px) {
-    .app {
-      grid-template-columns: 1fr;
-      height: auto;
-      min-height: 100vh;
-    }
-    
-    .panel {
-      max-height: 45vh;
-      min-height: 300px;
-    }
-    
-    .right {
-      min-height: 50vh;
-    }
-    
-    .a4Wrap {
-      overflow-x: auto;
-      padding: 10px;
-    }
-    
-    .a4ScaleWrap {
-      transform: scale(0.5);
-      transform-origin: top left;
-      width: 200%;
-      height: 560px;
-    }
-    
-    .a4Sheet {
-      width: 794px !important;
-      min-height: 1123px !important;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .app {
-      padding: 8px;
-      gap: 8px;
-    }
-    
-    .panel {
-      border-radius: 12px;
-      max-height: 40vh;
-      min-height: 250px;
-    }
-    
-    .hdr {
-      padding: 10px;
-    }
-    
-    .hdr h1 {
-      font-size: 13px;
-    }
-    
-    .search {
-      padding: 8px 10px;
-    }
-    
-    .search input {
-      padding: 12px;
-      font-size: 16px;
-    }
-    
-    .item {
-      padding: 10px;
-    }
-    
-    .item .mid {
-      font-size: 14px;
-    }
-    
-    .actions {
-      padding: 10px;
-      border-radius: 12px;
-      gap: 6px;
-    }
-    
-    button {
-      padding: 12px 10px;
-      font-size: 11px;
-      flex: 1 1 calc(50% - 6px);
-      min-width: 0;
-    }
-    
-    .previewWrap {
-      border-radius: 12px;
-    }
-    
-    .previewInner {
-      padding: 10px;
-    }
-    
-    /* 모달 모바일 */
-    .modal {
-      padding: 8px;
-    }
-    
-    .modalCard {
-      width: 100%;
-      max-height: 90vh;
-      border-radius: 12px;
-    }
-    
-    .modalHdr {
-      padding: 10px;
-    }
-    
-    .modalBody {
-      padding: 10px;
-    }
-    
-    .modalBody input {
-      font-size: 16px;
-      padding: 12px;
-    }
-    
-    .modalBody .row {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    
-    .modalBody .row input {
-      flex: none;
-      width: 100%;
-    }
-    
-    .modalBody .row button {
-      width: 100%;
-      margin-top: 8px;
-    }
-  }
-
-  @media (max-width: 500px) {
-    .a4ScaleWrap {
-      transform: scale(0.42);
-      width: 238%;
-      height: 470px;
-    }
-    
-    .actions {
-      flex-direction: column;
-    }
-    
-    button {
-      width: 100%;
-      flex: none;
-      padding: 14px;
-      font-size: 13px;
-    }
-    
-    .panel {
-      max-height: 35vh;
-      min-height: 200px;
-    }
-  }
-
-  @media (max-width: 400px) {
-    .app {
-      padding: 6px;
-    }
-    
-    .a4ScaleWrap {
-      transform: scale(0.36);
-      width: 278%;
-      height: 400px;
-    }
-    
-    .hdr h1 {
-      font-size: 12px;
-    }
-    
-    .item .mid {
-      font-size: 13px;
-    }
-    
-    .item .bot {
-      font-size: 11px;
-    }
-  }
-
-  /* 터치 친화적 */
-  @media (hover: none) {
-    button:active {
-      background: #eee;
-      transform: scale(0.98);
-    }
-    
-    button.primary:active {
-      background: #222;
-    }
-    
-    .item:active {
-      background: #f0f4ff;
-    }
-  }
-
   @media print{
     @page {
       size: A4;
@@ -2210,5 +1998,10 @@ const css = `
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
+  }
+
+  @media (max-width:520px){
+    .app{grid-template-columns: 1fr; height:auto;}
+    .a4Sheet{width:100%;min-height:auto;padding:12px;}
   }
 `;
