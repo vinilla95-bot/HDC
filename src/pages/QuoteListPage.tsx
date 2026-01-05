@@ -1784,7 +1784,10 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     </div>
   );
 }
-@media (max-width: 768px) {
+@media (max-width:520px){
+    .app{grid-template-columns: 1fr; height:auto;}
+    .a4Sheet{width:100%;min-height:auto;padding:12px;}
+  @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
       height: auto !important;
@@ -1851,3 +1854,4 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
       padding: 12px !important;
     }
   }
+`;
