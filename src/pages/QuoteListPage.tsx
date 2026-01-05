@@ -1992,32 +1992,128 @@ const css = `
     }
   }
 
- @media (max-width: 768px) {
+============================================
+QuoteListPage.tsx 파일에서 
+맨 아래 const css = `...` 부분의 
+@media (max-width:520px) 부분을 
+아래 코드로 통째로 교체하세요!
+============================================
+
+찾을 부분 (삭제):
+-------------------
+@media (max-width:520px){
+  .app{grid-template-columns: 1fr; height:auto;}
+  .a4Sheet{width:100%;min-height:auto;padding:12px;}
+}
+
+
+교체할 코드 (복사해서 붙여넣기):
+-------------------
+@media (max-width: 768px) {
   .app {
-    grid-template-columns: 1fr;
-    height: auto;
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    padding: 8px !important;
+    gap: 8px !important;
   }
   
   .panel {
-    max-height: 300px; /* 목록 높이 제한 */
+    max-height: 280px !important;
   }
   
-  .previewInner > div > div {
-    transform: scale(0.42);
-    transform-origin: top left;
+  .list {
+    max-height: 180px !important;
+    overflow-y: auto !important;
   }
   
-  .previewWrap {
-    min-height: 500px;
+  .right {
+    gap: 8px !important;
   }
   
   .actions {
-    flex-wrap: wrap;
+    padding: 8px !important;
+    gap: 4px !important;
+    justify-content: center !important;
   }
   
   .actions button {
-    font-size: 11px;
-    padding: 8px 10px;
+    font-size: 9px !important;
+    padding: 6px 6px !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .previewWrap {
+    overflow: hidden !important;
+    position: relative !important;
+    min-height: 520px !important;
+    max-height: 70vh !important;
+  }
+  
+  .previewInner {
+    transform: scale(0.42) !important;
+    transform-origin: top left !important;
+    width: 260% !important;
+    padding: 0 !important;
+  }
+  
+  /* 인라인 스타일 덮어쓰기 */
+  .previewInner > div {
+    padding: 0 !important;
+    background: #f5f6f8 !important;
+  }
+  
+  .previewInner > div > div {
+    transform-origin: top left !important;
+    margin: 0 !important;
+  }
+  
+  .modalCard {
+    width: 95vw !important;
+    max-height: 90vh !important;
+  }
+  
+  .modalBody {
+    padding: 10px !important;
+  }
+  
+  .modal input {
+    font-size: 14px !important;
+  }
+  
+  .hdr h1 {
+    font-size: 13px !important;
+  }
+  
+  .search input {
+    font-size: 14px !important;
+    padding: 8px 10px !important;
+  }
+  
+  .item .mid {
+    font-size: 12px !important;
+  }
+  
+  .item .bot {
+    font-size: 11px !important;
   }
 }
-';
+
+/* 더 작은 화면 (아이폰 SE 등) */
+@media (max-width: 400px) {
+  .previewInner {
+    transform: scale(0.35) !important;
+  }
+  
+  .previewWrap {
+    min-height: 450px !important;
+  }
+  
+  .actions button {
+    font-size: 8px !important;
+    padding: 5px 4px !important;
+  }
+  
+  .panel {
+    max-height: 220px !important;
+  }
+}
