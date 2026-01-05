@@ -1817,6 +1817,7 @@ const css = `
   .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
   .modalBody{padding:12px;}
 
+  /* A4 견적서 스타일 (App.tsx와 동일) */
   .a4Wrap{
     display:flex;
     justify-content:center;
@@ -1913,9 +1914,11 @@ const css = `
   }
   
   .a4Items tbody td.c{
+    /* 모든 셀 기본 스타일 */
   }
   
   .a4Items tbody td.wrap{
+    /* 품목명 셀만 줄바꿈 허용 */
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -1966,6 +1969,7 @@ const css = `
     .previewWrap { border: none !important; }
     .previewInner { padding: 0 !important; }
     
+    /* 인라인 스타일 A4 컨테이너 */
     .previewInner > div {
       background: #fff !important;
       padding: 0 !important;
@@ -1988,110 +1992,8 @@ const css = `
     }
   }
 
-  @media (max-width: 768px) {
-    .app {
-      grid-template-columns: 1fr !important;
-      height: auto !important;
-      padding: 8px !important;
-      gap: 8px !important;
-    }
-    
-    .panel {
-      max-height: 280px !important;
-    }
-    
-    .list {
-      max-height: 180px !important;
-      overflow-y: auto !important;
-    }
-    
-    .right {
-      gap: 8px !important;
-    }
-    
-    .actions {
-      padding: 8px !important;
-      gap: 4px !important;
-      justify-content: center !important;
-    }
-    
-    .actions button {
-      font-size: 9px !important;
-      padding: 6px 6px !important;
-      flex: 0 0 auto !important;
-    }
-    
-    .previewWrap {
-      overflow: hidden !important;
-      position: relative !important;
-      min-height: 520px !important;
-    }
-    
-    .previewInner {
-      transform: scale(0.42) !important;
-      transform-origin: top left !important;
-      width: 238% !important;
-      padding: 0 !important;
-    }
-    
-    .previewInner > div {
-      padding: 0 !important;
-      background: #f5f6f8 !important;
-    }
-    
-    .previewInner > div > div {
-      transform-origin: top left !important;
-      margin: 0 !important;
-    }
-    
-    .modalCard {
-      width: 95vw !important;
-      max-height: 90vh !important;
-    }
-    
-    .modalBody {
-      padding: 10px !important;
-    }
-    
-    .modal input {
-      font-size: 14px !important;
-    }
-    
-    .hdr h1 {
-      font-size: 13px !important;
-    }
-    
-    .search input {
-      font-size: 14px !important;
-      padding: 8px 10px !important;
-    }
-    
-    .item .mid {
-      font-size: 12px !important;
-    }
-    
-    .item .bot {
-      font-size: 11px !important;
-    }
-  }
-
-  @media (max-width: 400px) {
-    .previewInner {
-      transform: scale(0.35) !important;
-      width: 285% !important;
-    }
-    
-    .previewWrap {
-      min-height: 450px !important;
-    }
-    
-    .actions button {
-      font-size: 8px !important;
-      padding: 5px 4px !important;
-    }
-    
-    .panel {
-      max-height: 220px !important;
-    }
+  @media (max-width:520px){
+    .app{grid-template-columns: 1fr; height:auto;}
+    .a4Sheet{width:100%;min-height:auto;padding:12px;}
   }
 `;
