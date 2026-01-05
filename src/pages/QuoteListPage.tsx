@@ -1817,12 +1817,16 @@ const css = `
   .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
   .modalBody{padding:12px;}
 
-  /* A4 견적서 스타일 (App.tsx와 동일) */
+  /* A4 견적서 스타일 */
   .a4Wrap{
     display:flex;
     justify-content:center;
     padding: 14px 0;
     background:#f5f6f8;
+  }
+  .a4ScaleWrap{
+    display: inline-block;
+    width: 100%;
   }
   .a4Sheet{
     width: 794px;
@@ -1906,24 +1910,33 @@ const css = `
     text-align:center;
   }
 
-  .a4Items tbody td{ 
+  .a4Items tbody td.c{ 
     background:#fff;
-    padding: 6px 8px;
-    vertical-align: middle;
-    min-height: 28px;
+    padding: 4px 8px;
+    vertical-align: top;
   }
-  
-  .a4Items tbody td.c{
-    /* 모든 셀 기본 스타일 */
-  }
-  
-  .a4Items tbody td.wrap{
-    /* 품목명 셀만 줄바꿈 허용 */
+  .a4Items .wrap{
+    display: block;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
     line-height: 1.3;
+    font-size: 11px;
+    max-height: 65px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .a4Items tbody td{
+    padding: 6px 8px;
+    vertical-align: middle;
+    min-height: 28px;
+    max-height: 70px;
+  }
+  
+  .a4Items tbody td.wrap{
     vertical-align: top;
+    line-height: 1.3;
   }
 
   .a4Bottom .sumRow td{
@@ -1949,6 +1962,214 @@ const css = `
     overflow-wrap:anywhere;
   }
 
+  /* =====================
+     MOBILE RESPONSIVE
+     ===================== */
+
+  @media (max-width: 1024px) {
+    .app {
+      grid-template-columns: 300px 1fr;
+      padding: 10px;
+      gap: 10px;
+    }
+  }
+
+  @media (max-width: 850px) {
+    .app {
+      grid-template-columns: 1fr;
+      height: auto;
+      min-height: 100vh;
+    }
+    
+    .panel {
+      max-height: 45vh;
+      min-height: 300px;
+    }
+    
+    .right {
+      min-height: 50vh;
+    }
+    
+    .a4Wrap {
+      overflow-x: auto;
+      padding: 10px;
+    }
+    
+    .a4ScaleWrap {
+      transform: scale(0.5);
+      transform-origin: top left;
+      width: 200%;
+      height: 560px;
+    }
+    
+    .a4Sheet {
+      width: 794px !important;
+      min-height: 1123px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .app {
+      padding: 8px;
+      gap: 8px;
+    }
+    
+    .panel {
+      border-radius: 12px;
+      max-height: 40vh;
+      min-height: 250px;
+    }
+    
+    .hdr {
+      padding: 10px;
+    }
+    
+    .hdr h1 {
+      font-size: 13px;
+    }
+    
+    .search {
+      padding: 8px 10px;
+    }
+    
+    .search input {
+      padding: 12px;
+      font-size: 16px;
+    }
+    
+    .item {
+      padding: 10px;
+    }
+    
+    .item .mid {
+      font-size: 14px;
+    }
+    
+    .actions {
+      padding: 10px;
+      border-radius: 12px;
+      gap: 6px;
+    }
+    
+    button {
+      padding: 12px 10px;
+      font-size: 11px;
+      flex: 1 1 calc(50% - 6px);
+      min-width: 0;
+    }
+    
+    .previewWrap {
+      border-radius: 12px;
+    }
+    
+    .previewInner {
+      padding: 10px;
+    }
+    
+    /* 모달 모바일 */
+    .modal {
+      padding: 8px;
+    }
+    
+    .modalCard {
+      width: 100%;
+      max-height: 90vh;
+      border-radius: 12px;
+    }
+    
+    .modalHdr {
+      padding: 10px;
+    }
+    
+    .modalBody {
+      padding: 10px;
+    }
+    
+    .modalBody input {
+      font-size: 16px;
+      padding: 12px;
+    }
+    
+    .modalBody .row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .modalBody .row input {
+      flex: none;
+      width: 100%;
+    }
+    
+    .modalBody .row button {
+      width: 100%;
+      margin-top: 8px;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .a4ScaleWrap {
+      transform: scale(0.42);
+      width: 238%;
+      height: 470px;
+    }
+    
+    .actions {
+      flex-direction: column;
+    }
+    
+    button {
+      width: 100%;
+      flex: none;
+      padding: 14px;
+      font-size: 13px;
+    }
+    
+    .panel {
+      max-height: 35vh;
+      min-height: 200px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .app {
+      padding: 6px;
+    }
+    
+    .a4ScaleWrap {
+      transform: scale(0.36);
+      width: 278%;
+      height: 400px;
+    }
+    
+    .hdr h1 {
+      font-size: 12px;
+    }
+    
+    .item .mid {
+      font-size: 13px;
+    }
+    
+    .item .bot {
+      font-size: 11px;
+    }
+  }
+
+  /* 터치 친화적 */
+  @media (hover: none) {
+    button:active {
+      background: #eee;
+      transform: scale(0.98);
+    }
+    
+    button.primary:active {
+      background: #222;
+    }
+    
+    .item:active {
+      background: #f0f4ff;
+    }
+  }
+
   @media print{
     @page {
       size: A4;
@@ -1958,7 +2179,7 @@ const css = `
     html, body {
       margin: 0;
       padding: 0;
-      height: auto;
+      overflow: hidden;
     }
     
     .app { display: block !important; }
@@ -1969,7 +2190,6 @@ const css = `
     .previewWrap { border: none !important; }
     .previewInner { padding: 0 !important; }
     
-    /* 인라인 스타일 A4 컨테이너 */
     .previewInner > div {
       background: #fff !important;
       padding: 0 !important;
@@ -1991,71 +2211,4 @@ const css = `
       print-color-adjust: exact;
     }
   }
-
-  @media (max-width: 768px) {
-    .app {
-      grid-template-columns: 1fr !important;
-      height: auto !important;
-      padding: 8px !important;
-      gap: 8px !important;
-    }
-    
-    .panel {
-      max-height: 50vh;
-    }
-    
-    .actions {
-      flex-direction: column !important;
-      padding: 8px !important;
-    }
-    
-    .actions button {
-      width: 100% !important;
-      padding: 12px !important;
-    }
-    
-    .previewWrap {
-      overflow-x: auto !important;
-    }
-    
-    .previewInner {
-      min-width: 360px !important;
-    }
-    
-    .modalCard {
-      width: 100% !important;
-      max-height: 90vh !important;
-    }
-    
-    .modalBody {
-      padding: 10px !important;
-    }
-    
-    .row {
-      flex-direction: column !important;
-      gap: 6px !important;
-    }
-    
-    .row input {
-      font-size: 16px !important;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .app {
-      padding: 4px !important;
-    }
-    
-    .hdr h1 {
-      font-size: 12px !important;
-    }
-    
-    .item .mid {
-      font-size: 12px !important;
-    }
-    
-    .search input {
-      font-size: 16px !important;
-      padding: 12px !important;
-    }
-  }
+`;
