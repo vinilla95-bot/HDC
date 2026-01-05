@@ -1992,8 +1992,70 @@ const css = `
     }
   }
 
-  @media (max-width:520px){
-    .app{grid-template-columns: 1fr; height:auto;}
-    .a4Sheet{width:100%;min-height:auto;padding:12px;}
+  @media (max-width: 768px) {
+    .app {
+      grid-template-columns: 1fr !important;
+      height: auto !important;
+      padding: 8px !important;
+      gap: 8px !important;
+    }
+    
+    .panel {
+      max-height: 50vh;
+    }
+    
+    .actions {
+      flex-direction: column !important;
+      padding: 8px !important;
+    }
+    
+    .actions button {
+      width: 100% !important;
+      padding: 12px !important;
+    }
+    
+    .previewWrap {
+      overflow-x: auto !important;
+    }
+    
+    .previewInner {
+      min-width: 360px !important;
+    }
+    
+    .modalCard {
+      width: 100% !important;
+      max-height: 90vh !important;
+    }
+    
+    .modalBody {
+      padding: 10px !important;
+    }
+    
+    .row {
+      flex-direction: column !important;
+      gap: 6px !important;
+    }
+    
+    .row input {
+      font-size: 16px !important;
+    }
   }
-`;
+  
+  @media (max-width: 480px) {
+    .app {
+      padding: 4px !important;
+    }
+    
+    .hdr h1 {
+      font-size: 12px !important;
+    }
+    
+    .item .mid {
+      font-size: 12px !important;
+    }
+    
+    .search input {
+      font-size: 16px !important;
+      padding: 12px !important;
+    }
+  }
