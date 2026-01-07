@@ -284,3 +284,6 @@ export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
   
   return await supabase.from('quotes').insert([row]).select();
 };
+  
+  return await supabase.from('quotes').insert([row]).select();
+};
