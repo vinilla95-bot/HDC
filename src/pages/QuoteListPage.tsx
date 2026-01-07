@@ -1695,7 +1695,7 @@ const css = `
   }
  .a4Sheet {
   width: 794px;
-  min-height: 1123px;
+  min-height: 1300px;
   background: #fff;
   border: 1px solid #cfd3d8;
   padding: 16px;
@@ -1721,7 +1721,7 @@ const css = `
     align-items:center;
     gap: 10px;
   }
-  .a4Logo{ width: 110px; height:auto; }
+  .a4Logo{ width: 160px; height:auto; }
   .a4BrandEn{
     font-size: 12px;
     line-height:1.15;
@@ -1747,7 +1747,7 @@ const css = `
   .a4Items th, .a4Items td,
   .a4Bottom th, .a4Bottom td{
     border: 1px solid #333;
-    padding: 6px 8px;
+    padding: 2px 2px;
     font-size: 13px;
     vertical-align: middle;
   }
