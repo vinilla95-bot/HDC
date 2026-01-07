@@ -7,9 +7,6 @@ const SB_KEY =
 
 export const supabase = createClient(SB_URL, SB_KEY);
 
-// ------------------------------------------------------------------
-// 1) 유틸
-// ------------------------------------------------------------------
 export const roundToTenThousand = (val: number) => {
   const n = Number(val || 0);
   return Math.round(n / 10000) * 10000;
@@ -36,17 +33,12 @@ export const matchKorean = (target: string, keyword: string) => {
   const t = normNoSpace(target);
   const k = normNoSpace(keyword);
   if (!k) return true;
-
   if (t.toLowerCase().includes(k.toLowerCase())) return true;
-
   const tc = getChosung(t);
   const kc = getChosung(k);
   return tc.includes(kc);
 };
 
-// ------------------------------------------------------------------
-// 2) 임대 단가 계산
-// ------------------------------------------------------------------
 const rentUnitPriceBySpec = (w: number, l: number) => {
   const key = `${Number(w)}x${Number(l)}`;
   const map: Record<string, number> = { '3x6': 150000, '3x3': 130000, '3x9': 200000 };
@@ -54,9 +46,6 @@ const rentUnitPriceBySpec = (w: number, l: number) => {
   return v || 150000;
 };
 
-// ------------------------------------------------------------------
-// 3) 옵션 라인 계산 (내부 base 계산용)
-// ------------------------------------------------------------------
 export const calculateOptionLine = (
   opt: SupabaseOptionRow,
   w: number,
@@ -82,13 +71,11 @@ export const calculateOptionLine = (
     unitRaw.includes('METRE') ||
     opt.unit === 'm';
 
-  // 임대
   if (isRent) {
     const months = Math.max(1, Math.floor(Number(qty || 1)));
     unitPrice = rentUnitPriceBySpec(w, l);
     let amount = Math.round(months * unitPrice);
     amount = roundToTenThousand(amount);
-
     return {
       qty: months,
       unit: '개월',
@@ -98,60 +85,51 @@ export const calculateOptionLine = (
     };
   }
 
-  // 평 자동
   if (qtyMode === 'AUTO_PYEONG') {
     const p = (w * l) / 3.3;
     qty = Math.ceil(p);
     memo = `자동계산(평): ${w}×${l}=${(w * l).toFixed(2)}㎡ / 3.3 = ${p.toFixed(2)} → ${qty}평`;
   }
 
-  // 폭별 단가 (w3/w4)
-  const w3 = Number(opt.unit_price_w3 || 0);
-  const w4 = Number(opt.unit_price_w4 || 0);
-  const hasWidthPrice = w3 > 0 || w4 > 0;
+  if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
+    if (w >= 4) {
+      const area = w * l;
+      const pyeong = area / 3.3;
+      qty = Math.round(pyeong * 10) / 10;
+      unit = '평';
+      let amount = pyeong * unitPrice;
+      amount = roundToTenThousand(amount);
+      memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
+      return { qty, unit, unitPrice, amount, memo };
+    }
+    
+    qty = l;
+    memo = `자동계산(m): 길이 ${l}m`;
 
-  // ✅ m 단위 자동계산
- // ✅ m 단위 자동계산
-if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
-  
-  // ✅ 폭 4m 이상이면 평 계산 (단가는 그대로)
-  if (w >= 4) {
-    const area = w * l;
-    const pyeong = area / 3.3;
-    qty = Math.round(pyeong * 10) / 10; // 소수점 1자리
-    unit = '평';
+    const mMinBill = Number(opt.m_min_bill || 0);
+    const mMinUntil = Number(opt.m_min_until || 0);
+    if (mMinBill > 0 && mMinUntil > 0) {
+      if (qty > 0 && qty < mMinUntil) {
+        const before = qty;
+        qty = Math.max(qty, mMinBill);
+        memo += `\n최소청구: ${before}m → ${qty}m`;
+      }
+    }
     
-    // 단가는 그대로 unitPrice 사용
-    let amount = pyeong * unitPrice;
+    let amount = qty * unitPrice;
     amount = roundToTenThousand(amount);
-    memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
-    
     return { qty, unit, unitPrice, amount, memo };
   }
-  
-  // ✅ 폭 3m 이하면 길이(m) 계산
-  qty = l;
 
-  memo = `자동계산(m): 길이 ${l}m`;
+  if (overrides.unitPrice !== undefined) unitPrice = Number(overrides.unitPrice);
 
-  const mMinBill = Number(opt.m_min_bill || 0);
-  const mMinUntil = Number(opt.m_min_until || 0);
-  if (mMinBill > 0 && mMinUntil > 0) {
-    if (qty > 0 && qty < mMinUntil) {
-      const before = qty;
-      qty = Math.max(qty, mMinBill);
-      memo += `\n최소청구: ${before}m → ${qty}m`;
-    }
-  }
-  
   let amount = qty * unitPrice;
+  if (overrides.amount !== undefined) amount = Number(overrides.amount);
   amount = roundToTenThousand(amount);
-  
+
   return { qty, unit, unitPrice, amount, memo };
-}
-// ------------------------------------------------------------------
-// 4) 현장 요금 검색
-// ------------------------------------------------------------------
+};
+
 export const searchSiteRates = async (keyword: string, w: number, l: number) => {
   const kw = normNoSpace(keyword);
   if (!kw) return { list: [] };
@@ -196,18 +174,11 @@ export const searchSiteRates = async (keyword: string, w: number, l: number) => 
   return { list };
 };
 
-// ------------------------------------------------------------------
-// 5) 명함 로드
-// ------------------------------------------------------------------
 export const loadBizcards = async () => {
   const { data, error } = await supabase.from('business_cards').select('*').order('created_at', { ascending: true });
   if (error) return { list: [] as any[] };
   return { list: data || [] };
 };
-
-// ------------------------------------------------------------------
-// 6) 견적 저장/수정 (quotes 스키마 맞춤)
-// ------------------------------------------------------------------
 
 const sanitizeItems = (items: any[]): any[] => {
   if (!Array.isArray(items)) return [];
@@ -235,9 +206,6 @@ export const saveQuoteToDb = async (payload: any) => {
     ...payload,
     items: sanitizeItems(payload.items || [])
   };
-  
-  console.log('💾 저장할 items:', dataToSave.items);
-  
   return await supabase.from('quotes').insert([dataToSave]).select();
 };
 
@@ -260,8 +228,5 @@ export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
     items: sanitizeItems(payload.items || [])
   };
   
-  console.log('💾 수정 저장할 items:', row.items);
-  
   return await supabase.from('quotes').insert([row]).select();
 };
-  
