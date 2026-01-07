@@ -375,6 +375,8 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
 
     const today = new Date();
     const ymd = today.toISOString().slice(0, 10);
+    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+const bizcardName = selectedBizcard?.name || "";
 
     const itemRows = items.map((raw, idx) => {
   const it = normItem(raw);
@@ -419,12 +421,12 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
               <col style="width: 22%" />
             </colgroup>
             <tbody style="display:table-row-group;">
-              <tr style="display:table-row;">
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">NO.</th>
-                <td style="border:1px solid #333;padding:6px;" colspan="3"></td>
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">견적일자 :</th>
-                <td style="border:1px solid #333;padding:6px;">${ymd}</td>
-              </tr>
+           <tr style="display:table-row;">
+  <th style="border:1px solid #333;padding:6px;font-weight:900;">담당자</th>
+  <td style="border:1px solid #333;padding:6px;" colspan="3">${escapeHtml(bizcardName)}</td>
+  <th style="border:1px solid #333;padding:6px;font-weight:900;">견적일자</th>
+  <td style="border:1px solid #333;padding:6px;">${ymd}</td>
+</tr>
 
               <tr style="display:table-row;">
                 <th style="border:1px solid #333;padding:6px;font-weight:900;">고객명</th>
