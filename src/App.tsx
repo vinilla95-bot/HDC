@@ -1191,3 +1191,5 @@ const a4css = `
     print-color-adjust: exact;
   }
 }
+
+';
