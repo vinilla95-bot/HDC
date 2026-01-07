@@ -863,7 +863,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
 
           <table className="a4Items">
             <colgroup>
-              <col style={{ width: "5%" }} />
+              <col style={{ width: "7%" }} />
               <col style={{ width: "35%" }} />
               <col style={{ width: "10%" }} />
               <col style={{ width: "8%" }} />
@@ -998,14 +998,14 @@ const a4css = `
     padding: 14px 0;
     background:#f5f6f8;
   }
-  .a4Sheet{
-    width: 794px;
-    min-height: 1123px;
-    background:#fff;
-    border:1px solid #cfd3d8;
-    padding: 16px;
-    box-sizing:border-box;
-  }
+   .a4Sheet {
+      width: 700px;
+      min-height: 1123px;
+      background: #fff;
+      border: 1px solid #cfd3d8;
+      padding: 16px;
+      box-sizing: border-box;
+    }
 
   .a4Header{
     display:flex;
@@ -1020,7 +1020,15 @@ const a4css = `
     align-items:center;
     gap: 10px;
   }
-  .a4Logo{ width: 110px; height:auto; }
+  .a4HeaderLeft { display: flex; align-items: center; gap: 10px; }
+    .a4Logo {
+  width: 160px;
+  height: 140px;       /* 높이 고정 */
+  display: block;
+}
+    .a4Info {
+  margin-top: 0;        /* 테이블 위 여백 제거 */
+}
   .a4BrandEn{
     font-size: 12px;
     line-height:1.15;
