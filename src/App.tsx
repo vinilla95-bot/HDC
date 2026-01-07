@@ -1150,42 +1150,44 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-  @media print{
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    
-    .wrap > .card:first-child { display: none !important; }
-    .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
-    .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
-    .btn, .actions { display: none !important; }
-    .a4Wrap{ 
-      background:#fff; 
-      padding:0;
-      margin: 0;
-      zoom: 1;
-      overflow: hidden;
-    }
-    .a4Sheet{ 
-      border:none; 
-      width: 210mm;
-      height: 297mm;
-      padding: 10mm;
-      margin: 0;
-      box-shadow: none;
-      overflow: hidden;
-    }
-    
-    * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+ @media print{
+  @page {
+    size: A4;
+    margin: 0;
   }
-`;
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  .wrap > .card:first-child { display: none !important; }
+  .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
+  .btn, .actions { display: none !important; }
+  .a4Wrap{ 
+    background:#fff; 
+    padding:0;
+    margin: 0;
+    zoom: 1;
+    overflow: hidden;
+    transform: none;  
+  }
+  .a4Sheet{ 
+    border:none; 
+    width: 210mm;
+    min-height: auto; 
+    height: auto;      
+    padding: 10mm;
+    margin: 0;
+    box-shadow: none;
+    overflow: hidden;
+    transform: none;   
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
