@@ -992,24 +992,22 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
 }
 
 const a4css = `
-  .a4Wrap {
-  display: flex;
-  justify-content: center;
-  padding: 14px 0;
-  background: #f5f6f8;
-  transform: scale(0.80);
-  transform-origin: top center;
-}
-
-.a4Sheet {
-  width: 900x;
-  min-height: 1123px;
-  background: #fff;
-  border: 1px solid #cfd3d8;
-  padding: 16px;
-  box-sizing: border-box;
-}
-
+  .a4Wrap{
+    display:flex;
+    justify-content:center;
+    padding: 14px 0;
+    background:#f5f6f8;
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+  .a4Sheet {
+    width: 900px;
+    min-height: 1123px;
+    background: #fff;
+    border: 1px solid #cfd3d8;
+    padding: 16px;
+    box-sizing: border-box;
+  }
   .a4Header{
     display:flex;
     align-items:center;
@@ -1023,20 +1021,13 @@ const a4css = `
     align-items:center;
     gap: 10px;
   }
-  .a4HeaderLeft { display: flex; align-items: center; gap: 10px; }
-    .a4Logo {
-  width: 160px;
-  height: 140px;       /* 높이 고정 */
-  display: block;
-}
-    .a4Info {
-  margin-top: 0;        /* 테이블 위 여백 제거 */
-}
-  .a4BrandEn{
-    font-size: 12px;
-    line-height:1.15;
-    font-weight:700;
-    letter-spacing:0.3px;
+  .a4Logo {
+    width: 160px;
+    height: 140px;
+    display: block;
+  }
+  .a4Info {
+    margin-top: 0;
   }
   .a4HeaderCenter{
     flex:1;
@@ -1047,19 +1038,19 @@ const a4css = `
   }
   .a4HeaderRight{ width: 140px; }
 
- table{ 
-  width: 100% !important; 
-  max-width: 100% !important;
-  border-collapse: collapse; 
-  table-layout: fixed;
-}
-.a4Info, .a4Items, .a4Bottom{
-  width: 100% !important;
-  max-width: 100% !important;
-  table-layout: fixed;
-  border: 1px solid #333;
-  margin-top: 8px;
-}
+  table{ 
+    width: 100% !important; 
+    max-width: 100% !important;
+    border-collapse: collapse; 
+    table-layout: fixed;
+  }
+  .a4Info, .a4Items, .a4Bottom{
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+    border: 1px solid #333;
+    margin-top: 8px;
+  }
   .a4Info th, .a4Info td,
   .a4Items th, .a4Items td,
   .a4Bottom th, .a4Bottom td{
@@ -1150,46 +1141,42 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
- @media print{
-  @page {
-    size: A4;
-    margin: 0;
+  @media print{
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .wrap > .card:first-child { display: none !important; }
+    .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
+    .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
+    .btn, .actions { display: none !important; }
+    .a4Wrap{ 
+      background:#fff; 
+      padding:0;
+      margin: 0;
+      zoom: 1;
+      overflow: hidden;
+      transform: none;
+    }
+    .a4Sheet{ 
+      border:none; 
+      width: 210mm;
+      min-height: auto;
+      height: auto;
+      padding: 10mm;
+      margin: 0;
+      box-shadow: none;
+      overflow: hidden;
+      transform: none;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
-  
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-  
-  .wrap > .card:first-child { display: none !important; }
-  .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
-  .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
-  .btn, .actions { display: none !important; }
-  .a4Wrap{ 
-    background:#fff; 
-    padding:0;
-    margin: 0;
-    zoom: 1;
-    overflow: hidden;
-    transform: none;  
-  }
-  .a4Sheet{ 
-    border:none; 
-    width: 210mm;
-    min-height: auto; 
-    height: auto;      
-    padding: 10mm;
-    margin: 0;
-    box-shadow: none;
-    overflow: hidden;
-    transform: none;   
-  }
-  
-  * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-}
-
-';
+`;
