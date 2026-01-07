@@ -111,64 +111,44 @@ export const calculateOptionLine = (
   const hasWidthPrice = w3 > 0 || w4 > 0;
 
   // ✅ m 단위 자동계산
-  if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
+ // ✅ m 단위 자동계산
+if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
+  
+  // ✅ 폭 4m 이상이면 평 계산 (단가는 그대로)
+  if (w >= 4) {
+    const area = w * l;
+    const pyeong = area / 3.3;
+    qty = Math.round(pyeong * 10) / 10; // 소수점 1자리
+    unit = '평';
     
-    // ✅ 폭 4m 이상이면 평 계산
-    if (w >= 4) {
-      const area = w * l;
-      const pyeong = area / 3.3;
-      qty = Math.round(pyeong * 10) / 10; // 소수점 1자리
-      unit = '평';
-      
-      // 폭별 단가 있으면 적용
-      if (hasWidthPrice && w4 > 0) {
-        unitPrice = w4;
-      }
-      
-      let amount = pyeong * unitPrice;
-      amount = roundToTenThousand(amount);
-      memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
-      
-      return { qty, unit, unitPrice, amount, memo };
-    }
-    
-    // ✅ 폭 3m 이하면 길이(m) 계산
-    qty = l;
-
-    if (hasWidthPrice) {
-      if (w >= 4 && w4 > 0) unitPrice = w4;
-      else if (w3 > 0) unitPrice = w3;
-    }
-
-    memo = `자동계산(m): 길이 ${l}m`;
-    if (hasWidthPrice) memo += ` (폭 ${w}m 기준)`;
-
-    const mMinBill = Number(opt.m_min_bill || 0);
-    const mMinUntil = Number(opt.m_min_until || 0);
-    if (mMinBill > 0 && mMinUntil > 0) {
-      if (qty > 0 && qty < mMinUntil) {
-        const before = qty;
-        qty = Math.max(qty, mMinBill);
-        memo += `\n최소청구: ${before}m → ${qty}m`;
-      }
-    }
-    
-    let amount = qty * unitPrice;
+    // 단가는 그대로 unitPrice 사용
+    let amount = pyeong * unitPrice;
     amount = roundToTenThousand(amount);
+    memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
     
     return { qty, unit, unitPrice, amount, memo };
   }
+  
+  // ✅ 폭 3m 이하면 길이(m) 계산
+  qty = l;
 
-  if (overrides.unitPrice !== undefined) unitPrice = Number(overrides.unitPrice);
+  memo = `자동계산(m): 길이 ${l}m`;
 
+  const mMinBill = Number(opt.m_min_bill || 0);
+  const mMinUntil = Number(opt.m_min_until || 0);
+  if (mMinBill > 0 && mMinUntil > 0) {
+    if (qty > 0 && qty < mMinUntil) {
+      const before = qty;
+      qty = Math.max(qty, mMinBill);
+      memo += `\n최소청구: ${before}m → ${qty}m`;
+    }
+  }
+  
   let amount = qty * unitPrice;
-  if (overrides.amount !== undefined) amount = Number(overrides.amount);
-
   amount = roundToTenThousand(amount);
-
+  
   return { qty, unit, unitPrice, amount, memo };
-};
-
+}
 // ------------------------------------------------------------------
 // 4) 현장 요금 검색
 // ------------------------------------------------------------------
