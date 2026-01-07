@@ -1817,20 +1817,23 @@ const css = `
   .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
   .modalBody{padding:12px;}
 
-  .a4Wrap{
-    display:flex;
-    justify-content:center;
-    padding: 14px 0;
-    background:#f5f6f8;
-  }
-  .a4Sheet{
-    width: 794px;
-    min-height: 1123px;
-    background:#fff;
-    border:1px solid #cfd3d8;
-    padding: 16px;
-    box-sizing:border-box;
-  }
+ .a4Wrap {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0;
+  background: #f5f6f8;
+  transform: scale(0.85);
+  transform-origin: top center;
+}
+
+.a4Sheet {
+  width: 900px;
+  min-height: 1123px;
+  background: #fff;
+  border: 1px solid #cfd3d8;
+  padding: 16px;
+  box-sizing: border-box;
+}
 
   .a4Header{
     display:flex;
