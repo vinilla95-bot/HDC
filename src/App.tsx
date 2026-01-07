@@ -997,6 +997,7 @@ const a4css = `
     justify-content:center;
     padding: 14px 0;
     background:#f5f6f8;
+    transform-origin: top center;
   }
    .a4Sheet {
       width: 600px;
