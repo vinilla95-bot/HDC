@@ -776,7 +776,7 @@ export default function App() {
   );
 
   return view === "list" ? listScreen : rtScreen;
-};
+}
 
 
 type A4QuoteProps = {
