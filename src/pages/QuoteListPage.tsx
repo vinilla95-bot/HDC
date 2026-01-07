@@ -1819,10 +1819,17 @@ const css = `
   }
 
   @media print {
-  @page {
-    size: A4;
+  .a4Sheet {
+    border: none;
+    width: 210mm;
+    min-height: auto !important;
+    height: auto !important;
+    padding: 8mm;
     margin: 0;
+    transform: scale(0.95);
+    transform-origin: top center;
   }
+}
   
   html, body {
     margin: 0;
