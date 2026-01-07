@@ -992,22 +992,23 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
 }
 
 const a4css = `
-  .a4Wrap{
-    display:flex;
-    justify-content:center;
-    padding: 14px 0;
-    background:#f5f6f8;
-    transform-origin: top center;
-  }
-   .a4Sheet {
-      width: 600px;
-      min-height: 1123px;
-      background: #fff;
-      border: 1px solid #cfd3d8;
-      padding: 16px;
-      box-sizing: border-box;
-     
-    }
+  .a4Wrap {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0;
+  background: #f5f6f8;
+  transform: scale(0.85);
+  transform-origin: top center;
+}
+
+.a4Sheet {
+  width: 700px;
+  min-height: 1123px;
+  background: #fff;
+  border: 1px solid #cfd3d8;
+  padding: 16px;
+  box-sizing: border-box;
+}
 
   .a4Header{
     display:flex;
