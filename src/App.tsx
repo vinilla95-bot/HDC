@@ -929,14 +929,14 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             </tbody>
           </table>
 
-          <table className="a4Bottom">
-            <colgroup>
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "auto" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "13%" }} />
-            </colgroup>
+  <table className="a4Bottom">
+  <colgroup>
+    <col style={{ width: "15%" }} />
+    <col style={{ width: "37%" }} />
+    <col style={{ width: "16%" }} />
+    <col style={{ width: "16%" }} />
+    <col style={{ width: "16%" }} />
+  </colgroup>
             <tbody>
               <tr className="sumRow">
                 <td className="sumLeft" colSpan={2}>
@@ -1006,7 +1006,7 @@ const a4css = `
       border: 1px solid #cfd3d8;
       padding: 16px;
       box-sizing: border-box;
-      transform: scale(0.9);
+     
     }
 
   .a4Header{
