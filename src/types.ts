@@ -14,6 +14,8 @@ export interface SupabaseOptionRow {
   unit_price_w4?: number;
 
   keywords?: string;
+  sub_items?: { name: string; unit?: string; qty?: number; unitPrice?: number }[];
+};
 }
 
 export interface SupabaseSiteRateRow {
