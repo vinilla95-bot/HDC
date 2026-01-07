@@ -739,7 +739,9 @@ export default function App() {
               supply_amount={supply_amount}
               vat_amount={vat_amount}
               total_amount={total_amount}
-            />
+            bizcardName={selectedBizcard?.name || ""}
+  />
+       
         </div>
       </div>
     </>
@@ -761,6 +763,7 @@ type A4QuoteProps = {
     sitePickedLabel: string;
     optQ: string;
   };
+  
   computedItems: any[];
   blankRows: any[];
   fmt: (n: number) => string;
