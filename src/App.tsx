@@ -591,6 +591,7 @@ export default function App() {
 
           {String(form.optQ || "").trim() !== "" && (
             <div className="box">
+              
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((o: any) => (
                   <div
@@ -613,6 +614,33 @@ export default function App() {
               )}
             </div>
           )}
+
+          {/* ✅ 자유 품목 추가 버튼 */}
+<button
+  className="btn"
+  style={{ marginTop: 8, width: "100%" }}
+  onClick={() => {
+    const newRow: any = {
+      key: `CUSTOM_${Date.now()}`,
+      optionId: `CUSTOM_${Date.now()}`,
+      optionName: "직접입력",
+      displayName: "",
+      unit: "EA",
+      showSpec: "n",
+      baseQty: 1,
+      baseUnitPrice: 0,
+      baseAmount: 0,
+      displayQty: 1,
+      customerUnitPrice: 0,
+      finalAmount: 0,
+      memo: "",
+      lineSpec: { w: form.w, l: form.l },
+    };
+    setSelectedItems((prev: any) => [...prev, newRow]);
+  }}
+>
+  + 자유 품목 추가
+</button>
 
           <div style={{ height: 10 }} />
           <div className="mini" style={{ marginBottom: 6 }}>
