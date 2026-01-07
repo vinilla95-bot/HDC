@@ -999,12 +999,13 @@ const a4css = `
     background:#f5f6f8;
   }
    .a4Sheet {
-      width: 1000px;
+      width: 600px;
       min-height: 1123px;
       background: #fff;
       border: 1px solid #cfd3d8;
       padding: 16px;
       box-sizing: border-box;
+      transform: scale(0.9);
     }
 
   .a4Header{
