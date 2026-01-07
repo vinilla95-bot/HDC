@@ -1,5 +1,4 @@
 body { font-family: Arial, "Noto Sans KR", sans-serif; margin: 0; background:#fafafa; }
-
 .wrap { 
   display: grid; 
   grid-template-columns: 1fr 1fr; 
@@ -8,14 +7,13 @@ body { font-family: Arial, "Noto Sans KR", sans-serif; margin: 0; background:#fa
   box-sizing: border-box; 
   min-height: 100vh;
 }
-
 .card { 
   background: #fff; 
   border: 1px solid #ddd; 
   border-radius: 12px; 
   padding: 16px; 
+  overflow-x: auto;
 }
-
 .row { display:flex; gap:10px; align-items:center; margin-bottom:10px; }
 label { font-size:12px; color:#555; min-width:72px; font-weight: bold; }
 input, select { width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:8px; box-sizing: border-box; }
@@ -46,13 +44,9 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
   }
 }
 
-/* 테이블 깨짐 방지 */
-table {
+/* A4 미리보기 테이블만 min-width 적용 */
+.previewInner table,
+.a4Sheet table {
   min-width: 720px;
 }
-.card {
-  overflow-x: auto;
-}
-
-
 
