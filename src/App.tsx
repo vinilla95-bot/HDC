@@ -1165,10 +1165,10 @@ const a4css = `
     }
     .a4Sheet{ 
       border:none; 
-      width: 210mm;
+      width: 200mm;
       min-height: auto;
       height: auto;
-      padding: 10mm;
+      padding: 0mm;
       margin: 0;
       box-shadow: none;
       overflow: hidden;
