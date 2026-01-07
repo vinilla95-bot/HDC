@@ -1818,48 +1818,55 @@ const css = `
     overflow-wrap:anywhere;
   }
 
-  @media print{
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: auto;
-    }
-    
-    .app { display: block !important; }
-    .panel { display: none !important; }
-    .actions { display: none !important; }
-    button { display: none !important; }
-    .right { display: block !important; }
-    .previewWrap { border: none !important; }
-    .previewInner { padding: 0 !important; }
-    
-    /* 인라인 스타일 A4 컨테이너 */
-    .previewInner > div {
-      background: #fff !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      zoom: 0.95 !important;
-    }
-    
-    .previewInner > div > div {
-      border: none !important;
-      width: 210mm !important;
-      min-height: auto !important;
-      padding: 10mm !important;
-      margin: 0 !important;
-      box-shadow: none !important;
-    }
-    
-    * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+  @media print {
+  @page {
+    size: A4;
+    margin: 0;
   }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  
+  .wrap > .card:first-child { display: none !important; }
+  .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
+  .btn, .actions { display: none !important; }
+  
+  .a4Wrap { 
+    background: #fff; 
+    padding: 0;
+    margin: 0;
+    transform: none;
+  }
+  
+  .a4Sheet { 
+    border: none; 
+    width: 210mm;
+    min-height: auto !important;  /* ← 핵심! */
+    height: auto !important;      /* ← 핵심! */
+    padding: 10mm;
+    margin: 0;
+    box-shadow: none;
+    overflow: visible;
+    transform: none;
+  }
+  
+  .a4Items {
+    page-break-inside: avoid;
+  }
+  
+  .a4Bottom {
+    page-break-inside: avoid;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 
   @media (max-width:520px){
     .app{grid-template-columns: 1fr; height:auto;}
