@@ -997,12 +997,12 @@ const a4css = `
   justify-content: center;
   padding: 14px 0;
   background: #f5f6f8;
-  transform: scale(0.85);
+  transform: scale(0.70);
   transform-origin: top center;
 }
 
 .a4Sheet {
-  width: 700px;
+  width: 800x;
   min-height: 1123px;
   background: #fff;
   border: 1px solid #cfd3d8;
