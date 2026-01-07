@@ -354,82 +354,213 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     }
   }
 
- const previewHtml = useMemo(() => {
-  if (!current) return '<div style="display:flex;align-items:center;justify-content:center;height:400px;color:#999;">왼쪽에서 견적을 선택하세요.</div>';
+  const previewHtml = useMemo(() => {
+    if (!current) return `<div class="a4Wrap"><div class="a4Sheet" style="display:flex;align-items:center;justify-content:center;color:#999;">왼쪽에서 견적을 선택하세요.</div></div>`;
 
-  const p = (current as any).payload || {};
-  const header = p.header || {};
+    const p = (current as any).payload || {};
+    const header = p.header || {};
 
-  const customerName = header.customerName ?? current.customer_name ?? "(고객명)";
-  const customerEmail = header.customerEmail ?? current.customer_email ?? "";
-  const customerPhone = header.customerPhone ?? current.customer_phone ?? "";
-  const siteName = header.siteName ?? current.site_name ?? "";
-  const spec = header.spec ?? current.spec ?? "";
-  
-  const supplyAmount = header.supplyAmount ?? current.supply_amount ?? (Number(current.total_amount || 0) - Number(current.vat_amount || 0));
-  const vatAmount = header.vatAmount ?? current.vat_amount ?? Math.round((Number(current.total_amount || 0) || 0) * 0.1);
-  const totalAmount = header.totalAmount ?? current.total_amount ?? 0;
+    const customerName = header.customerName ?? current.customer_name ?? "(고객명)";
+    const customerEmail = header.customerEmail ?? current.customer_email ?? "";
+    const customerPhone = header.customerPhone ?? current.customer_phone ?? "";
+    const siteName = header.siteName ?? current.site_name ?? "";
+    const spec = header.spec ?? current.spec ?? "";
+    
+    const supplyAmount = header.supplyAmount ?? current.supply_amount ?? (Number(current.total_amount || 0) - Number(current.vat_amount || 0));
+    const vatAmount = header.vatAmount ?? current.vat_amount ?? Math.round((Number(current.total_amount || 0) || 0) * 0.1);
+    const totalAmount = header.totalAmount ?? current.total_amount ?? 0;
 
-  const items = pickItems(current);
-  const MIN_ROWS = 12;
+    const items = pickItems(current);
+    const MIN_ROWS = 12;
 
-  const today = new Date();
-  const ymd = today.toISOString().slice(0, 10);
+    const today = new Date();
+    const ymd = today.toISOString().slice(0, 10);
 
-  const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
-  const bizcardName = selectedBizcard?.name || "";
+    const itemRows = items.map((raw, idx) => {
+  const it = normItem(raw);
+  const unitSupply = Number(it.unitPrice ?? 0);
+  const qty = Number(it.qty ?? 0);
+  const supply = unitSupply * qty;
+  const vat = Math.round(supply * 0.1);
 
-  const itemRows = items.map((raw, idx) => {
-    const it = normItem(raw);
-    const unitSupply = Number(it.unitPrice ?? 0);
-    const qty = Number(it.qty ?? 0);
-    const supply = unitSupply * qty;
-    const vat = Math.round(supply * 0.1);
+  // ✅ show_spec이 'y'인 경우만 규격 표시
+  const showSpec = String((raw as any).showSpec || "").toLowerCase() === "y";
+  const specText = showSpec ? escapeHtml(spec) : "";
 
-    const showSpec = String((raw as any).showSpec || "").toLowerCase() === "y";
-    const specText = showSpec ? escapeHtml(spec) : "";
+  return `<tr style="display:table-row;"><td style="border:1px solid #333;padding:6px;text-align:center;">${idx + 1}</td><td style="border:1px solid #333;padding:6px;text-align:left;">${escapeHtml(it.name)}</td><td style="border:1px solid #333;padding:6px;text-align:center;">${specText}</td><td style="border:1px solid #333;padding:6px;text-align:center;">${qty}</td><td style="border:1px solid #333;padding:6px;text-align:right;">${money(unitSupply)}</td><td style="border:1px solid #333;padding:6px;text-align:right;">${money(supply)}</td><td style="border:1px solid #333;padding:6px;text-align:right;">${money(vat)}</td><td style="border:1px solid #333;padding:6px;"></td></tr>`;
+});
+    const blanks = Math.max(0, MIN_ROWS - items.length);
+    for (let i = 0; i < blanks; i++) {
+      itemRows.push(`<tr style="display:table-row;height:28px;"><td style="border:1px solid #333;padding:6px;">&nbsp;</td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td></tr>`);
+    }
 
-    return '<tr><td style="border:1px solid #333;padding:6px 8px;text-align:center;background:#fff;">' + (idx + 1) + '</td><td style="border:1px solid #333;padding:6px 8px;text-align:left;background:#fff;">' + escapeHtml(it.name) + '</td><td style="border:1px solid #333;padding:6px 8px;text-align:center;background:#fff;">' + specText + '</td><td style="border:1px solid #333;padding:6px 8px;text-align:center;background:#fff;">' + qty + '</td><td style="border:1px solid #333;padding:6px 8px;text-align:right;background:#fff;">' + money(unitSupply) + '</td><td style="border:1px solid #333;padding:6px 8px;text-align:right;background:#fff;">' + money(supply) + '</td><td style="border:1px solid #333;padding:6px 8px;text-align:right;background:#fff;">' + money(vat) + '</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td></tr>';
-  });
+    const tbodyHtml = itemRows.join('');
 
-  const blanks = Math.max(0, MIN_ROWS - items.length);
-  for (let i = 0; i < blanks; i++) {
-    itemRows.push('<tr style="height:28px;"><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td></tr>');
-  }
+    const fullHtml = `
+      <div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">
+        <div style="width:794px;min-height:1123px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:110px;height:auto;" />
+            </div>
 
-  const html = '<div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;transform:scale(0.85);transform-origin:top center;">' +
-    '<div style="width:900px;min-height:1300px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">' +
-    '<div style="display:flex;align-items:center;gap:10px;"><img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:120px;height:auto;" /></div>' +
-    '<div style="flex:1;text-align:center;font-size:34px;font-weight:900;letter-spacing:6px;">견 적 서</div>' +
-    '<div style="width:140px;"></div>' +
-    '</div>' +
-    '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">' +
-    '<colgroup><col style="width:15%" /><col style="width:18%" /><col style="width:12%" /><col style="width:18%" /><col style="width:15%" /><col style="width:22%" /></colgroup>' +
-    '<tbody>' +
-    '<tr><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">담당자</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;" colspan="3">' + escapeHtml(bizcardName) + '</td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">견적일자</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">' + ymd + '</td></tr>' +
-    '<tr><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">고객명</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;" colspan="3"><div style="display:flex;justify-content:space-between;"><span>' + escapeHtml(customerName) + '</span><span style="font-weight:900;">귀하</span></div></td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">공급자</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">현대컨테이너</td></tr>' +
-    '<tr><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">이메일</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">' + escapeHtml(customerEmail) + '</td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;text-align:center;background:#fff;">전화</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">' + escapeHtml(customerPhone) + '</td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">등록번호</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">130-41-38154</td></tr>' +
-    '<tr><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">현장</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">' + escapeHtml(siteName) + '</td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;text-align:center;background:#fff;">견적일</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">' + today.toLocaleDateString("ko-KR") + '</td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">상호</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">현대컨테이너</td></tr>' +
-    '<tr><td style="border:1px solid #333;padding:6px 8px;font-weight:700;text-align:center;background:#fff;" colspan="4">견적요청에 감사드리며 아래와 같이 견적합니다.</td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">주소</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">경기도 화성시<br />향남읍 구문천안길16</td></tr>' +
-    '<tr><td style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;" colspan="4">합계금액 : ₩' + money(totalAmount) + ' (부가세 포함)</td><th style="border:1px solid #333;padding:6px 8px;font-weight:900;background:#fff;">전화</th><td style="border:1px solid #333;padding:6px 8px;background:#fff;">1688-1447</td></tr>' +
-    '</tbody></table>' +
-    '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">' +
-    '<colgroup><col style="width:5%" /><col style="width:32%" /><col style="width:10%" /><col style="width:8%" /><col style="width:13%" /><col style="width:12%" /><col style="width:10%" /><col style="width:10%" /></colgroup>' +
-    '<thead><tr><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">순번</th><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">품목</th><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">규격</th><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">수량</th><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">단가</th><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">공급가</th><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">세액</th><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">비고</th></tr></thead>' +
-    '<tbody>' + itemRows.join('') + '</tbody></table>' +
-    '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">' +
-    '<colgroup><col style="width:15%" /><col style="width:37%" /><col style="width:16%" /><col style="width:16%" /><col style="width:16%" /></colgroup>' +
-    '<tbody>' +
-    '<tr><td style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:left;" colspan="2">합계: ' + money(totalAmount) + '원 (총공급가액 ' + money(supplyAmount) + ' / 총세액 ' + money(vatAmount) + ')</td><td style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:right;">' + money(supplyAmount) + '</td><td style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:right;">' + money(vatAmount) + '</td><td style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:right;">' + money(totalAmount) + '</td></tr>' +
-    '<tr><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">결제조건</th><td style="border:1px solid #333;padding:6px 8px;font-size:12px;line-height:1.55;" colspan="4">계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td></tr>' +
-    '<tr><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">주의사항</th><td style="border:1px solid #333;padding:6px 8px;font-size:12px;line-height:1.55;" colspan="4">*견적서는 견적일로 부터 2주간 유효합니다.<br />1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)<br />2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고.<br />*출고 전날 오후 2시 이전 잔금 결제 조건*<br />3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)</td></tr>' +
-    '<tr><th style="border:1px solid #333;padding:6px 8px;background:#e6e6e6;font-weight:900;text-align:center;">중요사항</th><td style="border:1px solid #333;padding:6px 8px;font-size:12px;line-height:1.55;" colspan="4">*중요사항*<br />1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.<br />해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.</td></tr>' +
-    '</tbody></table>' +
-    '</div></div>';
+            <div style="flex:1;text-align:center;font-size:34px;font-weight:900;letter-spacing:6px;">견 적 서</div>
 
-  return html;
-}, [current, bizcards, selectedBizcardId]);
+            <div style="width:140px;"></div>
+          </div>
+
+          <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+            <colgroup>
+              <col style="width: 15%" />
+              <col style="width: 18%" />
+              <col style="width: 12%" />
+              <col style="width: 18%" />
+              <col style="width: 15%" />
+              <col style="width: 22%" />
+            </colgroup>
+            <tbody style="display:table-row-group;">
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">NO.</th>
+                <td style="border:1px solid #333;padding:6px;" colspan="3"></td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">견적일자 :</th>
+                <td style="border:1px solid #333;padding:6px;">${ymd}</td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">고객명</th>
+                <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerName)}</td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">귀하</th>
+                <td style="border:1px solid #333;padding:6px;"></td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">등록번호</th>
+                <td style="border:1px solid #333;padding:6px;">130-41-38154</td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">이메일</th>
+                <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerEmail)}</td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">전화</th>
+                <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerPhone)}</td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">상호</th>
+                <td style="border:1px solid #333;padding:6px;">현대컨테이너</td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">현장</th>
+                <td style="border:1px solid #333;padding:6px;">${escapeHtml(siteName)}</td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">견적일</th>
+                <td style="border:1px solid #333;padding:6px;">${today.toLocaleDateString("ko-KR")}</td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">주소</th>
+                <td style="border:1px solid #333;padding:6px;">경기도 화성시<br />향남읍 구문천안길16</td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <td style="border:1px solid #333;padding:6px;font-weight:700;text-align:center;" colspan="4">
+                  견적요청에 감사드리며 아래와 같이 견적합니다.
+                </td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">전화</th>
+                <td style="border:1px solid #333;padding:6px;">1688-1447</td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <td style="border:1px solid #333;padding:6px;font-weight:900;" colspan="6">
+                  합계금액 : ₩${money(totalAmount)} (부가세 포함)
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+            <colgroup>
+              <col style="width: 5%" />
+              <col style="width: 35%" />
+              <col style="width: 10%" />
+              <col style="width: 8%" />
+              <col style="width: 13%" />
+              <col style="width: 11%" />
+              <col style="width: 9%" />
+              <col style="width: 9%" />
+            </colgroup>
+
+            <thead>
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">순번</th>
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">품목</th>
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">규격</th>
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">수량</th>
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">단가</th>
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">공급가</th>
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">세액</th>
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">비고</th>
+              </tr>
+            </thead>
+
+            <tbody style="display:table-row-group;">
+              ${itemRows.join('')}
+            </tbody>
+          </table>
+
+          <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+            <colgroup>
+              <col style="width: 18%" />
+              <col style="width: auto" />
+              <col style="width: 15%" />
+              <col style="width: 12%" />
+              <col style="width: 13%" />
+            </colgroup>
+            <tbody style="display:table-row-group;">
+              <tr style="display:table-row;">
+                <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:left;" colspan="2">
+                  합계: ${money(totalAmount)}원 (총공급가액 ${money(supplyAmount)} / 총세액 ${money(vatAmount)})
+                </td>
+                <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:right;">${money(supplyAmount)}</td>
+                <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:right;">${money(vatAmount)}</td>
+                <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:right;">${money(totalAmount)}</td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">결제조건</th>
+                <td style="border:1px solid #333;padding:6px;font-size:12px;line-height:1.55;" colspan="4">
+                  계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고
+                </td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">주의사항</th>
+                <td style="border:1px solid #333;padding:6px;font-size:12px;line-height:1.55;" colspan="4">
+                  *견적서는 견적일로 부터 2주간 유효합니다.
+                  <br />
+                  1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
+                  <br />
+                  2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고.
+                  <br />
+                  *출고 전날 오후 2시 이전 잔금 결제 조건*
+                  <br />
+                  3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
+                </td>
+              </tr>
+
+              <tr style="display:table-row;">
+                <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">중요사항</th>
+                <td style="border:1px solid #333;padding:6px;font-size:12px;line-height:1.55;" colspan="4">
+                  *중요사항*
+                  <br />
+                  1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
+                  <br />
+                  2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
+                  <br />
+                  한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.
+                  <br />
+                  해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    return fullHtml;
+  }, [current]);
 
   async function downloadJpg() {
     requireCurrent();
@@ -1686,21 +1817,23 @@ const css = `
   .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
   .modalBody{padding:12px;}
 
-  /* A4 견적서 스타일 (App.tsx와 동일) */
-  .a4Wrap{
-    display:flex;
-    justify-content:center;
-    padding: 14px 0;
-    background:#f5f6f8;
-  }
-  .a4Sheet{
-    width: 794px;
-    min-height: 1123px;
-    background:#fff;
-    border:1px solid #cfd3d8;
-    padding: 16px;
-    box-sizing:border-box;
-  }
+ .a4Wrap {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0;
+  background: #f5f6f8;
+  transform: scale(0.85);
+  transform-origin: top center;
+}
+
+.a4Sheet {
+  width: 900px;
+  min-height: 1123px;
+  background: #fff;
+  border: 1px solid #cfd3d8;
+  padding: 16px;
+  box-sizing: border-box;
+}
 
   .a4Header{
     display:flex;
@@ -1783,11 +1916,9 @@ const css = `
   }
   
   .a4Items tbody td.c{
-    /* 모든 셀 기본 스타일 */
   }
   
   .a4Items tbody td.wrap{
-    /* 품목명 셀만 줄바꿈 허용 */
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -1818,65 +1949,152 @@ const css = `
     overflow-wrap:anywhere;
   }
 
-  @media print {
-  .a4Sheet {
-    border: none;
-    width: 210mm;
-    min-height: auto !important;
-    height: auto !important;
-    padding: 8mm;
-    margin: 0;
-    transform: scale(0.95);
-    transform-origin: top center;
+  @media print{
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: auto;
+    }
+    
+    .app { display: block !important; }
+    .panel { display: none !important; }
+    .actions { display: none !important; }
+    button { display: none !important; }
+    .right { display: block !important; }
+    .previewWrap { border: none !important; }
+    .previewInner { padding: 0 !important; }
+    
+    .previewInner > div {
+      background: #fff !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      zoom: 0.95 !important;
+    }
+    
+    .previewInner > div > div {
+      border: none !important;
+      width: 210mm !important;
+      min-height: auto !important;
+      padding: 10mm !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+    }
+    
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
-}
-  
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow: visible;
-  }
-  
-  .wrap > .card:first-child { display: none !important; }
-  .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
-  .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
-  .btn, .actions { display: none !important; }
-  
-  .a4Wrap { 
-    background: #fff; 
-    padding: 0;
-    margin: 0;
-    transform: none;
-  }
-  
-  .a4Sheet { 
-    border: none; 
-    width: 210mm;
-    min-height: auto !important;  /* ← 핵심! */
-    height: auto !important;      /* ← 핵심! */
-    padding: 10mm;
-    margin: 0;
-    box-shadow: none;
-    overflow: visible;
-    transform: none;
-  }
-  
-  .a4Items {
-    page-break-inside: avoid;
-  }
-  
-  .a4Bottom {
-    page-break-inside: avoid;
-  }
-  
-  * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-}
 
-  @media (max-width:520px){
-    .app{grid-template-columns: 1fr; height:auto;}
-    .a4Sheet{width:100%;min-height:auto;padding:12px;}
+  @media (max-width: 768px) {
+    .app {
+      grid-template-columns: 1fr !important;
+      height: auto !important;
+      padding: 8px !important;
+      gap: 8px !important;
+    }
+    
+    .panel {
+      max-height: 280px !important;
+    }
+    
+    .list {
+      max-height: 180px !important;
+      overflow-y: auto !important;
+    }
+    
+    .right {
+      gap: 8px !important;
+    }
+    
+    .actions {
+      padding: 8px !important;
+      gap: 4px !important;
+      justify-content: center !important;
+    }
+    
+    .actions button {
+      font-size: 9px !important;
+      padding: 6px 6px !important;
+      flex: 0 0 auto !important;
+    }
+    
+    .previewWrap {
+      overflow: hidden !important;
+      position: relative !important;
+      min-height: 520px !important;
+    }
+    
+    .previewInner {
+      transform: scale(0.42) !important;
+      transform-origin: top left !important;
+      width: 238% !important;
+      padding: 0 !important;
+    }
+    
+    .previewInner > div {
+      padding: 0 !important;
+      background: #f5f6f8 !important;
+    }
+    
+    .previewInner > div > div {
+      transform-origin: top left !important;
+      margin: 0 !important;
+    }
+    
+    .modalCard {
+      width: 95vw !important;
+      max-height: 90vh !important;
+    }
+    
+    .modalBody {
+      padding: 10px !important;
+    }
+    
+    .modal input {
+      font-size: 14px !important;
+    }
+    
+    .hdr h1 {
+      font-size: 13px !important;
+    }
+    
+    .search input {
+      font-size: 14px !important;
+      padding: 8px 10px !important;
+    }
+    
+    .item .mid {
+      font-size: 12px !important;
+    }
+    
+    .item .bot {
+      font-size: 11px !important;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .previewInner {
+      transform: scale(0.35) !important;
+      width: 285% !important;
+    }
+    
+    .previewWrap {
+      min-height: 450px !important;
+    }
+    
+    .actions button {
+      font-size: 8px !important;
+      padding: 5px 4px !important;
+    }
+    
+    .panel {
+      max-height: 220px !important;
+    }
   }
 `;
