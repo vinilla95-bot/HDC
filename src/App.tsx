@@ -771,9 +771,10 @@ type A4QuoteProps = {
   vat_amount: number;
   total_amount: number;
   bizcardImageUrl?: string;
+  bizcardName?: string;
 };
 
-function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount }: A4QuoteProps) {
+function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName }: A4QuoteProps) {
   const today = new Date();
   const ymd = today.toISOString().slice(0, 10);
   const spec = `${form.w}x${form.l}`;
@@ -806,17 +807,20 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             </colgroup>
             <tbody>
               <tr>
-                <th className="k">NO.</th>
-                <td className="v" colSpan={3}></td>
-                <th className="k">견적일자 :</th>
+                <th className="k">담당자</th>
+                <td className="v" colSpan={3}>{bizcardName || ""}</td>
+                <th className="k">견적일자</th>
                 <td className="v">{ymd}</td>
               </tr>
 
               <tr>
                 <th className="k">고객명</th>
-                <td className="v">{form.name || ""}</td>
-                <th className="k center">귀하</th>
-                <td className="v"></td>
+                <td className="v" colSpan={3}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>{form.name || ""}</span>
+                    <span style={{ fontWeight: 900 }}>귀하</span>
+                  </div>
+                </td>
                 <th className="k">공급자</th>
                 <td className="v">현대컨테이너</td>
               </tr>
