@@ -37,10 +37,8 @@ export const matchKorean = (target: string, keyword: string) => {
   const k = normNoSpace(keyword);
   if (!k) return true;
 
-  // 일반 포함
   if (t.toLowerCase().includes(k.toLowerCase())) return true;
 
-  // 초성 포함
   const tc = getChosung(t);
   const kc = getChosung(k);
   return tc.includes(kc);
@@ -78,25 +76,11 @@ export const calculateOptionLine = (
 
   const qtyMode = String(opt.qty_mode || '').toUpperCase();
   const unitRaw = String(opt.unit || '').toUpperCase();
-  
   const isMeterUnit =
     unitRaw.includes('M') ||
     unitRaw.includes('METER') ||
     unitRaw.includes('METRE') ||
     opt.unit === 'm';
-
-  // ✅ 면적 단위 (㎡, m2, SQM 등)
-  const isAreaUnit =
-    unitRaw.includes('㎡') ||
-    unitRaw.includes('M2') ||
-    unitRaw.includes('SQM') ||
-    unitRaw.includes('평') ||
-    opt.unit === '㎡';
-
-  // 폭별 단가 (w3/w4)
-  const w3 = Number(opt.unit_price_w3 || 0);
-  const w4 = Number(opt.unit_price_w4 || 0);
-  const hasWidthPrice = w3 > 0 || w4 > 0;
 
   // 임대
   if (isRent) {
@@ -114,25 +98,6 @@ export const calculateOptionLine = (
     };
   }
 
-  // ✅ 면적 기준 자동계산 (㎡ 단위 또는 AUTO_AREA 모드)
-  if (isAreaUnit || qtyMode === 'AUTO_AREA' || qtyMode === 'AUTO_SQM') {
-    const area = w * l;
-    qty = area;
-    unit = '㎡';
-    
-    // 폭별 단가 적용
-    if (hasWidthPrice) {
-      if (w >= 4 && w4 > 0) unitPrice = w4;
-      else if (w3 > 0) unitPrice = w3;
-    }
-    
-    let amount = qty * unitPrice;
-    amount = roundToTenThousand(amount);
-    memo = `면적계산: ${w}×${l}=${area}㎡`;
-    
-    return { qty, unit, unitPrice, amount, memo };
-  }
-
   // 평 자동
   if (qtyMode === 'AUTO_PYEONG') {
     const p = (w * l) / 3.3;
@@ -140,8 +105,34 @@ export const calculateOptionLine = (
     memo = `자동계산(평): ${w}×${l}=${(w * l).toFixed(2)}㎡ / 3.3 = ${p.toFixed(2)} → ${qty}평`;
   }
 
-  // m 자동 (길이 기준)
+  // 폭별 단가 (w3/w4)
+  const w3 = Number(opt.unit_price_w3 || 0);
+  const w4 = Number(opt.unit_price_w4 || 0);
+  const hasWidthPrice = w3 > 0 || w4 > 0;
+
+  // ✅ m 단위 자동계산
   if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
+    
+    // ✅ 폭 4m 이상이면 평 계산
+    if (w >= 4) {
+      const area = w * l;
+      const pyeong = area / 3.3;
+      qty = Math.round(pyeong * 10) / 10; // 소수점 1자리
+      unit = '평';
+      
+      // 폭별 단가 있으면 적용
+      if (hasWidthPrice && w4 > 0) {
+        unitPrice = w4;
+      }
+      
+      let amount = pyeong * unitPrice;
+      amount = roundToTenThousand(amount);
+      memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
+      
+      return { qty, unit, unitPrice, amount, memo };
+    }
+    
+    // ✅ 폭 3m 이하면 길이(m) 계산
     qty = l;
 
     if (hasWidthPrice) {
@@ -161,6 +152,11 @@ export const calculateOptionLine = (
         memo += `\n최소청구: ${before}m → ${qty}m`;
       }
     }
+    
+    let amount = qty * unitPrice;
+    amount = roundToTenThousand(amount);
+    
+    return { qty, unit, unitPrice, amount, memo };
   }
 
   if (overrides.unitPrice !== undefined) unitPrice = Number(overrides.unitPrice);
@@ -172,6 +168,7 @@ export const calculateOptionLine = (
 
   return { qty, unit, unitPrice, amount, memo };
 };
+
 // ------------------------------------------------------------------
 // 4) 현장 요금 검색
 // ------------------------------------------------------------------
@@ -232,7 +229,6 @@ export const loadBizcards = async () => {
 // 6) 견적 저장/수정 (quotes 스키마 맞춤)
 // ------------------------------------------------------------------
 
-// ✅ items 배열을 안전하게 정제하는 헬퍼 함수
 const sanitizeItems = (items: any[]): any[] => {
   if (!Array.isArray(items)) return [];
   
@@ -250,11 +246,11 @@ const sanitizeItems = (items: any[]): any[] => {
     baseUnitPrice: Number(item.baseUnitPrice || 0),
     baseAmount: Number(item.baseAmount || 0),
     lineSpec: item.lineSpec || null,
+    showSpec: item.showSpec || 'n',
   }));
 };
 
 export const saveQuoteToDb = async (payload: any) => {
-  // ✅ items를 안전하게 정제
   const dataToSave = {
     ...payload,
     items: sanitizeItems(payload.items || [])
@@ -266,7 +262,6 @@ export const saveQuoteToDb = async (payload: any) => {
 };
 
 export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
-  // 최신 버전 조회
   const { data: rows } = await supabase
     .from('quotes')
     .select('version')
@@ -277,7 +272,6 @@ export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
   const latest = rows && rows[0] ? Number((rows[0] as any).version || 1) : 1;
   const nextVersion = latest + 1;
 
-  // ✅ items를 안전하게 정제
   const row = { 
     ...payload, 
     quote_id, 
