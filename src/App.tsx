@@ -746,17 +746,8 @@ export default function App() {
   );
 
   return view === "list" ? listScreen : rtScreen;
-}
+};
 
-/* =========================
- *  A4Quote (컴포넌트 밖)
- * ========================= */
-
-
-
-/* =========================
- *  A4Quote (컴포넌트 밖)
- * ========================= */
 
 type A4QuoteProps = {
   form: {
