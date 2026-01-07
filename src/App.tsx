@@ -752,53 +752,7 @@ export default function App() {
  *  A4Quote (컴포넌트 밖)
  * ========================= */
 
-type A4QuoteProps = {
-  form: {
-    quoteTitle: string;
-    name: string;
-    email: string;
-    phone: string;
-    w: number;
-    l: number;
-    siteQ: string;
-    sitePickedLabel: string;
-    optQ: string;
-  };
-  computedItems: any[];
-  blankRows: any[];
-  fmt: (n: number) => string;
-  supply_amount: number;
-  vat_amount: number;
-  total_amount: number;
-  bizcardImageUrl?: string;
-  bizcardName?: string;
-};
 
-/* =========================
- *  A4Quote (컴포넌트 밖)
- * ========================= */
-
-type A4QuoteProps = {
-  form: {
-    quoteTitle: string;
-    name: string;
-    email: string;
-    phone: string;
-    w: number;
-    l: number;
-    siteQ: string;
-    sitePickedLabel: string;
-    optQ: string;
-  };
-  computedItems: any[];
-  blankRows: any[];
-  fmt: (n: number) => string;
-  supply_amount: number;
-  vat_amount: number;
-  total_amount: number;
-  bizcardImageUrl?: string;
-  bizcardName?: string;
-};
 
 /* =========================
  *  A4Quote (컴포넌트 밖)
