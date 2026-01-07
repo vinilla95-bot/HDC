@@ -137,6 +137,29 @@ export default function App() {
 }, [form.optQ, options]);
 
   const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
+     if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+    const newRows = opt.sub_items.map((sub: any, idx: number) => ({
+      key: `${opt.option_id}_${Date.now()}_${idx}`,
+      optionId: `${opt.option_id}_${idx}`,
+      optionName: sub.name,
+      displayName: sub.name,
+      unit: sub.unit || "",
+      showSpec: "n",
+      baseQty: sub.qty || 0,
+      baseUnitPrice: sub.unitPrice || 0,
+      baseAmount: 0,
+      displayQty: sub.qty || 0,
+      customerUnitPrice: sub.unitPrice || 0,
+      finalAmount: 0,
+      memo: "",
+      lineSpec: { w: form.w, l: form.l },
+    }));
+    
+    setSelectedItems((prev: any) => [...prev, ...newRows]);
+    setForm((prev) => ({ ...prev, optQ: "" }));
+    setSites([]);
+    return;
+  }
     const res = calculateOptionLine(opt, form.w, form.l);
     const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
     const rent = rawName.trim() === "임대";
