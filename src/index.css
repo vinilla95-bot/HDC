@@ -55,22 +55,4 @@ table {
 }
 
 
-/* ========== 모바일 최적화 ========== */
-@media (max-width: 768px) {
-  /* 레이아웃: 세로 배치 */
-  .wrap {
-    grid-template-columns: 1fr;
-  }
-  
-  /* 견적서 미리보기 축소해서 한눈에 보이게 */
-  .previewInner > div {
-    transform: scale(0.45);
-    transform-origin: top left;
-    width: 794px !important;
-  }
-  
-  .previewWrap {
-    height: 520px; /* 축소된 높이에 맞춤 */
-    overflow: hidden;
-  }
-}
+
