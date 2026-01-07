@@ -78,11 +78,25 @@ export const calculateOptionLine = (
 
   const qtyMode = String(opt.qty_mode || '').toUpperCase();
   const unitRaw = String(opt.unit || '').toUpperCase();
+  
   const isMeterUnit =
     unitRaw.includes('M') ||
     unitRaw.includes('METER') ||
     unitRaw.includes('METRE') ||
     opt.unit === 'm';
+
+  // ✅ 면적 단위 (㎡, m2, SQM 등)
+  const isAreaUnit =
+    unitRaw.includes('㎡') ||
+    unitRaw.includes('M2') ||
+    unitRaw.includes('SQM') ||
+    unitRaw.includes('평') ||
+    opt.unit === '㎡';
+
+  // 폭별 단가 (w3/w4)
+  const w3 = Number(opt.unit_price_w3 || 0);
+  const w4 = Number(opt.unit_price_w4 || 0);
+  const hasWidthPrice = w3 > 0 || w4 > 0;
 
   // 임대
   if (isRent) {
@@ -100,6 +114,25 @@ export const calculateOptionLine = (
     };
   }
 
+  // ✅ 면적 기준 자동계산 (㎡ 단위 또는 AUTO_AREA 모드)
+  if (isAreaUnit || qtyMode === 'AUTO_AREA' || qtyMode === 'AUTO_SQM') {
+    const area = w * l;
+    qty = area;
+    unit = '㎡';
+    
+    // 폭별 단가 적용
+    if (hasWidthPrice) {
+      if (w >= 4 && w4 > 0) unitPrice = w4;
+      else if (w3 > 0) unitPrice = w3;
+    }
+    
+    let amount = qty * unitPrice;
+    amount = roundToTenThousand(amount);
+    memo = `면적계산: ${w}×${l}=${area}㎡`;
+    
+    return { qty, unit, unitPrice, amount, memo };
+  }
+
   // 평 자동
   if (qtyMode === 'AUTO_PYEONG') {
     const p = (w * l) / 3.3;
@@ -107,12 +140,7 @@ export const calculateOptionLine = (
     memo = `자동계산(평): ${w}×${l}=${(w * l).toFixed(2)}㎡ / 3.3 = ${p.toFixed(2)} → ${qty}평`;
   }
 
-  // 폭별 단가 (w3/w4)
-  const w3 = Number(opt.unit_price_w3 || 0);
-  const w4 = Number(opt.unit_price_w4 || 0);
-  const hasWidthPrice = w3 > 0 || w4 > 0;
-
-  // m 자동
+  // m 자동 (길이 기준)
   if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
     qty = l;
 
@@ -144,7 +172,6 @@ export const calculateOptionLine = (
 
   return { qty, unit, unitPrice, amount, memo };
 };
-
 // ------------------------------------------------------------------
 // 4) 현장 요금 검색
 // ------------------------------------------------------------------
