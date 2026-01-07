@@ -1693,15 +1693,21 @@ const css = `
     padding: 14px 0;
     background:#f5f6f8;
   }
-  .a4Sheet{
-    width: 794px;
-    min-height: 1123px;
-    background:#fff;
-    border:1px solid #cfd3d8;
-    padding: 16px;
-    box-sizing:border-box;
-  }
+ .a4Sheet {
+  width: 794px;
+  min-height: 1123px;
+  background: #fff;
+  border: 1px solid #cfd3d8;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
 
+.a4Items {
+  flex: 1;
+}
   .a4Header{
     display:flex;
     align-items:center;
