@@ -397,7 +397,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     itemRows.push('<tr style="height:28px;"><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td><td style="border:1px solid #333;padding:6px 8px;background:#fff;">&nbsp;</td></tr>');
   }
 
-  const html = '<div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">' +
+  const html = '<div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;transform:scale(0.85);transform-origin:top center;">' +
     '<div style="width:700px;min-height:1123px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">' +
     '<div style="display:flex;align-items:center;gap:10px;"><img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:120px;height:auto;" /></div>' +
@@ -1676,7 +1676,7 @@ const css = `
   button.primary:hover{background:#222;}
   .content{flex:1; display:grid; grid-template-columns: 1fr; gap:12px;}
   .previewWrap{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:auto;}
-  .previewInner{padding:14px; min-height:400px;}
+ .previewInner{padding:14px; min-height:400px; transform: scale(0.85); transform-origin: top left;}
   .muted{color:#666;font-size:12px;}
   .row{display:flex;gap:8px;align-items:center;}
   .spacer{flex:1;}
