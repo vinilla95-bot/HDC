@@ -1046,12 +1046,19 @@ const a4css = `
   }
   .a4HeaderRight{ width: 140px; }
 
-  table{ width:100%; border-collapse: collapse; }
-  .a4Info, .a4Items, .a4Bottom{
-    table-layout: fixed;
-    border: 1px solid #333;
-    margin-top: 8px;
-  }
+ table{ 
+  width: 100% !important; 
+  max-width: 100% !important;
+  border-collapse: collapse; 
+  table-layout: fixed;
+}
+.a4Info, .a4Items, .a4Bottom{
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
+  border: 1px solid #333;
+  margin-top: 8px;
+}
   .a4Info th, .a4Info td,
   .a4Items th, .a4Items td,
   .a4Bottom th, .a4Bottom td{
