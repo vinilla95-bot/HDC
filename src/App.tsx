@@ -999,7 +999,7 @@ const a4css = `
     background:#f5f6f8;
   }
    .a4Sheet {
-      width: 600px;
+      width: 1000px;
       min-height: 1123px;
       background: #fff;
       border: 1px solid #cfd3d8;
