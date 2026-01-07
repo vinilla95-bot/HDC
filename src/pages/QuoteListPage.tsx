@@ -398,7 +398,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   }
 
   const html = '<div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;transform:scale(0.85);transform-origin:top center;">' +
-    '<div style="width:700px;min-height:1123px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">' +
+    '<div style="width:900px;min-height:1123px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">' +
     '<div style="display:flex;align-items:center;gap:10px;"><img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:120px;height:auto;" /></div>' +
     '<div style="flex:1;text-align:center;font-size:34px;font-weight:900;letter-spacing:6px;">견 적 서</div>' +
@@ -1696,7 +1696,7 @@ const css = `
 }
 
 .a4Sheet {
-  width: 700px;
+  width: 900px;
   min-height: 1123px;
   background: #fff;
   border: 1px solid #cfd3d8;
