@@ -136,8 +136,7 @@ export default function App() {
   return matched.slice(0, 12);
 }, [form.optQ, options]);
 
-  const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
-    const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
+ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   // ✅ sub_items가 있으면 여러 줄로 추가
   if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
     const newRows = opt.sub_items.map((sub: any, idx: number) => ({
@@ -162,58 +161,58 @@ export default function App() {
     setSites([]);
     return;
   }
-    const res = calculateOptionLine(opt, form.w, form.l);
-    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-    const rent = rawName.trim() === "임대";
 
-    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+  const res = calculateOptionLine(opt, form.w, form.l);
+  const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+  const rent = rawName.trim() === "임대";
 
-    const displayQty = rent ? baseQty : 1;
-    const customerUnitPrice = rent ? baseUnitPrice : baseAmount;
+  const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+  const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
+  const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
 
-    let simplifiedLabel = label;
-    if (label && form.siteQ) {
-      const regions = label.split(',').map((r: string) => r.trim());
-      const searchQuery = form.siteQ.toLowerCase();
-      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
-      simplifiedLabel = matched || regions[0];
-    }
+  const displayQty = rent ? baseQty : 1;
+  const customerUnitPrice = rent ? baseUnitPrice : baseAmount;
 
-    const displayName = isSpecial
-      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
-      : rent
-      ? `임대 ${baseQty}개월`
-      : rawName;
+  let simplifiedLabel = label;
+  if (label && form.siteQ) {
+    const regions = label.split(',').map((r: string) => r.trim());
+    const searchQuery = form.siteQ.toLowerCase();
+    const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
+    simplifiedLabel = matched || regions[0];
+  }
 
-    // ✅ show_spec 저장 (isSpecial인 경우 'y', 아니면 옵션 테이블에서 가져옴)
-    const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
+  const displayName = isSpecial
+    ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
+    : rent
+    ? `임대 ${baseQty}개월`
+    : rawName;
 
-    const row: any = {
-      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-      optionId: String(opt.option_id || rawName),
-      optionName: rawName,
-      displayName,
-      unit: rent ? "개월" : res.unit || "EA",
-      showSpec,  // ✅ 추가
+  const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
 
-      baseQty,
-      baseUnitPrice,
-      baseAmount,
+  const row: any = {
+    key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+    optionId: String(opt.option_id || rawName),
+    optionName: rawName,
+    displayName,
+    unit: rent ? "개월" : res.unit || "EA",
+    showSpec,
 
-      displayQty,
-      customerUnitPrice,
-      finalAmount: Math.round(displayQty * customerUnitPrice),
+    baseQty,
+    baseUnitPrice,
+    baseAmount,
 
-      memo: res.memo || "",
-      lineSpec: { w: form.w, l: form.l },
-    };
+    displayQty,
+    customerUnitPrice,
+    finalAmount: Math.round(displayQty * customerUnitPrice),
 
-    setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
-    setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
-    setSites([]);  // ✅ 현장 리스트 닫기
+    memo: res.memo || "",
+    lineSpec: { w: form.w, l: form.l },
   };
+
+  setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
+  setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
+  setSites([]);
+};
 
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
