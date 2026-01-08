@@ -1986,13 +1986,14 @@ const css = `
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    height: auto !important;
+    background: #fff !important;
   }
   
   .app { 
     display: block !important; 
     height: auto !important;
     padding: 0 !important;
+    background: #fff !important;
   }
   
   .panel { display: none !important; }
@@ -2002,12 +2003,14 @@ const css = `
   .right { 
     display: block !important; 
     height: auto !important;
+    background: #fff !important;
   }
   
   .content {
     display: block !important;
     height: auto !important;
-    flex: none !important;
+    min-height: auto !important;
+    background: #fff !important;
   }
   
   .previewWrap { 
@@ -2015,6 +2018,7 @@ const css = `
     overflow: visible !important;
     height: auto !important;
     min-height: auto !important;
+    background: #fff !important;
   }
   
   .previewInner { 
@@ -2024,6 +2028,7 @@ const css = `
     height: auto !important;
     min-height: auto !important;
     width: auto !important;
+    background: #fff !important;
   }
   
   .previewInner > div {
@@ -2040,6 +2045,7 @@ const css = `
     border: none !important;
     padding: 0 !important;
     margin: 0 !important;
+    background: #fff !important;
   }
   
   #a4SheetCapture table {
@@ -2050,6 +2056,7 @@ const css = `
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    background-color: #fff !important;
   }
 }
   @media (max-width: 768px) {
