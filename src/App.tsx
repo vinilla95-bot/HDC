@@ -1064,12 +1064,6 @@ const a4css = `
     padding: 16px;
     box-sizing: border-box;
   }
-  
-
-.a4Sheet td, .a4Sheet th {
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
   .a4Header{
     display:flex;
     align-items:center;
@@ -1203,22 +1197,28 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-@media (max-width: 768px) {
+  @media (max-width: 768px) {
     .a4Wrap {
       transform: scale(0.42) !important;
       transform-origin: top left !important;
       padding: 0 !important;
-      width: 238% !important;
+    }
+    
+    .card:has(.a4Wrap) {
+      overflow: hidden !important;
+      min-height: 520px !important;
     }
   }
 
   @media (max-width: 400px) {
     .a4Wrap {
       transform: scale(0.35) !important;
-      width: 285% !important;
+    }
+    
+    .card:has(.a4Wrap) {
+      min-height: 450px !important;
     }
   }
-
 
   @media print{
     @page {
