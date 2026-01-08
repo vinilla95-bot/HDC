@@ -1986,30 +1986,39 @@ const css = `
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    height: auto !important;
   }
   
   .app { display: block !important; }
   .panel { display: none !important; }
   .actions { display: none !important; }
   button { display: none !important; }
-  .right { display: block !important; width: 100% !important; }
-  .previewWrap { border: none !important; background: #fff !important; }
-  .previewInner { padding: 0 !important; transform: none !important; width: 100% !important; }
+  .right { display: block !important; }
   
-  .previewInner > div {
-    display: contents !important;
+  .previewWrap { 
+    border: none !important; 
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  .previewInner { 
+    padding: 0 !important; 
+    transform: none !important; 
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  #a4WrapPrint {
+    display: block !important;
+    padding: 0 !important;
   }
   
   #a4SheetCapture {
-    width: 100% !important;
+    width: 200mm !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 5mm !important;
-    margin: 0 !important;
-    transform: scale(0.9) !important;
-    transform-origin: top center !important;
+    padding: 10mm !important;
+    margin: 0 auto !important;
   }
   
   #a4SheetCapture table {
