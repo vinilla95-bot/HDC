@@ -120,3 +120,26 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
     min-height: 450px !important;
   }
 }
+
+@media print {
+  .wrap {
+    display: block !important;
+    padding: 0 !important;
+  }
+  
+  .wrap > .card:first-child {
+    display: none !important;
+  }
+  
+  #quotePreviewApp > .card {
+    display: block !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+  
+  #quotePreviewApp .a4Wrap {
+    transform: none !important;
+    width: auto !important;
+    padding: 0 !important;
+  }
+}
