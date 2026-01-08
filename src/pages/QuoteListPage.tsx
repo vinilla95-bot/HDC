@@ -1977,70 +1977,77 @@ const css = `
     overflow-wrap:anywhere;
   }
 
-  @media print{
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    
-    html, body {
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    
-    .app { 
-      display: block !important; 
-      height: auto !important;
-      padding: 0 !important;
-    }
-    
-    .panel { display: none !important; }
-    .actions { display: none !important; }
-    button { display: none !important; }
-    
-    .right { 
-      display: block !important; 
-    }
-    
-    .content {
-      display: block !important;
-    }
-    
-    .previewWrap { 
-      border: none !important; 
-      overflow: visible !important;
-    }
-    
-    .previewInner { 
-      padding: 0 !important; 
-      transform: none !important; 
-      width: auto !important;
-    }
-    
-    .previewInner > div {
-      padding: 0 !important;
-      margin: 0 !important;
-      background: #fff !important;
-    }
-    
-    #a4SheetCapture {
-      width: 200mm !important;
-      min-height: auto !important;
-      height: auto !important;
-      border: none !important;
-      padding: 5mm !important;
-      margin: 0 !important;
-    }
-    
-    #a4SheetCapture table {
-      width: 100% !important;
-    }
-    
-    * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+ @media print{
+  @page {
+    size: A4;
+    margin: 0;
   }
+  
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .app { 
+    display: block !important; 
+    height: auto !important;
+    padding: 0 !important;
+  }
+  
+  .panel { display: none !important; }
+  .actions { display: none !important; }
+  button { display: none !important; }
+  
+  .right { 
+    display: block !important; 
+    height: auto !important;
+  }
+  
+  .content {
+    display: block !important;
+    height: auto !important;
+    flex: none !important;
+  }
+  
+  .previewWrap { 
+    border: none !important; 
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  .previewInner { 
+    padding: 0 !important; 
+    transform: none !important; 
+    width: auto !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+  
+  .previewInner > div {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+  
+  #a4SheetCapture {
+    width: 200mm !important;
+    min-height: auto !important;
+    height: auto !important;
+    border: none !important;
+    padding: 5mm !important;
+    margin: 0 !important;
+  }
+  
+  #a4SheetCapture table {
+    width: 100% !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 
   @media (max-width: 768px) {
     .app {
