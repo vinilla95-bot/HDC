@@ -400,7 +400,7 @@ const bizcardName = selectedBizcard?.name || "";
 
     const fullHtml = `
       <div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">
-        <div style="width:794px;min-height:1123px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
+        <div id="a4SheetCapture" style="width:794px;min-height:1123px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
               <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:110px;height:auto;" />
@@ -566,11 +566,9 @@ const bizcardName = selectedBizcard?.name || "";
 
  async function downloadJpg() {
   requireCurrent();
-  const el = document.getElementById("quotePreview");
-  if (!el) return;
-
-  // ✅ 내부 흰색 견적서만 캡처 (회색 배경 제외)
-  const sheet = el.querySelector("div > div") as HTMLElement;
+  
+  // ✅ 흰색 견적서만 캡처
+  const sheet = document.getElementById("a4SheetCapture");
   if (!sheet) {
     toast("캡처 대상을 찾을 수 없습니다.");
     return;
