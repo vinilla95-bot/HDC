@@ -1980,24 +1980,41 @@ const css = `
 @media print{
   @page {
     size: A4;
-    margin: 5mm;
+    margin: 0;
   }
   
   html, body {
     margin: 0 !important;
     padding: 0 !important;
+    height: auto !important;
   }
   
-  .app { display: block !important; }
+  .app { 
+    display: block !important; 
+    height: auto !important;
+    padding: 0 !important;
+  }
+  
   .panel { display: none !important; }
   .actions { display: none !important; }
   button { display: none !important; }
-  .right { display: block !important; }
+  
+  .right { 
+    display: block !important; 
+    height: auto !important;
+  }
+  
+  .content {
+    display: block !important;
+    height: auto !important;
+    flex: none !important;
+  }
   
   .previewWrap { 
     border: none !important; 
     overflow: visible !important;
     height: auto !important;
+    min-height: auto !important;
   }
   
   .previewInner { 
@@ -2005,29 +2022,29 @@ const css = `
     transform: none !important; 
     overflow: visible !important;
     height: auto !important;
+    min-height: auto !important;
+    width: auto !important;
   }
   
   .previewInner > div {
     padding: 0 !important;
     margin: 0 !important;
     background: #fff !important;
+    display: block !important;
   }
   
   #a4SheetCapture {
-    width: 190mm !important;
+    width: 200mm !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 5mm !important;
-    margin: 0 auto !important;
-    transform: scale(0.82) !important;
-    transform-origin: top center !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
   #a4SheetCapture table {
     min-width: auto !important;
     width: 100% !important;
-    page-break-inside: auto !important;
   }
   
   * {
@@ -2035,7 +2052,6 @@ const css = `
     print-color-adjust: exact;
   }
 }
-
   @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
