@@ -1984,8 +1984,8 @@ const css = `
   }
   
   html, body {
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     height: auto !important;
   }
   
@@ -1993,24 +1993,30 @@ const css = `
   .panel { display: none !important; }
   .actions { display: none !important; }
   button { display: none !important; }
-  .right { display: block !important; }
-  .previewWrap { border: none !important; background: #fff !important; }
-  .previewInner { padding: 0 !important; transform: none !important; width: auto !important; }
+  .right { display: block !important; width: 100% !important; }
+  .previewWrap { border: none !important; background: #fff !important; overflow: visible !important; }
+  .previewInner { padding: 0 !important; transform: none !important; width: 100% !important; }
   
   .previewInner > div {
     background: #fff !important;
     padding: 0 !important;
     margin: 0 !important;
+    display: block !important;
   }
   
   #a4SheetCapture {
-    width: 100% !important;
+    width: 190mm !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 5mm !important;
+    margin: 0 auto !important;
     box-shadow: none !important;
+  }
+  
+  #a4SheetCapture table {
+    min-width: auto !important;
+    width: 100% !important;
   }
   
   * {
