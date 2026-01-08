@@ -1813,7 +1813,6 @@ const bizcardName = selectedBizcard?.name || "";
     </div>
   );
 }
-
 const css = `
   .app{display:grid;grid-template-columns: 360px 1fr; height:100vh; gap:12px; padding:12px; box-sizing:border-box;}
   .panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:hidden; display:flex; flex-direction:column;}
