@@ -74,6 +74,59 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
   }
 }
 
+/* App.tsx 상담 입력 모바일 */
+@media (max-width: 768px) {
+  .wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+  
+  .wrap > .card:first-child {
+    font-size: 12px !important;
+  }
+  
+  .wrap > .card:first-child .row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-bottom: 6px !important;
+  }
+  
+  .wrap > .card:first-child .row label {
+    min-width: 55px !important;
+    font-size: 11px !important;
+  }
+  
+  .wrap > .card:first-child .row input,
+  .wrap > .card:first-child .row select {
+    font-size: 14px !important;
+    padding: 8px !important;
+  }
+  
+  .wrap > .card:first-child .title {
+    font-size: 14px !important;
+  }
+  
+  .wrap > .card:first-child .actions {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  
+  .wrap > .card:first-child .actions .btn {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
+  }
+  
+  .wrap > .card:first-child table {
+    font-size: 10px !important;
+  }
+  
+  .wrap > .card:first-child table input {
+    font-size: 11px !important;
+    padding: 4px !important;
+  }
+}
 
 
 
