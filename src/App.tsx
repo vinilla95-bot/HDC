@@ -136,27 +136,33 @@ export default function App() {
   return matched.slice(0, 12);
 }, [form.optQ, options]);
 
- const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
+const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   // ✅ sub_items가 있으면 여러 줄로 추가
   if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
-    const newRows = opt.sub_items.map((sub: any, idx: number) => ({
-      key: `${opt.option_id}_${Date.now()}_${idx}`,
-      optionId: `${opt.option_id}_${idx}`,
-      optionName: sub.name,
-      displayName: sub.name,
-      unit: sub.unit || "",
-      showSpec: "n",
-      baseQty: sub.qty || 0,
-      baseUnitPrice: sub.unitPrice || 0,
-      baseAmount: 0,
-      displayQty: sub.qty || 0,
-      customerUnitPrice: sub.unitPrice || 0,
-      finalAmount: 0,
-      memo: "",
-      lineSpec: { w: form.w, l: form.l },
-    }));
+    const newRows = opt.sub_items.map((sub: any, idx: number) => {
+      const qty = sub.qty || 0;
+      const unitPrice = sub.unitPrice || 0;
+      const amount = qty * unitPrice;
+      
+      return {
+        key: `${opt.option_id}_${Date.now()}_${idx}`,
+        optionId: `${opt.option_id}_${idx}`,
+        optionName: sub.name,
+        displayName: sub.name,
+        unit: sub.unit || "EA",
+        showSpec: "n",
+        baseQty: qty,
+        baseUnitPrice: unitPrice,
+        baseAmount: amount,              // ✅ 계산된 금액
+        displayQty: qty,
+        customerUnitPrice: unitPrice,
+        finalAmount: amount,             // ✅ 계산된 금액
+        memo: "",
+        lineSpec: { w: form.w, l: form.l },
+      };
+    });
     
-    setSelectedItems((prev: any) => [...prev, ...newRows]);
+    setSelectedItems((prev: any) => [...prev, ...newRows.map(recomputeRow)]);
     setForm((prev) => ({ ...prev, optQ: "" }));
     setSites([]);
     return;
