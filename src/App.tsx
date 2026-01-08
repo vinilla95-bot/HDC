@@ -897,8 +897,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <td className="v">{siteText}</td>
                 <th className="k center">견적일</th>
                 <td className="v">{today.toLocaleDateString("ko-KR")}</td>
-                <th className="k">상호</th>
-                <td className="v">현대컨테이너</td>
+              
               </tr>
 
               <tr>
