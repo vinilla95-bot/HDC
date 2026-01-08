@@ -2007,23 +2007,27 @@ const css = `
     height: auto !important;
   }
   
-  #a4WrapPrint {
-    display: block !important;
+  .previewInner > div {
     padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
   }
   
   #a4SheetCapture {
-    width: 200mm !important;
+    width: 190mm !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 10mm !important;
+    padding: 5mm !important;
     margin: 0 auto !important;
+    transform: scale(0.82) !important;
+    transform-origin: top center !important;
   }
   
   #a4SheetCapture table {
     min-width: auto !important;
     width: 100% !important;
+    page-break-inside: auto !important;
   }
   
   * {
