@@ -1135,16 +1135,7 @@ function A4Quote({
   );
 }
 
-/**
- * ✅ FIX 포인트
- * - 네 a4css 안에 중괄호가 깨져있어서(@media 블록/셀렉터 블록이 닫힘이 이상함) 브라우저가 CSS를 중간부터 무시할 수 있었음.
- * - 모바일 scale은 그대로 유지
- * - print에서는 transform/scale을 무조건 끄도록 “listPrintRoot” 타겟을 추가(리스트만 적용)
- */
 const a4css = `
-  /* =====================
-     Screen (desktop) view
-     ===================== */
   .a4Wrap{
     display:flex;
     justify-content:center;
@@ -1154,9 +1145,10 @@ const a4css = `
     transform-origin: top center;
   }
 
-  .a4Sheet{
-    width: 800px;
-    min-height: 1123px;
+  /* ✅ A4 실제 비율에 더 맞게 (mm 사용) */
+  .a4Sheet {
+    width: 210mm;
+    min-height: 297mm;
     background: #fff;
     border: 1px solid #cfd3d8;
     padding: 16px;
@@ -1171,8 +1163,8 @@ const a4css = `
     border-bottom: 2px solid #2e5b86;
     margin-bottom: 10px;
   }
-  .a4HeaderLeft{ display:flex; align-items:center; gap:10px; }
-  .a4Logo{ width:160px; height:140px; display:block; }
+  .a4HeaderLeft{ display:flex; align-items:center; gap: 10px; }
+  .a4Logo { width: 160px; height: 140px; display: block; }
   .a4HeaderCenter{
     flex:1;
     text-align:center;
@@ -1180,23 +1172,21 @@ const a4css = `
     font-weight: 900;
     letter-spacing: 6px;
   }
-  .a4HeaderRight{ width:140px; }
+  .a4HeaderRight{ width: 140px; }
 
   table{
-    width:100% !important;
-    max-width:100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
     border-collapse: collapse;
     table-layout: fixed;
   }
-
   .a4Info, .a4Items, .a4Bottom{
-    width:100% !important;
-    max-width:100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
     table-layout: fixed;
     border: 1px solid #333;
     margin-top: 8px;
   }
-
   .a4Info th, .a4Info td,
   .a4Items th, .a4Items td,
   .a4Bottom th, .a4Bottom td{
@@ -1206,22 +1196,13 @@ const a4css = `
     vertical-align: middle;
   }
 
-  .k{ background:#fff; font-weight:900; }
+  .k{ background:#fff; font-weight: 900; }
   .v{ background:#fff; }
   .center{ text-align:center; }
   .right{ text-align:right; }
 
-  .msg{
-    font-size:13px;
-    font-weight:700;
-    text-align:center;
-    background:#fff;
-  }
-  .sum{
-    font-size:14px;
-    font-weight:900;
-    background:#fff;
-  }
+  .msg{ font-size: 13px; font-weight: 700; text-align:center; background:#fff; }
+  .sum{ font-size: 14px; font-weight: 900; background:#fff; }
 
   .a4Items thead th,
   .h{
@@ -1235,9 +1216,8 @@ const a4css = `
     padding: 4px 8px;
     vertical-align: top;
   }
-
   .a4Items .wrap{
-    display:block;
+    display: block;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -1248,108 +1228,68 @@ const a4css = `
     text-overflow: ellipsis;
   }
 
-  .a4Items tbody td{
-    padding: 6px 8px;
-    vertical-align: middle;
-    min-height: 28px;
-    max-height: 70px;
-  }
-
-  .a4Bottom .sumRow td{
-    background:#e6e6e6;
-    font-weight:900;
-  }
+  .a4Bottom .sumRow td{ background:#e6e6e6; font-weight:900; }
   .a4Bottom .sumLeft{ text-align:left; }
   .a4Bottom .sumNum{ text-align:right; }
-  .a4Bottom .label{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-  }
+  .a4Bottom .label{ background:#e6e6e6; font-weight:900; text-align:center; }
   .a4Bottom .text{
     font-size: 12px;
-    line-height: 1.55;
+    line-height:1.55;
     white-space: normal;
     word-break: break-word;
-    overflow-wrap: anywhere;
+    overflow-wrap:anywhere;
   }
 
-  /* preview container tweaks */
+  /* ✅ preview 카드 overflow는 여기서만 1번만 */
   #quotePreviewApp .card{
     overflow: hidden !important;
     min-height: 520px !important;
   }
 
-  /* =====================
-     Mobile view (keep)
-     ===================== */
-  @media (max-width: 768px){
-    .a4Wrap{
+  @media (max-width: 768px) {
+    .a4Wrap {
       transform: scale(0.42) !important;
-      transform-origin: top left !important;
+      transform-origin: top center !important;
       padding: 0 !important;
+      background: transparent !important;
+    }
+    #quotePreviewApp .card{
+      min-height: 520px !important;
+      display:flex !important;
+      justify-content:center !important;
     }
   }
 
-  @media (max-width: 400px){
-    .a4Wrap{
-      transform: scale(0.35) !important;
-    }
+  @media (max-width: 400px) {
+    .a4Wrap { transform: scale(0.35) !important; }
+    #quotePreviewApp .card{ min-height: 450px !important; }
   }
 
-  /* =====================
-     Print (A4 fit)
-     ===================== */
   @media print{
     @page { size: A4; margin: 0; }
+    html, body { margin: 0; padding: 0; }
 
-    html, body{
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 210mm !important;
-      height: 297mm !important;
-      overflow: hidden !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+    .wrap > .card:first-child { display: none !important; }
+    .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
+    .btn, .actions { display: none !important; }
 
-    /* hide left panel / buttons */
-    .wrap > .card:first-child{ display:none !important; }
-    .btn, .actions{ display:none !important; }
-    .wrap{ display:block !important; margin:0 !important; padding:0 !important; }
-
-    /* remove any card spacing that causes shrink */
-    #quotePreviewApp, #quotePreviewApp .card{
-      margin: 0 !important;
-      padding: 0 !important;
-      border: 0 !important;
-      box-shadow: none !important;
-      overflow: hidden !important;
-    }
-
-    /* IMPORTANT: print must NOT be scaled */
     .a4Wrap{
-      background:#fff !important;
-      padding:0 !important;
-      margin:0 !important;
-      transform:none !important;
-      zoom: 1 !important;
-      width: 210mm !important;
-      height: 297mm !important;
-      display:block !important;
+      transform: none !important;
+      padding: 0 !important;
+      background: #fff !important;
     }
-
-    /* force real A4 box */
     .a4Sheet{
       width: 210mm !important;
-      height: 297mm !important;
       min-height: 297mm !important;
-      border:none !important;
+      border: none !important;
       padding: 0 !important;
       margin: 0 !important;
-      box-shadow:none !important;
-      overflow:hidden !important;
-      box-sizing: border-box !important;
+      box-shadow: none !important;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
   }
 `;
+
