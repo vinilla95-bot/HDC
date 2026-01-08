@@ -96,8 +96,27 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
     padding: 4px !important;
   }
   
-  /* 견적서 중앙 정렬 */
-  #quotePreviewApp .a4Wrap {
+  /* 견적서 카드 중앙 정렬 */
+  #quotePreviewApp > .card {
+    display: flex !important;
     justify-content: center !important;
+    overflow: hidden !important;
+    min-height: 520px !important;
+  }
+  
+  #quotePreviewApp .a4Wrap {
+    transform: scale(0.42) !important;
+    transform-origin: top center !important;
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 400px) {
+  #quotePreviewApp .a4Wrap {
+    transform: scale(0.35) !important;
+  }
+  
+  #quotePreviewApp > .card {
+    min-height: 450px !important;
   }
 }
