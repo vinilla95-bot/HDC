@@ -1197,29 +1197,28 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-  @media (max-width: 768px) {
-    .a4Wrap {
-      transform: scale(0.42) !important;
-      transform-origin: top left !important;
-      padding: 0 !important;
-    }
-    
-    .card:has(.a4Wrap) {
-      overflow: hidden !important;
-      min-height: 520px !important;
-    }
+@media (max-width: 768px) {
+  #quotePreviewApp .a4Wrap {
+    transform: scale(0.42) !important;
+    transform-origin: top left !important;
+    padding: 0 !important;
   }
-
-  @media (max-width: 400px) {
-    .a4Wrap {
-      transform: scale(0.35) !important;
-    }
-    
-    .card:has(.a4Wrap) {
-      min-height: 450px !important;
-    }
+  
+  #quotePreviewApp .card {
+    overflow: hidden !important;
+    min-height: 520px !important;
   }
+}
 
+@media (max-width: 400px) {
+  #quotePreviewApp .a4Wrap {
+    transform: scale(0.35) !important;
+  }
+  
+  #quotePreviewApp .card {
+    min-height: 450px !important;
+  }
+}
   @media print{
     @page {
       size: A4;
