@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
 
@@ -20,11 +20,16 @@ import "./index.css";
 // GAS 호출 래퍼
 async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   const res = await gasRpcRaw(fn, args);
-  if (res && typeof res === "object" && "error" in res) throw new Error(String(res.error));
+  if (res && typeof res === "object" && "error" in res) throw new Error(String((res as any).error));
   return res as T;
 }
 
-async function sendQuoteEmailApi(quoteId: string, to: string, html?: string, bizcardImageUrl?: string) {
+async function sendQuoteEmailApi(
+  quoteId: string,
+  to: string,
+  html?: string,
+  bizcardImageUrl?: string
+) {
   await gasCall("listSendQuoteEmail", [quoteId, to, html, bizcardImageUrl]);
 }
 
@@ -55,6 +60,7 @@ export default function App() {
   });
 
   const [statusMsg, setStatusMsg] = useState("");
+  const [sendStatus, setSendStatus] = useState("");
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   const isRentRow = (row: SelectedRow) => String((row as any)?.optionName || "").trim() === "임대";
@@ -110,116 +116,116 @@ export default function App() {
 
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
- const filteredOptions = useMemo(() => {
-  const q = String(form.optQ || "").trim();
-  if (!q) return [];
+  const filteredOptions = useMemo(() => {
+    const q = String(form.optQ || "").trim();
+    if (!q) return [];
 
-  const matched = options.filter((o: any) => {
-    const name = String(o.option_name || "");
-    return matchKorean(name, q);
-  });
-
-  // ✅ 정렬: 검색어로 시작 > 검색어 포함 > 초성 매칭
-  const qLower = q.toLowerCase();
-  matched.sort((a: any, b: any) => {
-    const nameA = String(a.option_name || "").toLowerCase();
-    const nameB = String(b.option_name || "").toLowerCase();
-    
-    const startsA = nameA.startsWith(qLower) ? 0 : 1;
-    const startsB = nameB.startsWith(qLower) ? 0 : 1;
-    if (startsA !== startsB) return startsA - startsB;
-    
-    const includesA = nameA.includes(qLower) ? 0 : 1;
-    const includesB = nameB.includes(qLower) ? 0 : 1;
-    return includesA - includesB;
-  });
-
-  return matched.slice(0, 12);
-}, [form.optQ, options]);
-
-const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
-  // ✅ sub_items가 있으면 여러 줄로 추가
-  if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
-    const newRows = opt.sub_items.map((sub: any, idx: number) => {
-      const qty = sub.qty || 0;
-      const unitPrice = sub.unitPrice || 0;
-      const amount = qty * unitPrice;
-      
-      return {
-        key: `${opt.option_id}_${Date.now()}_${idx}`,
-        optionId: `${opt.option_id}_${idx}`,
-        optionName: sub.name,
-        displayName: sub.name,
-        unit: sub.unit || "EA",
-        showSpec: "n",
-        baseQty: qty,
-        baseUnitPrice: unitPrice,
-        baseAmount: amount,              // ✅ 계산된 금액
-        displayQty: qty,
-        customerUnitPrice: unitPrice,
-        finalAmount: amount,             // ✅ 계산된 금액
-        memo: "",
-        lineSpec: { w: form.w, l: form.l },
-      };
+    const matched = options.filter((o: any) => {
+      const name = String(o.option_name || "");
+      return matchKorean(name, q);
     });
-    
-    setSelectedItems((prev: any) => [...prev, ...newRows.map(recomputeRow)]);
-    setForm((prev) => ({ ...prev, optQ: "" }));
+
+    // ✅ 정렬: 검색어로 시작 > 검색어 포함 > 초성 매칭
+    const qLower = q.toLowerCase();
+    matched.sort((a: any, b: any) => {
+      const nameA = String(a.option_name || "").toLowerCase();
+      const nameB = String(b.option_name || "").toLowerCase();
+
+      const startsA = nameA.startsWith(qLower) ? 0 : 1;
+      const startsB = nameB.startsWith(qLower) ? 0 : 1;
+      if (startsA !== startsB) return startsA - startsB;
+
+      const includesA = nameA.includes(qLower) ? 0 : 1;
+      const includesB = nameB.includes(qLower) ? 0 : 1;
+      return includesA - includesB;
+    });
+
+    return matched.slice(0, 12);
+  }, [form.optQ, options]);
+
+  const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
+    // ✅ sub_items가 있으면 여러 줄로 추가
+    if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+      const newRows = opt.sub_items.map((sub: any, idx: number) => {
+        const qty = sub.qty || 0;
+        const unitPrice = sub.unitPrice || 0;
+        const amount = qty * unitPrice;
+
+        return {
+          key: `${opt.option_id}_${Date.now()}_${idx}`,
+          optionId: `${opt.option_id}_${idx}`,
+          optionName: sub.name,
+          displayName: sub.name,
+          unit: sub.unit || "EA",
+          showSpec: "n",
+          baseQty: qty,
+          baseUnitPrice: unitPrice,
+          baseAmount: amount,
+          displayQty: qty,
+          customerUnitPrice: unitPrice,
+          finalAmount: amount,
+          memo: "",
+          lineSpec: { w: form.w, l: form.l },
+        };
+      });
+
+      setSelectedItems((prev: any) => [...prev, ...newRows.map(recomputeRow)]);
+      setForm((prev) => ({ ...prev, optQ: "" }));
+      setSites([]);
+      return;
+    }
+
+    const res = calculateOptionLine(opt, form.w, form.l);
+    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+    const rent = rawName.trim() === "임대";
+
+    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
+    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+
+    const displayQty = rent ? baseQty : 1;
+    const customerUnitPrice = rent ? baseUnitPrice : baseAmount;
+
+    let simplifiedLabel = label;
+    if (label && form.siteQ) {
+      const regions = label.split(",").map((r: string) => r.trim());
+      const searchQuery = form.siteQ.toLowerCase();
+      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
+      simplifiedLabel = matched || regions[0];
+    }
+
+    const displayName = isSpecial
+      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
+      : rent
+      ? `임대 ${baseQty}개월`
+      : rawName;
+
+    const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
+
+    const row: any = {
+      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+      optionId: String(opt.option_id || rawName),
+      optionName: rawName,
+      displayName,
+      unit: rent ? "개월" : res.unit || "EA",
+      showSpec,
+
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+
+      displayQty,
+      customerUnitPrice,
+      finalAmount: Math.round(displayQty * customerUnitPrice),
+
+      memo: res.memo || "",
+      lineSpec: { w: form.w, l: form.l },
+    };
+
+    setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
+    setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
     setSites([]);
-    return;
-  }
-
-  const res = calculateOptionLine(opt, form.w, form.l);
-  const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-  const rent = rawName.trim() === "임대";
-
-  const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-  const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-  const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
-
-  const displayQty = rent ? baseQty : 1;
-  const customerUnitPrice = rent ? baseUnitPrice : baseAmount;
-
-  let simplifiedLabel = label;
-  if (label && form.siteQ) {
-    const regions = label.split(',').map((r: string) => r.trim());
-    const searchQuery = form.siteQ.toLowerCase();
-    const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
-    simplifiedLabel = matched || regions[0];
-  }
-
-  const displayName = isSpecial
-    ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
-    : rent
-    ? `임대 ${baseQty}개월`
-    : rawName;
-
-  const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
-
-  const row: any = {
-    key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-    optionId: String(opt.option_id || rawName),
-    optionName: rawName,
-    displayName,
-    unit: rent ? "개월" : res.unit || "EA",
-    showSpec,
-
-    baseQty,
-    baseUnitPrice,
-    baseAmount,
-
-    displayQty,
-    customerUnitPrice,
-    finalAmount: Math.round(displayQty * customerUnitPrice),
-
-    memo: res.memo || "",
-    lineSpec: { w: form.w, l: form.l },
   };
-
-  setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
-  setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
-  setSites([]);
-};
 
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
@@ -287,17 +293,20 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     }
     setStatusMsg("검색 중...");
     const { list } = await searchSiteRates(val, form.w, form.l);
-    
+
     const filtered = list.filter((s: any) => {
       const alias = String(s.alias || "");
       return matchKorean(alias, val);
     });
-    
+
     setSites(filtered);
     setStatusMsg(`검색 결과 ${filtered.length}개`);
   };
 
-  const supply_amount = computedItems.reduce((acc: number, cur: any) => acc + Number(cur.finalAmount || 0), 0);
+  const supply_amount = computedItems.reduce(
+    (acc: number, cur: any) => acc + Number(cur.finalAmount || 0),
+    0
+  );
   const vat_amount = Math.round(supply_amount * 0.1);
   const total_amount = supply_amount + vat_amount;
 
@@ -351,7 +360,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         baseUnitPrice: r.baseUnitPrice,
         baseAmount: r.baseAmount,
         lineSpec: r.lineSpec,
-        showSpec: r.showSpec,  // ✅ 추가
+        showSpec: r.showSpec,
       })),
 
       updated_at: new Date().toISOString(),
@@ -410,14 +419,12 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     setStatusMsg("수정 저장 완료");
   };
 
-  const [sendStatus, setSendStatus] = useState("");
-
   const handleSend = async () => {
     if (!form.email) return alert("이메일을 입력해주세요.");
-    
+
     try {
       setSendStatus("전송 준비 중...");
-      
+
       let quoteId = currentQuoteId;
       if (!quoteId) {
         setSendStatus("견적서 저장 중...");
@@ -429,19 +436,18 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         quoteId = newId;
       }
 
-      
       const previewEl = document.getElementById("quotePreviewApp");
       const html = previewEl ? previewEl.innerHTML : "";
-      
-      const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
-      
+
+      const selectedBizcard2 = bizcards.find((b) => b.id === selectedBizcardId);
+      const bizcardImageUrl = selectedBizcard2?.image_url || "";
+
       setSendStatus("메일 전송 중...");
       await sendQuoteEmailApi(quoteId, form.email, html, bizcardImageUrl);
-      
+
       setSendStatus("전송 완료!");
       alert("견적서가 성공적으로 전송되었습니다.");
-      
+
       setTimeout(() => setSendStatus(""), 2000);
     } catch (e: any) {
       setSendStatus("전송 실패");
@@ -451,52 +457,52 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   };
 
   const downloadJpg = async () => {
-  const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
-  if (!sheet) {
-    alert("캡처 대상을 찾을 수 없습니다.");
-    return;
-  }
-  
-  setStatusMsg("JPG 생성 중...");
-  
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const a4Wrap = document.querySelector("#quotePreviewApp .a4Wrap") as HTMLElement;
-  
-  // 모바일: 캡처 전 transform 제거
-  if (isMobile && a4Wrap) {
-    a4Wrap.style.cssText = "transform: none !important; width: auto !important;";
-    await new Promise(r => setTimeout(r, 300));
-  }
-  
-  try {
-    const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-    
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `QUOTE_${currentQuoteId || Date.now()}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    
-    setStatusMsg("다운로드 완료");
-    setTimeout(() => setStatusMsg(""), 2000);
-  } catch (e: any) {
-    setStatusMsg("JPG 생성 실패");
-    alert("JPG 생성 실패: " + (e?.message || String(e)));
-  } finally {
-    // 모바일: 원래대로 복원
-    if (isMobile && a4Wrap) {
-      a4Wrap.style.cssText = "";
+    const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
+    if (!sheet) {
+      alert("캡처 대상을 찾을 수 없습니다.");
+      return;
     }
-  }
-};
 
+    setStatusMsg("JPG 생성 중...");
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const a4Wrap = document.querySelector("#quotePreviewApp .a4Wrap") as HTMLElement;
+
+    // 모바일: 캡처 전 transform 제거
+    if (isMobile && a4Wrap) {
+      a4Wrap.style.cssText = "transform: none !important; width: auto !important;";
+      await new Promise((r) => setTimeout(r, 300));
+    }
+
+    try {
+      const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `QUOTE_${currentQuoteId || Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setStatusMsg("다운로드 완료");
+      setTimeout(() => setStatusMsg(""), 2000);
+    } catch (e: any) {
+      setStatusMsg("JPG 생성 실패");
+      alert("JPG 생성 실패: " + (e?.message || String(e)));
+    } finally {
+      // 모바일: 원래대로 복원
+      if (isMobile && a4Wrap) {
+        a4Wrap.style.cssText = "";
+      }
+    }
+  };
 
   const MIN_ROWS = 12;
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
   const blankRows = Array.from({ length: blanksCount });
 
+  // ✅ 여기만 추가됨: listPrintRoot로 감쌈 (리스트 print만 타겟)
   const listScreen = (
     <div style={{ minHeight: "100vh" }}>
       <div
@@ -514,7 +520,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         </button>
       </div>
 
-      <QuoteListPage onGoLive={() => setView("rt")} />
+      <div id="listPrintRoot">
+        <QuoteListPage onGoLive={() => setView("rt")} />
+      </div>
     </div>
   );
 
@@ -581,11 +589,19 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
           <div className="row">
             <label>가로(m)</label>
-            <input type="number" value={form.w} onChange={(e) => setForm({ ...form, w: Number(e.target.value) })} />
+            <input
+              type="number"
+              value={form.w}
+              onChange={(e) => setForm({ ...form, w: Number(e.target.value) })}
+            />
           </div>
           <div className="row">
             <label>세로(m)</label>
-            <input type="number" value={form.l} onChange={(e) => setForm({ ...form, l: Number(e.target.value) })} />
+            <input
+              type="number"
+              value={form.l}
+              onChange={(e) => setForm({ ...form, l: Number(e.target.value) })}
+            />
           </div>
           <p className="muted" style={{ textAlign: "right" }}>
             면적: {(form.w * form.l).toFixed(2)}㎡
@@ -616,12 +632,18 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                     <button
                       className="btn"
                       onClick={() => {
-                        const regions = s.alias.split(',').map((r: string) => r.trim());
+                        const regions = s.alias.split(",").map((r: string) => r.trim());
                         const searchQuery = form.siteQ.toLowerCase();
-                        const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery)) || regions[0];
-                        
+                        const matched =
+                          regions.find((r: string) => r.toLowerCase().includes(searchQuery)) || regions[0];
+
                         setForm((p) => ({ ...p, sitePickedLabel: matched, siteQ: matched }));
-                        addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", unit_price: 0, show_spec: "y" }, true, s.delivery, s.alias);
+                        addOption(
+                          { option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", unit_price: 0, show_spec: "y" },
+                          true,
+                          s.delivery,
+                          s.alias
+                        );
                       }}
                     >
                       일반운송 추가 · {fmt(s.delivery)}
@@ -630,12 +652,18 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                     <button
                       className="btn"
                       onClick={() => {
-                        const regions = s.alias.split(',').map((r: string) => r.trim());
+                        const regions = s.alias.split(",").map((r: string) => r.trim());
                         const searchQuery = form.siteQ.toLowerCase();
-                        const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery)) || regions[0];
-                        
+                        const matched =
+                          regions.find((r: string) => r.toLowerCase().includes(searchQuery)) || regions[0];
+
                         setForm((p) => ({ ...p, sitePickedLabel: matched, siteQ: matched }));
-                        addOption({ option_id: "CRANE", option_name: "크레인 운송비", unit_price: 0, show_spec: "y" }, true, s.crane, s.alias);
+                        addOption(
+                          { option_id: "CRANE", option_name: "크레인 운송비", unit_price: 0, show_spec: "y" },
+                          true,
+                          s.crane,
+                          s.alias
+                        );
                       }}
                     >
                       크레인운송 추가 · {fmt(s.crane)}
@@ -666,7 +694,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
           {String(form.optQ || "").trim() !== "" && (
             <div className="box">
-              
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((o: any) => (
                   <div
@@ -691,37 +718,36 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
           )}
 
           {/* ✅ 자유 품목 추가 버튼 */}
-<button
-  className="btn"
-  style={{ marginTop: 8, width: "100%" }}
-  onClick={() => {
-    const newRow: any = {
-      key: `CUSTOM_${Date.now()}`,
-      optionId: `CUSTOM_${Date.now()}`,
-      optionName: "직접입력",
-      displayName: "",
-      unit: "EA",
-      showSpec: "n",
-      baseQty: 1,
-      baseUnitPrice: 0,
-      baseAmount: 0,
-      displayQty: 1,
-      customerUnitPrice: 0,
-      finalAmount: 0,
-      memo: "",
-      lineSpec: { w: form.w, l: form.l },
-    };
-    setSelectedItems((prev: any) => [...prev, newRow]);
-  }}
->
-  + 품목 추가
-</button>
+          <button
+            className="btn"
+            style={{ marginTop: 8, width: "100%" }}
+            onClick={() => {
+              const id = `CUSTOM_${Date.now()}`;
+              const newRow: any = {
+                key: id,
+                optionId: id,
+                optionName: "직접입력",
+                displayName: "",
+                unit: "EA",
+                showSpec: "n",
+                baseQty: 1,
+                baseUnitPrice: 0,
+                baseAmount: 0,
+                displayQty: 1,
+                customerUnitPrice: 0,
+                finalAmount: 0,
+                memo: "",
+                lineSpec: { w: form.w, l: form.l },
+              };
+              setSelectedItems((prev: any) => [...prev, newRow]);
+            }}
+          >
+            + 품목 추가
+          </button>
 
           <div style={{ height: 10 }} />
           <div className="mini" style={{ marginBottom: 6 }}>
             좌측에서 수량/단가 수정 → 우측 A4 미리보기/저장에 동일 반영
-            <br />
-            
           </div>
 
           <div className="box" style={{ marginTop: 10 }}>
@@ -827,8 +853,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
               {sendStatus || "견적서 보내기"}
             </button>
             <button className="btn" onClick={downloadJpg}>
-    JPG저장
-  </button>
+              JPG저장
+            </button>
             <button className="btn" onClick={handlePreview}>
               인쇄
             </button>
@@ -837,17 +863,16 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
         {/* RIGHT */}
         <div id="quotePreviewApp">
-         <A4Quote
-    form={form}
-    computedItems={computedItems}
-    blankRows={blankRows}
-    fmt={fmt}
-    supply_amount={supply_amount}
-    vat_amount={vat_amount}
-    total_amount={total_amount}
-    bizcardName={selectedBizcard?.name || ""}
-  />
-       
+          <A4Quote
+            form={form}
+            computedItems={computedItems}
+            blankRows={blankRows}
+            fmt={fmt}
+            supply_amount={supply_amount}
+            vat_amount={vat_amount}
+            total_amount={total_amount}
+            bizcardName={selectedBizcard?.name || ""}
+          />
         </div>
       </div>
     </>
@@ -855,7 +880,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
   return view === "list" ? listScreen : rtScreen;
 }
-
 
 type A4QuoteProps = {
   form: {
@@ -869,7 +893,7 @@ type A4QuoteProps = {
     sitePickedLabel: string;
     optQ: string;
   };
-  
+
   computedItems: any[];
   blankRows: any[];
   fmt: (n: number) => string;
@@ -880,7 +904,16 @@ type A4QuoteProps = {
   bizcardName?: string;
 };
 
-function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName }: A4QuoteProps) {
+function A4Quote({
+  form,
+  computedItems,
+  blankRows,
+  fmt,
+  supply_amount,
+  vat_amount,
+  total_amount,
+  bizcardName,
+}: A4QuoteProps) {
   const today = new Date();
   const ymd = today.toISOString().slice(0, 10);
   const spec = `${form.w}x${form.l}`;
@@ -914,7 +947,9 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             <tbody>
               <tr>
                 <th className="k">담당자</th>
-                <td className="v" colSpan={3}>{bizcardName || ""}</td>
+                <td className="v" colSpan={3}>
+                  {bizcardName || ""}
+                </td>
                 <th className="k">견적일자</th>
                 <td className="v">{ymd}</td>
               </tr>
@@ -941,27 +976,31 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
               </tr>
 
               <tr>
-  <th className="k">현장</th>
-  <td className="v">{siteText}</td>
-  <th className="k center">견적일</th>
-  <td className="v">{today.toLocaleDateString("ko-KR")}</td>
-  <th className="k">주소</th>
-  <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
-</tr>
+                <th className="k">현장</th>
+                <td className="v">{siteText}</td>
+                <th className="k center">견적일</th>
+                <td className="v">{today.toLocaleDateString("ko-KR")}</td>
+                <th className="k">주소</th>
+                <td className="v">
+                  경기도 화성시
+                  <br />
+                  향남읍 구문천안길16
+                </td>
+              </tr>
 
-<tr>
-  <td className="msg" colSpan={4}>
-    견적요청에 감사드리며 아래와 같이 견적합니다.
-  </td>
-  <th className="k">전화</th>
-  <td className="v">1688-1447</td>
-</tr>
+              <tr>
+                <td className="msg" colSpan={4}>
+                  견적요청에 감사드리며 아래와 같이 견적합니다.
+                </td>
+                <th className="k">전화</th>
+                <td className="v">1688-1447</td>
+              </tr>
 
-<tr>
-  <td className="sum" colSpan={6}>
-    합계금액 : ₩{fmt(total_amount)} (부가세 포함)
-  </td>
-</tr>
+              <tr>
+                <td className="sum" colSpan={6}>
+                  합계금액 : ₩{fmt(total_amount)} (부가세 포함)
+                </td>
+              </tr>
             </tbody>
           </table>
 
@@ -994,15 +1033,16 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
               {computedItems.map((item: any, idx: number) => {
                 const unitSupply = Number(item.customerUnitPrice ?? 0);
                 const qty = Number(item.displayQty ?? 0);
-                
+
                 const supply = unitSupply * qty;
                 const vat = Math.round(supply * 0.1);
 
                 // ✅ show_spec이 'y'인 경우만 규격 표시
                 const showSpec = String(item.showSpec || "").toLowerCase() === "y";
-                const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l 
-                  ? `${item.lineSpec.w}x${item.lineSpec.l}` 
-                  : "";
+                const specText =
+                  showSpec && item?.lineSpec?.w && item?.lineSpec?.l
+                    ? `${item.lineSpec.w}x${item.lineSpec.l}`
+                    : "";
 
                 return (
                   <tr key={item.key ?? idx}>
@@ -1033,14 +1073,14 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             </tbody>
           </table>
 
-  <table className="a4Bottom">
-  <colgroup>
-    <col style={{ width: "15%" }} />
-    <col style={{ width: "37%" }} />
-    <col style={{ width: "16%" }} />
-    <col style={{ width: "16%" }} />
-    <col style={{ width: "16%" }} />
-  </colgroup>
+          <table className="a4Bottom">
+            <colgroup>
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "37%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "16%" }} />
+            </colgroup>
             <tbody>
               <tr className="sumRow">
                 <td className="sumLeft" colSpan={2}>
@@ -1095,6 +1135,12 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
   );
 }
 
+/**
+ * ✅ FIX 포인트
+ * - 네 a4css 안에 중괄호가 깨져있어서(@media 블록/셀렉터 블록이 닫힘이 이상함) 브라우저가 CSS를 중간부터 무시할 수 있었음.
+ * - 모바일 scale은 그대로 유지
+ * - print에서는 transform/scale을 무조건 끄도록 “listPrintRoot” 타겟을 추가(리스트만 적용)
+ */
 const a4css = `
   .a4Wrap{
     display:flex;
@@ -1186,7 +1232,6 @@ const a4css = `
     font-weight:900;
     text-align:center;
   }
-  
   .h{
     background:#e6e6e6;
     font-weight:900;
@@ -1217,11 +1262,6 @@ const a4css = `
     max-height: 70px;
   }
   
-  .a4Items tbody td.wrap{
-    vertical-align: top;
-    line-height: 1.3;
-  }
-
   .a4Bottom .sumRow td{
     background:#e6e6e6;
     font-weight:900;
@@ -1245,36 +1285,27 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-
-  
   #quotePreviewApp .card {
     overflow: hidden !important;
     min-height: 520px !important;
   }
-}
 
-
-  
-  #quotePreviewApp .card {
-    min-height: 450px !important;
+  @media (max-width: 768px) {
+    .a4Wrap {
+      transform: scale(0.42) !important;
+      transform-origin: top left !important;
+      padding: 0 !important;
+    }
   }
-}
-@media (max-width: 768px) {
-  .a4Wrap {
-    transform: scale(0.42) !important;
-    transform-origin: top left !important;
-    padding: 0 !important;
+
+  @media (max-width: 400px) {
+    .a4Wrap {
+      transform: scale(0.35) !important;
+    }
   }
-}
 
-@media (max-width: 400px) {
-  .a4Wrap {
-    transform: scale(0.35) !important;
-  }
-}
-
-
-  @media print{
+  /* ✅ 리스트 인쇄만 “A4 원본 크기”로 강제 (모바일/화면에는 영향 없음) */
+  @media print {
     @page {
       size: A4;
       margin: 0;
@@ -1284,11 +1315,36 @@ const a4css = `
       padding: 0;
       overflow: hidden;
     }
+
+    /* RT 인쇄(기존 유지) */
     .wrap > .card:first-child { display: none !important; }
     .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
     .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
     .btn, .actions { display: none !important; }
-    .a4Wrap{ 
+
+    /* ✅ 리스트 인쇄(새로 추가): listPrintRoot 안에 있는 A4는 transform/scale 끔 */
+    #listPrintRoot .a4Wrap{
+      background:#fff !important;
+      padding:0 !important;
+      margin: 0 !important;
+      transform: none !important;
+      transform-origin: top left !important;
+      zoom: 1 !important;
+    }
+    #listPrintRoot .a4Sheet{
+      border:none !important;
+      width: 200mm !important;
+      min-height: auto !important;
+      height: auto !important;
+      padding: 0mm !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      overflow: hidden !important;
+      transform: none !important;
+    }
+
+    /* RT 미리보기도 print에서 transform 제거(기존 유지) */
+    #quotePreviewApp .a4Wrap{ 
       background:#fff; 
       padding:0;
       margin: 0;
@@ -1296,7 +1352,7 @@ const a4css = `
       overflow: hidden;
       transform: none;
     }
-    .a4Sheet{ 
+    #quotePreviewApp .a4Sheet{ 
       border:none; 
       width: 200mm;
       min-height: auto;
@@ -1307,9 +1363,11 @@ const a4css = `
       overflow: hidden;
       transform: none;
     }
+
     * {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
   }
 `;
+
