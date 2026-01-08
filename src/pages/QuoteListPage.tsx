@@ -604,7 +604,7 @@ const bizcardName = selectedBizcard?.name || "";
   const sheet = document.getElementById("a4SheetCapture");
   if (!sheet) {
     toast("캡처 대상을 찾을 수 없습니다.");
-    return;
+  
   }
 
   toast("JPG 생성 중...");
@@ -619,6 +619,7 @@ const bizcardName = selectedBizcard?.name || "";
   a.remove();
 
   toast("다운로드 완료");
+     return;
 }
 
   function handlePrint() {
