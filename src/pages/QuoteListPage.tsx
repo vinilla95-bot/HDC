@@ -1977,17 +1977,16 @@ const css = `
     word-break: break-word;
     overflow-wrap:anywhere;
   }
-
-  @media print{
+@media print{
   @page {
     size: A4;
-    margin: 0;
+    margin: 10mm;
   }
   
   html, body {
     margin: 0;
     padding: 0;
-    height: auto;
+    height: auto !important;
   }
   
   .app { display: block !important; }
@@ -1995,7 +1994,7 @@ const css = `
   .actions { display: none !important; }
   button { display: none !important; }
   .right { display: block !important; }
-  .previewWrap { border: none !important; }
+  .previewWrap { border: none !important; background: #fff !important; }
   .previewInner { padding: 0 !important; transform: none !important; width: auto !important; }
   
   .previewInner > div {
@@ -2004,12 +2003,12 @@ const css = `
     margin: 0 !important;
   }
   
-  .previewInner > div > div {
-    border: none !important;
+  #a4SheetCapture {
     width: 100% !important;
     min-height: auto !important;
     height: auto !important;
-    padding: 10mm !important;
+    border: none !important;
+    padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
   }
