@@ -576,30 +576,72 @@ const bizcardName = selectedBizcard?.name || "";
   
   toast("JPG 생성 중...");
   
-  // ✅ 모바일일 때만 폰트 변경
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const originalFont = sheet.style.fontFamily;
+  
+  // ✅ 모바일: 캡처 전 스타일 강제 적용
+  const allElements = sheet.querySelectorAll("*");
+  const originalStyles: { el: HTMLElement; font: string; transform: string }[] = [];
   
   if (isMobile) {
-    sheet.style.fontFamily = '-apple-system, "Malgun Gothic", sans-serif';
-    await new Promise(r => setTimeout(r, 100));
+    // 폰트 로딩 대기
+    await document.fonts.ready;
+    
+    // 모든 요소에 시스템 폰트 적용 + transform 제거
+    allElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      originalStyles.push({
+        el: htmlEl,
+        font: htmlEl.style.fontFamily,
+        transform: htmlEl.style.transform,
+      });
+      htmlEl.style.fontFamily = '-apple-system, "Malgun Gothic", "맑은 고딕", sans-serif';
+      htmlEl.style.transform = 'none';
+    });
+    
+    // 부모 컨테이너 transform도 제거
+    const previewInner = document.querySelector(".previewInner") as HTMLElement;
+    if (previewInner) {
+      previewInner.style.transform = 'none';
+      previewInner.style.width = 'auto';
+    }
+    
+    await new Promise(r => setTimeout(r, 200));
   }
   
-  const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
-  
-  if (isMobile) {
-    sheet.style.fontFamily = originalFont;
+  try {
+    const canvas = await html2canvas(sheet, { 
+      scale: 2, 
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+    });
+    
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `QUOTE_${current!.quote_id}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    
+    toast("다운로드 완료");
+  } catch (e: any) {
+    toast("JPG 생성 실패: " + (e?.message || String(e)));
+  } finally {
+    // ✅ 모바일: 원래 스타일 복원
+    if (isMobile) {
+      originalStyles.forEach(({ el, font, transform }) => {
+        el.style.fontFamily = font;
+        el.style.transform = transform;
+      });
+      
+      const previewInner = document.querySelector(".previewInner") as HTMLElement;
+      if (previewInner) {
+        previewInner.style.transform = '';
+        previewInner.style.width = '';
+      }
+    }
   }
-  
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-  const a = document.createElement("a");
-  a.href = dataUrl;
-  a.download = `QUOTE_${current!.quote_id}.jpg`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  
-  toast("다운로드 완료");
 }
 
   function handlePrint() {
