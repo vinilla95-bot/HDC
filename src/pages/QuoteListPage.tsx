@@ -1976,83 +1976,64 @@ const css = `
     word-break: break-word;
     overflow-wrap:anywhere;
   }
+@media print{
+  @page { size: A4; margin: 0; }
 
- @media print{
-  @page {
-    size: A4;
-    margin: 0;
-  }
-  
-  html, body {
+  html, body{
     margin: 0 !important;
     padding: 0 !important;
-  }
-  
-  .app { 
-    display: block !important; 
-    height: auto !important;
-    padding: 0 !important;
-  }
-  
-  .panel { display: none !important; }
-  .actions { display: none !important; }
-  button { display: none !important; }
-  
-  .right { 
-    display: block !important; 
-    height: auto !important;
-  }
-  
-  .content {
-    display: block !important;
-    height: auto !important;
-    flex: none !important;
-  }
-  
-  .previewWrap { 
-    border: none !important; 
-    overflow: visible !important;
-    height: auto !important;
-  }
-  
-  .previewInner { 
-    padding: 0 !important; 
-    transform: none !important; 
-    width: auto !important;
-    height: auto !important;
-    min-height: auto !important;
-  }
-  
-  .previewInner > div {
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #fff !important;
-  }
-  
-  #a4SheetCapture {
-    width: 200mm !important;
-    min-height: auto !important;
-    height: auto !important;
-    border: none !important;
-    padding: 5mm !important;
-    margin: 0 !important;
-  }
-  
-  #a4SheetCapture table {
-    width: 100% !important;
-  }
-  #a4PrintWrap {
-  display: block !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: #fff !important;
-}
-  * {
+    width: 210mm !important;
+    height: 297mm !important;
+    overflow: hidden !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  /* 버튼/좌측 UI 숨김 (기존 유지) */
+  .btn, .actions { display: none !important; }
+  .wrap > .card:first-child { display: none !important; }
+  .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
+
+  /* ✅ 중요: “카드”가 여백/패딩 만들면서 화면이 줄어드는 케이스 차단 */
+  .card{
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* ✅ 중요: print에서는 무조건 scale/transform OFF */
+  .a4Wrap{
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    zoom: 1 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+
+    display: block !important;
+  }
+
+  /* ✅ A4 실제 사이즈로 강제 */
+  .a4Sheet{
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  /* 혹시 어딘가에 또 transform이 숨어있을 때 “최후의 수단” */
+  *{
+    transform: none !important;
+  }
 }
+
 
   @media (max-width: 768px) {
     .app {
