@@ -54,23 +54,21 @@ export const calculateOptionLine = (
 ) => {
   w = Number(w || 0);
   l = Number(l || 0);
-
   let qty = overrides.qty !== undefined ? Number(overrides.qty) : 1;
   let unitPrice = Number(opt.unit_price || 0);
 
-// w별 단가 확인
-if (w <= 3 && opt.unit_price_w3) {
-  unitPrice = Number(opt.unit_price_w3);
-} else if (w >= 4 && opt.unit_price_w4) {
-  unitPrice = Number(opt.unit_price_w4);
-}
+  // ✅ w별 단가 확인
+  const hasWPrice = opt.unit_price_w3 || opt.unit_price_w4;
+  if (w <= 3 && opt.unit_price_w3) {
+    unitPrice = Number(opt.unit_price_w3);
+  } else if (w >= 4 && opt.unit_price_w4) {
+    unitPrice = Number(opt.unit_price_w4);
+  }
 
-let memo = '';
+  let memo = '';
   let unit = opt.unit || 'EA';
-
   const rawName = opt.option_name || '';
   const isRent = rawName.trim() === '임대';
-
   const qtyMode = String(opt.qty_mode || '').toUpperCase();
   const unitRaw = String(opt.unit || '').toUpperCase();
   const isMeterUnit =
@@ -100,7 +98,8 @@ let memo = '';
   }
 
   if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
-    if (w >= 4) {
+    // ✅ w별 단가가 있으면 평 계산 안 하고 미터로 계산
+    if (w >= 4 && !hasWPrice) {
       const area = w * l;
       const pyeong = area / 3.3;
       qty = Math.round(pyeong * 10) / 10;
@@ -113,7 +112,6 @@ let memo = '';
     
     qty = l;
     memo = `자동계산(m): 길이 ${l}m`;
-
     const mMinBill = Number(opt.m_min_bill || 0);
     const mMinUntil = Number(opt.m_min_until || 0);
     if (mMinBill > 0 && mMinUntil > 0) {
@@ -130,11 +128,9 @@ let memo = '';
   }
 
   if (overrides.unitPrice !== undefined) unitPrice = Number(overrides.unitPrice);
-
   let amount = qty * unitPrice;
   if (overrides.amount !== undefined) amount = Number(overrides.amount);
   amount = roundToTenThousand(amount);
-
   return { qty, unit, unitPrice, amount, memo };
 };
 
