@@ -1211,6 +1211,21 @@ const a4css = `
     min-height: 450px !important;
   }
 }
+@media (max-width: 768px) {
+  .a4Wrap {
+    transform: scale(0.42) !important;
+    transform-origin: top left !important;
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .a4Wrap {
+    transform: scale(0.35) !important;
+  }
+}
+
+
   @media print{
     @page {
       size: A4;
