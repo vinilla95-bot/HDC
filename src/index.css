@@ -50,3 +50,47 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
   min-width: 720px;
 }
 
+@media (max-width: 768px) {
+  .wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .wrap > .card:first-child {
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    font-size: 12px !important;
+  }
+  
+  .wrap > .card:first-child input,
+  .wrap > .card:first-child select,
+  .wrap > .card:first-child textarea {
+    font-size: 14px !important;
+    padding: 8px !important;
+  }
+  
+  .wrap > .card:first-child .row {
+    flex-wrap: wrap !important;
+  }
+  
+  .wrap > .card:first-child .row label {
+    min-width: 60px !important;
+    font-size: 11px !important;
+  }
+  
+  .wrap > .card:first-child .title {
+    font-size: 14px !important;
+  }
+  
+  .wrap > .card:first-child .actions {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  
+  .wrap > .card:first-child .actions .btn {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
+  }
+}
+
