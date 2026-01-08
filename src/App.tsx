@@ -428,7 +428,29 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         }
         quoteId = newId;
       }
-const downloadJpg = async () => {
+
+      
+      const previewEl = document.getElementById("quotePreviewApp");
+      const html = previewEl ? previewEl.innerHTML : "";
+      
+      const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
+      const bizcardImageUrl = selectedBizcard?.image_url || "";
+      
+      setSendStatus("메일 전송 중...");
+      await sendQuoteEmailApi(quoteId, form.email, html, bizcardImageUrl);
+      
+      setSendStatus("전송 완료!");
+      alert("견적서가 성공적으로 전송되었습니다.");
+      
+      setTimeout(() => setSendStatus(""), 2000);
+    } catch (e: any) {
+      setSendStatus("전송 실패");
+      alert("전송 실패: " + (e?.message || String(e)));
+      console.error("handleSend error:", e);
+    }
+  };
+
+  const downloadJpg = async () => {
   const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
   if (!sheet) {
     alert("캡처 대상을 찾을 수 없습니다.");
@@ -469,26 +491,7 @@ const downloadJpg = async () => {
     }
   }
 };
-      
-      const previewEl = document.getElementById("quotePreviewApp");
-      const html = previewEl ? previewEl.innerHTML : "";
-      
-      const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
-      
-      setSendStatus("메일 전송 중...");
-      await sendQuoteEmailApi(quoteId, form.email, html, bizcardImageUrl);
-      
-      setSendStatus("전송 완료!");
-      alert("견적서가 성공적으로 전송되었습니다.");
-      
-      setTimeout(() => setSendStatus(""), 2000);
-    } catch (e: any) {
-      setSendStatus("전송 실패");
-      alert("전송 실패: " + (e?.message || String(e)));
-      console.error("handleSend error:", e);
-    }
-  };
+
 
   const MIN_ROWS = 12;
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
