@@ -57,7 +57,15 @@ export const calculateOptionLine = (
 
   let qty = overrides.qty !== undefined ? Number(overrides.qty) : 1;
   let unitPrice = Number(opt.unit_price || 0);
-  let memo = '';
+
+// w별 단가 확인
+if (w <= 3 && opt.unit_price_w3) {
+  unitPrice = Number(opt.unit_price_w3);
+} else if (w >= 4 && opt.unit_price_w4) {
+  unitPrice = Number(opt.unit_price_w4);
+}
+
+let memo = '';
   let unit = opt.unit || 'EA';
 
   const rawName = opt.option_name || '';
