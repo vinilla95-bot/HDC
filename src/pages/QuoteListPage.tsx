@@ -564,14 +564,16 @@ const bizcardName = selectedBizcard?.name || "";
     return fullHtml;
   }, [current]);
 
- async function downloadJpg() {
+
+  async function downloadJpg() {
   requireCurrent();
+  
   const sheet = document.getElementById("a4SheetCapture");
   if (!sheet) {
     toast("캡처 대상을 찾을 수 없습니다.");
     return;
   }
-
+  
   toast("JPG 생성 중...");
   
   // ✅ 모바일일 때만 폰트 변경
@@ -590,36 +592,14 @@ const bizcardName = selectedBizcard?.name || "";
   }
   
   const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-
   const a = document.createElement("a");
   a.href = dataUrl;
   a.download = `QUOTE_${current!.quote_id}.jpg`;
   document.body.appendChild(a);
   a.click();
   a.remove();
-
-  toast("다운로드 완료");
-
-  // ✅ 흰색 견적서만 캡처
-  const sheet = document.getElementById("a4SheetCapture");
-  if (!sheet) {
-    toast("캡처 대상을 찾을 수 없습니다.");
   
-  }
-
-  toast("JPG 생성 중...");
-  const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-
-  const a = document.createElement("a");
-  a.href = dataUrl;
-  a.download = `QUOTE_${current!.quote_id}.jpg`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
   toast("다운로드 완료");
-     return;
 }
 
   function handlePrint() {
