@@ -1197,12 +1197,7 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-@media (max-width: 768px) {
-  #quotePreviewApp .a4Wrap {
-    transform: scale(0.42) !important;
-    transform-origin: top left !important;
-    padding: 0 !important;
-  }
+
   
   #quotePreviewApp .card {
     overflow: hidden !important;
@@ -1210,10 +1205,7 @@ const a4css = `
   }
 }
 
-@media (max-width: 400px) {
-  #quotePreviewApp .a4Wrap {
-    transform: scale(0.35) !important;
-  }
+
   
   #quotePreviewApp .card {
     min-height: 450px !important;
