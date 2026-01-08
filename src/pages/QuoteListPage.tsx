@@ -1992,7 +1992,6 @@ const css = `
     display: block !important; 
     height: auto !important;
     padding: 0 !important;
-    background: #fff !important;
   }
   
   .panel { display: none !important; }
@@ -2001,55 +2000,39 @@ const css = `
   
   .right { 
     display: block !important; 
-    height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
   }
   
   .content {
     display: block !important;
-    height: auto !important;
-    min-height: auto !important;
   }
   
   .previewWrap { 
     border: none !important; 
     overflow: visible !important;
-    height: auto !important;
-    min-height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
   }
   
   .previewInner { 
     padding: 0 !important; 
     transform: none !important; 
-    overflow: visible !important;
-    height: auto !important;
-    min-height: auto !important;
-    width: 100% !important;
+    width: auto !important;
   }
   
   .previewInner > div {
     padding: 0 !important;
     margin: 0 !important;
     background: #fff !important;
-    display: block !important;
-    justify-content: flex-start !important;
   }
   
   #a4SheetCapture {
-    width: 100% !important;
-    max-width: 210mm !important;
+    width: 200mm !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 10mm !important;
-    margin: 0 auto !important;
+    padding: 5mm !important;
+    margin: 0 !important;
   }
   
   #a4SheetCapture table {
-    min-width: auto !important;
     width: 100% !important;
   }
   
