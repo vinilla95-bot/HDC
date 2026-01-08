@@ -400,7 +400,7 @@ const bizcardName = selectedBizcard?.name || "";
 
     const fullHtml = `
       <div style="display:flex;justify-content:center;padding:14px 0;background:#fff">
-      <div id="a4SheetCapture" style="width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
+      <div id="a4PrintWrap" style="display:flex;justify-content:center;padding:14px 0;background:#fff">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
               <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:110px;height:auto;" />
@@ -2042,7 +2042,12 @@ const css = `
   #a4SheetCapture table {
     width: 100% !important;
   }
-  
+  #a4PrintWrap {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #fff !important;
+}
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -2056,6 +2061,8 @@ const css = `
       padding: 8px !important;
       gap: 8px !important;
     }
+
+
     
     .panel {
       max-height: 280px !important;
