@@ -1980,7 +1980,7 @@ const css = `
 @media print{
   @page {
     size: A4;
-    margin: 10mm;
+    margin: 5mm;
   }
   
   html, body {
@@ -1994,24 +1994,22 @@ const css = `
   .actions { display: none !important; }
   button { display: none !important; }
   .right { display: block !important; width: 100% !important; }
-  .previewWrap { border: none !important; background: #fff !important; overflow: visible !important; }
+  .previewWrap { border: none !important; background: #fff !important; }
   .previewInner { padding: 0 !important; transform: none !important; width: 100% !important; }
   
   .previewInner > div {
-    background: #fff !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: block !important;
+    display: contents !important;
   }
   
   #a4SheetCapture {
-    width: 190mm !important;
+    width: 100% !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
     padding: 5mm !important;
-    margin: 0 auto !important;
-    box-shadow: none !important;
+    margin: 0 !important;
+    transform: scale(0.9) !important;
+    transform-origin: top center !important;
   }
   
   #a4SheetCapture table {
@@ -2024,7 +2022,6 @@ const css = `
     print-color-adjust: exact;
   }
 }
-
   @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
