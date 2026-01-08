@@ -1846,23 +1846,23 @@ const css = `
   .modalHdr{padding:12px;border-bottom:1px solid #eef0f3;display:flex;gap:8px;align-items:center;}
   .modalBody{padding:12px;}
 
- .a4Wrap {
-  display: flex;
-  justify-content: center;
-  padding: 14px 0;
-  background: #f5f6f8;
-  transform: scale(0.85);
-  transform-origin: top center;
-}
+  .a4Wrap {
+    display: flex;
+    justify-content: center;
+    padding: 14px 0;
+    background: #f5f6f8;
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
 
-.a4Sheet {
-  width: 900px;
-  min-height: 1123px;
-  background: #fff;
-  border: 1px solid #cfd3d8;
-  padding: 16px;
-  box-sizing: border-box;
-}
+  .a4Sheet {
+    width: 900px;
+    min-height: 1123px;
+    background: #fff;
+    border: 1px solid #cfd3d8;
+    padding: 16px;
+    box-sizing: border-box;
+  }
 
   .a4Header{
     display:flex;
@@ -1977,70 +1977,72 @@ const css = `
     word-break: break-word;
     overflow-wrap:anywhere;
   }
-@media print{
-  @page {
-    size: A4;
-    margin: 0;
+
+  @media print{
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    .app { 
+      display: block !important; 
+      height: auto !important;
+      padding: 0 !important;
+    }
+    
+    .panel { display: none !important; }
+    .actions { display: none !important; }
+    button { display: none !important; }
+    
+    .right { 
+      display: block !important; 
+    }
+    
+    .content {
+      display: block !important;
+    }
+    
+    .previewWrap { 
+      border: none !important; 
+      overflow: visible !important;
+    }
+    
+    .previewInner { 
+      padding: 0 !important; 
+      transform: none !important; 
+      width: auto !important;
+    }
+    
+    .previewInner > div {
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #fff !important;
+    }
+    
+    #a4SheetCapture {
+      width: 200mm !important;
+      min-height: auto !important;
+      height: auto !important;
+      border: none !important;
+      padding: 5mm !important;
+      margin: 0 !important;
+    }
+    
+    #a4SheetCapture table {
+      width: 100% !important;
+    }
+    
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
-  
-  html, body {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  .app { 
-    display: block !important; 
-    height: auto !important;
-    padding: 0 !important;
-  }
-  
-  .panel { display: none !important; }
-  .actions { display: none !important; }
-  button { display: none !important; }
-  
-  .right { 
-    display: block !important; 
-  }
-  
-  .content {
-    display: block !important;
-  }
-  
-  .previewWrap { 
-    border: none !important; 
-    overflow: visible !important;
-  }
-  
-  .previewInner { 
-    padding: 0 !important; 
-    transform: none !important; 
-    width: auto !important;
-  }
-  
-  .previewInner > div {
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #fff !important;
-  }
-  
-  #a4SheetCapture {
-    width: 200mm !important;
-    min-height: auto !important;
-    height: auto !important;
-    border: none !important;
-    padding: 5mm !important;
-    margin: 0 !important;
-  }
-  
-  #a4SheetCapture table {
-    width: 100% !important;
-  }
-  
-  * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-}
+
   @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
