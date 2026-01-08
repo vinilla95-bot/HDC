@@ -565,15 +565,10 @@ const bizcardName = selectedBizcard?.name || "";
   }, [current]);
 
 
-  async function downloadJpg() {
+ async function downloadJpg() {
   requireCurrent();
   
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  
-  // ✅ 모바일: 화면 그대로, PC: 기존 방식
-  const targetId = isMobile ? "quotePreview" : "a4SheetCapture";
-  const sheet = document.getElementById(targetId);
-  
+  const sheet = document.getElementById("a4SheetCapture");
   if (!sheet) {
     toast("캡처 대상을 찾을 수 없습니다.");
     return;
@@ -581,14 +576,19 @@ const bizcardName = selectedBizcard?.name || "";
   
   toast("JPG 생성 중...");
   
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const previewInner = document.querySelector(".previewInner") as HTMLElement;
+  
+  // ✅ 모바일: 캡처 전 transform 제거
+  if (isMobile && previewInner) {
+    previewInner.style.cssText = "transform: none !important; width: auto !important;";
+    await new Promise(r => setTimeout(r, 300));
+  }
+  
   try {
-    const canvas = await html2canvas(sheet, { 
-      scale: 2, 
-      backgroundColor: "#ffffff",
-      useCORS: true,
-    });
-    
+    const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    
     const a = document.createElement("a");
     a.href = dataUrl;
     a.download = `QUOTE_${current!.quote_id}.jpg`;
@@ -599,6 +599,11 @@ const bizcardName = selectedBizcard?.name || "";
     toast("다운로드 완료");
   } catch (e: any) {
     toast("JPG 생성 실패: " + (e?.message || String(e)));
+  } finally {
+    // ✅ 모바일: 원래대로 복원
+    if (isMobile && previewInner) {
+      previewInner.style.cssText = "";
+    }
   }
 }
 
