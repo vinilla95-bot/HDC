@@ -1142,6 +1142,9 @@ function A4Quote({
  * - print에서는 transform/scale을 무조건 끄도록 “listPrintRoot” 타겟을 추가(리스트만 적용)
  */
 const a4css = `
+  /* =====================
+     Screen (desktop) view
+     ===================== */
   .a4Wrap{
     display:flex;
     justify-content:center;
@@ -1150,7 +1153,8 @@ const a4css = `
     transform: scale(0.82);
     transform-origin: top center;
   }
-  .a4Sheet {
+
+  .a4Sheet{
     width: 800px;
     min-height: 1123px;
     background: #fff;
@@ -1158,6 +1162,7 @@ const a4css = `
     padding: 16px;
     box-sizing: border-box;
   }
+
   .a4Header{
     display:flex;
     align-items:center;
@@ -1166,19 +1171,8 @@ const a4css = `
     border-bottom: 2px solid #2e5b86;
     margin-bottom: 10px;
   }
-  .a4HeaderLeft{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-  }
-  .a4Logo {
-    width: 160px;
-    height: 140px;
-    display: block;
-  }
-  .a4Info {
-    margin-top: 0;
-  }
+  .a4HeaderLeft{ display:flex; align-items:center; gap:10px; }
+  .a4Logo{ width:160px; height:140px; display:block; }
   .a4HeaderCenter{
     flex:1;
     text-align:center;
@@ -1186,21 +1180,23 @@ const a4css = `
     font-weight: 900;
     letter-spacing: 6px;
   }
-  .a4HeaderRight{ width: 140px; }
+  .a4HeaderRight{ width:140px; }
 
-  table{ 
-    width: 100% !important; 
-    max-width: 100% !important;
-    border-collapse: collapse; 
+  table{
+    width:100% !important;
+    max-width:100% !important;
+    border-collapse: collapse;
     table-layout: fixed;
   }
+
   .a4Info, .a4Items, .a4Bottom{
-    width: 100% !important;
-    max-width: 100% !important;
+    width:100% !important;
+    max-width:100% !important;
     table-layout: fixed;
     border: 1px solid #333;
     margin-top: 8px;
   }
+
   .a4Info th, .a4Info td,
   .a4Items th, .a4Items td,
   .a4Bottom th, .a4Bottom td{
@@ -1210,41 +1206,38 @@ const a4css = `
     vertical-align: middle;
   }
 
-  .k{ background:#fff; font-weight: 900; }
+  .k{ background:#fff; font-weight:900; }
   .v{ background:#fff; }
   .center{ text-align:center; }
   .right{ text-align:right; }
 
   .msg{
-    font-size: 13px;
-    font-weight: 700;
+    font-size:13px;
+    font-weight:700;
     text-align:center;
     background:#fff;
   }
   .sum{
-    font-size: 14px;
-    font-weight: 900;
+    font-size:14px;
+    font-weight:900;
     background:#fff;
   }
 
-  .a4Items thead th{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-  }
+  .a4Items thead th,
   .h{
     background:#e6e6e6;
     font-weight:900;
     text-align:center;
   }
 
-  .a4Items tbody td.c{ 
+  .a4Items tbody td.c{
     background:#fff;
     padding: 4px 8px;
     vertical-align: top;
   }
+
   .a4Items .wrap{
-    display: block;
+    display:block;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -1261,17 +1254,13 @@ const a4css = `
     min-height: 28px;
     max-height: 70px;
   }
-  
+
   .a4Bottom .sumRow td{
     background:#e6e6e6;
     font-weight:900;
   }
-  .a4Bottom .sumLeft{
-    text-align:left;
-  }
-  .a4Bottom .sumNum{
-    text-align:right;
-  }
+  .a4Bottom .sumLeft{ text-align:left; }
+  .a4Bottom .sumNum{ text-align:right; }
   .a4Bottom .label{
     background:#e6e6e6;
     font-weight:900;
@@ -1279,95 +1268,88 @@ const a4css = `
   }
   .a4Bottom .text{
     font-size: 12px;
-    line-height:1.55;
+    line-height: 1.55;
     white-space: normal;
     word-break: break-word;
-    overflow-wrap:anywhere;
+    overflow-wrap: anywhere;
   }
 
-  #quotePreviewApp .card {
+  /* preview container tweaks */
+  #quotePreviewApp .card{
     overflow: hidden !important;
     min-height: 520px !important;
   }
 
-  @media (max-width: 768px) {
-    .a4Wrap {
+  /* =====================
+     Mobile view (keep)
+     ===================== */
+  @media (max-width: 768px){
+    .a4Wrap{
       transform: scale(0.42) !important;
       transform-origin: top left !important;
       padding: 0 !important;
     }
   }
 
-  @media (max-width: 400px) {
-    .a4Wrap {
+  @media (max-width: 400px){
+    .a4Wrap{
       transform: scale(0.35) !important;
     }
   }
 
-  /* ✅ 리스트 인쇄만 “A4 원본 크기”로 강제 (모바일/화면에는 영향 없음) */
-  @media print {
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+  /* =====================
+     Print (A4 fit)
+     ===================== */
+  @media print{
+    @page { size: A4; margin: 0; }
+
+    html, body{
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      overflow: hidden !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
 
-    /* RT 인쇄(기존 유지) */
-    .wrap > .card:first-child { display: none !important; }
-    .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
-    .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
-    .btn, .actions { display: none !important; }
+    /* hide left panel / buttons */
+    .wrap > .card:first-child{ display:none !important; }
+    .btn, .actions{ display:none !important; }
+    .wrap{ display:block !important; margin:0 !important; padding:0 !important; }
 
-    /* ✅ 리스트 인쇄(새로 추가): listPrintRoot 안에 있는 A4는 transform/scale 끔 */
-    #listPrintRoot .a4Wrap{
-      background:#fff !important;
-      padding:0 !important;
+    /* remove any card spacing that causes shrink */
+    #quotePreviewApp, #quotePreviewApp .card{
       margin: 0 !important;
-      transform: none !important;
-      transform-origin: top left !important;
-      zoom: 1 !important;
-    }
-    #listPrintRoot .a4Sheet{
-      border:none !important;
-      width: 200mm !important;
-      min-height: auto !important;
-      height: auto !important;
-      padding: 0mm !important;
-      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
       box-shadow: none !important;
       overflow: hidden !important;
-      transform: none !important;
     }
 
-    /* RT 미리보기도 print에서 transform 제거(기존 유지) */
-    #quotePreviewApp .a4Wrap{ 
-      background:#fff; 
-      padding:0;
-      margin: 0;
-      zoom: 1;
-      overflow: hidden;
-      transform: none;
-    }
-    #quotePreviewApp .a4Sheet{ 
-      border:none; 
-      width: 200mm;
-      min-height: auto;
-      height: auto;
-      padding: 0mm;
-      margin: 0;
-      box-shadow: none;
-      overflow: hidden;
-      transform: none;
+    /* IMPORTANT: print must NOT be scaled */
+    .a4Wrap{
+      background:#fff !important;
+      padding:0 !important;
+      margin:0 !important;
+      transform:none !important;
+      zoom: 1 !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      display:block !important;
     }
 
-    * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+    /* force real A4 box */
+    .a4Sheet{
+      width: 210mm !important;
+      height: 297mm !important;
+      min-height: 297mm !important;
+      border:none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow:none !important;
+      overflow:hidden !important;
+      box-sizing: border-box !important;
     }
   }
 `;
-
