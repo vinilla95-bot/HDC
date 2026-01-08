@@ -1057,13 +1057,14 @@ const a4css = `
     transform-origin: top center;
   }
   .a4Sheet {
-  width: 800px;
-  min-height: 1123px;
-  background: #fff;
-  border: 1px solid #cfd3d8;
-  padding: 16px;
-  box-sizing: border-box;
-}
+    width: 700px;
+    min-height: 1123px;
+    background: #fff;
+    border: 1px solid #cfd3d8;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  
 
 .a4Sheet td, .a4Sheet th {
   word-break: break-word;
@@ -1201,6 +1202,23 @@ const a4css = `
     word-break: break-word;
     overflow-wrap:anywhere;
   }
+
+@media (max-width: 768px) {
+    .a4Wrap {
+      transform: scale(0.42) !important;
+      transform-origin: top left !important;
+      padding: 0 !important;
+      width: 238% !important;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .a4Wrap {
+      transform: scale(0.35) !important;
+      width: 285% !important;
+    }
+  }
+
 
   @media print{
     @page {
