@@ -428,22 +428,25 @@ const bizcardName = selectedBizcard?.name || "";
   <td style="border:1px solid #333;padding:6px;">${ymd}</td>
 </tr>
 
-              <tr style="display:table-row;">
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">고객명</th>
-                <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerName)}</td>
-                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">귀하</th>
-                <td style="border:1px solid #333;padding:6px;"></td>
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">등록번호</th>
-                <td style="border:1px solid #333;padding:6px;">130-41-38154</td>
-              </tr>
+             <tr style="display:table-row;">
+  <th style="border:1px solid #333;padding:6px;font-weight:900;">고객명</th>
+  <td style="border:1px solid #333;padding:6px;" colspan="3">
+    <div style="display:flex;justify-content:space-between;">
+      <span>${escapeHtml(customerName)}</span>
+      <span style="font-weight:900;">귀하</span>
+    </div>
+  </td>
+  <th style="border:1px solid #333;padding:6px;font-weight:900;">공급자</th>
+  <td style="border:1px solid #333;padding:6px;">현대컨테이너</td>
+</tr>
 
               <tr style="display:table-row;">
                 <th style="border:1px solid #333;padding:6px;font-weight:900;">이메일</th>
                 <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerEmail)}</td>
                 <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">전화</th>
                 <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerPhone)}</td>
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">상호</th>
-                <td style="border:1px solid #333;padding:6px;">현대컨테이너</td>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;">등록번호</th>
+                <td style="border:1px solid #333;padding:6px;">130-41-38154</td>
               </tr>
 
               <tr style="display:table-row;">
