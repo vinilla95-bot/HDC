@@ -1986,7 +1986,6 @@ const css = `
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    background: #fff !important;
   }
   
   .app { 
@@ -2003,14 +2002,14 @@ const css = `
   .right { 
     display: block !important; 
     height: auto !important;
-    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   .content {
     display: block !important;
     height: auto !important;
     min-height: auto !important;
-    background: #fff !important;
   }
   
   .previewWrap { 
@@ -2018,7 +2017,8 @@ const css = `
     overflow: visible !important;
     height: auto !important;
     min-height: auto !important;
-    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   .previewInner { 
@@ -2027,8 +2027,7 @@ const css = `
     overflow: visible !important;
     height: auto !important;
     min-height: auto !important;
-    width: auto !important;
-    background: #fff !important;
+    width: 100% !important;
   }
   
   .previewInner > div {
@@ -2036,16 +2035,17 @@ const css = `
     margin: 0 !important;
     background: #fff !important;
     display: block !important;
+    justify-content: flex-start !important;
   }
   
   #a4SheetCapture {
-    width: 200mm !important;
+    width: 100% !important;
+    max-width: 210mm !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #fff !important;
+    padding: 10mm !important;
+    margin: 0 auto !important;
   }
   
   #a4SheetCapture table {
@@ -2056,7 +2056,6 @@ const css = `
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    background-color: #fff !important;
   }
 }
   @media (max-width: 768px) {
