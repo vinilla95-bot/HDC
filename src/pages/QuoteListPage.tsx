@@ -1979,46 +1979,46 @@ const css = `
   }
 
   @media print{
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: auto;
-    }
-    
-    .app { display: block !important; }
-    .panel { display: none !important; }
-    .actions { display: none !important; }
-    button { display: none !important; }
-    .right { display: block !important; }
-    .previewWrap { border: none !important; }
-    .previewInner { padding: 0 !important; }
-    
-    .previewInner > div {
-      background: #fff !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      zoom: 0.95 !important;
-    }
-    
-    .previewInner > div > div {
-      border: none !important;
-      width: 210mm !important;
-      min-height: auto !important;
-      padding: 10mm !important;
-      margin: 0 !important;
-      box-shadow: none !important;
-    }
-    
-    * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+  @page {
+    size: A4;
+    margin: 0;
   }
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: auto;
+  }
+  
+  .app { display: block !important; }
+  .panel { display: none !important; }
+  .actions { display: none !important; }
+  button { display: none !important; }
+  .right { display: block !important; }
+  .previewWrap { border: none !important; }
+  .previewInner { padding: 0 !important; transform: none !important; width: auto !important; }
+  
+  .previewInner > div {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .previewInner > div > div {
+    border: none !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    padding: 10mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 
   @media (max-width: 768px) {
     .app {
