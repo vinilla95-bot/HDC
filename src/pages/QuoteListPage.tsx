@@ -1977,45 +1977,64 @@ const css = `
     word-break: break-word;
     overflow-wrap:anywhere;
   }
- @media print{
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    .wrap > .card:first-child { display: none !important; }
-    .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
-    .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
-    .btn, .actions { display: none !important; }
-    .a4Wrap{ 
-      background:#fff; 
-      padding:0;
-      margin: 0;
-      zoom: 1;
-      overflow: hidden;
-      transform: none;
-    }
-    .a4Sheet{ 
-      border:none; 
-      width: 200mm;
-      min-height: auto;
-      height: auto;
-      padding: 0mm;
-      margin: 0;
-      box-shadow: none;
-      overflow: hidden;
-      transform: none;
-    }
-    * {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+@media print{
+  @page {
+    size: A4;
+    margin: 5mm;
   }
-`;
+  
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .app { display: block !important; }
+  .panel { display: none !important; }
+  .actions { display: none !important; }
+  button { display: none !important; }
+  .right { display: block !important; }
+  
+  .previewWrap { 
+    border: none !important; 
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  .previewInner { 
+    padding: 0 !important; 
+    transform: none !important; 
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  .previewInner > div {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+  
+  #a4SheetCapture {
+    width: 190mm !important;
+    min-height: auto !important;
+    height: auto !important;
+    border: none !important;
+    padding: 5mm !important;
+    margin: 0 auto !important;
+    transform: scale(0.82) !important;
+    transform-origin: top center !important;
+  }
+  
+  #a4SheetCapture table {
+    min-width: auto !important;
+    width: 100% !important;
+    page-break-inside: auto !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 
   @media (max-width: 768px) {
     .app {
