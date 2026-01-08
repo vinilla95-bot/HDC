@@ -1057,7 +1057,7 @@ const a4css = `
     transform-origin: top center;
   }
   .a4Sheet {
-    width: 800px;
+    width: 700px;
     min-height: 1123px;
     background: #fff;
     border: 1px solid #cfd3d8;
