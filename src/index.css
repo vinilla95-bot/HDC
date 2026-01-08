@@ -45,11 +45,13 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
 }
 
 /* App.tsx 메인페이지 견적서 모바일 */
+/* App.tsx 메인페이지 견적서 모바일 */
 @media (max-width: 768px) {
   #quotePreviewApp .a4Wrap {
     transform: scale(0.42) !important;
     transform-origin: top left !important;
     padding: 0 !important;
+    width: 238% !important;
   }
   
   #quotePreviewApp .card {
@@ -61,6 +63,7 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
 @media (max-width: 400px) {
   #quotePreviewApp .a4Wrap {
     transform: scale(0.35) !important;
+    width: 285% !important;
   }
   
   #quotePreviewApp .card {
