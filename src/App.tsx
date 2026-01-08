@@ -1,6 +1,7 @@
 // src/App.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
+import html2canvas from "html2canvas";
 
 import {
   supabase,
@@ -427,6 +428,47 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         }
         quoteId = newId;
       }
+const downloadJpg = async () => {
+  const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
+  if (!sheet) {
+    alert("캡처 대상을 찾을 수 없습니다.");
+    return;
+  }
+  
+  setStatusMsg("JPG 생성 중...");
+  
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const a4Wrap = document.querySelector("#quotePreviewApp .a4Wrap") as HTMLElement;
+  
+  // 모바일: 캡처 전 transform 제거
+  if (isMobile && a4Wrap) {
+    a4Wrap.style.cssText = "transform: none !important; width: auto !important;";
+    await new Promise(r => setTimeout(r, 300));
+  }
+  
+  try {
+    const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `QUOTE_${currentQuoteId || Date.now()}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    
+    setStatusMsg("다운로드 완료");
+    setTimeout(() => setStatusMsg(""), 2000);
+  } catch (e: any) {
+    setStatusMsg("JPG 생성 실패");
+    alert("JPG 생성 실패: " + (e?.message || String(e)));
+  } finally {
+    // 모바일: 원래대로 복원
+    if (isMobile && a4Wrap) {
+      a4Wrap.style.cssText = "";
+    }
+  }
+};
       
       const previewEl = document.getElementById("quotePreviewApp");
       const html = previewEl ? previewEl.innerHTML : "";
@@ -781,6 +823,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             <button className="btn" onClick={handleSend} disabled={!!sendStatus}>
               {sendStatus || "견적서 보내기"}
             </button>
+            <button className="btn" onClick={downloadJpg}>
+    JPG저장
+  </button>
             <button className="btn" onClick={handlePreview}>
               인쇄
             </button>
