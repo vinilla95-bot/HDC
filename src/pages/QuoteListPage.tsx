@@ -399,8 +399,8 @@ const bizcardName = selectedBizcard?.name || "";
     const tbodyHtml = itemRows.join('');
 
     const fullHtml = `
-      <div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">
-        <div id="a4SheetCapture" style="width:794px;min-height:1123px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
+      <div style="display:flex;justify-content:center;padding:14px 0;background:#fff">
+       <div id="a4SheetCapture" style="width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
               <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:110px;height:auto;" />
