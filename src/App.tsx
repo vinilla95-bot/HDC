@@ -481,7 +481,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         </button>
       </div>
 
-      <div className="wrap">
+      <div className="wrap rtWrap">
         {/* LEFT */}
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
