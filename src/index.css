@@ -51,3 +51,27 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
 }
 
 
+@media (max-width: 768px) {
+  #quotePreviewApp .a4Wrap {
+    transform: scale(0.42) !important;
+    transform-origin: top left !important;
+    padding: 0 !important;
+  }
+  
+  #quotePreviewApp .card {
+    overflow: hidden !important;
+    min-height: 520px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  #quotePreviewApp .a4Wrap {
+    transform: scale(0.35) !important;
+  }
+  
+  #quotePreviewApp .card {
+    min-height: 450px !important;
+  }
+}
+
+
