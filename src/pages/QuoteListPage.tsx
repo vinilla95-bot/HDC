@@ -566,7 +566,40 @@ const bizcardName = selectedBizcard?.name || "";
 
  async function downloadJpg() {
   requireCurrent();
+  const sheet = document.getElementById("a4SheetCapture");
+  if (!sheet) {
+    toast("캡처 대상을 찾을 수 없습니다.");
+    return;
+  }
+
+  toast("JPG 생성 중...");
   
+  // ✅ 모바일일 때만 폰트 변경
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const originalFont = sheet.style.fontFamily;
+  
+  if (isMobile) {
+    sheet.style.fontFamily = '-apple-system, "Malgun Gothic", sans-serif';
+    await new Promise(r => setTimeout(r, 100));
+  }
+  
+  const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
+  
+  if (isMobile) {
+    sheet.style.fontFamily = originalFont;
+  }
+  
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `QUOTE_${current!.quote_id}.jpg`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  toast("다운로드 완료");
+
   // ✅ 흰색 견적서만 캡처
   const sheet = document.getElementById("a4SheetCapture");
   if (!sheet) {
