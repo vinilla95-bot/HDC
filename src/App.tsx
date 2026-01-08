@@ -553,7 +553,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             <input
               value={form.siteQ}
               onChange={(e) => handleSiteSearch(e.target.value)}
-              placeholder="예: ㄱㄹ / 강릉 / 화성"
+              placeholder="예:단가 조회는 초성 검색,운송비 추가는 단어검색 추천 "
             />
           </div>
           <div className="status">{statusMsg}</div>
@@ -669,14 +669,14 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     setSelectedItems((prev: any) => [...prev, newRow]);
   }}
 >
-  + 자유 품목 추가
+  + 품목 추가
 </button>
 
           <div style={{ height: 10 }} />
           <div className="mini" style={{ marginBottom: 6 }}>
-            ✅ 좌측에서 수량/단가 수정 → 우측 A4 미리보기/저장에 동일 반영
+            좌측에서 수량/단가 수정 → 우측 A4 미리보기/저장에 동일 반영
             <br />
-            ✅ 내부 계산(baseQty/baseUnitPrice/baseAmount)은 참고용
+            
           </div>
 
           <div className="box" style={{ marginTop: 10 }}>
