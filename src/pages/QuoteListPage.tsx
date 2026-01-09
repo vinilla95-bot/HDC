@@ -1969,11 +1969,51 @@ const bizcardName = selectedBizcard?.name || "";
                 )}
                 {current?.customer_phone && (
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       document.getElementById('sendMenu')!.style.display = 'none';
-                      const phone = current.customer_phone.replace(/[^0-9]/g, '');
-                      const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
-                      window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                      
+                      // 견적서 이미지 생성
+                      const sheet = document.getElementById('a4SheetCapture');
+                      if (!sheet) {
+                        alert('견적서를 찾을 수 없습니다.');
+                        return;
+                      }
+                      
+                      try {
+                        toast('이미지 생성 중...');
+                        const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: '#ffffff' });
+                        
+                        const blob = await new Promise<Blob>((resolve) => 
+                          canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
+                        );
+                        const file = new File([blob], `견적서_${current.customer_name || 'quote'}.jpg`, { type: 'image/jpeg' });
+                        
+                        const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                        
+                        // Web Share API 지원 확인
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                          await navigator.share({
+                            files: [file],
+                            title: '견적서',
+                            text: msg,
+                          });
+                        } else {
+                          // 미지원 시 이미지 다운로드 후 문자앱 열기
+                          const a = document.createElement('a');
+                          a.href = URL.createObjectURL(blob);
+                          a.download = file.name;
+                          a.click();
+                          
+                          const phone = current.customer_phone.replace(/[^0-9]/g, '');
+                          window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                          toast('이미지가 저장되었습니다. 문자에서 첨부해주세요.');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('공유 실패: ' + (e as any)?.message);
+                      }
+                      
+                      setMobilePreviewOpen(false);
                     }}
                     style={{
                       padding: '14px 16px',
@@ -1985,8 +2025,8 @@ const bizcardName = selectedBizcard?.name || "";
                       cursor: 'pointer',
                     }}
                   >
-                    📱 문자 전송
-                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{current.customer_phone}</div>
+                    📱 문자/카톡 공유
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{current.customer_phone} (이미지 첨부)</div>
                   </button>
                 )}
                 {!current?.customer_email && !current?.customer_phone && (
