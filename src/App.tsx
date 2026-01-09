@@ -1,4 +1,4 @@
-/// src/App.tsx
+// src/App.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
