@@ -56,6 +56,10 @@ export default function App() {
 
   const [statusMsg, setStatusMsg] = useState("");
 
+  // 모바일 전체화면 미리보기
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const isMobileDevice = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   const isRentRow = (row: SelectedRow) => String((row as any)?.optionName || "").trim() === "임대";
 
@@ -428,7 +432,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         }
         quoteId = newId;
       }
+const downloadJpg = async () => {
 
+      
       const previewEl = document.getElementById("quotePreviewApp");
       const html = previewEl ? previewEl.innerHTML : "";
       
@@ -450,46 +456,67 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   };
 
   const downloadJpg = async () => {
-    const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
-    if (!sheet) {
-      alert("캡처 대상을 찾을 수 없습니다.");
-      return;
-    }
+  const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
+  if (!sheet) {
+    alert("캡처 대상을 찾을 수 없습니다.");
+    return;
+  }
 
-    setStatusMsg("JPG 생성 중...");
+  setStatusMsg("JPG 생성 중...");
 
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const a4Wrap = document.querySelector("#quotePreviewApp .a4Wrap") as HTMLElement;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const a4Wrap = document.querySelector("#quotePreviewApp .a4Wrap") as HTMLElement;
 
-    // 모바일: 캡처 전 transform 제거
+  // 모바일: 캡처 전 transform 제거
+  if (isMobile && a4Wrap) {
+    a4Wrap.style.cssText = "transform: none !important; width: auto !important;";
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  try {
+    const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `QUOTE_${currentQuoteId || Date.now()}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setStatusMsg("다운로드 완료");
+    setTimeout(() => setStatusMsg(""), 2000);
+  } catch (e: any) {
+    setStatusMsg("JPG 생성 실패");
+    alert("JPG 생성 실패: " + (e?.message || String(e)));
+  } finally {
+    // 모바일: 원래대로 복원
     if (isMobile && a4Wrap) {
-      a4Wrap.style.cssText = "transform: none !important; width: auto !important;";
-      await new Promise(r => setTimeout(r, 300));
+      a4Wrap.style.cssText = "";
     }
-
-    try {
-      const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `QUOTE_${currentQuoteId || Date.now()}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      setStatusMsg("다운로드 완료");
-      setTimeout(() => setStatusMsg(""), 2000);
+  }
+};
+      
+      const previewEl = document.getElementById("quotePreviewApp");
+      const html = previewEl ? previewEl.innerHTML : "";
+      
+      const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
+      const bizcardImageUrl = selectedBizcard?.image_url || "";
+      
+      setSendStatus("메일 전송 중...");
+      await sendQuoteEmailApi(quoteId, form.email, html, bizcardImageUrl);
+      
+      setSendStatus("전송 완료!");
+      alert("견적서가 성공적으로 전송되었습니다.");
+      
+      setTimeout(() => setSendStatus(""), 2000);
     } catch (e: any) {
-      setStatusMsg("JPG 생성 실패");
-      alert("JPG 생성 실패: " + (e?.message || String(e)));
-    } finally {
-      // 모바일: 원래대로 복원
-      if (isMobile && a4Wrap) {
-        a4Wrap.style.cssText = "";
-      }
+      setSendStatus("전송 실패");
+      alert("전송 실패: " + (e?.message || String(e)));
+      console.error("handleSend error:", e);
     }
   };
+
 
   const MIN_ROWS = 12;
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
@@ -834,7 +861,28 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         </div>
 
         {/* RIGHT */}
-        <div id="quotePreviewApp">
+        <div 
+          id="quotePreviewApp"
+          onClick={() => { if (isMobileDevice) setMobilePreviewOpen(true); }}
+          style={{ cursor: isMobileDevice ? 'pointer' : 'default', position: 'relative' }}
+        >
+          {isMobileDevice && (
+            <div style={{
+              position: 'absolute',
+              bottom: 20,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              padding: '6px 12px',
+              borderRadius: 20,
+              fontSize: 11,
+              zIndex: 10,
+              pointerEvents: 'none'
+            }}>
+              탭하여 크게 보기
+            </div>
+          )}
          <A4Quote
     form={form}
     computedItems={computedItems}
@@ -848,6 +896,105 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
         </div>
       </div>
+
+      {/* 모바일 전체화면 미리보기 */}
+      {mobilePreviewOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: '#fff',
+            zIndex: 10000,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid #eee',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#fff',
+          }}>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
+            <button 
+              onClick={() => setMobilePreviewOpen(false)}
+              style={{
+                padding: '8px 16px',
+                background: '#111',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              닫기
+            </button>
+          </div>
+          <div style={{
+            flex: 1,
+            overflow: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            background: '#f5f6f8',
+          }}>
+            <div style={{
+              transform: 'scale(0.48)',
+              transformOrigin: 'top center',
+              padding: '10px 0',
+            }}>
+              <A4Quote
+                form={form}
+                computedItems={computedItems}
+                blankRows={blankRows}
+                fmt={fmt}
+                supply_amount={supply_amount}
+                vat_amount={vat_amount}
+                total_amount={total_amount}
+                bizcardName={selectedBizcard?.name || ""}
+              />
+            </div>
+          </div>
+          <div style={{
+            padding: '10px 16px',
+            borderTop: '1px solid #eee',
+            display: 'flex',
+            gap: 8,
+            background: '#fff',
+          }}>
+            <button 
+              onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                background: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              JPG 저장
+            </button>
+            <button 
+              onClick={() => { setMobilePreviewOpen(false); handleSend(); }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                background: '#111',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              저장/전송
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -1243,32 +1390,34 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-  @media (min-width: 1200px) {
-    #quotePreviewApp .card {
-      overflow: hidden !important;
-      min-height: 520px !important;
-    }
-  }
 
-  @media (min-width: 769px) and (max-width: 1199px) {
-    #quotePreviewApp .card {
-      min-height: 450px !important;
-    }
+  
+  #quotePreviewApp .card {
+    overflow: hidden !important;
+    min-height: 520px !important;
   }
+}
 
-  @media (max-width: 768px) {
-    .a4Wrap {
-      transform: scale(0.42) !important;
-      transform-origin: top left !important;
-      padding: 0 !important;
-    }
-  }
 
-  @media (max-width: 400px) {
-    .a4Wrap {
-      transform: scale(0.35) !important;
-    }
+  
+  #quotePreviewApp .card {
+    min-height: 450px !important;
   }
+}
+@media (max-width: 768px) {
+  .a4Wrap {
+    transform: scale(0.42) !important;
+    transform-origin: top left !important;
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .a4Wrap {
+    transform: scale(0.35) !important;
+  }
+}
+
 
   @media print{
     @page {
