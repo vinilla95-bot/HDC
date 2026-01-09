@@ -1869,12 +1869,15 @@ const bizcardName = selectedBizcard?.name || "";
             WebkitOverflowScrolling: 'touch',
             background: '#f5f6f8',
             padding: '10px',
+            display: 'flex',
+            justifyContent: 'center',
           }}>
             <div 
               style={{
                 transform: `scale(${Math.min(1, (window.innerWidth - 20) / 794)})`,
-                transformOrigin: 'top left',
+                transformOrigin: 'top center',
                 width: 794,
+                margin: '0 auto',
               }}
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
@@ -2006,10 +2009,12 @@ const bizcardName = selectedBizcard?.name || "";
                         a.click();
                         document.body.removeChild(a);
                         
-                        // 잠시 대기 후 문자앱 열기
+                        // 잠시 대기 후 문자앱 열기 (iOS/Android 호환)
                         setTimeout(() => {
                           const phone = current.customer_phone.replace(/[^0-9]/g, '');
-                          window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                          const separator = isIOS ? '&' : '?';
+                          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
                         }, 500);
                         
                         toast('📷 이미지가 저장되었습니다!\n문자에서 갤러리의 이미지를 첨부해주세요.');
