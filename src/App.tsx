@@ -1057,7 +1057,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         );
                         const file = new File([blob], `견적서_${form.name || 'quote'}.jpg`, { type: 'image/jpeg' });
                         
-                        const msg = `[현대컨테이너] ${form.name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                        const msg = `안녕하세요 현대컨테이너 입니다 문의주셔서 감사합니다! ${form.name || '고객'}님, 견적서 첨부드립니다 궁금하신 점 있으시면 언제든 연락주세요 감사합니다~ `;
                         
                         // Web Share API 시도
                         if (navigator.share && navigator.canShare?.({ files: [file] })) {
