@@ -365,7 +365,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     const customerPhone = header.customerPhone ?? current.customer_phone ?? "";
     const siteName = header.siteName ?? current.site_name ?? "";
     const spec = header.spec ?? current.spec ?? "";
-    
+
     const supplyAmount = header.supplyAmount ?? current.supply_amount ?? (Number(current.total_amount || 0) - Number(current.vat_amount || 0));
     const vatAmount = header.vatAmount ?? current.vat_amount ?? Math.round((Number(current.total_amount || 0) || 0) * 0.1);
     const totalAmount = header.totalAmount ?? current.total_amount ?? 0;
@@ -400,6 +400,7 @@ const bizcardName = selectedBizcard?.name || "";
 
     const fullHtml = `
       <div style="display:flex;justify-content:center;padding:14px 0;background:#fff">
+      <div id="a4SheetCapture" style="width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
       <div id="a4PrintWrap" style="display:flex;justify-content:center;padding:14px 0;background:#fff">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
@@ -570,35 +571,35 @@ const bizcardName = selectedBizcard?.name || "";
 
  async function downloadJpg() {
   requireCurrent();
-  
+
   const sheet = document.getElementById("a4SheetCapture");
   if (!sheet) {
     toast("캡처 대상을 찾을 수 없습니다.");
     return;
   }
-  
+
   toast("JPG 생성 중...");
-  
+
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const previewInner = document.querySelector(".previewInner") as HTMLElement;
-  
+
   // ✅ 모바일: 캡처 전 transform 제거
   if (isMobile && previewInner) {
     previewInner.style.cssText = "transform: none !important; width: auto !important;";
     await new Promise(r => setTimeout(r, 300));
   }
-  
+
   try {
     const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-    
+
     const a = document.createElement("a");
     a.href = dataUrl;
     a.download = `QUOTE_${current!.quote_id}.jpg`;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    
+
     toast("다운로드 완료");
   } catch (e: any) {
     toast("JPG 생성 실패: " + (e?.message || String(e)));
@@ -617,23 +618,23 @@ const bizcardName = selectedBizcard?.name || "";
 
   async function handleDelete() {
     requireCurrent();
-    
+
     const confirmed = window.confirm(
       `정말 삭제하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n\n이 작업은 되돌릴 수 없습니다.`
     );
-    
+
     if (!confirmed) return;
-    
+
     try {
       toast("삭제 중...");
-      
+
       const { error } = await supabase
         .from("quotes")
         .delete()
         .eq("quote_id", current!.quote_id);
-      
+
       if (error) throw error;
-      
+
       toast("삭제 완료!");
       setCurrent(null);
       await loadList(q);
@@ -729,7 +730,7 @@ const bizcardName = selectedBizcard?.name || "";
 
     try {
       setSendStatus("PDF 준비 중...");
-      
+
       // ✅ 로고 이미지를 base64로 변환
       const logoUrl = "https://i.postimg.cc/VvsGvxFP/logo1.jpg";
       const logoBase64 = await imageUrlToBase64(logoUrl);
@@ -737,7 +738,7 @@ const bizcardName = selectedBizcard?.name || "";
         new RegExp(logoUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), 
         logoBase64
       );
-      
+
       setSendStatus("메일 전송 중...");
       const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
       const bizcardImageUrl = selectedBizcard?.image_url || "";
@@ -856,7 +857,7 @@ const bizcardName = selectedBizcard?.name || "";
           .select("*")
           .eq("quote_id", current.quote_id)
           .single();
-        
+
         if (checkData) {
           toast("저장 완료!");
           setOptQ("");
@@ -872,7 +873,7 @@ const bizcardName = selectedBizcard?.name || "";
       toast("저장 완료!");
       setOptQ("");
       setEditOpen(false);
-      
+
       // 목록 새로고침 후 현재 선택된 견적도 업데이트
       await loadList(q);
       setCurrent(data[0] as QuoteRow);
@@ -897,11 +898,11 @@ const bizcardName = selectedBizcard?.name || "";
   matched.sort((a: any, b: any) => {
     const nameA = String(a.option_name || "").toLowerCase();
     const nameB = String(b.option_name || "").toLowerCase();
-    
+
     const startsA = nameA.startsWith(qLower) ? 0 : 1;
     const startsB = nameB.startsWith(qLower) ? 0 : 1;
     if (startsA !== startsB) return startsA - startsB;
-    
+
     const includesA = nameA.includes(qLower) ? 0 : 1;
     const includesB = nameB.includes(qLower) ? 0 : 1;
     return includesA - includesB;
@@ -912,11 +913,11 @@ const bizcardName = selectedBizcard?.name || "";
   // 옵션 검색에서 선택하여 추가 (App.tsx와 동일한 로직)
   function addOptionFromSearch(opt: any) {
   if (!editForm) return;
-  
+
   const w = Number(editForm.w) || 3;
   const l = Number(editForm.l) || 6;
   const res = calculateOptionLine(opt, w, l);
-  
+
   const rawName = String(opt.option_name || "(이름없음)");
   const rent = rawName.trim() === "임대";
 
@@ -947,7 +948,7 @@ const bizcardName = selectedBizcard?.name || "";
       },
     ],
   }));
-  
+
   setOptQ("");
 }
   function addItem() {
@@ -1042,13 +1043,13 @@ const bizcardName = selectedBizcard?.name || "";
 
   useEffect(() => {
     loadList("");
-    
+
     // 옵션 목록 로드
     supabase
       .from("options")
       .select("*")
       .then(({ data }) => setOptions((data || []) as any));
-    
+
     // 명함 목록 로드
     supabase
       .from("bizcards")
@@ -1193,7 +1194,7 @@ const bizcardName = selectedBizcard?.name || "";
                   }}
                 />
               </div>
-              
+
               {/* 명함 선택 */}
               <div style={{ marginBottom: 10 }}>
                 <div className="muted" style={{ marginBottom: 4 }}>명함 선택</div>
@@ -1213,7 +1214,7 @@ const bizcardName = selectedBizcard?.name || "";
                   ))}
                 </select>
               </div>
-              
+
               <div className="row">
                 <span className="spacer" />
                 <button className="primary" onClick={sendQuoteEmail}>
@@ -1976,64 +1977,84 @@ const css = `
     word-break: break-word;
     overflow-wrap:anywhere;
   }
-@media print{
-  @page { size: A4; margin: 0; }
 
-  html, body{
+ @media print{
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  
+  html, body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    overflow: hidden !important;
+  }
+  
+  .app { 
+    display: block !important; 
+    height: auto !important;
+    padding: 0 !important;
+  }
+  
+  .panel { display: none !important; }
+  .actions { display: none !important; }
+  button { display: none !important; }
+  
+  .right { 
+    display: block !important; 
+    height: auto !important;
+  }
+  
+  .content {
+    display: block !important;
+    height: auto !important;
+    flex: none !important;
+  }
+  
+  .previewWrap { 
+    border: none !important; 
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  .previewInner { 
+    padding: 0 !important; 
+    transform: none !important; 
+    width: auto !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+  
+  .previewInner > div {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+  
+  #a4SheetCapture {
+    width: 200mm !important;
+    min-height: auto !important;
+    height: auto !important;
+    border: none !important;
+    padding: 5mm !important;
+    margin: 0 !important;
+  }
+  
+  #a4SheetCapture table {
+    width: 100% !important;
+  }
+  
+  #a4PrintWrap {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #fff !important;
+}
+  * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-
-  /* 버튼/좌측 UI 숨김 (기존 유지) */
-  .btn, .actions { display: none !important; }
-  .wrap > .card:first-child { display: none !important; }
-  .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
-
-  /* ✅ 중요: “카드”가 여백/패딩 만들면서 화면이 줄어드는 케이스 차단 */
-  .card{
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-
-  /* ✅ 중요: print에서는 무조건 scale/transform OFF */
-  .a4Wrap{
-    background: #fff !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-    zoom: 1 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-
-    display: block !important;
-  }
-
-  /* ✅ A4 실제 사이즈로 강제 */
-  .a4Sheet{
-    width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
-
-    border: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    overflow: hidden !important;
-  }
-
-  /* 혹시 어딘가에 또 transform이 숨어있을 때 “최후의 수단” */
-  *{
-    transform: none !important;
-  }
 }
-
 
   @media (max-width: 768px) {
     .app {
@@ -2143,4 +2164,4 @@ const css = `
       max-height: 220px !important;
     }
   }
-`;
+
