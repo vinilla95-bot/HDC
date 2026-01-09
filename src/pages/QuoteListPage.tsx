@@ -1983,41 +1983,27 @@ const bizcardName = selectedBizcard?.name || "";
                         const blob = await new Promise<Blob>((resolve) => 
                           canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
                         );
-                        const file = new File([blob], `견적서_${current.customer_name || 'quote'}.jpg`, { type: 'image/jpeg' });
                         
                         const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                        const phone = current.customer_phone.replace(/[^0-9]/g, '');
                         
-                        // Web Share API 시도
-                        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-                          try {
-                            await navigator.share({
-                              files: [file],
-                              title: '견적서',
-                              text: msg,
-                            });
-                            return;
-                          } catch (e) {
-                            // 공유 취소 또는 실패 시 아래 방법으로
-                          }
-                        }
-                        
-                        // 이미지 다운로드
+                        // 이미지 직접 다운로드 (Web Share API 사용 안 함)
                         const a = document.createElement('a');
                         a.href = URL.createObjectURL(blob);
-                        a.download = file.name;
+                        a.download = `견적서_${current.customer_name || 'quote'}.jpg`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
+                        URL.revokeObjectURL(a.href);
                         
                         // 잠시 대기 후 문자앱 열기 (iOS/Android 호환)
                         setTimeout(() => {
-                          const phone = current.customer_phone.replace(/[^0-9]/g, '');
                           const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const separator = isIOS ? '&' : '?';
                           window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        }, 500);
+                        }, 800);
                         
-                        toast('📷 이미지가 저장되었습니다!\n문자에서 갤러리의 이미지를 첨부해주세요.');
+                        toast('📷 이미지 저장됨! 문자에서 갤러리의 이미지를 첨부하세요.');
                         
                       } catch (e) {
                         console.error(e);
@@ -2035,7 +2021,7 @@ const bizcardName = selectedBizcard?.name || "";
                     }}
                   >
                     📱 문자 전송
-                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{current.customer_phone} (이미지 자동저장)</div>
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{current.customer_phone}</div>
                   </button>
                 )}
                 {!current?.customer_email && !current?.customer_phone && (
