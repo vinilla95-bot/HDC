@@ -914,6 +914,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             WebkitOverflowScrolling: 'touch',
             background: '#f5f6f8',
             padding: '10px',
+            display: 'flex',
+            justifyContent: 'center',
           }}>
             <style>{`
               .mobilePreviewContent .card {
@@ -938,8 +940,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
               className="mobilePreviewContent"
               style={{
                 transform: `scale(${(window.innerWidth - 20) / 794})`,
-                transformOrigin: 'top left',
+                transformOrigin: 'top center',
                 width: 794,
+                margin: '0 auto',
               }}
             >
               <A4Quote
@@ -1057,7 +1060,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         );
                         const file = new File([blob], `견적서_${form.name || 'quote'}.jpg`, { type: 'image/jpeg' });
                         
-                        const msg = `안녕하세요 현대컨테이너 입니다 문의주셔서 감사합니다! ${form.name || '고객'}님, 견적서 첨부드립니다 궁금하신 점 있으시면 언제든 연락주세요 감사합니다~ `;
+                        const msg = `[현대컨테이너] ${form.name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
                         
                         // Web Share API 시도
                         if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -1082,10 +1085,12 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         a.click();
                         document.body.removeChild(a);
                         
-                        // 잠시 대기 후 문자앱 열기
+                        // 잠시 대기 후 문자앱 열기 (iOS/Android 호환)
                         setTimeout(() => {
                           const phone = form.phone.replace(/[^0-9]/g, '');
-                          window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                          const separator = isIOS ? '&' : '?';
+                          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
                         }, 500);
                         
                         setStatusMsg('📷 이미지 저장됨! 문자에서 갤러리의 이미지를 첨부하세요.');
@@ -1532,13 +1537,28 @@ const a4css = `
 }
 @media (max-width: 768px) {
   .a4Wrap {
+    transform: scale(0.48) !important;
+    transform-origin: top center !important;
+    padding: 8px 0 !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .a4Wrap {
     transform: scale(0.42) !important;
-    transform-origin: top left !important;
-    padding: 0 !important;
   }
 }
 
 @media (max-width: 400px) {
+  .a4Wrap {
+    transform: scale(0.38) !important;
+  }
+}
+
+@media (max-width: 360px) {
   .a4Wrap {
     transform: scale(0.35) !important;
   }
