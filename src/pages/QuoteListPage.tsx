@@ -399,7 +399,7 @@ const bizcardName = selectedBizcard?.name || "";
     const tbodyHtml = itemRows.join('');
 
     const fullHtml = `
-      <div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">
+      <div class="quoteWrapper" style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">
         <div id="a4SheetCapture" style="display:block;width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
@@ -1981,7 +1981,7 @@ const css = `
  @media print{
   @page {
     size: A4 portrait;
-    margin: 5mm;
+    margin: 3mm;
   }
   
   * {
@@ -2025,6 +2025,16 @@ const css = `
   .search { display: none !important; }
   .list { display: none !important; }
   
+  .quoteWrapper {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+  
   .right { 
     display: block !important; 
     height: auto !important;
@@ -2045,6 +2055,9 @@ const css = `
     height: auto !important;
     width: 100% !important;
     background: #fff !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
   .previewInner { 
@@ -2054,6 +2067,17 @@ const css = `
     width: 100% !important;
     height: auto !important;
     min-height: auto !important;
+    margin: 0 !important;
+  }
+  
+  .a4Sheet,
+  .a4Wrap {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    background: #fff !important;
   }
   
   .previewInner > div,
@@ -2066,6 +2090,8 @@ const css = `
     width: 100% !important;
     transform: none !important;
     -webkit-transform: none !important;
+    min-height: auto !important;
+    height: auto !important;
   }
   
   #a4SheetCapture {
@@ -2075,12 +2101,11 @@ const css = `
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 0 !important;
+    padding: 5mm !important;
     margin: 0 !important;
     box-shadow: none !important;
-    transform: scale(1.15) !important;
-    -webkit-transform: scale(1.15) !important;
-    transform-origin: top left !important;
+    transform: none !important;
+    -webkit-transform: none !important;
   }
   
   #a4SheetCapture table {
@@ -2091,12 +2116,12 @@ const css = `
   
   #a4SheetCapture table th,
   #a4SheetCapture table td {
-    font-size: 11px !important;
-    padding: 4px 6px !important;
+    font-size: 12px !important;
+    padding: 5px 7px !important;
   }
   
   #a4SheetCapture img {
-    max-width: 120px !important;
+    max-width: 140px !important;
     height: auto !important;
   }
 
