@@ -1987,39 +1987,48 @@ const css = `
   html, body {
     margin: 0 !important;
     padding: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
   }
   
   .app { 
     display: block !important; 
     height: auto !important;
     padding: 0 !important;
+    width: 100% !important;
+    grid-template-columns: none !important;
   }
   
   .panel { display: none !important; }
   .actions { display: none !important; }
   button { display: none !important; }
+  .toast { display: none !important; }
+  .modal { display: none !important; }
   
   .right { 
     display: block !important; 
     height: auto !important;
+    width: 100% !important;
   }
   
   .content {
     display: block !important;
     height: auto !important;
     flex: none !important;
+    width: 100% !important;
   }
   
   .previewWrap { 
     border: none !important; 
     overflow: visible !important;
     height: auto !important;
+    width: 100% !important;
   }
   
   .previewInner { 
     padding: 0 !important; 
     transform: none !important; 
-    width: auto !important;
+    width: 100% !important;
     height: auto !important;
     min-height: auto !important;
   }
@@ -2029,30 +2038,35 @@ const css = `
     padding: 0 !important;
     margin: 0 !important;
     background: #fff !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
   }
   
   #a4SheetCapture {
-    width: 200mm !important;
+    width: 100% !important;
+    max-width: 200mm !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 5mm !important;
-    margin: 0 !important;
+    padding: 10mm !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
   }
   
   #a4SheetCapture table {
     width: 100% !important;
+    display: table !important;
   }
   
-  #a4PrintWrap {
-  display: block !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: #fff !important;
-}
+  #a4SheetCapture table th,
+  #a4SheetCapture table td {
+    font-size: 11px !important;
+    padding: 4px 6px !important;
+  }
+
   * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 
