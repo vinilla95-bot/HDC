@@ -919,9 +919,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             padding: '10px',
           }}>
             <div style={{
-              transform: 'scale(0.95)',
+              transform: `scale(${Math.min(1, (window.innerWidth - 20) / 900)})`,
               transformOrigin: 'top left',
-              width: '105%',
+              width: 900,
             }}>
               <A4Quote
                 form={form}
