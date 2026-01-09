@@ -1879,9 +1879,9 @@ const bizcardName = selectedBizcard?.name || "";
           }}>
             <div 
               style={{
-                transform: 'scale(0.95)',
+                transform: `scale(${Math.min(1, (window.innerWidth - 20) / 794)})`,
                 transformOrigin: 'top left',
-                width: '105%',
+                width: 794,
               }}
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
