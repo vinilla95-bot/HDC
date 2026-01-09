@@ -916,23 +916,33 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             overflow: 'auto',
             WebkitOverflowScrolling: 'touch',
             background: '#f5f6f8',
-            padding: '5px',
+            padding: '10px',
           }}>
             <style>{`
+              .mobilePreviewContent .card {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: transparent !important;
+              }
               .mobilePreviewContent .a4Wrap {
                 transform: none !important;
                 padding: 0 !important;
+                background: transparent !important;
+                display: block !important;
               }
-              .mobilePreviewContent .card {
-                box-shadow: none !important;
-                border: none !important;
+              .mobilePreviewContent .a4Sheet {
+                margin: 0 !important;
+                border: 1px solid #ccc !important;
               }
             `}</style>
             <div 
               className="mobilePreviewContent"
               style={{
-                transform: `scale(${(window.innerWidth - 10) /450})`,
+                transform: `scale(${(window.innerWidth - 20) / 794})`,
                 transformOrigin: 'top left',
+                width: 794,
               }}
             >
               <A4Quote
