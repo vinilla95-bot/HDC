@@ -244,6 +244,10 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   const [bizcards, setBizcards] = useState<any[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState("");
 
+  // 모바일 전체화면 미리보기
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   // 이미지 URL을 base64로 변환
   const imageUrlToBase64 = async (url: string): Promise<string> => {
     try {
@@ -1156,12 +1160,32 @@ const bizcardName = selectedBizcard?.name || "";
           </div>
 
           <div className="content">
-            <div className="previewWrap">
+            <div 
+              className="previewWrap"
+              onClick={() => { if (isMobile && current) setMobilePreviewOpen(true); }}
+              style={{ cursor: isMobile ? 'pointer' : 'default' }}
+            >
               <div
                 className="previewInner"
                 id="quotePreview"
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
               />
+              {isMobile && current && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 10,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  fontSize: 11,
+                  pointerEvents: 'none'
+                }}>
+                  탭하여 크게 보기
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1809,6 +1833,98 @@ const bizcardName = selectedBizcard?.name || "";
         </div>
       )}
 
+      {/* 모바일 전체화면 미리보기 */}
+      {mobilePreviewOpen && (
+        <div 
+          className="mobilePreviewModal"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: '#fff',
+            zIndex: 10000,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid #eee',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#fff',
+          }}>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
+            <button 
+              onClick={() => setMobilePreviewOpen(false)}
+              style={{
+                padding: '8px 16px',
+                background: '#111',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              닫기
+            </button>
+          </div>
+          <div style={{
+            flex: 1,
+            overflow: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            background: '#f5f6f8',
+          }}>
+            <div 
+              style={{
+                transform: 'scale(0.48)',
+                transformOrigin: 'top center',
+                padding: '10px 0',
+              }}
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
+          </div>
+          <div style={{
+            padding: '10px 16px',
+            borderTop: '1px solid #eee',
+            display: 'flex',
+            gap: 8,
+            background: '#fff',
+          }}>
+            <button 
+              onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                background: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              JPG 저장
+            </button>
+            <button 
+              onClick={() => { setMobilePreviewOpen(false); openSendModal(); }}
+              style={{
+                flex: 1,
+                padding: '12px',
+                background: '#111',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              메일 전송
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="toast" ref={toastRef} />
     </div>
   );
@@ -2051,14 +2167,12 @@ const css = `
       gap: 8px !important;
     }
 
-
-    
     .panel {
-      max-height: 280px !important;
+      max-height: 200px !important;
     }
     
     .list {
-      max-height: 180px !important;
+      max-height: 120px !important;
       overflow-y: auto !important;
     }
     
@@ -2068,27 +2182,33 @@ const css = `
     
     .actions {
       padding: 8px !important;
-      gap: 4px !important;
+      gap: 6px !important;
       justify-content: center !important;
+      flex-wrap: wrap !important;
     }
     
     .actions button {
-      font-size: 9px !important;
-      padding: 6px 6px !important;
-      flex: 0 0 auto !important;
+      font-size: 11px !important;
+      padding: 10px 12px !important;
+      flex: 1 1 auto !important;
+      min-width: 70px !important;
     }
     
     .previewWrap {
       overflow: hidden !important;
       position: relative !important;
-      min-height: 520px !important;
+      min-height: 300px !important;
+      max-height: 400px !important;
+      cursor: pointer !important;
     }
     
     .previewInner {
-      transform: scale(0.42) !important;
-      transform-origin: top left !important;
-      width: 238% !important;
+      transform: scale(0.38) !important;
+      transform-origin: top center !important;
+      width: 100% !important;
       padding: 0 !important;
+      display: flex !important;
+      justify-content: center !important;
     }
     
     .previewInner > div {
@@ -2099,7 +2219,7 @@ const css = `
     
     .previewInner > div > div {
       display: block !important;
-      transform-origin: top left !important;
+      transform-origin: top center !important;
       margin: 0 !important;
     }
     
@@ -2122,7 +2242,7 @@ const css = `
     
     .search input {
       font-size: 14px !important;
-      padding: 8px 10px !important;
+      padding: 10px !important;
     }
     
     .item .mid {
@@ -2136,21 +2256,25 @@ const css = `
 
   @media (max-width: 400px) {
     .previewInner {
-      transform: scale(0.35) !important;
-      width: 285% !important;
+      transform: scale(0.32) !important;
     }
     
     .previewWrap {
-      min-height: 450px !important;
+      min-height: 280px !important;
+      max-height: 350px !important;
     }
     
     .actions button {
-      font-size: 8px !important;
-      padding: 5px 4px !important;
+      font-size: 10px !important;
+      padding: 8px 10px !important;
     }
     
     .panel {
-      max-height: 220px !important;
+      max-height: 180px !important;
+    }
+
+    .list {
+      max-height: 100px !important;
     }
   }
 `;
