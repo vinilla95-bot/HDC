@@ -399,8 +399,8 @@ const bizcardName = selectedBizcard?.name || "";
     const tbodyHtml = itemRows.join('');
 
     const fullHtml = `
-      <div class="quoteWrapper" style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">
-        <div id="a4SheetCapture" style="display:block;width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
+      <div class="a4Wrap">
+        <div class="a4Sheet" id="a4SheetCapture">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
               <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:160px;height:140px;" />
@@ -1980,158 +1980,66 @@ const css = `
 
  @media print{
   @page {
-    size: A4 portrait;
-    margin: 3mm;
+    size: A4;
+    margin: 0;
   }
-  
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  
   html, body {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    background: #fff !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
-  
-  .app { 
-    display: block !important; 
-    grid-template-columns: 1fr !important;
-    height: auto !important;
-    padding: 0 !important;
-    width: 100% !important;
-    gap: 0 !important;
-    background: #fff !important;
-  }
-  
-  .panel { 
-    display: none !important; 
-    width: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    visibility: hidden !important;
-    position: absolute !important;
-    left: -9999px !important;
-  }
+  .panel { display: none !important; }
   .actions { display: none !important; }
-  button { display: none !important; }
+  .btn, button { display: none !important; }
   .toast { display: none !important; }
   .modal { display: none !important; }
-  .hdr { display: none !important; }
-  .search { display: none !important; }
-  .list { display: none !important; }
-  
-  .quoteWrapper {
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #fff !important;
-    width: 100% !important;
-    min-height: auto !important;
-    height: auto !important;
-  }
-  
-  .right { 
+  .app { 
     display: block !important; 
-    height: auto !important;
-    width: 100% !important;
-    gap: 0 !important;
-  }
-  
-  .content {
-    display: block !important;
-    height: auto !important;
-    flex: none !important;
-    width: 100% !important;
-  }
-  
-  .previewWrap { 
-    border: none !important; 
-    overflow: visible !important;
-    height: auto !important;
-    width: 100% !important;
-    background: #fff !important;
-    min-height: auto !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  .previewInner { 
+    margin: 0 !important; 
     padding: 0 !important; 
-    transform: none !important; 
-    -webkit-transform: none !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: auto !important;
-    margin: 0 !important;
   }
-  
-  .a4Sheet,
-  .a4Wrap {
-    min-height: auto !important;
-    height: auto !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-    background: #fff !important;
+  .right { 
+    margin: 0 !important; 
+    padding: 0 !important; 
   }
-  
-  .previewInner > div,
-  .previewInner > div > div,
-  .previewInner > div > div > div {
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #fff !important;
-    width: 100% !important;
-    transform: none !important;
-    -webkit-transform: none !important;
-    min-height: auto !important;
-    height: auto !important;
+  .content { 
+    margin: 0 !important; 
+    padding: 0 !important; 
   }
-  
-  #a4SheetCapture {
-    display: block !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-height: auto !important;
-    height: auto !important;
+  .previewWrap { 
+    margin: 0 !important; 
+    padding: 0 !important; 
     border: none !important;
-    padding: 5mm !important;
-    margin: 0 !important;
-    box-shadow: none !important;
+  }
+  .previewInner { 
+    margin: 0 !important; 
+    padding: 0 !important; 
     transform: none !important;
-    -webkit-transform: none !important;
+    width: auto !important;
+    min-height: auto !important;
   }
-  
-  #a4SheetCapture table {
-    width: 100% !important;
-    display: table !important;
-    page-break-inside: avoid !important;
+  .a4Wrap { 
+    background: #fff; 
+    padding: 0;
+    margin: 0;
+    zoom: 1;
+    overflow: hidden;
+    transform: none !important;
   }
-  
-  #a4SheetCapture table th,
-  #a4SheetCapture table td {
-    font-size: 12px !important;
-    padding: 5px 7px !important;
+  .a4Sheet { 
+    border: none; 
+    width: 200mm;
+    min-height: auto;
+    height: auto;
+    padding: 0mm;
+    margin: 0;
+    box-shadow: none;
+    overflow: hidden;
+    transform: none !important;
   }
-  
-  #a4SheetCapture img {
-    max-width: 140px !important;
-    height: auto !important;
-  }
-
-  div[style*="display:flex"][style*="justify-content:center"] {
-    display: block !important;
-    padding: 0 !important;
-  }
-
-  div[style*="display: flex"] {
-    display: block !important;
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 
