@@ -1,4 +1,4 @@
-// src/App.tsx
+/// src/App.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
@@ -428,9 +428,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         }
         quoteId = newId;
       }
-const downloadJpg = async () => {
 
-      
       const previewEl = document.getElementById("quotePreviewApp");
       const html = previewEl ? previewEl.innerHTML : "";
       
@@ -452,67 +450,46 @@ const downloadJpg = async () => {
   };
 
   const downloadJpg = async () => {
-  const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
-  if (!sheet) {
-    alert("캡처 대상을 찾을 수 없습니다.");
-    return;
-  }
-
-  setStatusMsg("JPG 생성 중...");
-
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const a4Wrap = document.querySelector("#quotePreviewApp .a4Wrap") as HTMLElement;
-
-  // 모바일: 캡처 전 transform 제거
-  if (isMobile && a4Wrap) {
-    a4Wrap.style.cssText = "transform: none !important; width: auto !important;";
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  try {
-    const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `QUOTE_${currentQuoteId || Date.now()}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    setStatusMsg("다운로드 완료");
-    setTimeout(() => setStatusMsg(""), 2000);
-  } catch (e: any) {
-    setStatusMsg("JPG 생성 실패");
-    alert("JPG 생성 실패: " + (e?.message || String(e)));
-  } finally {
-    // 모바일: 원래대로 복원
-    if (isMobile && a4Wrap) {
-      a4Wrap.style.cssText = "";
+    const sheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
+    if (!sheet) {
+      alert("캡처 대상을 찾을 수 없습니다.");
+      return;
     }
-  }
-};
-      
-      const previewEl = document.getElementById("quotePreviewApp");
-      const html = previewEl ? previewEl.innerHTML : "";
-      
-      const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
-      
-      setSendStatus("메일 전송 중...");
-      await sendQuoteEmailApi(quoteId, form.email, html, bizcardImageUrl);
-      
-      setSendStatus("전송 완료!");
-      alert("견적서가 성공적으로 전송되었습니다.");
-      
-      setTimeout(() => setSendStatus(""), 2000);
+
+    setStatusMsg("JPG 생성 중...");
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const a4Wrap = document.querySelector("#quotePreviewApp .a4Wrap") as HTMLElement;
+
+    // 모바일: 캡처 전 transform 제거
+    if (isMobile && a4Wrap) {
+      a4Wrap.style.cssText = "transform: none !important; width: auto !important;";
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    try {
+      const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `QUOTE_${currentQuoteId || Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setStatusMsg("다운로드 완료");
+      setTimeout(() => setStatusMsg(""), 2000);
     } catch (e: any) {
-      setSendStatus("전송 실패");
-      alert("전송 실패: " + (e?.message || String(e)));
-      console.error("handleSend error:", e);
+      setStatusMsg("JPG 생성 실패");
+      alert("JPG 생성 실패: " + (e?.message || String(e)));
+    } finally {
+      // 모바일: 원래대로 복원
+      if (isMobile && a4Wrap) {
+        a4Wrap.style.cssText = "";
+      }
     }
   };
-
 
   const MIN_ROWS = 12;
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
@@ -1266,34 +1243,32 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-
-  
-  #quotePreviewApp .card {
-    overflow: hidden !important;
-    min-height: 520px !important;
+  @media (min-width: 1200px) {
+    #quotePreviewApp .card {
+      overflow: hidden !important;
+      min-height: 520px !important;
+    }
   }
-}
 
-
-  
-  #quotePreviewApp .card {
-    min-height: 450px !important;
+  @media (min-width: 769px) and (max-width: 1199px) {
+    #quotePreviewApp .card {
+      min-height: 450px !important;
+    }
   }
-}
-@media (max-width: 768px) {
-  .a4Wrap {
-    transform: scale(0.42) !important;
-    transform-origin: top left !important;
-    padding: 0 !important;
-  }
-}
 
-@media (max-width: 400px) {
-  .a4Wrap {
-    transform: scale(0.35) !important;
+  @media (max-width: 768px) {
+    .a4Wrap {
+      transform: scale(0.42) !important;
+      transform-origin: top left !important;
+      padding: 0 !important;
+    }
   }
-}
 
+  @media (max-width: 400px) {
+    .a4Wrap {
+      transform: scale(0.35) !important;
+    }
+  }
 
   @media print{
     @page {
