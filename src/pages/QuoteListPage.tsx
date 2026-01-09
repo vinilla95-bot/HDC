@@ -1980,15 +1980,21 @@ const css = `
 
  @media print{
   @page {
-    size: A4;
-    margin: 0;
+    size: A4 portrait;
+    margin: 5mm;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   
   .app { 
@@ -2004,11 +2010,15 @@ const css = `
   button { display: none !important; }
   .toast { display: none !important; }
   .modal { display: none !important; }
+  .hdr { display: none !important; }
+  .search { display: none !important; }
+  .list { display: none !important; }
   
   .right { 
     display: block !important; 
     height: auto !important;
     width: 100% !important;
+    gap: 0 !important;
   }
   
   .content {
@@ -2023,50 +2033,68 @@ const css = `
     overflow: visible !important;
     height: auto !important;
     width: 100% !important;
+    background: #fff !important;
   }
   
   .previewInner { 
     padding: 0 !important; 
     transform: none !important; 
+    -webkit-transform: none !important;
     width: 100% !important;
     height: auto !important;
     min-height: auto !important;
   }
   
-  .previewInner > div {
+  .previewInner > div,
+  .previewInner > div > div,
+  .previewInner > div > div > div {
     display: block !important;
     padding: 0 !important;
     margin: 0 !important;
     background: #fff !important;
     width: 100% !important;
-    justify-content: flex-start !important;
+    transform: none !important;
+    -webkit-transform: none !important;
   }
   
   #a4SheetCapture {
+    display: block !important;
     width: 100% !important;
-    max-width: 200mm !important;
+    max-width: none !important;
     min-height: auto !important;
     height: auto !important;
     border: none !important;
-    padding: 10mm !important;
-    margin: 0 auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
     box-shadow: none !important;
+    transform: none !important;
+    -webkit-transform: none !important;
   }
   
   #a4SheetCapture table {
     width: 100% !important;
     display: table !important;
+    page-break-inside: avoid !important;
   }
   
   #a4SheetCapture table th,
   #a4SheetCapture table td {
-    font-size: 11px !important;
-    padding: 4px 6px !important;
+    font-size: 10px !important;
+    padding: 3px 5px !important;
+  }
+  
+  #a4SheetCapture img {
+    max-width: 100px !important;
+    height: auto !important;
   }
 
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  div[style*="display:flex"][style*="justify-content:center"] {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  div[style*="display: flex"] {
+    display: block !important;
   }
 }
 
