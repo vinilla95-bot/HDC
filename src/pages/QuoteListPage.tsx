@@ -1995,17 +1995,28 @@ const css = `
     width: 100% !important;
     height: auto !important;
     overflow: visible !important;
+    background: #fff !important;
   }
   
   .app { 
     display: block !important; 
+    grid-template-columns: 1fr !important;
     height: auto !important;
     padding: 0 !important;
     width: 100% !important;
-    grid-template-columns: none !important;
+    gap: 0 !important;
+    background: #fff !important;
   }
   
-  .panel { display: none !important; }
+  .panel { 
+    display: none !important; 
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
   .actions { display: none !important; }
   button { display: none !important; }
   .toast { display: none !important; }
