@@ -52,8 +52,10 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
     padding: 8px !important;
   }
 
+  /* 상담 입력 카드 */
   .wrap > .card:first-child {
     font-size: 12px !important;
+    padding: 12px !important;
   }
 
   .wrap > .card:first-child .row {
@@ -63,28 +65,32 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
   }
 
   .wrap > .card:first-child .row label {
-    min-width: 55px !important;
+    min-width: 50px !important;
     font-size: 11px !important;
   }
 
   .wrap > .card:first-child .row input,
   .wrap > .card:first-child .row select {
     font-size: 14px !important;
-    padding: 8px !important;
+    padding: 10px 8px !important;
   }
 
   .wrap > .card:first-child .title {
     font-size: 14px !important;
+    margin-bottom: 10px !important;
   }
 
   .wrap > .card:first-child .actions {
     flex-wrap: wrap !important;
-    gap: 4px !important;
+    gap: 6px !important;
+    margin-top: 12px !important;
   }
 
   .wrap > .card:first-child .actions .btn {
-    font-size: 11px !important;
-    padding: 6px 8px !important;
+    font-size: 12px !important;
+    padding: 10px 12px !important;
+    flex: 1 1 auto !important;
+    min-width: 80px !important;
   }
 
   .wrap > .card:first-child table {
@@ -92,20 +98,32 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
   }
 
   .wrap > .card:first-child table input {
-    font-size: 11px !important;
-    padding: 4px !important;
+    font-size: 12px !important;
+    padding: 6px !important;
   }
 
-  /* 견적서 카드 중앙 정렬 */
+  .wrap > .card:first-child table th,
+  .wrap > .card:first-child table td {
+    padding: 6px 4px !important;
+  }
+
+  /* 견적서 미리보기 카드 */
+  #quotePreviewApp {
+    min-height: 300px !important;
+    max-height: 400px !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
   #quotePreviewApp > .card {
     display: flex !important;
     justify-content: center !important;
     overflow: hidden !important;
-    min-height: 520px !important;
+    padding: 8px !important;
   }
 
   #quotePreviewApp .a4Wrap {
-    transform: scale(0.42) !important;
+    transform: scale(0.38) !important;
     transform-origin: top center !important;
     padding: 0 !important;
   }
@@ -113,11 +131,17 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
 
 @media (max-width: 400px) {
   #quotePreviewApp .a4Wrap {
-    transform: scale(0.35) !important;
+    transform: scale(0.32) !important;
   }
 
-  #quotePreviewApp > .card {
-    min-height: 450px !important;
+  #quotePreviewApp {
+    min-height: 280px !important;
+    max-height: 350px !important;
+  }
+
+  .wrap > .card:first-child .actions .btn {
+    font-size: 11px !important;
+    padding: 8px 10px !important;
   }
 }
 
