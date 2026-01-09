@@ -1892,12 +1892,12 @@ const bizcardName = selectedBizcard?.name || "";
             display: 'flex',
             gap: 8,
             background: '#fff',
-            flexWrap: 'wrap',
+            position: 'relative',
           }}>
             <button 
               onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
               style={{
-                flex: '1 1 45%',
+                flex: 1,
                 padding: '12px',
                 background: '#fff',
                 border: '1px solid #ddd',
@@ -1908,32 +1908,17 @@ const bizcardName = selectedBizcard?.name || "";
             >
               JPG 저장
             </button>
-            <button 
-              onClick={() => { setMobilePreviewOpen(false); openSendModal(); }}
-              style={{
-                flex: '1 1 45%',
-                padding: '12px',
-                background: '#111',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 8,
-                fontWeight: 700,
-                fontSize: 13,
-              }}
-            >
-              메일 전송
-            </button>
-            {current?.customer_phone && (
+            <div style={{ flex: 1, position: 'relative' }}>
               <button 
-                onClick={() => {
-                  const phone = current.customer_phone.replace(/[^0-9]/g, '');
-                  const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
-                  window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const menu = document.getElementById('sendMenu');
+                  if (menu) menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
                 }}
                 style={{
-                  flex: '1 1 100%',
+                  width: '100%',
                   padding: '12px',
-                  background: '#2563eb',
+                  background: '#111',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 8,
@@ -1941,9 +1926,76 @@ const bizcardName = selectedBizcard?.name || "";
                   fontSize: 13,
                 }}
               >
-                📱 문자 전송 ({current.customer_phone})
+                전송 ▼
               </button>
-            )}
+              <div 
+                id="sendMenu"
+                style={{
+                  display: 'none',
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  right: 0,
+                  marginBottom: 8,
+                  background: '#fff',
+                  borderRadius: 10,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                {current?.customer_email && (
+                  <button
+                    onClick={() => { 
+                      document.getElementById('sendMenu')!.style.display = 'none';
+                      setMobilePreviewOpen(false); 
+                      openSendModal(); 
+                    }}
+                    style={{
+                      padding: '14px 16px',
+                      background: '#fff',
+                      border: 'none',
+                      borderBottom: '1px solid #eee',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✉️ 이메일 전송
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{current.customer_email}</div>
+                  </button>
+                )}
+                {current?.customer_phone && (
+                  <button
+                    onClick={() => {
+                      document.getElementById('sendMenu')!.style.display = 'none';
+                      const phone = current.customer_phone.replace(/[^0-9]/g, '');
+                      const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                      window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                    }}
+                    style={{
+                      padding: '14px 16px',
+                      background: '#fff',
+                      border: 'none',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📱 문자 전송
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{current.customer_phone}</div>
+                  </button>
+                )}
+                {!current?.customer_email && !current?.customer_phone && (
+                  <div style={{ padding: '14px 16px', color: '#888', fontSize: 13 }}>
+                    이메일 또는 전화번호를 입력해주세요
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
