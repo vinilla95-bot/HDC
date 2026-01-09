@@ -916,12 +916,11 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             overflow: 'auto',
             WebkitOverflowScrolling: 'touch',
             background: '#f5f6f8',
-            padding: '10px',
+            padding: '5px',
           }}>
             <div style={{
-              transform: `scale(${Math.min(1, (window.innerWidth - 20) / 900)})`,
+              transform: `scale(${(window.innerWidth - 10) / 650})`,
               transformOrigin: 'top left',
-              width: 900,
             }}>
               <A4Quote
                 form={form}
