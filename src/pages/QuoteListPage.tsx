@@ -399,12 +399,11 @@ const bizcardName = selectedBizcard?.name || "";
     const tbodyHtml = itemRows.join('');
 
     const fullHtml = `
-      <div style="display:flex;justify-content:center;padding:14px 0;background:#fff">
-      <div id="a4SheetCapture" style="width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
-      <div id="a4PrintWrap" style="display:flex;justify-content:center;padding:14px 0;background:#fff">
+      <div style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;">
+        <div id="a4SheetCapture" style="display:block;width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
-              <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:110px;height:auto;" />
+              <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:160px;height:140px;" />
             </div>
 
             <div style="flex:1;text-align:center;font-size:34px;font-weight:900;letter-spacing:6px;">견 적 서</div>
@@ -412,7 +411,7 @@ const bizcardName = selectedBizcard?.name || "";
             <div style="width:140px;"></div>
           </div>
 
-          <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+          <table style="display:table;width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
             <colgroup>
               <col style="width: 15%" />
               <col style="width: 18%" />
@@ -475,7 +474,7 @@ const bizcardName = selectedBizcard?.name || "";
             </tbody>
           </table>
 
-          <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+          <table style="display:table;width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
             <colgroup>
               <col style="width: 5%" />
               <col style="width: 35%" />
@@ -505,7 +504,7 @@ const bizcardName = selectedBizcard?.name || "";
             </tbody>
           </table>
 
-          <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+          <table style="display:table;width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
             <colgroup>
               <col style="width: 18%" />
               <col style="width: auto" />
@@ -2106,11 +2105,13 @@ const css = `
     }
     
     .previewInner > div {
+      display: block !important;
       padding: 0 !important;
       background: #f5f6f8 !important;
     }
     
     .previewInner > div > div {
+      display: block !important;
       transform-origin: top left !important;
       margin: 0 !important;
     }
