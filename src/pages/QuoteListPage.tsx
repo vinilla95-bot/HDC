@@ -2078,8 +2078,9 @@ const css = `
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
-    transform: none !important;
-    -webkit-transform: none !important;
+    transform: scale(1.15) !important;
+    -webkit-transform: scale(1.15) !important;
+    transform-origin: top left !important;
   }
   
   #a4SheetCapture table {
@@ -2090,12 +2091,12 @@ const css = `
   
   #a4SheetCapture table th,
   #a4SheetCapture table td {
-    font-size: 10px !important;
-    padding: 3px 5px !important;
+    font-size: 11px !important;
+    padding: 4px 6px !important;
   }
   
   #a4SheetCapture img {
-    max-width: 100px !important;
+    max-width: 120px !important;
     height: auto !important;
   }
 
