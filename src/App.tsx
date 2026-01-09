@@ -24,8 +24,8 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   return res as T;
 }
 
-async function sendQuoteEmailApi(quoteId: string, to: string, html?: string, bizcardImageUrl?: string) {
-  await gasCall("listSendQuoteEmail", [quoteId, to, html, bizcardImageUrl]);
+async function sendQuoteEmailApi(quoteId: string, to: string, bizcardImageUrl?: string) {
+  await gasCall("listSendQuoteEmail", [quoteId, to, "", bizcardImageUrl]);
 }
 
 type Bizcard = { id: string; name: string; image_url: string };
@@ -433,14 +433,11 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         quoteId = newId;
       }
 
-      const previewEl = document.getElementById("quotePreviewApp");
-      const html = previewEl ? previewEl.innerHTML : "";
-      
       const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
       const bizcardImageUrl = selectedBizcard?.image_url || "";
       
       setSendStatus("메일 전송 중...");
-      await sendQuoteEmailApi(quoteId, form.email, html, bizcardImageUrl);
+      await sendQuoteEmailApi(quoteId, form.email, bizcardImageUrl);
       
       setSendStatus("전송 완료!");
       alert("견적서가 성공적으로 전송되었습니다.");
