@@ -941,11 +941,12 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             display: 'flex',
             gap: 8,
             background: '#fff',
+            flexWrap: 'wrap',
           }}>
             <button 
               onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
               style={{
-                flex: 1,
+                flex: '1 1 45%',
                 padding: '12px',
                 background: '#fff',
                 border: '1px solid #ddd',
@@ -959,7 +960,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             <button 
               onClick={() => { setMobilePreviewOpen(false); handleSend(); }}
               style={{
-                flex: 1,
+                flex: '1 1 45%',
                 padding: '12px',
                 background: '#111',
                 color: '#fff',
@@ -969,8 +970,29 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 fontSize: 13,
               }}
             >
-              저장/전송
+              전송
             </button>
+            {form.phone && (
+              <button 
+                onClick={() => {
+                  const phone = form.phone.replace(/[^0-9]/g, '');
+                  const msg = `[현대컨테이너] ${form.name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                  window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                }}
+                style={{
+                  flex: '1 1 100%',
+                  padding: '12px',
+                  background: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 13,
+                }}
+              >
+                📱 문자 전송 ({form.phone})
+              </button>
+            )}
           </div>
         </div>
       )}
