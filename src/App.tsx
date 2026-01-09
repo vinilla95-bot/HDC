@@ -1020,6 +1020,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                   <button
                     onClick={async () => {
                       document.getElementById('sendMenuApp')!.style.display = 'none';
+                      setMobilePreviewOpen(false);
                       
                       // 견적서 이미지 생성
                       const sheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
@@ -1029,7 +1030,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                       }
                       
                       try {
-                        setStatusMsg('이미지 생성 중...');
+                        setStatusMsg('이미지 저장 중...');
                         const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: '#ffffff' });
                         
                         const blob = await new Promise<Blob>((resolve) => 
@@ -1039,32 +1040,43 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         
                         const msg = `[현대컨테이너] ${form.name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
                         
-                        // Web Share API 지원 확인
-                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                          await navigator.share({
-                            files: [file],
-                            title: '견적서',
-                            text: msg,
-                          });
-                          setStatusMsg('');
-                        } else {
-                          // 미지원 시 이미지 다운로드 후 문자앱 열기
-                          const a = document.createElement('a');
-                          a.href = URL.createObjectURL(blob);
-                          a.download = file.name;
-                          a.click();
-                          
+                        // Web Share API 시도
+                        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                          try {
+                            await navigator.share({
+                              files: [file],
+                              title: '견적서',
+                              text: msg,
+                            });
+                            setStatusMsg('');
+                            return;
+                          } catch (e) {
+                            // 공유 취소 또는 실패 시 아래 방법으로
+                          }
+                        }
+                        
+                        // 이미지 다운로드
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = file.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        
+                        // 잠시 대기 후 문자앱 열기
+                        setTimeout(() => {
                           const phone = form.phone.replace(/[^0-9]/g, '');
                           window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
-                          setStatusMsg('이미지가 저장되었습니다. 문자에서 첨부해주세요.');
-                        }
+                        }, 500);
+                        
+                        setStatusMsg('📷 이미지 저장됨! 문자에서 갤러리의 이미지를 첨부하세요.');
+                        setTimeout(() => setStatusMsg(''), 5000);
+                        
                       } catch (e) {
                         console.error(e);
                         setStatusMsg('');
-                        alert('공유 실패: ' + (e as any)?.message);
+                        alert('이미지 생성 실패: ' + (e as any)?.message);
                       }
-                      
-                      setMobilePreviewOpen(false);
                     }}
                     style={{
                       padding: '14px 16px',
@@ -1076,8 +1088,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                       cursor: 'pointer',
                     }}
                   >
-                    📱 문자/카톡 공유
-                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone} (이미지 첨부)</div>
+                    📱 문자 전송
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone} (이미지 자동저장)</div>
                   </button>
                 )}
                 {!form.email && !form.phone && (
