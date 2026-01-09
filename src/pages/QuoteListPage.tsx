@@ -177,8 +177,8 @@ async function previewStatementPdfUrl(quoteId: string) {
   return { url, fileName: out?.fileName || "거래명세서 미리보기" };
 }
 
-async function sendQuoteEmailApi(quoteId: string, to: string, html?: string, bizcardImageUrl?: string) {
-  await gasCall("listSendQuoteEmail", [quoteId, to, html, bizcardImageUrl]);
+async function sendQuoteEmailApi(quoteId: string, to: string, bizcardImageUrl?: string) {
+  await gasCall("listSendQuoteEmail", [quoteId, to, "", bizcardImageUrl]);
 }
 
 async function sendStatementEmailApi(quoteId: string, to: string, bizcardImageUrl?: string) {
@@ -732,20 +732,13 @@ const bizcardName = selectedBizcard?.name || "";
     }
 
     try {
-      setSendStatus("PDF 준비 중...");
-
-      // ✅ 로고 이미지를 base64로 변환
-      const logoUrl = "https://i.postimg.cc/VvsGvxFP/logo1.jpg";
-      const logoBase64 = await imageUrlToBase64(logoUrl);
-      const processedHtml = previewHtml.replace(
-        new RegExp(logoUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), 
-        logoBase64
-      );
-
       setSendStatus("메일 전송 중...");
       const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
       const bizcardImageUrl = selectedBizcard?.image_url || "";
-      await sendQuoteEmailApi(quoteId, to, processedHtml, bizcardImageUrl);
+      
+      // HTML 없이 quote_id만 전송 (GAS에서 HTML 생성)
+      await sendQuoteEmailApi(quoteId, to, bizcardImageUrl);
+      
       setSendStatus("전송 완료!");
       toast("견적서 메일 전송 완료");
       setSendOpen(false);
