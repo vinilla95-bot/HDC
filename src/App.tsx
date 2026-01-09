@@ -1058,40 +1058,25 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         const blob = await new Promise<Blob>((resolve) => 
                           canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
                         );
-                        const file = new File([blob], `견적서_${form.name || 'quote'}.jpg`, { type: 'image/jpeg' });
                         
                         const msg = `[현대컨테이너] ${form.name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                        const phone = form.phone.replace(/[^0-9]/g, '');
                         
-                        // Web Share API 시도
-                        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-                          try {
-                            await navigator.share({
-                              files: [file],
-                              title: '견적서',
-                              text: msg,
-                            });
-                            setStatusMsg('');
-                            return;
-                          } catch (e) {
-                            // 공유 취소 또는 실패 시 아래 방법으로
-                          }
-                        }
-                        
-                        // 이미지 다운로드
+                        // 이미지 직접 다운로드 (Web Share API 사용 안 함)
                         const a = document.createElement('a');
                         a.href = URL.createObjectURL(blob);
-                        a.download = file.name;
+                        a.download = `견적서_${form.name || 'quote'}.jpg`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
+                        URL.revokeObjectURL(a.href);
                         
                         // 잠시 대기 후 문자앱 열기 (iOS/Android 호환)
                         setTimeout(() => {
-                          const phone = form.phone.replace(/[^0-9]/g, '');
                           const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const separator = isIOS ? '&' : '?';
                           window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        }, 500);
+                        }, 800);
                         
                         setStatusMsg('📷 이미지 저장됨! 문자에서 갤러리의 이미지를 첨부하세요.');
                         setTimeout(() => setStatusMsg(''), 5000);
@@ -1113,7 +1098,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                     }}
                   >
                     📱 문자 전송
-                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone} (이미지 자동저장)</div>
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
                   </button>
                 )}
                 {!form.email && !form.phone && (
@@ -1123,6 +1108,104 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SMS 이미지 저장 모달 */}
+      {smsImageModal.open && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.9)',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: '1px solid #333',
+          }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>📷 이미지 저장</span>
+            <button
+              onClick={() => setSmsImageModal({ open: false, imageUrl: '', phone: '', msg: '' })}
+              style={{
+                background: '#333',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '8px 14px',
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              닫기
+            </button>
+          </div>
+          
+          <div style={{
+            flex: 1,
+            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '16px',
+          }}>
+            <div style={{
+              background: '#222',
+              borderRadius: 10,
+              padding: '16px',
+              marginBottom: 16,
+              textAlign: 'center',
+            }}>
+              <div style={{ color: '#ffd700', fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
+                👆 이미지를 길게 눌러서 저장하세요
+              </div>
+              <div style={{ color: '#aaa', fontSize: 12 }}>
+                저장 후 아래 '문자 보내기' 버튼을 눌러주세요
+              </div>
+            </div>
+            
+            <img 
+              src={smsImageModal.imageUrl} 
+              alt="견적서"
+              style={{
+                maxWidth: '100%',
+                maxHeight: 'calc(100vh - 250px)',
+                borderRadius: 8,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              }}
+            />
+          </div>
+          
+          <div style={{
+            padding: '12px 16px',
+            borderTop: '1px solid #333',
+            display: 'flex',
+            gap: 10,
+          }}>
+            <button
+              onClick={() => {
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                const separator = isIOS ? '&' : '?';
+                window.location.href = `sms:${smsImageModal.phone}${separator}body=${encodeURIComponent(smsImageModal.msg)}`;
+              }}
+              style={{
+                flex: 1,
+                padding: '14px',
+                background: '#007AFF',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: 15,
+              }}
+            >
+              📱 문자 보내기
+            </button>
           </div>
         </div>
       )}
@@ -1521,48 +1604,48 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-
-  
-  #quotePreviewApp .card {
-    overflow: hidden !important;
-    min-height: 520px !important;
+  /* 모바일 견적서 미리보기 스케일 */
+  @media (max-width: 768px) {
+    .a4Wrap {
+      transform: scale(0.48) !important;
+      transform-origin: top center !important;
+      padding: 8px 0 !important;
+      margin: 0 auto !important;
+      display: flex !important;
+      justify-content: center !important;
+    }
+    #quotePreviewApp .card {
+      overflow: hidden !important;
+      min-height: 520px !important;
+    }
   }
-}
 
+  @media (max-width: 480px) {
+    .a4Wrap {
+      transform: scale(0.45) !important;
+    }
+    #quotePreviewApp .card {
+      min-height: 480px !important;
+    }
+  }
 
-  
-  #quotePreviewApp .card {
-    min-height: 450px !important;
+  @media (max-width: 400px) {
+    .a4Wrap {
+      transform: scale(0.42) !important;
+    }
+    #quotePreviewApp .card {
+      min-height: 450px !important;
+    }
   }
-}
-@media (max-width: 768px) {
-  .a4Wrap {
-    transform: scale(0.48) !important;
-    transform-origin: top center !important;
-    padding: 8px 0 !important;
-    margin: 0 auto !important;
-    display: flex !important;
-    justify-content: center !important;
-  }
-}
 
-@media (max-width: 480px) {
-  .a4Wrap {
-    transform: scale(0.42) !important;
+  @media (max-width: 360px) {
+    .a4Wrap {
+      transform: scale(0.38) !important;
+    }
+    #quotePreviewApp .card {
+      min-height: 420px !important;
+    }
   }
-}
-
-@media (max-width: 400px) {
-  .a4Wrap {
-    transform: scale(0.38) !important;
-  }
-}
-
-@media (max-width: 360px) {
-  .a4Wrap {
-    transform: scale(0.35) !important;
-  }
-}
 
 
   @media print{
