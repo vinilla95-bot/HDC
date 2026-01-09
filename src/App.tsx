@@ -931,7 +931,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             <div 
               className="mobilePreviewContent"
               style={{
-                transform: `scale(${(window.innerWidth - 10) / 794})`,
+                transform: `scale(${(window.innerWidth - 10) /450})`,
                 transformOrigin: 'top left',
               }}
             >
