@@ -918,10 +918,23 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             background: '#f5f6f8',
             padding: '5px',
           }}>
-            <div style={{
-              transform: `scale(${(window.innerWidth - 10) / 650})`,
-              transformOrigin: 'top left',
-            }}>
+            <style>{`
+              .mobilePreviewContent .a4Wrap {
+                transform: none !important;
+                padding: 0 !important;
+              }
+              .mobilePreviewContent .card {
+                box-shadow: none !important;
+                border: none !important;
+              }
+            `}</style>
+            <div 
+              className="mobilePreviewContent"
+              style={{
+                transform: `scale(${(window.innerWidth - 10) / 794})`,
+                transformOrigin: 'top left',
+              }}
+            >
               <A4Quote
                 form={form}
                 computedItems={computedItems}
