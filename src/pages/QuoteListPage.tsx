@@ -1892,11 +1892,12 @@ const bizcardName = selectedBizcard?.name || "";
             display: 'flex',
             gap: 8,
             background: '#fff',
+            flexWrap: 'wrap',
           }}>
             <button 
               onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
               style={{
-                flex: 1,
+                flex: '1 1 45%',
                 padding: '12px',
                 background: '#fff',
                 border: '1px solid #ddd',
@@ -1910,7 +1911,7 @@ const bizcardName = selectedBizcard?.name || "";
             <button 
               onClick={() => { setMobilePreviewOpen(false); openSendModal(); }}
               style={{
-                flex: 1,
+                flex: '1 1 45%',
                 padding: '12px',
                 background: '#111',
                 color: '#fff',
@@ -1922,6 +1923,27 @@ const bizcardName = selectedBizcard?.name || "";
             >
               메일 전송
             </button>
+            {current?.customer_phone && (
+              <button 
+                onClick={() => {
+                  const phone = current.customer_phone.replace(/[^0-9]/g, '');
+                  const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                  window.location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+                }}
+                style={{
+                  flex: '1 1 100%',
+                  padding: '12px',
+                  background: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 13,
+                }}
+              >
+                📱 문자 전송 ({current.customer_phone})
+              </button>
+            )}
           </div>
         </div>
       )}
