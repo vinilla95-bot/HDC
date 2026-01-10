@@ -1046,14 +1046,40 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                       
                       // 견적서 이미지 생성
                       const sheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
+                      const a4Wrap = document.querySelector('#quotePreviewApp .a4Wrap') as HTMLElement;
                       if (!sheet) {
                         alert('견적서를 찾을 수 없습니다.');
                         return;
                       }
                       
                       try {
-                        setStatusMsg('이미지 저장 중...');
-                        const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: '#ffffff' });
+                        setStatusMsg('이미지 생성 중...');
+                        
+                        // 캡처 전 transform 제거 + 원본 크기로 설정
+                        const originalWrapStyle = a4Wrap?.getAttribute('style') || '';
+                        const originalSheetStyle = sheet.getAttribute('style') || '';
+                        
+                        if (a4Wrap) {
+                          a4Wrap.style.cssText = 'transform: none !important; width: 800px !important; padding: 0 !important; background: #fff !important;';
+                        }
+                        sheet.style.cssText = originalSheetStyle + '; width: 800px !important; transform: none !important;';
+                        
+                        await new Promise(r => setTimeout(r, 500));
+                        
+                        const canvas = await html2canvas(sheet, { 
+                          scale: 2, 
+                          backgroundColor: '#ffffff',
+                          useCORS: true,
+                          allowTaint: true,
+                          width: 800,
+                          windowWidth: 800,
+                        });
+                        
+                        // 캡처 후 원래대로 복원
+                        if (a4Wrap) {
+                          a4Wrap.style.cssText = originalWrapStyle;
+                        }
+                        sheet.style.cssText = originalSheetStyle;
                         
                         const blob = await new Promise<Blob>((resolve) => 
                           canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
@@ -1062,7 +1088,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         const msg = `[현대컨테이너] ${form.name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
                         const phone = form.phone.replace(/[^0-9]/g, '');
                         
-                        // 이미지 직접 다운로드 (Web Share API 사용 안 함)
+                        // 이미지 다운로드
                         const a = document.createElement('a');
                         a.href = URL.createObjectURL(blob);
                         a.download = `견적서_${form.name || 'quote'}.jpg`;
@@ -1071,19 +1097,21 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         document.body.removeChild(a);
                         URL.revokeObjectURL(a.href);
                         
-                        // 잠시 대기 후 문자앱 열기 (iOS/Android 호환)
+                        setStatusMsg('📷 이미지 저장됨!');
+                        
+                        // 문자앱 자동 열기
                         setTimeout(() => {
                           const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const separator = isIOS ? '&' : '?';
                           window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        }, 800);
+                        }, 1000);
                         
-                        setStatusMsg('📷 이미지 저장됨! 문자에서 갤러리의 이미지를 첨부하세요.');
-                        setTimeout(() => setStatusMsg(''), 5000);
+                        setTimeout(() => setStatusMsg(''), 3000);
                         
                       } catch (e) {
                         console.error(e);
                         setStatusMsg('');
+                        if (a4Wrap) a4Wrap.style.cssText = '';
                         alert('이미지 생성 실패: ' + (e as any)?.message);
                       }
                     }}
