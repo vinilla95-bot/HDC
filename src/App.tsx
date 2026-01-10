@@ -848,59 +848,69 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
         {/* RIGHT - 삼성 인터넷 호환 미리보기 */}
         {isMobileDevice ? (
-          // 모바일: 인라인 스타일로 완전히 제어
-          <div 
-            id="quotePreviewApp"
-            onClick={() => setMobilePreviewOpen(true)}
-            style={{ 
-              cursor: 'pointer', 
-              position: 'relative',
-              height: getMobileHeight(),
-              overflow: 'hidden',
-              width: '100%',
-              background: '#f5f6f8',
-              borderRadius: 14,
-              border: '1px solid #e5e7eb',
-            }}
-          >
-            <div style={{
-              position: 'absolute',
-              bottom: 15,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'rgba(0,0,0,0.7)',
-              color: '#fff',
-              padding: '6px 12px',
-              borderRadius: 20,
-              fontSize: 11,
-              zIndex: 10,
-              pointerEvents: 'none'
-            }}>
-              탭하여 크게 보기
-            </div>
-            {/* 스케일 적용 컨테이너 */}
-            <div style={{
-              position: 'absolute',
-              top: 8,
-              left: '50%',
-              width: 800,
-              transform: `translateX(-50%) scale(${getMobileScale()})`,
-              transformOrigin: 'top center',
-            }}>
-              <A4Quote
-                form={form}
-                computedItems={computedItems}
-                blankRows={blankRows}
-                fmt={fmt}
-                supply_amount={supply_amount}
-                vat_amount={vat_amount}
-                total_amount={total_amount}
-                bizcardName={selectedBizcard?.name || ""}
-                noTransform={true}
-                noPadding={true}
-              />
-            </div>
-          </div>
+          // 모바일: 삼성 인터넷 호환
+          (() => {
+            const isSamsung = typeof navigator !== 'undefined' && navigator.userAgent.includes('SamsungBrowser');
+            const scale = getMobileScale();
+            const containerHeight = Math.round(1130 * scale);
+            
+            return (
+              <div 
+                id="quotePreviewApp"
+                onClick={() => setMobilePreviewOpen(true)}
+                style={{ 
+                  cursor: 'pointer', 
+                  position: 'relative',
+                  width: '100%',
+                  height: containerHeight,
+                  overflow: 'hidden',
+                  background: '#f5f6f8',
+                  borderRadius: 14,
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  bottom: 15,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  fontSize: 11,
+                  zIndex: 10,
+                  pointerEvents: 'none'
+                }}>
+                  탭하여 크게 보기
+                </div>
+                {/* 스케일 적용 컨테이너 - 삼성은 zoom 사용 */}
+                <div style={{
+                  position: 'absolute',
+                  top: 8,
+                  left: '50%',
+                  width: 800,
+                  marginLeft: -400,
+                  transformOrigin: 'top center',
+                  transform: isSamsung ? 'none' : `scale(${scale})`,
+                  zoom: isSamsung ? scale : undefined,
+                }}>
+                  <A4Quote
+                    form={form}
+                    computedItems={computedItems}
+                    blankRows={blankRows}
+                    fmt={fmt}
+                    supply_amount={supply_amount}
+                    vat_amount={vat_amount}
+                    total_amount={total_amount}
+                    bizcardName={selectedBizcard?.name || ""}
+                    noTransform={true}
+                    noPadding={true}
+                  />
+                </div>
+              </div>
+            );
+          })()
         ) : (
           // 데스크톱: 기존 방식
           <div id="quotePreviewApp">
@@ -962,30 +972,26 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 전체화면: A4 비율 유지 */}
+            {/* ✅ 삼성 인터넷 호환: zoom 사용 */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 800);
-              const scaledWidth = 800 * scale;
-              const scaledHeight = 1130 * scale; // A4 높이도 스케일 적용
               return (
                 <div 
                   style={{
-                    width: scaledWidth,
-                    height: scaledHeight,
+                    width: 800 * scale,
                     margin: '0 auto',
-                    overflow: 'hidden',
-                    position: 'relative',
                   }}
                 >
                   <div
                     style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
                       width: 800,
-                      height: 1130,
-                      transform: `scale(${scale})`,
                       transformOrigin: 'top left',
+                      transform: `scale(${scale})`,
+                      // 삼성 인터넷 폴백
+                      ...(navigator.userAgent.includes('SamsungBrowser') ? { 
+                        transform: 'none',
+                        zoom: scale 
+                      } : {})
                     }}
                   >
                     <A4Quote
