@@ -846,13 +846,12 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
           </div>
         </div>
 
-        {/* RIGHT - 삼성 인터넷 호환 미리보기 */}
+        {/* RIGHT - 모바일 미리보기 (zoom만 사용) */}
         {isMobileDevice ? (
-          // 모바일: 삼성 인터넷 호환
           (() => {
-            const isSamsung = typeof navigator !== 'undefined' && navigator.userAgent.includes('SamsungBrowser');
             const scale = getMobileScale();
-            const containerHeight = Math.round(1130 * scale);
+            const scaledWidth = Math.floor(800 * scale);
+            const scaledHeight = Math.floor(1130 * scale);
             
             return (
               <div 
@@ -860,9 +859,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 onClick={() => setMobilePreviewOpen(true)}
                 style={{ 
                   cursor: 'pointer', 
-                  position: 'relative',
-                  width: '100%',
-                  height: containerHeight,
+                  width: scaledWidth,
+                  height: scaledHeight,
+                  margin: '0 auto',
                   overflow: 'hidden',
                   background: '#f5f6f8',
                   borderRadius: 14,
@@ -884,16 +883,11 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 }}>
                   탭하여 크게 보기
                 </div>
-                {/* 스케일 적용 컨테이너 - 삼성은 zoom 사용 */}
+                {/* zoom만 사용 - 모든 브라우저 호환 */}
                 <div style={{
-                  position: 'absolute',
-                  top: 8,
-                  left: '50%',
                   width: 800,
-                  marginLeft: -400,
-                  transformOrigin: 'top center',
-                  transform: isSamsung ? 'none' : `scale(${scale})`,
-                  zoom: isSamsung ? scale : undefined,
+                  zoom: scale,
+                  WebkitTextSizeAdjust: '100%',
                 }}>
                   <A4Quote
                     form={form}
@@ -972,26 +966,25 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 삼성 인터넷 호환: zoom 사용 */}
+            {/* ✅ 전체화면: zoom만 사용 (모든 브라우저 호환) */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 800);
+              const scaledWidth = Math.floor(800 * scale);
+              const scaledHeight = Math.floor(1130 * scale);
               return (
                 <div 
                   style={{
-                    width: 800 * scale,
+                    width: scaledWidth,
+                    height: scaledHeight,
                     margin: '0 auto',
+                    overflow: 'hidden',
                   }}
                 >
                   <div
                     style={{
                       width: 800,
-                      transformOrigin: 'top left',
-                      transform: `scale(${scale})`,
-                      // 삼성 인터넷 폴백
-                      ...(navigator.userAgent.includes('SamsungBrowser') ? { 
-                        transform: 'none',
-                        zoom: scale 
-                      } : {})
+                      zoom: scale,
+                      WebkitTextSizeAdjust: '100%',
                     }}
                   >
                     <A4Quote
@@ -1154,17 +1147,15 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         
                         setStatusMsg('');
                         
-                        // 다운로드 팝업에서 다운로드 누르면 (focus 돌아오면) SMS로 이동
-                        const goToSms = () => {
-                          window.removeEventListener('focus', goToSms);
-                          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                          const separator = isIOS ? '&' : '?';
-                          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        };
-                        window.addEventListener('focus', goToSms);
+                        // ✅ 다운로드 시작 후 1.5초 뒤 SMS 앱으로 이동
+                        // 삼성 인터넷에서 다운로드 팝업이 뜨더라도 자동으로 SMS 앱 열림
+                        const phone = form.phone.replace(/[^0-9]/g, '');
+                        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                        const separator = isIOS ? '&' : '?';
                         
-                        // 10초 후 리스너 제거 (취소한 경우)
-                        setTimeout(() => window.removeEventListener('focus', goToSms), 10000);
+                        setTimeout(() => {
+                          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
+                        }, 1500);
                         
                       } catch (e) {
                         console.error(e);
