@@ -107,37 +107,11 @@ hr { border:none; border-top:1px solid #eee; margin:12px 0; width: 100%; }
     padding: 6px 4px !important;
   }
 
-  /* 견적서 미리보기 카드 */
-  #quotePreviewApp {
-    min-height: 300px !important;
-    max-height: 400px !important;
-    overflow: hidden !important;
-    position: relative !important;
-  }
-
-  #quotePreviewApp > .card {
-    display: flex !important;
-    justify-content: center !important;
-    overflow: hidden !important;
-    padding: 8px !important;
-  }
-
-  #quotePreviewApp .a4Wrap {
-    transform: scale(0.38) !important;
-    transform-origin: top center !important;
-    padding: 0 !important;
-  }
+  /* ✅ 견적서 미리보기 - App.tsx 인라인 스타일로 제어 (CSS 삭제됨) */
 }
 
 @media (max-width: 400px) {
-  #quotePreviewApp .a4Wrap {
-    transform: scale(0.32) !important;
-  }
-
-  #quotePreviewApp {
-    min-height: 280px !important;
-    max-height: 350px !important;
-  }
+  /* ✅ #quotePreviewApp 관련 CSS 삭제됨 */
 
   .wrap > .card:first-child .actions .btn {
     font-size: 11px !important;
