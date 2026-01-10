@@ -1170,30 +1170,28 @@ const bizcardName = selectedBizcard?.name || "";
 
           <div className="content">
             {/* ✅ 삼성 인터넷 호환: 인라인 스타일로 transform 적용 */}
-            <div 
-              className="previewWrap"
-              onClick={() => { if (isMobile && current) setMobilePreviewOpen(true); }}
-              style={{ 
-                cursor: isMobile ? 'pointer' : 'default',
-                position: 'relative',
-                overflow: 'hidden',
-                ...(isMobile ? {
+            {isMobile ? (
+              // 모바일: 인라인 스타일로 완전히 제어
+              <div 
+                className="previewWrap"
+                onClick={() => { if (current) setMobilePreviewOpen(true); }}
+                style={{ 
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
                   height: getMobileHeight(),
                   width: '100%',
-                } : {})
-              }}
-            >
-              {/* 모바일: 인라인 스타일로 transform 적용 */}
-              {isMobile ? (
+                  background: '#f5f6f8',
+                }}
+              >
                 <div
                   className="previewInner"
                   id="quotePreview"
                   style={{
                     position: 'absolute',
-                    top: 0,
+                    top: 10,
                     left: '50%',
                     width: 794,
-                    height: 1180,
                     transform: `translateX(-50%) scale(${getMobileScale()})`,
                     transformOrigin: 'top center',
                     padding: 0,
@@ -1201,31 +1199,37 @@ const bizcardName = selectedBizcard?.name || "";
                   }}
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
                 />
-              ) : (
+                {current && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 10,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(0,0,0,0.7)',
+                    color: '#fff',
+                    padding: '6px 12px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                  }}>
+                    탭하여 크게 보기
+                  </div>
+                )}
+              </div>
+            ) : (
+              // 데스크톱: 기존 방식
+              <div 
+                className="previewWrap"
+                style={{ cursor: 'default' }}
+              >
                 <div
                   className="previewInner"
                   id="quotePreview"
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
                 />
-              )}
-              {isMobile && current && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: 10,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: 'rgba(0,0,0,0.7)',
-                  color: '#fff',
-                  padding: '6px 12px',
-                  borderRadius: 20,
-                  fontSize: 11,
-                  pointerEvents: 'none',
-                  zIndex: 10,
-                }}>
-                  탭하여 크게 보기
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
