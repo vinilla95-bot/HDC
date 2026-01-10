@@ -248,19 +248,15 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // ✅ 모바일 스케일 - 단순 고정값
+  // ✅ 모바일 스케일 - 화면에 꽉 차게
   const getMobileScale = () => {
     if (typeof window === 'undefined') return 0.45;
-    const w = window.innerWidth;
-    if (w >= 500) return 0.55;
-    if (w >= 430) return 0.50;
-    if (w >= 400) return 0.47;
-    if (w >= 360) return 0.42;
-    return 0.38;
+    return (window.innerWidth - 32) / 794; // 좌우 패딩 16px씩 제외
   };
 
   const getMobileHeight = () => {
-    return Math.round(1130 * getMobileScale()) + 30;
+    const scale = getMobileScale();
+    return Math.round(1130 * scale); // A4 높이 * 스케일
   };
 
   // 이미지 URL을 base64로 변환
@@ -1922,19 +1918,28 @@ const bizcardName = selectedBizcard?.name || "";
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 전체화면: 스크롤 가능하게, 비율 유지 */}
+            {/* ✅ 전체화면: A4 비율 유지 */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 794);
+              const scaledWidth = 794 * scale;
+              const scaledHeight = 1130 * scale; // A4 높이도 스케일 적용
               return (
                 <div 
                   style={{
-                    width: 794 * scale,
+                    width: scaledWidth,
+                    height: scaledHeight,
                     margin: '0 auto',
+                    overflow: 'hidden',
+                    position: 'relative',
                   }}
                 >
                   <div
                     style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
                       width: 794,
+                      height: 1130,
                       transform: `scale(${scale})`,
                       transformOrigin: 'top left',
                     }}
