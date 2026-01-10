@@ -248,6 +248,25 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+  // ✅ 모바일 스케일 계산 함수
+  const getMobileScale = () => {
+    if (typeof window === 'undefined') return 0.42;
+    const w = window.innerWidth;
+    if (w <= 360) return 0.32;
+    if (w <= 400) return 0.35;
+    if (w <= 480) return 0.38;
+    return 0.42;
+  };
+
+  const getMobileHeight = () => {
+    if (typeof window === 'undefined') return 500;
+    const w = window.innerWidth;
+    if (w <= 360) return 400;
+    if (w <= 400) return 430;
+    if (w <= 480) return 460;
+    return 500;
+  };
+
   // 이미지 URL을 base64로 변환
   const imageUrlToBase64 = async (url: string): Promise<string> => {
     try {
@@ -1069,16 +1088,6 @@ const bizcardName = selectedBizcard?.name || "";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  // ✅ 화면 너비에 따른 스케일 계산
-  const getMobileScale = () => {
-    if (typeof window === 'undefined') return 0.42;
-    const screenWidth = window.innerWidth;
-    if (screenWidth <= 360) return 0.32;
-    if (screenWidth <= 400) return 0.35;
-    if (screenWidth <= 480) return 0.38;
-    return 0.42;
-  };
-
   return (
     <div
       style={{
@@ -1165,16 +1174,45 @@ const bizcardName = selectedBizcard?.name || "";
           </div>
 
           <div className="content">
+            {/* ✅ 삼성 인터넷 호환: 인라인 스타일로 transform 적용 */}
             <div 
               className="previewWrap"
               onClick={() => { if (isMobile && current) setMobilePreviewOpen(true); }}
-              style={{ cursor: isMobile ? 'pointer' : 'default' }}
+              style={{ 
+                cursor: isMobile ? 'pointer' : 'default',
+                position: 'relative',
+                overflow: 'hidden',
+                ...(isMobile ? {
+                  height: getMobileHeight(),
+                  width: '100%',
+                } : {})
+              }}
             >
-              <div
-                className="previewInner"
-                id="quotePreview"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
+              {/* 모바일: 인라인 스타일로 transform 적용 */}
+              {isMobile ? (
+                <div
+                  className="previewInner"
+                  id="quotePreview"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    width: 794,
+                    height: 1180,
+                    transform: `translateX(-50%) scale(${getMobileScale()})`,
+                    transformOrigin: 'top center',
+                    padding: 0,
+                    margin: 0,
+                  }}
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              ) : (
+                <div
+                  className="previewInner"
+                  id="quotePreview"
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              )}
               {isMobile && current && (
                 <div style={{
                   position: 'absolute',
@@ -1186,7 +1224,8 @@ const bizcardName = selectedBizcard?.name || "";
                   padding: '6px 12px',
                   borderRadius: 20,
                   fontSize: 11,
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  zIndex: 10,
                 }}>
                   탭하여 크게 보기
                 </div>
@@ -2349,7 +2388,7 @@ const css = `
   }
 }
 
-  /* ✅ 모바일 미리보기 수정 - 삼성 인터넷 호환 */
+  /* ✅ 모바일: CSS media query 제거 - 인라인 스타일로 처리 */
   @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
@@ -2385,44 +2424,6 @@ const css = `
       min-width: 70px !important;
     }
     
-    /* ✅ 삼성 인터넷 호환: 컨테이너에 고정 높이 */
-    .previewWrap {
-      overflow: hidden !important;
-      position: relative !important;
-      cursor: pointer !important;
-      height: 500px !important;
-      width: 100% !important;
-    }
-    
-    /* ✅ 삼성 인터넷 호환: previewInner에 고정 크기 + transform */
-    .previewInner {
-      position: absolute !important;
-      top: 0 !important;
-      left: 50% !important;
-      width: 794px !important;
-      height: 1180px !important;
-      transform: translateX(-50%) scale(0.42) !important;
-      transform-origin: top center !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-    
-    /* ✅ a4Wrap: transform 제거, 고정 크기 */
-    .previewInner .a4Wrap {
-      transform: none !important;
-      padding: 14px 0 !important;
-      width: 794px !important;
-      height: auto !important;
-      display: block !important;
-      background: #f5f6f8 !important;
-    }
-    
-    .previewInner .a4Sheet {
-      width: 794px !important;
-      min-height: 1123px !important;
-      margin: 0 auto !important;
-    }
-    
     .modalCard {
       width: 95vw !important;
       max-height: 90vh !important;
@@ -2451,39 +2452,6 @@ const css = `
     
     .item .bot {
       font-size: 11px !important;
-    }
-  }
-
-  @media (max-width: 400px) {
-    .previewWrap {
-      height: 430px !important;
-    }
-    
-    .previewInner {
-      transform: translateX(-50%) scale(0.35) !important;
-    }
-    
-    .actions button {
-      font-size: 10px !important;
-      padding: 8px 10px !important;
-    }
-    
-    .panel {
-      max-height: 180px !important;
-    }
-
-    .list {
-      max-height: 100px !important;
-    }
-  }
-  
-  @media (max-width: 360px) {
-    .previewWrap {
-      height: 400px !important;
-    }
-    
-    .previewInner {
-      transform: translateX(-50%) scale(0.32) !important;
     }
   }
 `;
