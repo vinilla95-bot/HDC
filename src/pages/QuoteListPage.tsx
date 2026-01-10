@@ -1846,6 +1846,7 @@ const bizcardName = selectedBizcard?.name || "";
             alignItems: 'center',
             justifyContent: 'space-between',
             background: '#fff',
+            flexShrink: 0,
           }}>
             <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
             <button 
@@ -1869,8 +1870,6 @@ const bizcardName = selectedBizcard?.name || "";
             WebkitOverflowScrolling: 'touch',
             background: '#f5f6f8',
             padding: '10px',
-            display: 'flex',
-            justifyContent: 'center',
           }}>
             <div 
               style={{
@@ -1889,6 +1888,7 @@ const bizcardName = selectedBizcard?.name || "";
             gap: 8,
             background: '#fff',
             position: 'relative',
+            flexShrink: 0,
           }}>
             <button 
               onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
@@ -2091,7 +2091,7 @@ const css = `
   button.primary{background:#111;color:#fff;border-color:#111;}
   button.primary:hover{background:#222;}
   .content{flex:1; display:grid; grid-template-columns: 1fr; gap:12px;}
-  .previewWrap{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:auto;}
+  .previewWrap{background:#fff;border:1px solid #e5e7eb;border-radius:14px; overflow:hidden; position:relative;}
   .previewInner{padding:14px; min-height:400px;}
   .muted{color:#666;font-size:12px;}
   .row{display:flex;gap:8px;align-items:center;}
@@ -2112,7 +2112,7 @@ const css = `
   }
 
   .a4Sheet {
-    width: 900px;
+    width: 794px;
     min-height: 1123px;
     background: #fff;
     border: 1px solid #cfd3d8;
@@ -2299,6 +2299,7 @@ const css = `
   }
 }
 
+  /* ✅ 모바일 미리보기 수정 - 전체가 보이도록 */
   @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
@@ -2338,26 +2339,26 @@ const css = `
       overflow: hidden !important;
       position: relative !important;
       cursor: pointer !important;
+      /* A4 전체 높이가 보이도록 컨테이너 높이 설정 */
+      height: calc(1150px * 0.42 + 30px) !important;
     }
     
     .previewInner {
-      transform: scale(0.38) !important;
+      transform: scale(0.42) !important;
       transform-origin: top center !important;
-      width: 100% !important;
+      width: 794px !important;
       padding: 0 !important;
-      height: calc(1123px * 0.38) !important;
+      margin: 0 auto !important;
     }
     
-    .previewInner > div {
-      display: block !important;
+    .previewInner .a4Wrap {
+      transform: none !important;
       padding: 0 !important;
-      background: #f5f6f8 !important;
+      width: 794px !important;
     }
     
-    .previewInner > div > div {
-      display: block !important;
-      transform-origin: top center !important;
-      margin: 0 !important;
+    .previewInner .a4Sheet {
+      width: 794px !important;
     }
     
     .modalCard {
@@ -2392,14 +2393,12 @@ const css = `
   }
 
   @media (max-width: 400px) {
-    .previewInner {
-      transform: scale(0.32) !important;
-      height: calc(1123px * 0.32) !important;
+    .previewWrap {
+      height: calc(1150px * 0.35 + 30px) !important;
     }
     
-    .previewWrap {
-      min-height: auto !important;
-      max-height: none !important;
+    .previewInner {
+      transform: scale(0.35) !important;
     }
     
     .actions button {
