@@ -1097,16 +1097,19 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         document.body.removeChild(a);
                         URL.revokeObjectURL(a.href);
                         
-                        setStatusMsg('📷 이미지 저장됨!');
+                        setStatusMsg('');
                         
-                        // 문자앱 자동 열기
-                        setTimeout(() => {
+                        // 다운로드 팝업에서 다운로드 누르면 (focus 돌아오면) SMS로 이동
+                        const goToSms = () => {
+                          window.removeEventListener('focus', goToSms);
                           const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const separator = isIOS ? '&' : '?';
                           window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        }, 1000);
+                        };
+                        window.addEventListener('focus', goToSms);
                         
-                        setTimeout(() => setStatusMsg(''), 3000);
+                        // 10초 후 리스너 제거 (취소한 경우)
+                        setTimeout(() => window.removeEventListener('focus', goToSms), 10000);
                         
                       } catch (e) {
                         console.error(e);
@@ -1539,41 +1542,39 @@ const a4css = `
     .a4Wrap {
       transform: scale(0.48) !important;
       transform-origin: top center !important;
-      padding: 8px 0 !important;
+      padding: 0 !important;
       margin: 0 auto !important;
-      display: flex !important;
-      justify-content: center !important;
+      height: calc(1123px * 0.48) !important;
+    }
+    .a4Sheet {
+      width: 800px !important;
     }
     #quotePreviewApp .card {
       overflow: hidden !important;
-      min-height: 520px !important;
+      min-height: auto !important;
+      height: auto !important;
+      padding-bottom: 20px !important;
     }
   }
 
   @media (max-width: 480px) {
     .a4Wrap {
-      transform: scale(0.45) !important;
-    }
-    #quotePreviewApp .card {
-      min-height: 480px !important;
+      transform: scale(0.42) !important;
+      height: calc(1123px * 0.42) !important;
     }
   }
 
   @media (max-width: 400px) {
     .a4Wrap {
-      transform: scale(0.42) !important;
-    }
-    #quotePreviewApp .card {
-      min-height: 450px !important;
+      transform: scale(0.38) !important;
+      height: calc(1123px * 0.38) !important;
     }
   }
 
   @media (max-width: 360px) {
     .a4Wrap {
-      transform: scale(0.38) !important;
-    }
-    #quotePreviewApp .card {
-      min-height: 420px !important;
+      transform: scale(0.35) !important;
+      height: calc(1123px * 0.35) !important;
     }
   }
 
