@@ -872,7 +872,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         </div>
       </div>
 
-      {/* ✅ 모바일 전체화면 미리보기 - 수정됨 */}
+      {/* ✅ 모바일 전체화면 미리보기 - 삼성 인터넷 호환 */}
       {mobilePreviewOpen && (
         <div 
           style={{
@@ -916,26 +916,47 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 스케일을 화면 너비에 맞게 동적 계산 */}
-            <div 
-              style={{
-                transform: `scale(${Math.min(1, (window.innerWidth - 20) / 800)})`,
-                transformOrigin: 'top left',
-                width: 800,
-              }}
-            >
-              <A4Quote
-                form={form}
-                computedItems={computedItems}
-                blankRows={blankRows}
-                fmt={fmt}
-                supply_amount={supply_amount}
-                vat_amount={vat_amount}
-                total_amount={total_amount}
-                bizcardName={selectedBizcard?.name || ""}
-                noTransform={true}
-              />
-            </div>
+            {/* ✅ 삼성 인터넷 호환: 고정 크기 컨테이너 사용 */}
+            {(() => {
+              const scale = Math.min(1, (window.innerWidth - 20) / 800);
+              const scaledWidth = 800 * scale;
+              const scaledHeight = 1150 * scale;
+              return (
+                <div 
+                  style={{
+                    position: 'relative',
+                    width: scaledWidth,
+                    height: scaledHeight,
+                    margin: '0 auto',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 800,
+                      height: 1150,
+                      transform: `scale(${scale})`,
+                      transformOrigin: 'top left',
+                    }}
+                  >
+                    <A4Quote
+                      form={form}
+                      computedItems={computedItems}
+                      blankRows={blankRows}
+                      fmt={fmt}
+                      supply_amount={supply_amount}
+                      vat_amount={vat_amount}
+                      total_amount={total_amount}
+                      bizcardName={selectedBizcard?.name || ""}
+                      noTransform={true}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           <div style={{
             padding: '10px 16px',
@@ -1041,7 +1062,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         const originalSheetStyle = sheet.getAttribute('style') || '';
                         
                         if (a4Wrap) {
-                          a4Wrap.style.cssText = 'transform: none !important; width: 800px !important; padding: 0 !important; background: #fff !important;';
+                          a4Wrap.style.cssText = 'position: static !important; transform: none !important; width: 800px !important; height: auto !important; padding: 14px 0 !important; background: #fff !important;';
                         }
                         sheet.style.cssText = originalSheetStyle + '; width: 800px !important; transform: none !important;';
                         
@@ -1518,40 +1539,47 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-  /* ✅ 모바일 견적서 미리보기 - 비율 유지하며 전체 보이도록 수정 */
+  /* ✅ 모바일 견적서 미리보기 - 삼성 인터넷 호환 */
   @media (max-width: 768px) {
     #quotePreviewApp .card {
       overflow: hidden !important;
       min-height: auto !important;
       height: auto !important;
-      padding-bottom: 30px !important;
-    }
-    /* ✅ 수정: a4Wrap에서만 scale 적용 */
-    #quotePreviewApp .a4Wrap {
-      transform: scale(0.42) !important;
-      transform-origin: top center !important;
       padding: 0 !important;
-      margin: 0 auto !important;
+    }
+    
+    /* ✅ 삼성 인터넷 호환: 컨테이너에 position relative, 고정 높이 */
+    #quotePreviewApp {
+      position: relative !important;
+      height: 500px !important;
+      overflow: hidden !important;
+      width: 100% !important;
+    }
+    
+    /* ✅ 삼성 인터넷 호환: a4Wrap에 position absolute + transform */
+    #quotePreviewApp .a4Wrap {
+      position: absolute !important;
+      top: 0 !important;
+      left: 50% !important;
       width: 800px !important;
-      height: auto !important;
+      height: 1180px !important;
+      transform: translateX(-50%) scale(0.42) !important;
+      transform-origin: top center !important;
+      padding: 14px 0 !important;
+      margin: 0 !important;
       background: #f5f6f8 !important;
     }
+    
     #quotePreviewApp .a4Sheet {
       width: 800px !important;
       min-height: 1123px !important;
-    }
-    /* 컨테이너 높이 = A4 높이 * scale + 여유 */
-    #quotePreviewApp {
-      height: 500px !important;
-      overflow: hidden !important;
-      display: flex !important;
-      justify-content: center !important;
+      margin: 0 auto !important;
     }
   }
 
   @media (max-width: 480px) {
     #quotePreviewApp .a4Wrap {
-      transform: scale(0.38) !important;
+      transform: translateX(-50%) scale(0.38) !important;
     }
     #quotePreviewApp {
       height: 460px !important;
@@ -1560,7 +1588,7 @@ const a4css = `
 
   @media (max-width: 400px) {
     #quotePreviewApp .a4Wrap {
-      transform: scale(0.35) !important;
+      transform: translateX(-50%) scale(0.35) !important;
     }
     #quotePreviewApp {
       height: 420px !important;
@@ -1569,7 +1597,7 @@ const a4css = `
 
   @media (max-width: 360px) {
     #quotePreviewApp .a4Wrap {
-      transform: scale(0.32) !important;
+      transform: translateX(-50%) scale(0.32) !important;
     }
     #quotePreviewApp {
       height: 390px !important;
