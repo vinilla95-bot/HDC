@@ -1970,15 +1970,41 @@ const bizcardName = selectedBizcard?.name || "";
                       setMobilePreviewOpen(false);
                       
                       // 견적서 이미지 생성
-                      const sheet = document.getElementById('a4SheetCapture');
+                      const sheet = document.getElementById('a4SheetCapture') as HTMLElement;
+                      const previewInner = document.querySelector('.previewInner') as HTMLElement;
                       if (!sheet) {
                         alert('견적서를 찾을 수 없습니다.');
                         return;
                       }
                       
                       try {
-                        toast('이미지 저장 중...');
-                        const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: '#ffffff' });
+                        toast('이미지 생성 중...');
+                        
+                        // 캡처 전 transform 제거 + 원본 크기로 설정
+                        const originalInnerStyle = previewInner?.getAttribute('style') || '';
+                        const originalSheetStyle = sheet.getAttribute('style') || '';
+                        
+                        if (previewInner) {
+                          previewInner.style.cssText = 'transform: none !important; width: 800px !important; padding: 0 !important;';
+                        }
+                        sheet.style.cssText = originalSheetStyle + '; width: 794px !important; transform: none !important;';
+                        
+                        await new Promise(r => setTimeout(r, 500));
+                        
+                        const canvas = await html2canvas(sheet, { 
+                          scale: 2, 
+                          backgroundColor: '#ffffff',
+                          useCORS: true,
+                          allowTaint: true,
+                          width: 794,
+                          windowWidth: 794,
+                        });
+                        
+                        // 캡처 후 원래대로 복원
+                        if (previewInner) {
+                          previewInner.style.cssText = originalInnerStyle;
+                        }
+                        sheet.style.cssText = originalSheetStyle;
                         
                         const blob = await new Promise<Blob>((resolve) => 
                           canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
@@ -1987,7 +2013,7 @@ const bizcardName = selectedBizcard?.name || "";
                         const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
                         const phone = current.customer_phone.replace(/[^0-9]/g, '');
                         
-                        // 이미지 직접 다운로드 (Web Share API 사용 안 함)
+                        // 이미지 다운로드
                         const a = document.createElement('a');
                         a.href = URL.createObjectURL(blob);
                         a.download = `견적서_${current.customer_name || 'quote'}.jpg`;
@@ -1996,17 +2022,18 @@ const bizcardName = selectedBizcard?.name || "";
                         document.body.removeChild(a);
                         URL.revokeObjectURL(a.href);
                         
-                        // 잠시 대기 후 문자앱 열기 (iOS/Android 호환)
+                        toast('📷 이미지 저장됨!');
+                        
+                        // 문자앱 자동 열기
                         setTimeout(() => {
                           const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const separator = isIOS ? '&' : '?';
                           window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        }, 800);
-                        
-                        toast('📷 이미지 저장됨! 문자에서 갤러리의 이미지를 첨부하세요.');
+                        }, 1000);
                         
                       } catch (e) {
                         console.error(e);
+                        if (previewInner) previewInner.style.cssText = '';
                         alert('이미지 생성 실패: ' + (e as any)?.message);
                       }
                     }}
