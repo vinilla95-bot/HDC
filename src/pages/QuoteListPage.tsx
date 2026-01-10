@@ -1166,13 +1166,12 @@ const bizcardName = selectedBizcard?.name || "";
           </div>
 
           <div className="content">
-            {/* ✅ 삼성 인터넷 호환: zoom 사용 */}
+            {/* ✅ 모바일: zoom만 사용 (모든 브라우저 호환) */}
             {isMobile ? (
-              // 모바일: 삼성 인터넷 호환
               (() => {
-                const isSamsung = typeof navigator !== 'undefined' && navigator.userAgent.includes('SamsungBrowser');
                 const scale = getMobileScale();
-                const containerHeight = Math.round(1130 * scale);
+                const scaledWidth = Math.floor(794 * scale);
+                const scaledHeight = Math.floor(1130 * scale);
                 
                 return (
                   <div 
@@ -1180,10 +1179,10 @@ const bizcardName = selectedBizcard?.name || "";
                     onClick={() => { if (current) setMobilePreviewOpen(true); }}
                     style={{ 
                       cursor: 'pointer',
-                      position: 'relative',
+                      width: scaledWidth,
+                      height: scaledHeight,
+                      margin: '0 auto',
                       overflow: 'hidden',
-                      width: '100%',
-                      height: containerHeight,
                       background: '#f5f6f8',
                     }}
                   >
@@ -1191,14 +1190,9 @@ const bizcardName = selectedBizcard?.name || "";
                       className="previewInner"
                       id="quotePreview"
                       style={{
-                        position: 'absolute',
-                        top: 10,
-                        left: '50%',
                         width: 794,
-                        marginLeft: -397,
-                        transformOrigin: 'top center',
-                        transform: isSamsung ? 'none' : `scale(${scale})`,
-                        zoom: isSamsung ? scale : undefined,
+                        zoom: scale,
+                        WebkitTextSizeAdjust: '100%',
                         padding: 0,
                       }}
                       dangerouslySetInnerHTML={{ __html: previewHtml }}
@@ -1927,23 +1921,25 @@ const bizcardName = selectedBizcard?.name || "";
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 삼성 인터넷 호환: zoom 사용 */}
+            {/* ✅ 전체화면: zoom만 사용 (모든 브라우저 호환) */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 794);
-              const isSamsung = navigator.userAgent.includes('SamsungBrowser');
+              const scaledWidth = Math.floor(794 * scale);
+              const scaledHeight = Math.floor(1130 * scale);
               return (
                 <div 
                   style={{
-                    width: 794 * scale,
+                    width: scaledWidth,
+                    height: scaledHeight,
                     margin: '0 auto',
+                    overflow: 'hidden',
                   }}
                 >
                   <div
                     style={{
                       width: 794,
-                      transformOrigin: 'top left',
-                      transform: isSamsung ? 'none' : `scale(${scale})`,
-                      zoom: isSamsung ? scale : undefined,
+                      zoom: scale,
+                      WebkitTextSizeAdjust: '100%',
                     }}
                   >
                     <style>{`
@@ -2111,17 +2107,14 @@ const bizcardName = selectedBizcard?.name || "";
                         document.body.removeChild(a);
                         URL.revokeObjectURL(a.href);
                         
-                        // 다운로드 팝업에서 다운로드 누르면 (focus 돌아오면) SMS로 이동
-                        const goToSms = () => {
-                          window.removeEventListener('focus', goToSms);
-                          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                          const separator = isIOS ? '&' : '?';
-                          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        };
-                        window.addEventListener('focus', goToSms);
+                        // ✅ 다운로드 시작 후 1.5초 뒤 SMS 앱으로 이동
+                        // 삼성 인터넷에서 다운로드 팝업이 뜨더라도 자동으로 SMS 앱 열림
+                        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                        const separator = isIOS ? '&' : '?';
                         
-                        // 10초 후 리스너 제거 (취소한 경우)
-                        setTimeout(() => window.removeEventListener('focus', goToSms), 10000);
+                        setTimeout(() => {
+                          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
+                        }, 1500);
                         
                       } catch (e) {
                         console.error(e);
