@@ -846,7 +846,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
           </div>
         </div>
 
-        {/* RIGHT - 모바일 미리보기 (zoom만 사용) */}
+        {/* RIGHT - 모바일 미리보기 */}
         {isMobileDevice ? (
           (() => {
             const scale = getMobileScale();
@@ -866,6 +866,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                   background: '#f5f6f8',
                   borderRadius: 14,
                   border: '1px solid #e5e7eb',
+                  position: 'relative',
                 }}
               >
                 <div style={{
@@ -883,11 +884,14 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 }}>
                   탭하여 크게 보기
                 </div>
-                {/* zoom만 사용 - 모든 브라우저 호환 */}
+                {/* transform scale 사용 - position absolute로 레이아웃 분리 */}
                 <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
                   width: 800,
-                  zoom: scale,
-                  WebkitTextSizeAdjust: '100%',
+                  transformOrigin: 'top left',
+                  transform: `scale(${scale})`,
                 }}>
                   <A4Quote
                     form={form}
@@ -966,7 +970,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 전체화면: zoom만 사용 (모든 브라우저 호환) */}
+            {/* ✅ 전체화면: transform scale + 정확한 컨테이너 크기 */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 800);
               const scaledWidth = Math.floor(800 * scale);
@@ -978,13 +982,17 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                     height: scaledHeight,
                     margin: '0 auto',
                     overflow: 'hidden',
+                    position: 'relative',
                   }}
                 >
                   <div
                     style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
                       width: 800,
-                      zoom: scale,
-                      WebkitTextSizeAdjust: '100%',
+                      transformOrigin: 'top left',
+                      transform: `scale(${scale})`,
                     }}
                   >
                     <A4Quote
@@ -1229,8 +1237,8 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
     <div className="card" style={noPadding ? { padding: 0, margin: 0, border: 'none', background: 'transparent' } : undefined}>
       <style>{a4css}</style>
 
-      {/* ✅ noTransform일 때 transform 제거 */}
-      <div className="a4Wrap" style={noTransform ? { transform: 'none', padding: 0, background: '#fff' } : undefined}>
+      {/* ✅ noTransform일 때 transform 제거 + display: block으로 레이아웃 고정 */}
+      <div className="a4Wrap" style={noTransform ? { transform: 'none', padding: 0, background: '#fff', display: 'block' } : undefined}>
         <div className="a4Sheet">
           <div className="a4Header">
             <div className="a4HeaderLeft">
