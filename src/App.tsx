@@ -60,18 +60,19 @@ export default function App() {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobileDevice = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // ✅ 모바일 스케일 계산 함수 - 화면에 맞게 동적 계산
+  // ✅ 모바일 스케일 - 단순 고정값
   const getMobileScale = () => {
     if (typeof window === 'undefined') return 0.45;
-    const screenWidth = window.innerWidth - 24; // padding 제외
-    const scale = screenWidth / 800; // 800px 기준
-    return Math.min(scale, 0.6); // 최대 0.6
+    const w = window.innerWidth;
+    if (w >= 500) return 0.55;
+    if (w >= 430) return 0.50;
+    if (w >= 400) return 0.47;
+    if (w >= 360) return 0.42;
+    return 0.38;
   };
 
   const getMobileHeight = () => {
-    if (typeof window === 'undefined') return 550;
-    const scale = getMobileScale();
-    return Math.round(1150 * scale) + 20; // 견적서 높이 * 스케일 + 여백
+    return Math.round(1130 * getMobileScale()) + 30;
   };
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
@@ -964,28 +965,19 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 삼성 인터넷 호환: 고정 크기 컨테이너 사용 */}
+            {/* ✅ 전체화면: 스크롤 가능하게, 비율 유지 */}
             {(() => {
-              const scale = Math.min(1, (window.innerWidth - 20) / 800);
-              const scaledWidth = 800 * scale;
-              const scaledHeight = 1150 * scale;
+              const scale = Math.min(0.95, (window.innerWidth - 20) / 800);
               return (
                 <div 
                   style={{
-                    position: 'relative',
-                    width: scaledWidth,
-                    height: scaledHeight,
+                    width: 800 * scale,
                     margin: '0 auto',
-                    overflow: 'hidden',
                   }}
                 >
                   <div
                     style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
                       width: 800,
-                      height: 1150,
                       transform: `scale(${scale})`,
                       transformOrigin: 'top left',
                     }}
@@ -1000,6 +992,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                       total_amount={total_amount}
                       bizcardName={selectedBizcard?.name || ""}
                       noTransform={true}
+                      noPadding={true}
                     />
                   </div>
                 </div>
