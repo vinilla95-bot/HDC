@@ -1166,7 +1166,7 @@ const bizcardName = selectedBizcard?.name || "";
           </div>
 
           <div className="content">
-            {/* ✅ 모바일: zoom만 사용 (모든 브라우저 호환) */}
+            {/* ✅ 모바일: transform scale + 정확한 컨테이너 크기 */}
             {isMobile ? (
               (() => {
                 const scale = getMobileScale();
@@ -1184,15 +1184,19 @@ const bizcardName = selectedBizcard?.name || "";
                       margin: '0 auto',
                       overflow: 'hidden',
                       background: '#f5f6f8',
+                      position: 'relative',
                     }}
                   >
                     <div
                       className="previewInner"
                       id="quotePreview"
                       style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
                         width: 794,
-                        zoom: scale,
-                        WebkitTextSizeAdjust: '100%',
+                        transformOrigin: 'top left',
+                        transform: `scale(${scale})`,
                         padding: 0,
                       }}
                       dangerouslySetInnerHTML={{ __html: previewHtml }}
@@ -1921,7 +1925,7 @@ const bizcardName = selectedBizcard?.name || "";
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 전체화면: zoom만 사용 (모든 브라우저 호환) */}
+            {/* ✅ 전체화면: transform scale + 정확한 컨테이너 크기 */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 794);
               const scaledWidth = Math.floor(794 * scale);
@@ -1933,13 +1937,17 @@ const bizcardName = selectedBizcard?.name || "";
                     height: scaledHeight,
                     margin: '0 auto',
                     overflow: 'hidden',
+                    position: 'relative',
                   }}
                 >
                   <div
                     style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
                       width: 794,
-                      zoom: scale,
-                      WebkitTextSizeAdjust: '100%',
+                      transformOrigin: 'top left',
+                      transform: `scale(${scale})`,
                     }}
                   >
                     <style>{`
