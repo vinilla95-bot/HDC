@@ -1838,7 +1838,7 @@ const bizcardName = selectedBizcard?.name || "";
         </div>
       )}
 
-      {/* ✅ 모바일 전체화면 미리보기 - 스크롤 가능하게 수정 */}
+      {/* ✅ 모바일 전체화면 미리보기 - 삼성 인터넷 호환 */}
       {mobilePreviewOpen && (
         <div 
           className="mobilePreviewModal"
@@ -1883,36 +1883,55 @@ const bizcardName = selectedBizcard?.name || "";
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 스케일을 화면 너비에 맞게 동적 계산, 높이는 스케일된 A4 높이로 설정 */}
-            <div 
-              style={{
-                width: 794,
-                height: 1150,
-                transform: `scale(${Math.min(1, (window.innerWidth - 20) / 794)})`,
-                transformOrigin: 'top left',
-                marginLeft: `calc((100% - ${Math.min(1, (window.innerWidth - 20) / 794) * 794}px) / 2)`,
-              }}
-            >
-              {/* ✅ previewHtml을 scale 없이 렌더링 */}
-              <style>{`
-                .mobilePreviewModal .a4Wrap {
-                  transform: none !important;
-                  padding: 0 !important;
-                  display: flex !important;
-                  justify-content: center !important;
-                  background: #f5f6f8 !important;
-                }
-                .mobilePreviewModal .a4Sheet {
-                  width: 794px !important;
-                  min-height: 1123px !important;
-                  background: #fff !important;
-                  border: 1px solid #cfd3d8 !important;
-                  padding: 16px !important;
-                  box-sizing: border-box !important;
-                }
-              `}</style>
-              <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-            </div>
+            {/* ✅ 삼성 인터넷 호환: 스케일 계산 후 고정 크기 컨테이너 사용 */}
+            {(() => {
+              const scale = Math.min(1, (window.innerWidth - 20) / 794);
+              const scaledWidth = 794 * scale;
+              const scaledHeight = 1150 * scale;
+              return (
+                <div 
+                  style={{
+                    position: 'relative',
+                    width: scaledWidth,
+                    height: scaledHeight,
+                    margin: '0 auto',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 794,
+                      height: 1150,
+                      transform: `scale(${scale})`,
+                      transformOrigin: 'top left',
+                    }}
+                  >
+                    <style>{`
+                      .mobilePreviewModal .a4Wrap {
+                        transform: none !important;
+                        padding: 0 !important;
+                        width: 794px !important;
+                        display: block !important;
+                        background: #f5f6f8 !important;
+                      }
+                      .mobilePreviewModal .a4Sheet {
+                        width: 794px !important;
+                        min-height: 1123px !important;
+                        background: #fff !important;
+                        border: 1px solid #cfd3d8 !important;
+                        padding: 16px !important;
+                        box-sizing: border-box !important;
+                        margin: 0 auto !important;
+                      }
+                    `}</style>
+                    <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           <div style={{
             padding: '10px 16px',
@@ -2018,7 +2037,7 @@ const bizcardName = selectedBizcard?.name || "";
                         const originalSheetStyle = sheet.getAttribute('style') || '';
                         
                         if (previewInner) {
-                          previewInner.style.cssText = 'transform: none !important; width: 794px !important; padding: 0 !important;';
+                          previewInner.style.cssText = 'position: static !important; transform: none !important; width: 794px !important; height: auto !important; padding: 0 !important;';
                         }
                         sheet.style.cssText = originalSheetStyle + '; width: 794px !important; transform: none !important;';
                         
@@ -2330,7 +2349,7 @@ const css = `
   }
 }
 
-  /* ✅ 모바일 미리보기 수정 - A4 비율 유지 */
+  /* ✅ 모바일 미리보기 수정 - 삼성 인터넷 호환 */
   @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
@@ -2366,39 +2385,42 @@ const css = `
       min-width: 70px !important;
     }
     
-    /* ✅ 수정: 컨테이너 높이를 스케일된 A4 높이에 맞게 설정 */
+    /* ✅ 삼성 인터넷 호환: 컨테이너에 고정 높이 */
     .previewWrap {
       overflow: hidden !important;
       position: relative !important;
       cursor: pointer !important;
       height: 500px !important;
-      display: flex !important;
-      justify-content: center !important;
+      width: 100% !important;
     }
     
-    /* ✅ 수정: previewInner에서 transform 적용 (a4Wrap은 transform 없음) */
+    /* ✅ 삼성 인터넷 호환: previewInner에 고정 크기 + transform */
     .previewInner {
-      transform: scale(0.42) !important;
-      transform-origin: top center !important;
+      position: absolute !important;
+      top: 0 !important;
+      left: 50% !important;
       width: 794px !important;
+      height: 1180px !important;
+      transform: translateX(-50%) scale(0.42) !important;
+      transform-origin: top center !important;
       padding: 0 !important;
       margin: 0 !important;
-      flex-shrink: 0 !important;
     }
     
-    /* ✅ a4Wrap에서는 transform 제거 */
+    /* ✅ a4Wrap: transform 제거, 고정 크기 */
     .previewInner .a4Wrap {
       transform: none !important;
       padding: 14px 0 !important;
       width: 794px !important;
-      display: flex !important;
-      justify-content: center !important;
+      height: auto !important;
+      display: block !important;
       background: #f5f6f8 !important;
     }
     
     .previewInner .a4Sheet {
       width: 794px !important;
       min-height: 1123px !important;
+      margin: 0 auto !important;
     }
     
     .modalCard {
@@ -2438,7 +2460,7 @@ const css = `
     }
     
     .previewInner {
-      transform: scale(0.35) !important;
+      transform: translateX(-50%) scale(0.35) !important;
     }
     
     .actions button {
@@ -2452,6 +2474,16 @@ const css = `
 
     .list {
       max-height: 100px !important;
+    }
+  }
+  
+  @media (max-width: 360px) {
+    .previewWrap {
+      height: 400px !important;
+    }
+    
+    .previewInner {
+      transform: translateX(-50%) scale(0.32) !important;
     }
   }
 `;
