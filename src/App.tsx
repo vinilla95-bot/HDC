@@ -891,6 +891,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             alignItems: 'center',
             justifyContent: 'space-between',
             background: '#fff',
+            flexShrink: 0,
           }}>
             <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
             <button 
@@ -914,8 +915,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             WebkitOverflowScrolling: 'touch',
             background: '#f5f6f8',
             padding: '10px',
-            display: 'flex',
-            justifyContent: 'center',
           }}>
             <style>{`
               .mobilePreviewContent .card {
@@ -930,18 +929,19 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 padding: 0 !important;
                 background: transparent !important;
                 display: block !important;
+                height: auto !important;
               }
               .mobilePreviewContent .a4Sheet {
-                margin: 0 !important;
+                margin: 0 auto !important;
                 border: 1px solid #ccc !important;
               }
             `}</style>
             <div 
               className="mobilePreviewContent"
               style={{
-                transform: `scale(${(window.innerWidth - 20) / 794})`,
+                transform: `scale(${Math.min(1, (window.innerWidth - 20) / 800)})`,
                 transformOrigin: 'top center',
-                width: 794,
+                width: 800,
                 margin: '0 auto',
               }}
             >
@@ -964,6 +964,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             gap: 8,
             background: '#fff',
             position: 'relative',
+            flexShrink: 0,
           }}>
             <button 
               onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
@@ -1537,44 +1538,60 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-  /* 모바일 견적서 미리보기 스케일 */
+  /* ✅ 모바일 견적서 미리보기 - 비율 유지하며 전체 보이도록 수정 */
   @media (max-width: 768px) {
-    .a4Wrap {
-      transform: scale(0.48) !important;
-      transform-origin: top center !important;
-      padding: 0 !important;
-      margin: 0 auto !important;
-      height: calc(1123px * 0.48) !important;
-    }
-    .a4Sheet {
-      width: 800px !important;
-    }
     #quotePreviewApp .card {
       overflow: hidden !important;
       min-height: auto !important;
       height: auto !important;
-      padding-bottom: 20px !important;
+      padding-bottom: 30px !important;
+    }
+    #quotePreviewApp .a4Wrap {
+      --scale: 0.42;
+      transform: scale(var(--scale)) !important;
+      transform-origin: top center !important;
+      padding: 0 !important;
+      margin: 0 auto !important;
+      width: 800px !important;
+      height: auto !important;
+    }
+    #quotePreviewApp .a4Sheet {
+      width: 800px !important;
+    }
+    /* 컨테이너 높이 = A4 높이 * scale */
+    #quotePreviewApp {
+      height: calc(1150px * 0.42 + 40px) !important;
+      overflow: hidden !important;
     }
   }
 
   @media (max-width: 480px) {
-    .a4Wrap {
-      transform: scale(0.42) !important;
-      height: calc(1123px * 0.42) !important;
+    #quotePreviewApp .a4Wrap {
+      --scale: 0.38;
+      transform: scale(var(--scale)) !important;
+    }
+    #quotePreviewApp {
+      height: calc(1150px * 0.38 + 40px) !important;
     }
   }
 
   @media (max-width: 400px) {
-    .a4Wrap {
-      transform: scale(0.38) !important;
-      height: calc(1123px * 0.38) !important;
+    #quotePreviewApp .a4Wrap {
+      --scale: 0.35;
+      transform: scale(var(--scale)) !important;
+    }
+    #quotePreviewApp {
+      height: calc(1150px * 0.35 + 40px) !important;
     }
   }
 
   @media (max-width: 360px) {
-    .a4Wrap {
-      transform: scale(0.35) !important;
-      height: calc(1123px * 0.35) !important;
+    #quotePreviewApp .a4Wrap {
+      --scale: 0.32;
+      transform: scale(var(--scale)) !important;
+    }
+    #quotePreviewApp {
+      height: calc(1150px * 0.32 + 40px) !important;
     }
   }
 
