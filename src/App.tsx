@@ -1149,7 +1149,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         
                         // ✅ 다운로드 시작 후 1.5초 뒤 SMS 앱으로 이동
                         // 삼성 인터넷에서 다운로드 팝업이 뜨더라도 자동으로 SMS 앱 열림
-                        const phone = form.phone.replace(/[^0-9]/g, '');
                         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                         const separator = isIOS ? '&' : '?';
                         
