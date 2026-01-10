@@ -2022,14 +2022,17 @@ const bizcardName = selectedBizcard?.name || "";
                         document.body.removeChild(a);
                         URL.revokeObjectURL(a.href);
                         
-                        toast('📷 이미지 저장됨!');
-                        
-                        // 문자앱 자동 열기
-                        setTimeout(() => {
+                        // 다운로드 팝업에서 다운로드 누르면 (focus 돌아오면) SMS로 이동
+                        const goToSms = () => {
+                          window.removeEventListener('focus', goToSms);
                           const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                           const separator = isIOS ? '&' : '?';
                           window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                        }, 1000);
+                        };
+                        window.addEventListener('focus', goToSms);
+                        
+                        // 10초 후 리스너 제거 (취소한 경우)
+                        setTimeout(() => window.removeEventListener('focus', goToSms), 10000);
                         
                       } catch (e) {
                         console.error(e);
@@ -2334,8 +2337,6 @@ const css = `
     .previewWrap {
       overflow: hidden !important;
       position: relative !important;
-      min-height: 300px !important;
-      max-height: 400px !important;
       cursor: pointer !important;
     }
     
@@ -2344,8 +2345,7 @@ const css = `
       transform-origin: top center !important;
       width: 100% !important;
       padding: 0 !important;
-      display: flex !important;
-      justify-content: center !important;
+      height: calc(1123px * 0.38) !important;
     }
     
     .previewInner > div {
@@ -2394,11 +2394,12 @@ const css = `
   @media (max-width: 400px) {
     .previewInner {
       transform: scale(0.32) !important;
+      height: calc(1123px * 0.32) !important;
     }
     
     .previewWrap {
-      min-height: 280px !important;
-      max-height: 350px !important;
+      min-height: auto !important;
+      max-height: none !important;
     }
     
     .actions button {
