@@ -1429,7 +1429,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                   <br />
                   1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
                   <br />
-                  2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /주문제작 외 전액 완불 후 출고
+                  2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고 
                   <br />
                   *출고 전날 오후 2시 이전 잔금 결제 조건*
                   <br />
