@@ -1157,7 +1157,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
                         
-                        const msg = `[현대컨테이너] ${form.name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                        const msg = `안녕하세요 문의 주셔서 감사합니다! 현대컨테이너입니다. ${form.name || '고객'}님, 견적서를 보내드립니다.확인하시고 문의사항 있으시면 언제든 연락 주세요 감사합니다~`;
                         const phone = form.phone.replace(/[^0-9]/g, '');
                         
                         // 이미지 다운로드
@@ -1429,7 +1429,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                   <br />
                   1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
                   <br />
-                  2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고.
+                  2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /주문제작 외 전액 완불 후 출고
                   <br />
                   *출고 전날 오후 2시 이전 잔금 결제 조건*
                   <br />
