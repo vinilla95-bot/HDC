@@ -248,23 +248,18 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // ✅ 모바일 스케일 계산 함수
+  // ✅ 모바일 스케일 계산 함수 - 화면에 맞게 동적 계산
   const getMobileScale = () => {
-    if (typeof window === 'undefined') return 0.42;
-    const w = window.innerWidth;
-    if (w <= 360) return 0.32;
-    if (w <= 400) return 0.35;
-    if (w <= 480) return 0.38;
-    return 0.42;
+    if (typeof window === 'undefined') return 0.45;
+    const screenWidth = window.innerWidth - 24; // padding 제외
+    const scale = screenWidth / 794; // 794px 기준
+    return Math.min(scale, 0.6); // 최대 0.6
   };
 
   const getMobileHeight = () => {
-    if (typeof window === 'undefined') return 500;
-    const w = window.innerWidth;
-    if (w <= 360) return 400;
-    if (w <= 400) return 430;
-    if (w <= 480) return 460;
-    return 500;
+    if (typeof window === 'undefined') return 550;
+    const scale = getMobileScale();
+    return Math.round(1150 * scale) + 20; // 견적서 높이 * 스케일 + 여백
   };
 
   // 이미지 URL을 base64로 변환
