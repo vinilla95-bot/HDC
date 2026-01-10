@@ -402,9 +402,11 @@ const bizcardName = selectedBizcard?.name || "";
 
     const tbodyHtml = itemRows.join('');
 
+    // ✅ 모바일에서도 transform 없이 고정 크기로 렌더링 (외부에서 scale 적용)
+    // ✅ inline transform 제거 - CSS에서만 적용
     const fullHtml = `
-      <div class="a4Wrap" style="display:flex;justify-content:center;padding:14px 0;background:#f5f6f8;transform:scale(1);transform-origin:top center;">
-        <div class="a4Sheet" id="a4SheetCapture" style="width:794px;background:#fff;border:1px solid #cfd3d8;padding:16px;box-sizing:border-box;">
+      <div class="a4Wrap">
+        <div class="a4Sheet" id="a4SheetCapture">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;">
               <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:160px;height:140px;" />
@@ -1066,6 +1068,16 @@ const bizcardName = selectedBizcard?.name || "";
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
+
+  // ✅ 화면 너비에 따른 스케일 계산
+  const getMobileScale = () => {
+    if (typeof window === 'undefined') return 0.42;
+    const screenWidth = window.innerWidth;
+    if (screenWidth <= 360) return 0.32;
+    if (screenWidth <= 400) return 0.35;
+    if (screenWidth <= 480) return 0.38;
+    return 0.42;
+  };
 
   return (
     <div
@@ -1826,7 +1838,7 @@ const bizcardName = selectedBizcard?.name || "";
         </div>
       )}
 
-      {/* 모바일 전체화면 미리보기 */}
+      {/* ✅ 모바일 전체화면 미리보기 - 스크롤 가능하게 수정 */}
       {mobilePreviewOpen && (
         <div 
           className="mobilePreviewModal"
@@ -1871,15 +1883,36 @@ const bizcardName = selectedBizcard?.name || "";
             background: '#f5f6f8',
             padding: '10px',
           }}>
+            {/* ✅ 스케일을 화면 너비에 맞게 동적 계산, 높이는 스케일된 A4 높이로 설정 */}
             <div 
               style={{
-                transform: `scale(${Math.min(1, (window.innerWidth - 20) / 794)})`,
-                transformOrigin: 'top center',
                 width: 794,
-                margin: '0 auto',
+                height: 1150,
+                transform: `scale(${Math.min(1, (window.innerWidth - 20) / 794)})`,
+                transformOrigin: 'top left',
+                marginLeft: `calc((100% - ${Math.min(1, (window.innerWidth - 20) / 794) * 794}px) / 2)`,
               }}
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
+            >
+              {/* ✅ previewHtml을 scale 없이 렌더링 */}
+              <style>{`
+                .mobilePreviewModal .a4Wrap {
+                  transform: none !important;
+                  padding: 0 !important;
+                  display: flex !important;
+                  justify-content: center !important;
+                  background: #f5f6f8 !important;
+                }
+                .mobilePreviewModal .a4Sheet {
+                  width: 794px !important;
+                  min-height: 1123px !important;
+                  background: #fff !important;
+                  border: 1px solid #cfd3d8 !important;
+                  padding: 16px !important;
+                  box-sizing: border-box !important;
+                }
+              `}</style>
+              <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+            </div>
           </div>
           <div style={{
             padding: '10px 16px',
@@ -1985,7 +2018,7 @@ const bizcardName = selectedBizcard?.name || "";
                         const originalSheetStyle = sheet.getAttribute('style') || '';
                         
                         if (previewInner) {
-                          previewInner.style.cssText = 'transform: none !important; width: 800px !important; padding: 0 !important;';
+                          previewInner.style.cssText = 'transform: none !important; width: 794px !important; padding: 0 !important;';
                         }
                         sheet.style.cssText = originalSheetStyle + '; width: 794px !important; transform: none !important;';
                         
@@ -2107,8 +2140,6 @@ const css = `
     justify-content: center;
     padding: 14px 0;
     background: #f5f6f8;
-    transform: scale(0.85);
-    transform-origin: top center;
   }
 
   .a4Sheet {
@@ -2299,7 +2330,7 @@ const css = `
   }
 }
 
-  /* ✅ 모바일 미리보기 수정 - 전체가 보이도록 */
+  /* ✅ 모바일 미리보기 수정 - A4 비율 유지 */
   @media (max-width: 768px) {
     .app {
       grid-template-columns: 1fr !important;
@@ -2335,30 +2366,39 @@ const css = `
       min-width: 70px !important;
     }
     
+    /* ✅ 수정: 컨테이너 높이를 스케일된 A4 높이에 맞게 설정 */
     .previewWrap {
       overflow: hidden !important;
       position: relative !important;
       cursor: pointer !important;
-      /* A4 전체 높이가 보이도록 컨테이너 높이 설정 */
-      height: calc(1150px * 0.42 + 30px) !important;
+      height: 500px !important;
+      display: flex !important;
+      justify-content: center !important;
     }
     
+    /* ✅ 수정: previewInner에서 transform 적용 (a4Wrap은 transform 없음) */
     .previewInner {
       transform: scale(0.42) !important;
       transform-origin: top center !important;
       width: 794px !important;
       padding: 0 !important;
-      margin: 0 auto !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
     }
     
+    /* ✅ a4Wrap에서는 transform 제거 */
     .previewInner .a4Wrap {
       transform: none !important;
-      padding: 0 !important;
+      padding: 14px 0 !important;
       width: 794px !important;
+      display: flex !important;
+      justify-content: center !important;
+      background: #f5f6f8 !important;
     }
     
     .previewInner .a4Sheet {
       width: 794px !important;
+      min-height: 1123px !important;
     }
     
     .modalCard {
@@ -2394,7 +2434,7 @@ const css = `
 
   @media (max-width: 400px) {
     .previewWrap {
-      height: calc(1150px * 0.35 + 30px) !important;
+      height: 430px !important;
     }
     
     .previewInner {
