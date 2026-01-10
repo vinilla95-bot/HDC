@@ -1166,54 +1166,63 @@ const bizcardName = selectedBizcard?.name || "";
           </div>
 
           <div className="content">
-            {/* ✅ 삼성 인터넷 호환: 인라인 스타일로 transform 적용 */}
+            {/* ✅ 삼성 인터넷 호환: zoom 사용 */}
             {isMobile ? (
-              // 모바일: 인라인 스타일로 완전히 제어
-              <div 
-                className="previewWrap"
-                onClick={() => { if (current) setMobilePreviewOpen(true); }}
-                style={{ 
-                  cursor: 'pointer',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  height: getMobileHeight(),
-                  width: '100%',
-                  background: '#f5f6f8',
-                }}
-              >
-                <div
-                  className="previewInner"
-                  id="quotePreview"
-                  style={{
-                    position: 'absolute',
-                    top: 10,
-                    left: '50%',
-                    width: 794,
-                    transform: `translateX(-50%) scale(${getMobileScale()})`,
-                    transformOrigin: 'top center',
-                    padding: 0,
-                    margin: 0,
-                  }}
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
-                />
-                {current && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 10,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'rgba(0,0,0,0.7)',
-                    color: '#fff',
-                    padding: '6px 12px',
-                    borderRadius: 20,
-                    fontSize: 11,
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                  }}>
-                    탭하여 크게 보기
+              // 모바일: 삼성 인터넷 호환
+              (() => {
+                const isSamsung = typeof navigator !== 'undefined' && navigator.userAgent.includes('SamsungBrowser');
+                const scale = getMobileScale();
+                const containerHeight = Math.round(1130 * scale);
+                
+                return (
+                  <div 
+                    className="previewWrap"
+                    onClick={() => { if (current) setMobilePreviewOpen(true); }}
+                    style={{ 
+                      cursor: 'pointer',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      width: '100%',
+                      height: containerHeight,
+                      background: '#f5f6f8',
+                    }}
+                  >
+                    <div
+                      className="previewInner"
+                      id="quotePreview"
+                      style={{
+                        position: 'absolute',
+                        top: 10,
+                        left: '50%',
+                        width: 794,
+                        marginLeft: -397,
+                        transformOrigin: 'top center',
+                        transform: isSamsung ? 'none' : `scale(${scale})`,
+                        zoom: isSamsung ? scale : undefined,
+                        padding: 0,
+                      }}
+                      dangerouslySetInnerHTML={{ __html: previewHtml }}
+                    />
+                    {current && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 10,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'rgba(0,0,0,0.7)',
+                        color: '#fff',
+                        padding: '6px 12px',
+                        borderRadius: 20,
+                        fontSize: 11,
+                        pointerEvents: 'none',
+                        zIndex: 10,
+                      }}>
+                        탭하여 크게 보기
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()
             ) : (
               // 데스크톱: 기존 방식
               <div 
@@ -1918,30 +1927,23 @@ const bizcardName = selectedBizcard?.name || "";
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 전체화면: A4 비율 유지 */}
+            {/* ✅ 삼성 인터넷 호환: zoom 사용 */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 794);
-              const scaledWidth = 794 * scale;
-              const scaledHeight = 1130 * scale; // A4 높이도 스케일 적용
+              const isSamsung = navigator.userAgent.includes('SamsungBrowser');
               return (
                 <div 
                   style={{
-                    width: scaledWidth,
-                    height: scaledHeight,
+                    width: 794 * scale,
                     margin: '0 auto',
-                    overflow: 'hidden',
-                    position: 'relative',
                   }}
                 >
                   <div
                     style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
                       width: 794,
-                      height: 1130,
-                      transform: `scale(${scale})`,
                       transformOrigin: 'top left',
+                      transform: isSamsung ? 'none' : `scale(${scale})`,
+                      zoom: isSamsung ? scale : undefined,
                     }}
                   >
                     <style>{`
