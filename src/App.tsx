@@ -850,20 +850,22 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         </div>
 
         {/* RIGHT - 삼성 인터넷 호환 미리보기 */}
-        <div 
-          id="quotePreviewApp"
-          onClick={() => { if (isMobileDevice) setMobilePreviewOpen(true); }}
-          style={{ 
-            cursor: isMobileDevice ? 'pointer' : 'default', 
-            position: 'relative',
-            ...(isMobileDevice ? {
+        {isMobileDevice ? (
+          // 모바일: 인라인 스타일로 완전히 제어
+          <div 
+            id="quotePreviewApp"
+            onClick={() => setMobilePreviewOpen(true)}
+            style={{ 
+              cursor: 'pointer', 
+              position: 'relative',
               height: getMobileHeight(),
               overflow: 'hidden',
               width: '100%',
-            } : {})
-          }}
-        >
-          {isMobileDevice && (
+              background: '#f5f6f8',
+              borderRadius: 14,
+              border: '1px solid #e5e7eb',
+            }}
+          >
             <div style={{
               position: 'absolute',
               bottom: 20,
@@ -879,15 +881,11 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             }}>
               탭하여 크게 보기
             </div>
-          )}
-          {/* 모바일: 인라인 스타일로 transform 적용 */}
-          {isMobileDevice ? (
             <div style={{
               position: 'absolute',
-              top: 0,
+              top: 10,
               left: '50%',
               width: 800,
-              height: 1180,
               transform: `translateX(-50%) scale(${getMobileScale()})`,
               transformOrigin: 'top center',
             }}>
@@ -901,9 +899,13 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 total_amount={total_amount}
                 bizcardName={selectedBizcard?.name || ""}
                 noTransform={true}
+                noPadding={true}
               />
             </div>
-          ) : (
+          </div>
+        ) : (
+          // 데스크톱: 기존 방식
+          <div id="quotePreviewApp">
             <A4Quote
               form={form}
               computedItems={computedItems}
@@ -914,8 +916,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
               total_amount={total_amount}
               bizcardName={selectedBizcard?.name || ""}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ✅ 모바일 전체화면 미리보기 - 삼성 인터넷 호환 */}
@@ -1218,17 +1220,18 @@ type A4QuoteProps = {
   total_amount: number;
   bizcardImageUrl?: string;
   bizcardName?: string;
-  noTransform?: boolean;  // ✅ 추가: 모바일 전체화면에서 transform 제거용
+  noTransform?: boolean;
+  noPadding?: boolean;  // ✅ 추가: 모바일에서 .card padding 제거
 };
 
-function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform }: A4QuoteProps) {
+function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding }: A4QuoteProps) {
   const today = new Date();
   const ymd = today.toISOString().slice(0, 10);
   const spec = `${form.w}x${form.l}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
   return (
-    <div className="card">
+    <div className="card" style={noPadding ? { padding: 0, margin: 0, border: 'none', background: 'transparent' } : undefined}>
       <style>{a4css}</style>
 
       {/* ✅ noTransform일 때 transform 제거 */}
