@@ -2078,39 +2078,34 @@ const bizcardName = selectedBizcard?.name || "";
                   <button
                     onClick={async () => {
                       document.getElementById('sendMenu')!.style.display = 'none';
-                      setMobilePreviewOpen(false);
+                      // ❌ setMobilePreviewOpen(false) 제거 - 캡처 후에 이동
+                      
+                      const originalSheet = document.getElementById('a4SheetCapture') || document.querySelector('.a4Sheet');
+                      if (!originalSheet) {
+                        alert('견적서를 찾을 수 없습니다.');
+                        return;
+                      }
                       
                       try {
                         toast('이미지 생성 중...');
                         
-                        // ✅ 캡처 전용 숨겨진 컨테이너 생성
+                        // ✅ downloadJpg와 완전히 동일한 방식
                         const captureContainer = document.createElement('div');
-                        captureContainer.id = 'captureContainer';
+                        captureContainer.id = 'captureContainerSms';
                         captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
                         document.body.appendChild(captureContainer);
                         
-                        // 기존 견적서 HTML 복제
-                        const originalSheet = document.getElementById('a4SheetCapture') || document.querySelector('.a4Sheet');
-                        if (!originalSheet) {
-                          alert('견적서를 찾을 수 없습니다.');
-                          document.body.removeChild(captureContainer);
-                          return;
-                        }
-                        
-                        // 스타일 태그도 복제
                         const styleTag = document.querySelector('#quotePreview style');
                         if (styleTag) {
                           captureContainer.appendChild(styleTag.cloneNode(true));
                         }
                         
-                        // a4Sheet 복제 (transform 없이 원본 크기)
                         const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
                         clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
                         captureContainer.appendChild(clonedSheet);
                         
                         await new Promise(r => setTimeout(r, 300));
                         
-                        // 캡처
                         const canvas = await html2canvas(clonedSheet, { 
                           scale: 2, 
                           backgroundColor: '#ffffff',
@@ -2120,26 +2115,24 @@ const bizcardName = selectedBizcard?.name || "";
                           windowWidth: 794,
                         });
                         
-                        // 캡처 컨테이너 제거
                         document.body.removeChild(captureContainer);
                         
-                        const blob = await new Promise<Blob>((resolve) => 
-                          canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
-                        );
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
                         
                         const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
                         const phone = current.customer_phone.replace(/[^0-9]/g, '');
                         
                         // 이미지 다운로드
                         const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
+                        a.href = dataUrl;
                         a.download = `견적서_${current.customer_name || 'quote'}.jpg`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
-                        URL.revokeObjectURL(a.href);
                         
-                        // ✅ 다운로드 시작 후 1.5초 뒤 SMS 앱으로 이동
+                        setMobilePreviewOpen(false); // ✅ 캡처 완료 후 모달 닫기
+                        
+                        // 다운로드 후 SMS 앱으로 이동
                         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                         const separator = isIOS ? '&' : '?';
                         
@@ -2149,7 +2142,7 @@ const bizcardName = selectedBizcard?.name || "";
                         
                       } catch (e) {
                         console.error(e);
-                        const container = document.getElementById('captureContainer');
+                        const container = document.getElementById('captureContainerSms');
                         if (container) document.body.removeChild(container);
                         alert('이미지 생성 실패: ' + (e as any)?.message);
                       }
