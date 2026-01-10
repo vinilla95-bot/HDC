@@ -2119,7 +2119,7 @@ const bizcardName = selectedBizcard?.name || "";
                         
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
                         
-                        const msg = `[현대컨테이너] ${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인 부탁드립니다.`;
+                        const msg = `안녕하세요 현대컨테이너 입니다 문의 주셔서 감사합니다.${current.customer_name || '고객'}님, 견적서를 보내드립니다. 확인하시고 궁금하신 사항 있으시면 언제든 연락주세요 감사합니다~.`;
                         const phone = current.customer_phone.replace(/[^0-9]/g, '');
                         
                         // 이미지 다운로드
