@@ -865,7 +865,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
           >
             <div style={{
               position: 'absolute',
-              bottom: 20,
+              bottom: 15,
               left: '50%',
               transform: 'translateX(-50%)',
               background: 'rgba(0,0,0,0.7)',
@@ -878,9 +878,10 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             }}>
               탭하여 크게 보기
             </div>
+            {/* 스케일 적용 컨테이너 */}
             <div style={{
               position: 'absolute',
-              top: 10,
+              top: 8,
               left: '50%',
               width: 800,
               transform: `translateX(-50%) scale(${getMobileScale()})`,
