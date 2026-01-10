@@ -872,7 +872,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         </div>
       </div>
 
-      {/* 모바일 전체화면 미리보기 */}
+      {/* ✅ 모바일 전체화면 미리보기 - 수정됨 */}
       {mobilePreviewOpen && (
         <div 
           style={{
@@ -916,33 +916,12 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            <style>{`
-              .mobilePreviewContent .card {
-                margin: 0 !important;
-                padding: 0 !important;
-                box-shadow: none !important;
-                border: none !important;
-                background: transparent !important;
-              }
-              .mobilePreviewContent .a4Wrap {
-                transform: none !important;
-                padding: 0 !important;
-                background: transparent !important;
-                display: block !important;
-                height: auto !important;
-              }
-              .mobilePreviewContent .a4Sheet {
-                margin: 0 auto !important;
-                border: 1px solid #ccc !important;
-              }
-            `}</style>
+            {/* ✅ 스케일을 화면 너비에 맞게 동적 계산 */}
             <div 
-              className="mobilePreviewContent"
               style={{
                 transform: `scale(${Math.min(1, (window.innerWidth - 20) / 800)})`,
-                transformOrigin: 'top center',
+                transformOrigin: 'top left',
                 width: 800,
-                margin: '0 auto',
               }}
             >
               <A4Quote
@@ -954,6 +933,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                 vat_amount={vat_amount}
                 total_amount={total_amount}
                 bizcardName={selectedBizcard?.name || ""}
+                noTransform={true}
               />
             </div>
           </div>
@@ -1171,9 +1151,10 @@ type A4QuoteProps = {
   total_amount: number;
   bizcardImageUrl?: string;
   bizcardName?: string;
+  noTransform?: boolean;  // ✅ 추가: 모바일 전체화면에서 transform 제거용
 };
 
-function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName }: A4QuoteProps) {
+function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform }: A4QuoteProps) {
   const today = new Date();
   const ymd = today.toISOString().slice(0, 10);
   const spec = `${form.w}x${form.l}`;
@@ -1183,7 +1164,8 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
     <div className="card">
       <style>{a4css}</style>
 
-      <div className="a4Wrap">
+      {/* ✅ noTransform일 때 transform 제거 */}
+      <div className="a4Wrap" style={noTransform ? { transform: 'none', padding: 0, background: '#fff' } : undefined}>
         <div className="a4Sheet">
           <div className="a4Header">
             <div className="a4HeaderLeft">
@@ -1394,8 +1376,6 @@ const a4css = `
     justify-content:center;
     padding: 14px 0;
     background:#f5f6f8;
-    transform: scale(0.82);
-    transform-origin: top center;
   }
   .a4Sheet {
     width: 800px;
@@ -1546,52 +1526,53 @@ const a4css = `
       height: auto !important;
       padding-bottom: 30px !important;
     }
+    /* ✅ 수정: a4Wrap에서만 scale 적용 */
     #quotePreviewApp .a4Wrap {
-      --scale: 0.42;
-      transform: scale(var(--scale)) !important;
+      transform: scale(0.42) !important;
       transform-origin: top center !important;
       padding: 0 !important;
       margin: 0 auto !important;
       width: 800px !important;
       height: auto !important;
+      background: #f5f6f8 !important;
     }
     #quotePreviewApp .a4Sheet {
       width: 800px !important;
+      min-height: 1123px !important;
     }
-    /* 컨테이너 높이 = A4 높이 * scale */
+    /* 컨테이너 높이 = A4 높이 * scale + 여유 */
     #quotePreviewApp {
-      height: calc(1150px * 0.42 + 40px) !important;
+      height: 500px !important;
       overflow: hidden !important;
+      display: flex !important;
+      justify-content: center !important;
     }
   }
 
   @media (max-width: 480px) {
     #quotePreviewApp .a4Wrap {
-      --scale: 0.38;
-      transform: scale(var(--scale)) !important;
+      transform: scale(0.38) !important;
     }
     #quotePreviewApp {
-      height: calc(1150px * 0.38 + 40px) !important;
+      height: 460px !important;
     }
   }
 
   @media (max-width: 400px) {
     #quotePreviewApp .a4Wrap {
-      --scale: 0.35;
-      transform: scale(var(--scale)) !important;
+      transform: scale(0.35) !important;
     }
     #quotePreviewApp {
-      height: calc(1150px * 0.35 + 40px) !important;
+      height: 420px !important;
     }
   }
 
   @media (max-width: 360px) {
     #quotePreviewApp .a4Wrap {
-      --scale: 0.32;
-      transform: scale(var(--scale)) !important;
+      transform: scale(0.32) !important;
     }
     #quotePreviewApp {
-      height: calc(1150px * 0.32 + 40px) !important;
+      height: 390px !important;
     }
   }
 
