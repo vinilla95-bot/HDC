@@ -60,6 +60,25 @@ export default function App() {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobileDevice = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+  // ✅ 모바일 스케일 계산 함수
+  const getMobileScale = () => {
+    if (typeof window === 'undefined') return 0.42;
+    const w = window.innerWidth;
+    if (w <= 360) return 0.32;
+    if (w <= 400) return 0.35;
+    if (w <= 480) return 0.38;
+    return 0.42;
+  };
+
+  const getMobileHeight = () => {
+    if (typeof window === 'undefined') return 500;
+    const w = window.innerWidth;
+    if (w <= 360) return 390;
+    if (w <= 400) return 420;
+    if (w <= 480) return 460;
+    return 500;
+  };
+
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   const isRentRow = (row: SelectedRow) => String((row as any)?.optionName || "").trim() === "임대";
 
@@ -835,11 +854,19 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
           </div>
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT - 삼성 인터넷 호환 미리보기 */}
         <div 
           id="quotePreviewApp"
           onClick={() => { if (isMobileDevice) setMobilePreviewOpen(true); }}
-          style={{ cursor: isMobileDevice ? 'pointer' : 'default', position: 'relative' }}
+          style={{ 
+            cursor: isMobileDevice ? 'pointer' : 'default', 
+            position: 'relative',
+            ...(isMobileDevice ? {
+              height: getMobileHeight(),
+              overflow: 'hidden',
+              width: '100%',
+            } : {})
+          }}
         >
           {isMobileDevice && (
             <div style={{
@@ -858,17 +885,41 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
               탭하여 크게 보기
             </div>
           )}
-         <A4Quote
-    form={form}
-    computedItems={computedItems}
-    blankRows={blankRows}
-    fmt={fmt}
-    supply_amount={supply_amount}
-    vat_amount={vat_amount}
-    total_amount={total_amount}
-    bizcardName={selectedBizcard?.name || ""}
-  />
-
+          {/* 모바일: 인라인 스타일로 transform 적용 */}
+          {isMobileDevice ? (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              width: 800,
+              height: 1180,
+              transform: `translateX(-50%) scale(${getMobileScale()})`,
+              transformOrigin: 'top center',
+            }}>
+              <A4Quote
+                form={form}
+                computedItems={computedItems}
+                blankRows={blankRows}
+                fmt={fmt}
+                supply_amount={supply_amount}
+                vat_amount={vat_amount}
+                total_amount={total_amount}
+                bizcardName={selectedBizcard?.name || ""}
+                noTransform={true}
+              />
+            </div>
+          ) : (
+            <A4Quote
+              form={form}
+              computedItems={computedItems}
+              blankRows={blankRows}
+              fmt={fmt}
+              supply_amount={supply_amount}
+              vat_amount={vat_amount}
+              total_amount={total_amount}
+              bizcardName={selectedBizcard?.name || ""}
+            />
+          )}
         </div>
       </div>
 
@@ -1539,72 +1590,7 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-  /* ✅ 모바일 견적서 미리보기 - 삼성 인터넷 호환 */
-  @media (max-width: 768px) {
-    #quotePreviewApp .card {
-      overflow: hidden !important;
-      min-height: auto !important;
-      height: auto !important;
-      padding: 0 !important;
-    }
-    
-    /* ✅ 삼성 인터넷 호환: 컨테이너에 position relative, 고정 높이 */
-    #quotePreviewApp {
-      position: relative !important;
-      height: 500px !important;
-      overflow: hidden !important;
-      width: 100% !important;
-    }
-    
-    /* ✅ 삼성 인터넷 호환: a4Wrap에 position absolute + transform */
-    #quotePreviewApp .a4Wrap {
-      position: absolute !important;
-      top: 0 !important;
-      left: 50% !important;
-      width: 800px !important;
-      height: 1180px !important;
-      transform: translateX(-50%) scale(0.42) !important;
-      transform-origin: top center !important;
-      padding: 14px 0 !important;
-      margin: 0 !important;
-      background: #f5f6f8 !important;
-    }
-    
-    #quotePreviewApp .a4Sheet {
-      width: 800px !important;
-      min-height: 1123px !important;
-      margin: 0 auto !important;
-    }
-  }
-
-  @media (max-width: 480px) {
-    #quotePreviewApp .a4Wrap {
-      transform: translateX(-50%) scale(0.38) !important;
-    }
-    #quotePreviewApp {
-      height: 460px !important;
-    }
-  }
-
-  @media (max-width: 400px) {
-    #quotePreviewApp .a4Wrap {
-      transform: translateX(-50%) scale(0.35) !important;
-    }
-    #quotePreviewApp {
-      height: 420px !important;
-    }
-  }
-
-  @media (max-width: 360px) {
-    #quotePreviewApp .a4Wrap {
-      transform: translateX(-50%) scale(0.32) !important;
-    }
-    #quotePreviewApp {
-      height: 390px !important;
-    }
-  }
-
-
+  /* ✅ 데스크톱 전용 - 모바일은 인라인 스타일로 처리 */
   @media print{
     @page {
       size: A4;
