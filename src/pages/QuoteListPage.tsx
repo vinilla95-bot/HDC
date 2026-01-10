@@ -588,25 +588,46 @@ const bizcardName = selectedBizcard?.name || "";
  async function downloadJpg() {
   requireCurrent();
 
-  const sheet = document.getElementById("a4SheetCapture");
-  if (!sheet) {
+  const originalSheet = document.getElementById("a4SheetCapture") || document.querySelector(".a4Sheet");
+  if (!originalSheet) {
     toast("캡처 대상을 찾을 수 없습니다.");
     return;
   }
 
   toast("JPG 생성 중...");
 
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const previewInner = document.querySelector(".previewInner") as HTMLElement;
-
-  // ✅ 모바일: 캡처 전 transform 제거
-  if (isMobile && previewInner) {
-    previewInner.style.cssText = "transform: none !important; width: auto !important;";
-    await new Promise(r => setTimeout(r, 300));
-  }
-
   try {
-    const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff" });
+    // ✅ 캡처 전용 숨겨진 컨테이너 생성
+    const captureContainer = document.createElement('div');
+    captureContainer.id = 'captureContainer';
+    captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
+    document.body.appendChild(captureContainer);
+    
+    // 스타일 태그도 복제
+    const styleTag = document.querySelector('#quotePreview style');
+    if (styleTag) {
+      captureContainer.appendChild(styleTag.cloneNode(true));
+    }
+    
+    // a4Sheet 복제 (transform 없이 원본 크기)
+    const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+    clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+    captureContainer.appendChild(clonedSheet);
+    
+    await new Promise(r => setTimeout(r, 300));
+    
+    const canvas = await html2canvas(clonedSheet, { 
+      scale: 2, 
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      width: 794,
+      windowWidth: 794,
+    });
+    
+    // 캡처 컨테이너 제거
+    document.body.removeChild(captureContainer);
+    
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
 
     const a = document.createElement("a");
@@ -618,12 +639,9 @@ const bizcardName = selectedBizcard?.name || "";
 
     toast("다운로드 완료");
   } catch (e: any) {
+    const container = document.getElementById('captureContainer');
+    if (container) document.body.removeChild(container);
     toast("JPG 생성 실패: " + (e?.message || String(e)));
-  } finally {
-    // ✅ 모바일: 원래대로 복원
-    if (isMobile && previewInner) {
-      previewInner.style.cssText = "";
-    }
   }
 }
 
@@ -2062,29 +2080,38 @@ const bizcardName = selectedBizcard?.name || "";
                       document.getElementById('sendMenu')!.style.display = 'none';
                       setMobilePreviewOpen(false);
                       
-                      // 견적서 이미지 생성
-                      const sheet = document.getElementById('a4SheetCapture') as HTMLElement;
-                      const previewInner = document.querySelector('.previewInner') as HTMLElement;
-                      if (!sheet) {
-                        alert('견적서를 찾을 수 없습니다.');
-                        return;
-                      }
-                      
                       try {
                         toast('이미지 생성 중...');
                         
-                        // 캡처 전 transform 제거 + 원본 크기로 설정
-                        const originalInnerStyle = previewInner?.getAttribute('style') || '';
-                        const originalSheetStyle = sheet.getAttribute('style') || '';
+                        // ✅ 캡처 전용 숨겨진 컨테이너 생성
+                        const captureContainer = document.createElement('div');
+                        captureContainer.id = 'captureContainer';
+                        captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
+                        document.body.appendChild(captureContainer);
                         
-                        if (previewInner) {
-                          previewInner.style.cssText = 'position: static !important; transform: none !important; width: 794px !important; height: auto !important; padding: 0 !important;';
+                        // 기존 견적서 HTML 복제
+                        const originalSheet = document.getElementById('a4SheetCapture') || document.querySelector('.a4Sheet');
+                        if (!originalSheet) {
+                          alert('견적서를 찾을 수 없습니다.');
+                          document.body.removeChild(captureContainer);
+                          return;
                         }
-                        sheet.style.cssText = originalSheetStyle + '; width: 794px !important; transform: none !important;';
                         
-                        await new Promise(r => setTimeout(r, 500));
+                        // 스타일 태그도 복제
+                        const styleTag = document.querySelector('#quotePreview style');
+                        if (styleTag) {
+                          captureContainer.appendChild(styleTag.cloneNode(true));
+                        }
                         
-                        const canvas = await html2canvas(sheet, { 
+                        // a4Sheet 복제 (transform 없이 원본 크기)
+                        const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+                        clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+                        captureContainer.appendChild(clonedSheet);
+                        
+                        await new Promise(r => setTimeout(r, 300));
+                        
+                        // 캡처
+                        const canvas = await html2canvas(clonedSheet, { 
                           scale: 2, 
                           backgroundColor: '#ffffff',
                           useCORS: true,
@@ -2093,11 +2120,8 @@ const bizcardName = selectedBizcard?.name || "";
                           windowWidth: 794,
                         });
                         
-                        // 캡처 후 원래대로 복원
-                        if (previewInner) {
-                          previewInner.style.cssText = originalInnerStyle;
-                        }
-                        sheet.style.cssText = originalSheetStyle;
+                        // 캡처 컨테이너 제거
+                        document.body.removeChild(captureContainer);
                         
                         const blob = await new Promise<Blob>((resolve) => 
                           canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
@@ -2116,7 +2140,6 @@ const bizcardName = selectedBizcard?.name || "";
                         URL.revokeObjectURL(a.href);
                         
                         // ✅ 다운로드 시작 후 1.5초 뒤 SMS 앱으로 이동
-                        // 삼성 인터넷에서 다운로드 팝업이 뜨더라도 자동으로 SMS 앱 열림
                         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                         const separator = isIOS ? '&' : '?';
                         
@@ -2126,7 +2149,8 @@ const bizcardName = selectedBizcard?.name || "";
                         
                       } catch (e) {
                         console.error(e);
-                        if (previewInner) previewInner.style.cssText = '';
+                        const container = document.getElementById('captureContainer');
+                        if (container) document.body.removeChild(container);
                         alert('이미지 생성 실패: ' + (e as any)?.message);
                       }
                     }}
