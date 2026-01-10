@@ -1157,7 +1157,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
                         
-                        const msg = `안녕하세요 문의 주셔서 감사합니다! 현대컨테이너입니다. ${form.name || '고객'}님, 견적서를 보내드립니다.확인하시고 문의사항 있으시면 언제든 연락 주세요 감사합니다~`;
+                        const msg = `안녕하세요 현대컨테이너입니다 문의 주셔서 감사합니다 ${form.name || '고객'}님 견적서를 보내드립니다.확인하시고 문의사항 있으시면 언제든 연락 주세요 감사합니다~`;
                         const phone = form.phone.replace(/[^0-9]/g, '');
                         
                         // 이미지 다운로드
