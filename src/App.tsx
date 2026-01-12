@@ -107,7 +107,16 @@ export default function App() {
     const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
 
     const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
-    const customerUnitPrice = Math.max(0, Math.round(Number((r as any).customerUnitPrice ?? 0)));
+    
+    // ✅ 임대의 경우: 개월 수 × 기본단가 = customerUnitPrice
+    const months = Number((r as any).months ?? 1);
+    let customerUnitPrice: number;
+    
+    if (rent) {
+      customerUnitPrice = Math.max(0, Math.round(baseUnitPrice * months));
+    } else {
+      customerUnitPrice = Math.max(0, Math.round(Number((r as any).customerUnitPrice ?? 0)));
+    }
 
     const finalAmount = Math.round(displayQty * customerUnitPrice);
 
@@ -119,6 +128,7 @@ export default function App() {
       displayQty: rent ? Math.max(1, displayQty) : displayQty,
       customerUnitPrice,
       finalAmount,
+      months: rent ? Math.max(1, months) : months,
       displayName: (r as any).displayName || (r as any).optionName,
     } as any;
   };
@@ -174,6 +184,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         customerUnitPrice: unitPrice,
         finalAmount: amount,             // ✅ 계산된 금액
         memo: "",
+        months: 1,
         lineSpec: { w: form.w, l: form.l },
       };
     });
@@ -192,8 +203,10 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
   const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
 
-  const displayQty = rent ? baseQty : 1;
-  const customerUnitPrice = rent ? baseUnitPrice : baseAmount;
+  // ✅ 임대: 기본 1개월, 수량 1
+  const defaultMonths = rent ? 1 : 1;
+  const displayQty = 1;
+  const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
 
   let simplifiedLabel = label;
   if (label && form.siteQ) {
@@ -206,7 +219,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   const displayName = isSpecial
     ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
     : rent
-    ? `임대 ${baseQty}개월`
+    ? `임대 ${defaultMonths}개월`
     : rawName;
 
   const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
@@ -226,6 +239,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     displayQty,
     customerUnitPrice,
     finalAmount: Math.round(displayQty * customerUnitPrice),
+    
+    months: defaultMonths,  // ✅ 개월 수 저장
 
     memo: res.memo || "",
     lineSpec: { w: form.w, l: form.l },
@@ -241,7 +256,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
   const updateRow = (
     key: string,
-    field: "displayName" | "displayQty" | "customerUnitPrice",
+    field: "displayName" | "displayQty" | "customerUnitPrice" | "months",
     value: any
   ) => {
     setSelectedItems((prev: any) =>
@@ -252,38 +267,32 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
         if (field === "displayName") return { ...item, displayName: String(value ?? "") };
 
+        // ✅ 개월 수 변경 (임대 전용)
+        if (field === "months" && rent) {
+          const months = Math.max(1, Math.floor(Number(value || 1)));
+          const newUnitPrice = item.baseUnitPrice * months;
+          return recomputeRow({ 
+            ...item, 
+            months,
+            customerUnitPrice: newUnitPrice,
+            displayName: `임대 ${months}개월`,
+          });
+        }
+
         if (field === "displayQty") {
           const qty = Math.max(0, Math.floor(Number(value || 0)));
 
           if (rent) {
-            const months = Math.max(1, qty);
-            const res = calculateOptionLine(
-              { option_id: "RENT", option_name: "임대", unit_price: 0 } as any,
-              item.lineSpec.w,
-              item.lineSpec.l,
-              { qty: months }
-            );
-
-            const updated: any = {
-              ...item,
-              unit: "개월",
-              baseQty: months,
-              baseUnitPrice: Number(res.unitPrice || 0),
-              baseAmount: Number(res.amount || 0),
-
-              displayQty: months,
-              customerUnitPrice: Number(res.unitPrice || 0),
-              finalAmount: Number(res.amount || 0),
-              displayName: `임대 ${months}개월`,
-              memo: res.memo || `${months}개월 임대`,
-            };
-            return recomputeRow(updated);
+            // ✅ 임대: 수량 변경 시 개월 수 기반 단가는 유지, 수량만 변경
+            return recomputeRow({ ...item, displayQty: Math.max(1, qty) });
           }
 
           return recomputeRow({ ...item, displayQty: qty });
         }
 
         if (field === "customerUnitPrice") {
+          // ✅ 임대가 아닌 경우에만 단가 직접 수정 허용
+          if (rent) return item;
           const p = Math.max(0, Number(value || 0));
           return recomputeRow({ ...item, customerUnitPrice: p });
         }
@@ -306,6 +315,25 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     const filtered = list.filter((s: any) => {
       const alias = String(s.alias || "");
       return matchKorean(alias, val);
+    });
+
+    // ✅ 정렬: 검색어로 시작하는 지역 > 검색어 포함 > 나머지
+    const qLower = val.toLowerCase();
+    filtered.sort((a: any, b: any) => {
+      const aliasA = String(a.alias || "").toLowerCase();
+      const aliasB = String(b.alias || "").toLowerCase();
+      
+      // 각 alias의 지역들 중 검색어로 시작하는 것이 있는지 체크
+      const regionsA = aliasA.split(',').map((r: string) => r.trim());
+      const regionsB = aliasB.split(',').map((r: string) => r.trim());
+      
+      const startsA = regionsA.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
+      const startsB = regionsB.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
+      if (startsA !== startsB) return startsA - startsB;
+      
+      const includesA = regionsA.some((r: string) => r.includes(qLower)) ? 0 : 1;
+      const includesB = regionsB.some((r: string) => r.includes(qLower)) ? 0 : 1;
+      return includesA - includesB;
     });
 
     setSites(filtered);
@@ -366,7 +394,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         baseUnitPrice: r.baseUnitPrice,
         baseAmount: r.baseAmount,
         lineSpec: r.lineSpec,
-        showSpec: r.showSpec,  // ✅ 추가
+        showSpec: r.showSpec,
+        months: r.months,  // ✅ 개월 수 저장
       })),
 
       updated_at: new Date().toISOString(),
@@ -744,6 +773,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
       customerUnitPrice: 0,
       finalAmount: 0,
       memo: "",
+      months: 1,
       lineSpec: { w: form.w, l: form.l },
     };
     setSelectedItems((prev: any) => [...prev, newRow]);
@@ -763,22 +793,19 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             <table>
               <thead>
                 <tr>
-                  <th style={{ width: "40%" }}>품명(수정)</th>
-                  <th style={{ width: "10%" }}>단위</th>
-                  <th className="right" style={{ width: "15%" }}>
-                    수량(고객)
-                  </th>
-                  <th className="right" style={{ width: "20%" }}>
-                    단가(고객)
-                  </th>
-                  <th className="right" style={{ width: "10%" }}>
-                    금액
-                  </th>
+                  <th style={{ width: "35%" }}>품명(수정)</th>
+                  <th style={{ width: "8%" }}>단위</th>
+                  <th className="right" style={{ width: "12%" }}>개월</th>
+                  <th className="right" style={{ width: "12%" }}>수량</th>
+                  <th className="right" style={{ width: "18%" }}>단가</th>
+                  <th className="right" style={{ width: "10%" }}>금액</th>
                   <th className="right" style={{ width: "5%" }}></th>
                 </tr>
               </thead>
               <tbody>
-                {computedItems.map((item: any) => (
+                {computedItems.map((item: any) => {
+                  const rent = isRentRow(item);
+                  return (
                   <tr key={item.key}>
                     <td>
                       <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>
@@ -797,15 +824,20 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
                     <td style={{ textAlign: "center" }}>{item.unit}</td>
 
+                    {/* ✅ 개월 컬럼 - 임대만 활성화 */}
                     <td className="right">
-                      <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={item.displayQty}
-                        onChange={(e) => updateRow(item.key, "displayQty", e.target.value)}
-                        style={{ width: 70, padding: 2, textAlign: "right" }}
-                      />
+                      {rent ? (
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={item.months || 1}
+                          onChange={(e) => updateRow(item.key, "months", e.target.value)}
+                          style={{ width: 50, padding: 2, textAlign: "right" }}
+                        />
+                      ) : (
+                        <span style={{ color: "#ccc" }}>-</span>
+                      )}
                     </td>
 
                     <td className="right">
@@ -813,10 +845,26 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         type="number"
                         min={0}
                         step={1}
-                        value={item.customerUnitPrice}
-                        onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
-                        style={{ width: 120, padding: 2, textAlign: "right" }}
+                        value={item.displayQty}
+                        onChange={(e) => updateRow(item.key, "displayQty", e.target.value)}
+                        style={{ width: 50, padding: 2, textAlign: "right" }}
                       />
+                    </td>
+
+                    <td className="right">
+                      {rent ? (
+                        // ✅ 임대: 단가 = 기본단가 × 개월 (자동계산, 읽기전용)
+                        <span style={{ fontWeight: 700 }}>{fmt(item.customerUnitPrice)}</span>
+                      ) : (
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={item.customerUnitPrice}
+                          onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
+                          style={{ width: 100, padding: 2, textAlign: "right" }}
+                        />
+                      )}
                     </td>
 
                     <td className="right" style={{ fontWeight: 900 }}>
@@ -838,11 +886,11 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )})}
 
                 {computedItems.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: 20, color: "#ccc" }}>
+                    <td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#ccc" }}>
                       항목이 없습니다.
                     </td>
                   </tr>
