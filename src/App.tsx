@@ -72,7 +72,8 @@ export default function App() {
   };
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
-  const isRentRow = (row: SelectedRow) => String((row as any)?.optionName || "").trim() === "임대";
+  // ✅ "임대"가 포함된 옵션은 모두 임대로 처리
+  const isRentRow = (row: SelectedRow) => String((row as any)?.optionName || "").includes("임대");
 
   useEffect(() => {
     supabase
@@ -197,7 +198,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
   const res = calculateOptionLine(opt, form.w, form.l);
   const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-  const rent = rawName.trim() === "임대";
+  const rent = rawName.includes("임대");  // ✅ "임대" 포함 여부로 체크
 
   const baseQty = isSpecial ? 1 : Number(res.qty || 1);
   const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
@@ -219,7 +220,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   const displayName = isSpecial
     ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
     : rent
-    ? `임대 ${defaultMonths}개월`
+    ? `${rawName} ${defaultMonths}개월`  // ✅ 원래 이름 + 개월
     : rawName;
 
   const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
@@ -271,11 +272,13 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         if (field === "months" && rent) {
           const months = Math.max(1, Math.floor(Number(value || 1)));
           const newUnitPrice = item.baseUnitPrice * months;
+          // 원래 옵션 이름에서 기존 개월 표시 제거 후 새 개월 추가
+          const baseName = String(item.optionName || "").replace(/\s*\d+개월$/, "").trim();
           return recomputeRow({ 
             ...item, 
             months,
             customerUnitPrice: newUnitPrice,
-            displayName: `임대 ${months}개월`,
+            displayName: `${baseName} ${months}개월`,
           });
         }
 
