@@ -1346,6 +1346,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="h">순번</th>
                 <th className="h">품목</th>
                 <th className="h">규격</th>
+                <th className="h">개월</th>
                 <th className="h">수량</th>
                 <th className="h">단가</th>
                 <th className="h">공급가</th>
