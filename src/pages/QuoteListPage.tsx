@@ -733,6 +733,7 @@ const bizcardName = selectedBizcard?.name || "";
 
     setEditForm({
       quote_title: current!.quote_title || "",
+      bizcard_id: current!.bizcard_id || "",
       customer_name: current!.customer_name || "",
       customer_phone: current!.customer_phone || "",
       customer_email: current!.customer_email || "",
@@ -850,75 +851,78 @@ const bizcardName = selectedBizcard?.name || "";
       const total_amount = supply_amount + vat_amount;
 
       // update 사용
-      const { error, data } = await supabase
-        .from("quotes")
-        .update({
-          quote_title: editForm.quote_title,
-          customer_name: editForm.customer_name,
-          customer_phone: editForm.customer_phone,
-          customer_email: editForm.customer_email,
-          site_name: editForm.site_name,
-          site_addr: editForm.site_addr,
-          spec: editForm.spec,
-          w: Number(editForm.w) || null,
-          l: Number(editForm.l) || null,
-          product: editForm.product,
-          qty: Number(editForm.qty) || 1,
-          memo: editForm.memo,
-          items: itemsToSave,
-          supply_amount,
-          vat_amount,
-          total_amount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("quote_id", current.quote_id)
-        .select();
+    const { error, data } = await supabase
+  .from("quotes")
+  .update({
+    quote_title: editForm.quote_title,
+    customer_name: editForm.customer_name,
+    customer_phone: editForm.customer_phone,
+    customer_email: editForm.customer_email,
+    site_name: editForm.site_name,
+    site_addr: editForm.site_addr,
+    spec: editForm.spec,
+    w: Number(editForm.w) || null,
+    l: Number(editForm.l) || null,
+    product: editForm.product,
+    qty: Number(editForm.qty) || 1,
+    memo: editForm.memo,
+    items: itemsToSave,
+    supply_amount,
+    vat_amount,
+    total_amount,
+    bizcard_id: editForm.bizcard_id || null,
+    updated_at: new Date().toISOString(),
+  })
+  .eq("quote_id", current.quote_id)
+  .select();
 
-      if (error) throw error;
+if (error) throw error;
 
-      // 실제로 업데이트 되었는지 확인
-      if (!data || data.length === 0) {
-        // 다시 조회해서 확인
-        const { data: checkData } = await supabase
-          .from("quotes")
-          .select("*")
-          .eq("quote_id", current.quote_id)
-          .single();
+// 실제로 업데이트 되었는지 확인
+if (!data || data.length === 0) {
+  // 다시 조회해서 확인
+  const { data: checkData } = await supabase
+    .from("quotes")
+    .select("*")
+    .eq("quote_id", current.quote_id)
+    .single();
 
-        if (checkData) {
-          toast("저장 완료!");
-          setOptQ("");
-          setEditOpen(false);
-          await loadList(q);
-          setCurrent(checkData as QuoteRow);
-          return;
-        } else {
-          throw new Error("업데이트가 반영되지 않았습니다.");
-        }
-      }
-
-      toast("저장 완료!");
-      setOptQ("");
-      setEditOpen(false);
-
-      // 목록 새로고침 후 현재 선택된 견적도 업데이트
-      await loadList(q);
-      setCurrent(data[0] as QuoteRow);
-    } catch (e: any) {
-      toast("저장 실패: " + (e?.message || String(e)));
-      console.error("saveEdit error:", e);
+  if (checkData) {
+    toast("저장 완료!");
+    setOptQ("");
+    setEditOpen(false);
+    // ✅ 여기에 추가
+    if (checkData.bizcard_id) {
+      setSelectedBizcardId(checkData.bizcard_id);
     }
+    await loadList(q);
+    setCurrent(checkData as QuoteRow);
+    return;
+  } else {
+    throw new Error("업데이트가 반영되지 않았습니다.");
   }
+}
 
-  // 옵션 검색 결과 필터링
-  const filteredOptions = useMemo(() => {
-  const query = String(optQ || "").trim();
-  if (!query) return [];
+toast("저장 완료!");
+setOptQ("");
+setEditOpen(false);
 
-  const matched = options.filter((o: any) => {
-    const name = String(o.option_name || "");
-    return matchKorean(name, query);  // option_name만 검색
-  });
+// ✅ 여기에 추가
+if (data[0].bizcard_id) {
+  setSelectedBizcardId(data[0].bizcard_id);
+}
+
+// 목록 새로고침 후 현재 선택된 견적도 업데이트
+await loadList(q);
+setCurrent(data[0] as QuoteRow);
+} catch (e: any) {
+  toast("저장 실패: " + (e?.message || String(e)));
+  console.error("saveEdit error:", e);
+}
+}
+
+// 옵션 검색 결과 필터링
+const filteredOptions = useMemo(() => {
 
   // ✅ 정렬: 검색어로 시작 > 검색어 포함 > 초성 매칭
   const qLower = query.toLowerCase();
@@ -1137,9 +1141,13 @@ const bizcardName = selectedBizcard?.name || "";
               <div
                 key={it.quote_id}
                 className="item"
-                onClick={() => {
-                  setCurrent(it);
-                }}
+               onClick={() => {
+  setCurrent(it);
+  // ✅ 저장된 명함이 있으면 해당 명함 선택
+  if (it.bizcard_id) {
+    setSelectedBizcardId(it.bizcard_id);
+  }
+}}
               >
                 <div className="top">
                   <div>
