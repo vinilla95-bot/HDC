@@ -583,45 +583,53 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             />
           </div>
 
-          <div className="row">
-            <label>고객명</label>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          </div>
-          <div className="row">
-            <label>이메일</label>
-            <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-          <div className="row">
-            <label>전화번호</label>
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+        <hr />
+
+          {/* ✅ 옵션 검색을 먼저 */}
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <p className="title" style={{ margin: 0 }}>
+              옵션
+            </p>
+            <span className="pill">{computedItems.length}개</span>
           </div>
 
           <div className="row">
-            <label>명함</label>
-            <select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)}>
-              {bizcards.length === 0 && <option value="">(명함 없음)</option>}
-              {bizcards.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <label>옵션 검색</label>
+            <input
+              value={form.optQ}
+              onChange={(e) => setForm({ ...form, optQ: e.target.value })}
+              placeholder="예: 모노륨, 단열, 도어... (초성검색 가능)"
+            />
           </div>
 
-          <div className="row">
-            <label>가로(m)</label>
-            <input type="number" value={form.w} onChange={(e) => setForm({ ...form, w: Number(e.target.value) })} />
-          </div>
-          <div className="row">
-            <label>세로(m)</label>
-            <input type="number" value={form.l} onChange={(e) => setForm({ ...form, l: Number(e.target.value) })} />
-          </div>
-          <p className="muted" style={{ textAlign: "right" }}>
-            면적: {(form.w * form.l).toFixed(2)}㎡
-          </p>
+          {String(form.optQ || "").trim() !== "" && (
+            <div className="box">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((o: any) => (
+                  <div
+                    key={o.option_id}
+                    className="result-item"
+                    onClick={() => {
+                      addOption(o);
+                    }}
+                  >
+                    <div style={{ fontWeight: 800 }}>{o.option_name}</div>
+                    <div className="muted">
+                      {o.unit || "EA"} · {fmt(Number(o.unit_price || 0))}원
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="result-item" style={{ cursor: "default", color: "#999" }}>
+                  검색 결과 없음
+                </div>
+              )}
+            </div>
+          )}
 
           <hr />
 
+          {/* ✅ 현장지역을 아래로 */}
           <div className="row">
             <label>현장지역</label>
             <input
@@ -674,51 +682,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
               ))}
             </div>
           )}
-
-          <hr />
-
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <p className="title" style={{ margin: 0 }}>
-              옵션
-            </p>
-            <span className="pill">{computedItems.length}개</span>
-          </div>
-
-          <div className="row">
-            <label>옵션 검색</label>
-            <input
-              value={form.optQ}
-              onChange={(e) => setForm({ ...form, optQ: e.target.value })}
-              placeholder="예: 모노륨, 단열, 도어... (초성검색 가능)"
-            />
-          </div>
-
-          {String(form.optQ || "").trim() !== "" && (
-            <div className="box">
-
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((o: any) => (
-                  <div
-                    key={o.option_id}
-                    className="result-item"
-                    onClick={() => {
-                      addOption(o);
-                    }}
-                  >
-                    <div style={{ fontWeight: 800 }}>{o.option_name}</div>
-                    <div className="muted">
-                      {o.unit || "EA"} · {fmt(Number(o.unit_price || 0))}원
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="result-item" style={{ cursor: "default", color: "#999" }}>
-                  검색 결과 없음
-                </div>
-              )}
-            </div>
-          )}
-
           {/* ✅ 자유 품목 추가 버튼 */}
 <button
   className="btn"
