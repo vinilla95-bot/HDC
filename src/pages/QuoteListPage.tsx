@@ -923,8 +923,15 @@ setCurrent(data[0] as QuoteRow);
 
 // 옵션 검색 결과 필터링
 const filteredOptions = useMemo(() => {
+  const query = String(optQ || "").trim();
+  if (!query) return [];
 
-  // ✅ 정렬: 검색어로 시작 > 검색어 포함 > 초성 매칭
+  const matched = options.filter((o: any) => {
+    const name = String(o.option_name || "");
+    return matchKorean(name, query);
+  });
+
+  // 정렬: 검색어로 시작 > 검색어 포함 > 초성 매칭
   const qLower = query.toLowerCase();
   matched.sort((a: any, b: any) => {
     const nameA = String(a.option_name || "").toLowerCase();
