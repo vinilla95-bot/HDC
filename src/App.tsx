@@ -620,6 +620,54 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             면적: {(form.w * form.l).toFixed(2)}㎡
           </p>
 
+
+ <hr />
+
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <p className="title" style={{ margin: 0 }}>
+              옵션
+            </p>
+            <span className="pill">{computedItems.length}개</span>
+          </div>
+
+          <div className="row">
+            <label>옵션 검색</label>
+            <input
+              value={form.optQ}
+              onChange={(e) => setForm({ ...form, optQ: e.target.value })}
+              placeholder="예: 모노륨, 단열, 도어... (초성검색 가능)"
+            />
+          </div>
+
+          {String(form.optQ || "").trim() !== "" && (
+            <div className="box">
+
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((o: any) => (
+                  <div
+                    key={o.option_id}
+                    className="result-item"
+                    onClick={() => {
+                      addOption(o);
+                    }}
+                  >
+                    <div style={{ fontWeight: 800 }}>{o.option_name}</div>
+                    <div className="muted">
+                      {o.unit || "EA"} · {fmt(Number(o.unit_price || 0))}원
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="result-item" style={{ cursor: "default", color: "#999" }}>
+                  검색 결과 없음
+                </div>
+              )}
+            </div>
+          )}
+
+
+
+          
           <hr />
 
           <div className="row">
@@ -675,49 +723,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
             </div>
           )}
 
-          <hr />
-
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <p className="title" style={{ margin: 0 }}>
-              옵션
-            </p>
-            <span className="pill">{computedItems.length}개</span>
-          </div>
-
-          <div className="row">
-            <label>옵션 검색</label>
-            <input
-              value={form.optQ}
-              onChange={(e) => setForm({ ...form, optQ: e.target.value })}
-              placeholder="예: 모노륨, 단열, 도어... (초성검색 가능)"
-            />
-          </div>
-
-          {String(form.optQ || "").trim() !== "" && (
-            <div className="box">
-
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((o: any) => (
-                  <div
-                    key={o.option_id}
-                    className="result-item"
-                    onClick={() => {
-                      addOption(o);
-                    }}
-                  >
-                    <div style={{ fontWeight: 800 }}>{o.option_name}</div>
-                    <div className="muted">
-                      {o.unit || "EA"} · {fmt(Number(o.unit_price || 0))}원
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="result-item" style={{ cursor: "default", color: "#999" }}>
-                  검색 결과 없음
-                </div>
-              )}
-            </div>
-          )}
+         
 
           {/* ✅ 자유 품목 추가 버튼 */}
 <button
