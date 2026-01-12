@@ -727,7 +727,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     const newRow: any = {
       key: `CUSTOM_${Date.now()}`,
       optionId: `CUSTOM_${Date.now()}`,
-      optionName: "직접입력",
+      optionName: "",
       displayName: "",
       unit: "EA",
       showSpec: "n",
