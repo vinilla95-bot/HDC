@@ -406,36 +406,36 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   }
 
   // 견적 선택 시 임대차 폼 초기화
-  useEffect(() => {
-    if (current) {
-      const items = pickItems(current);
-      // 임대 품목에서 개월 수 추출
-      const rentalItem = items.find(it => {
-        const name = it.optionName || it.displayName || it.item_name || "";
-        return String(name).includes("임대");
-      });
-      const months = rentalItem?.months || 3;
+ // 견적 선택 시 임대차 폼 초기화
+useEffect(() => {
+  if (current) {
+    const items = pickItems(current);
+    const rentalItem = items.find(it => {
+      const name = it.optionName || it.displayName || it.item_name || "";
+      return String(name).includes("임대");
+    });
+    const months = rentalItem?.months || 3;
 
-      // 계약 시작일 계산
-      const today = new Date();
-      const startDate = current.contract_start || today.toISOString().slice(0, 10);
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + months);
+    const today = new Date();
+    const startDate = current.contract_start || today.toISOString().slice(0, 10);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + months);
 
-      setRentalForm({
-        contractStart: startDate.replace(/-/g, '/').slice(2),
-        contractEnd: endDate.toISOString().slice(2, 10).replace(/-/g, '/'),
-        months: months,
-        companyName: "",
-        regNo: "",
-        ceo: "",
-        siteAddr: current.site_addr || "",
-        phone: current.customer_phone || "",
-        officePhone: "",
-        fax: "",
-      });
-    }
-  }, [current]);
+    setRentalForm({
+      contractStart: startDate.replace(/-/g, '/').slice(2),
+      contractEnd: endDate.toISOString().slice(2, 10).replace(/-/g, '/'),
+      months: months,
+      companyName: "",
+      regNo: "",
+      ceo: "",
+      siteAddr: current.site_addr || "",
+      phone: current.customer_phone || "",
+      officePhone: "",
+      fax: "",
+      email: current.customer_email || "",  // ← 이거 추가!
+    });
+  }
+}, [current]);
 
   useEffect(() => {
     loadList("");
