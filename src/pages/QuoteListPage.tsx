@@ -753,33 +753,77 @@ const bizcardName = selectedBizcard?.name || "";
   }
 
   // ✅ 견적서 바로 전송 (미리보기 없음, HTML 양식 포함)
-  async function sendQuoteEmail() {
-    requireCurrent();
-    const quoteId = current!.quote_id;
-    const to = sendTo.trim() || (current!.customer_email || "").trim();
+  // ✅ 견적서 캡처 → PDF → 메일 전송 (App.tsx와 동일 방식)
+async function sendQuoteEmail() {
+  requireCurrent();
+  const quoteId = current!.quote_id;
+  const to = sendTo.trim() || (current!.customer_email || "").trim();
 
-    if (!to) {
-      setSendStatus("수신 이메일이 비어있습니다.");
-      return;
-    }
-
-    try {
-      setSendStatus("메일 전송 중...");
-      const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
-      
-      // HTML 없이 quote_id만 전송 (GAS에서 HTML 생성)
-      await sendQuoteEmailApi(quoteId, to, bizcardImageUrl);
-      
-      setSendStatus("전송 완료!");
-      toast("견적서 메일 전송 완료");
-      setSendOpen(false);
-      loadList(q);
-    } catch (e: any) {
-      setSendStatus("전송 실패: " + (e?.message || String(e)));
-      toast("메일 전송 실패");
-    }
+  if (!to) {
+    setSendStatus("수신 이메일이 비어있습니다.");
+    return;
   }
+
+  try {
+    setSendStatus("PDF 생성 중...");
+    
+    // ✅ 견적서 캡처
+    const originalSheet = document.getElementById("a4SheetCapture") || document.querySelector(".a4Sheet");
+    if (!originalSheet) {
+      throw new Error("견적서를 찾을 수 없습니다.");
+    }
+
+    // 캡처 컨테이너 생성
+    const captureContainer = document.createElement('div');
+    captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
+    document.body.appendChild(captureContainer);
+    
+    const styleTag = document.querySelector('#quotePreview style');
+    if (styleTag) {
+      captureContainer.appendChild(styleTag.cloneNode(true));
+    }
+    
+    const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+    clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+    captureContainer.appendChild(clonedSheet);
+    
+    await new Promise(r => setTimeout(r, 300));
+    
+    const canvas = await html2canvas(clonedSheet, { 
+      scale: 2, 
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      width: 794,
+      windowWidth: 794,
+    });
+    
+    document.body.removeChild(captureContainer);
+    
+    // ✅ 이미지 Base64 데이터
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    
+    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+    const bizcardImageUrl = selectedBizcard?.image_url || "";
+    const customerName = current!.customer_name || "고객";
+    
+    setSendStatus("메일 전송 중...");
+    
+    // ✅ 캡처 방식 GAS 함수 호출
+    await gasCall("sendQuoteEmailWithPdf", [quoteId, to, imgData, bizcardImageUrl, customerName]);
+    
+    setSendStatus("전송 완료!");
+    toast("견적서 메일 전송 완료");
+    setSendOpen(false);
+    loadList(q);
+  } catch (e: any) {
+    setSendStatus("전송 실패: " + (e?.message || String(e)));
+    toast("메일 전송 실패");
+    
+    // 캡처 컨테이너 정리
+    const container = document.querySelector('div[style*="top: -9999px"]');
+    if (container) document.body.removeChild(container);
+  }
+}
 
   async function sendStatementEmail() {
     requireCurrent();
