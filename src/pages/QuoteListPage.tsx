@@ -1025,7 +1025,8 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
         </table>
 
         {/* 주의사항 */}
-        <div style={{ fontSize: 10, lineHeight: 1.7, marginBottom: 15 }}>
+       {/* 주의사항 */}
+<div style={{ fontSize: 11, lineHeight: 1.7, marginBottom: 15, textAlign: 'left' }}>
           <p style={{ margin: '2px 0' }}>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
           <p style={{ margin: '2px 0' }}>※ 계약기간의 연장 시 임차인은 만료 5일 전까지 통보해야 하며, 재 계약서를 작성하지 않고 연장하였을 시 본 계약서로서 대체한다.</p>
           <p style={{ margin: '2px 0' }}>※ 임대 계약기간 만료 전에 컨테이너를 회수하여도 임대료는 환불되지 않는다.</p>
