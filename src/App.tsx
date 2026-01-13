@@ -1347,7 +1347,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                   </div>
                 </td>
                 <th className="k center">공급자</th>
-                <td className="v center">현대컨테이너</td>
+                <td className="v ">현대컨테이너</td>
               </tr>
 
               <tr>
