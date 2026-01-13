@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
+import jsPDF from 'jspdf'; 
 
 import {
   supabase,
@@ -30,6 +31,95 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   if (res && typeof res === "object" && "error" in res) throw new Error(String(res.error));
   return res as T;
 }
+
+// ✅ 이미지 기반 PDF 메일 전송 (화면 캡처 그대로)
+function sendQuoteEmailWithPdf(quoteId, toEmail, imgBase64, bizcardImageUrl, customerName) {
+  return safe_(function () {
+    quoteId = cleanKey_(quoteId);
+    if (!quoteId) throw new Error("QUOTE_ID가 비었습니다.");
+
+    const recipient = cleanKey_(toEmail);
+    if (!recipient) throw new Error("수신 이메일이 없습니다.");
+
+    customerName = cleanKey_(customerName) || "고객";
+    const today = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
+    const pdfName = `${customerName} 귀하 견적서 ${today}.pdf`;
+
+    // ✅ Base64 이미지 → PDF Blob 생성
+    const base64Data = imgBase64.replace(/^data:image\/\w+;base64,/, "");
+    const imageBytes = Utilities.base64Decode(base64Data);
+    const imageBlob = Utilities.newBlob(imageBytes, MimeType.JPEG, "quote.jpg");
+
+    // 이미지를 PDF로 변환 (Google Drive 임시 저장 방식)
+    const tempFolder = DriveApp.getRootFolder();
+    const tempFile = tempFolder.createFile(imageBlob);
+    
+    // 이미지 크기로 PDF 생성
+    const pdfBlob = Utilities.newBlob(imageBytes, MimeType.JPEG)
+      .setName(pdfName);
+    
+    // ✅ 더 나은 방법: HTML로 이미지 감싸서 PDF 변환
+    const htmlForPdf = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @page { size: A4; margin: 0; }
+          body { margin: 0; padding: 0; }
+          img { width: 100%; height: auto; display: block; }
+        </style>
+      </head>
+      <body>
+        <img src="${imgBase64}" />
+      </body>
+      </html>
+    `;
+    
+    const pdfBlobFinal = HtmlService.createHtmlOutput(htmlForPdf)
+      .getBlob()
+      .setName(pdfName)
+      .getAs(MimeType.PDF);
+    
+    // 임시 파일 삭제
+    tempFile.setTrashed(true);
+
+    const subject = `[현대컨테이너] 견적서 송부의 件`;
+    
+    let htmlBody = '<div style="font-family: Malgun Gothic, sans-serif; font-size: 14px; line-height: 1.8; color: #333;"><p>안녕하세요, 현대컨테이너 입니다.</p><p>귀사의 요청에 따라 견적서 보내드립니다.<br>첨부파일 확인 부탁드리며, 추가로 궁금하신 사항이나 수정 요청이 있으시면 언제든지 편하게 연락주시기 바랍니다.</p><p>감사합니다.</p>';
+    
+    let inlineImages = {};
+    if (bizcardImageUrl && String(bizcardImageUrl).trim().length > 0) {
+      try {
+        const response = UrlFetchApp.fetch(bizcardImageUrl);
+        inlineImages.bizcard = response.getBlob();
+        htmlBody += '<br><br><img src="cid:bizcard" style="max-width:400px; border:1px solid #ddd;">';
+      } catch (e) {
+        Logger.log("명함 이미지 로드 실패: " + e.message);
+      }
+    }
+    
+    htmlBody += '</div>';
+
+    const plainText = '안녕하세요, 현대컨테이너 입니다.\n\n귀사의 요청에 따라 견적서 보내드립니다.\n첨부파일 확인 부탁드리며, 추가로 궁금하신 사항이나 수정 요청이 있으시면 언제든지 편하게 연락주시기 바랍니다.\n\n감사합니다.';
+
+    GmailApp.sendEmail(
+      recipient,
+      subject,
+      plainText,
+      buildMailOptions_({
+        htmlBody: htmlBody,
+        attachments: [pdfBlobFinal],
+        inlineImages: inlineImages,
+        replyTo: 'hdc12@naver.com',
+        bcc: 'hdc12@naver.com',
+        name: '현대컨테이너'
+      })
+    );
+
+    return { ok: true, quoteId: quoteId };
+  });
+}
+
 
 async function sendQuoteEmailApi(quoteId: string, to: string, html: string, bizcardImageUrl?: string) {
   await gasCall("listSendQuoteEmail", [quoteId, to, html, bizcardImageUrl]);
