@@ -647,21 +647,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     );
   }, [current, bizcards, selectedBizcardId]);
 
-  // ✅ 거래명세서 미리보기 - 원본과 동일한 가로 레이아웃
-  const statementPreviewHtml = useMemo(() => {
-    if (!current) return null;
 
-    const items = pickItems(current);
-    const customerName = current.customer_name ?? "";
-    const customerPhone = current.customer_phone ?? "";
-    const supplyAmount = current.supply_amount ?? 0;
-    const vatAmount = current.vat_amount ?? 0;
-    const totalAmount = current.total_amount ?? 0;
-
-    const today = new Date();
-    const ymd = today.toISOString().slice(0, 10);
-
-    const MIN_ROWS = 12;
 // ✅ 거래명세서 미리보기 - HTML 디자인에 맞춤
   const statementPreviewHtml = useMemo(() => {
     if (!current) return null;
