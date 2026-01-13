@@ -7,18 +7,7 @@ const SB_KEY =
 
 export const supabase = createClient(SB_URL, SB_KEY);
 
-export const calculateOptionLine = (
-  opt: SupabaseOptionRow,
-  w: number,
-  l: number,
-  overrides: any = {}
-) => {
-  // ✅ 디버깅 로그 추가
-  console.log('calculateOptionLine:', {
-    name: opt.option_name,
-    qty_mode: opt.qty_mode,
-    w, l
-  });
+
 
 export const roundToTenThousand = (val: number) => {
   const n = Number(val || 0);
