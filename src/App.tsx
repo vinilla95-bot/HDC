@@ -1230,7 +1230,7 @@ const handleSend = async () => {
                         await new Promise(r => setTimeout(r, 300));
                         
                         const canvas = await html2canvas(clonedSheet, { 
-                          scale: 2, 
+                          scale: 1.5, 
                           backgroundColor: '#ffffff',
                           useCORS: true,
                           allowTaint: true,
