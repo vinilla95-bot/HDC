@@ -21,7 +21,7 @@ const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5
 
 // gasRpc가 필요로 하는 getWebAppUrl 전역 정의
 (window as any).getWebAppUrl = () => GAS_WEB_APP_URL;
-
+import React, { useEffect, useMemo, useRef, useState } from "react";
 // GAS 호출 래퍼
 async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   const res = await gasRpcRaw(fn, args);
