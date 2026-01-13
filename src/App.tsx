@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 import {
   supabase,
@@ -615,21 +616,60 @@ const previewHtml = useMemo(() => {
       quoteId = newId;
     }
 
+    // ✅ downloadJpg와 동일한 캡처 로직
+    setSendStatus("견적서 생성 중...");
+    
+    const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
+    if (!originalSheet) {
+      alert("견적서를 찾을 수 없습니다.");
+      setSendStatus("");
+      return;
+    }
+
+    const captureContainer = document.createElement('div');
+    captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
+    document.body.appendChild(captureContainer);
+    
+    const styleTag = document.querySelector('#quotePreviewApp style');
+    if (styleTag) captureContainer.appendChild(styleTag.cloneNode(true));
+    
+    const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+    clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+    captureContainer.appendChild(clonedSheet);
+    
+    await new Promise(r => setTimeout(r, 300));
+    
+    const canvas = await html2canvas(clonedSheet, { 
+      scale: 2, 
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      width: 800,
+      windowWidth: 800,
+    });
+    
+    document.body.removeChild(captureContainer);
+
+    // ✅ jsPDF로 PDF 생성
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pdfWidth = 210;
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+    const pdfBase64 = pdf.output("datauristring");
+
     const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
     const bizcardImageUrl = selectedBizcard?.image_url || "";
     
     setSendStatus("메일 전송 중...");
-    // ✅ previewHtml 전달
-    await gasCall("listSendQuoteEmail", [quoteId, form.email, previewHtml, bizcardImageUrl]);
+    await gasCall("listSendQuoteEmailWithPdf", [quoteId, form.email, pdfBase64, bizcardImageUrl]);
     
     setSendStatus("전송 완료!");
     alert("견적서가 성공적으로 전송되었습니다.");
-    
     setTimeout(() => setSendStatus(""), 2000);
   } catch (e: any) {
     setSendStatus("전송 실패");
     alert("전송 실패: " + (e?.message || String(e)));
-    console.error("handleSend error:", e);
   }
 };
 
