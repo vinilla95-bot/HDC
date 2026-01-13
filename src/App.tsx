@@ -637,7 +637,7 @@ const previewHtml = useMemo(() => {
     await new Promise(r => setTimeout(r, 300));
     
     const canvas = await html2canvas(clonedSheet, { 
-      scale: 2, 
+      scale: 1.5, 
       backgroundColor: "#ffffff",
       useCORS: true,
       allowTaint: true,
@@ -648,7 +648,7 @@ const previewHtml = useMemo(() => {
     document.body.removeChild(captureContainer);
 
     // ✅ jsPDF로 PDF 생성
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    const imgData = canvas.toDataURL("image/jpeg", 0.7);
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pdfWidth = 210;
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
