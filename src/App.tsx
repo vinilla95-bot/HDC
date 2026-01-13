@@ -17,6 +17,11 @@ import { gasRpc as gasRpcRaw } from "./lib/gasRpc";
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
 
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
+
+// gasRpc가 필요로 하는 getWebAppUrl 전역 정의
+(window as any).getWebAppUrl = () => GAS_WEB_APP_URL;
+
 // GAS 호출 래퍼
 async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   const res = await gasRpcRaw(fn, args);
