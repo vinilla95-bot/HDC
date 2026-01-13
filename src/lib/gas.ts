@@ -1,26 +1,19 @@
 // src/lib/gas.ts
-type GasOk<T> = { ok: true; value?: T } | T; // GAS가 safe_로 감싸서 {ok,value}로 오거나, 그냥 T로 올 수도 있음
-type GasErr = { ok: false; message?: string };
-
-const GAS_URL = import.meta.env.VITE_GAS_WEBAPP_URL as string;
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
 
 function unwrap<T>(res: any): T {
   if (!res) throw new Error("Empty response from GAS");
-  // safe_ 형태: { ok:false, message } or { ok:true, value }
   if (res.ok === false) throw new Error(res.message || "GAS error");
   if (res.value !== undefined) return res.value as T;
   return res as T;
 }
 
 async function gasPost<T>(fn: string, ...args: any[]): Promise<T> {
-  if (!GAS_URL) throw new Error("VITE_GAS_WEBAPP_URL is missing");
-
   const r = await fetch(GAS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fn, args }),
   });
-
   if (!r.ok) throw new Error(`GAS HTTP ${r.status}`);
   const json = await r.json();
   return unwrap<T>(json);
