@@ -662,6 +662,21 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     const ymd = today.toISOString().slice(0, 10);
 
     const MIN_ROWS = 12;
+// ✅ 거래명세서 미리보기 - HTML 디자인에 맞춤
+  const statementPreviewHtml = useMemo(() => {
+    if (!current) return null;
+
+    const items = pickItems(current);
+    const customerName = current.customer_name ?? "";
+    const customerPhone = current.customer_phone ?? "";
+    const supplyAmount = current.supply_amount ?? 0;
+    const vatAmount = current.vat_amount ?? 0;
+    const totalAmount = current.total_amount ?? 0;
+
+    const today = new Date();
+    const ymd = today.toISOString().slice(0, 10);
+
+    const MIN_ROWS = 12;
 
     // 스타일 정의
     const thStyle: React.CSSProperties = { 
@@ -673,6 +688,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
       fontSize: 11,
       textAlign: 'center' as const,
       whiteSpace: 'nowrap' as const,
+      width: 60,
     };
     const tdStyle: React.CSSProperties = { 
       border: '1px solid #5b9bd5', 
@@ -694,10 +710,11 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
       padding: '4px 6px',
       background: '#fff',
       fontSize: 11,
+      height: 24,
     };
 
     return (
-      <div className="a4Sheet" style={{ background: '#e8f4fc', padding: 30, width: 900, minHeight: 650 }}>
+      <div className="a4Sheet" style={{ background: '#fff', padding: 30, width: 850, minHeight: 650 }}>
         {/* 제목 */}
         <div style={{ textAlign: 'center', marginBottom: 5 }}>
           <div style={{ fontSize: 28, fontWeight: 900, color: '#1a5276', letterSpacing: 8 }}>거래명세서</div>
@@ -705,13 +722,13 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
         </div>
 
         {/* 상단 정보 영역 */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 20, marginBottom: 8 }}>
           {/* 왼쪽 - 거래처 정보 */}
-          <table style={{ borderCollapse: 'collapse', width: '40%' }}>
+          <table style={{ borderCollapse: 'collapse', width: '45%' }}>
             <tbody>
               <tr>
-                <th style={{ ...thStyle, width: 70 }}>일자</th>
-                <td style={{ ...tdStyle }} colSpan={3}>{ymd}</td>
+                <th style={thStyle}>일자</th>
+                <td style={tdStyle} colSpan={3}>{ymd}</td>
               </tr>
               <tr>
                 <th style={thStyle}>거래처</th>
@@ -733,12 +750,12 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
           </table>
 
           {/* 오른쪽 - 공급자 정보 */}
-          <table style={{ borderCollapse: 'collapse', width: '60%' }}>
+          <table style={{ borderCollapse: 'collapse', width: '55%' }}>
             <tbody>
               <tr>
-                <th style={{ ...thStyle, width: 70 }}>등록번호</th>
-                <td style={{ ...tdStyle, width: 100 }}>130-41-38154</td>
-                <th style={{ ...thStyle, width: 50 }}>성명</th>
+                <th style={thStyle}>등록번호</th>
+                <td style={tdStyle}>130-41-38154</td>
+                <th style={thStyle}>성명</th>
                 <td style={tdStyle}>류창석</td>
               </tr>
               <tr>
@@ -747,7 +764,8 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
                   현대컨테이너 
                   <span style={{ 
                     display: 'inline-block', 
-                    width: 18, height: 18, 
+                    width: 18, 
+                    height: 18, 
                     border: '2px solid #c0392b', 
                     borderRadius: '50%', 
                     color: '#c0392b', 
@@ -780,7 +798,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          background: '#d6eaf8', 
+          background: '#fff', 
           border: '1px solid #5b9bd5',
           padding: '8px 12px',
           marginBottom: 8,
@@ -824,7 +842,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
             })}
             {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
               <tr key={`blank-${i}`}>
-                <td style={{ ...itemTdStyle, height: 24 }}>&nbsp;</td>
+                <td style={itemTdStyle}>&nbsp;</td>
                 <td style={itemTdStyle}></td>
                 <td style={itemTdStyle}></td>
                 <td style={itemTdStyle}></td>
