@@ -820,9 +820,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
                         onChange={(e) => updateRow(item.key, "displayName", e.target.value)}
                         style={{ width: "100%", fontSize: 12, padding: 4, border: "1px solid #ddd" }}
                       />
-                      <div className="mini" style={{ color: "blue" }}>
-                        {item.memo}
-                      </div>
+                     
                     </td>
 
                     <td style={{ textAlign: "center" }}>{item.unit}</td>
