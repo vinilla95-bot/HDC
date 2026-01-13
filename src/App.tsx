@@ -24,8 +24,8 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   return res as T;
 }
 
-async function sendQuoteEmailApi(quoteId: string, to: string, bizcardImageUrl?: string) {
-  await gasCall("listSendQuoteEmail", [quoteId, to, "", bizcardImageUrl]);
+async function sendQuoteEmailApi(quoteId: string, to: string, html: string, bizcardImageUrl?: string) {
+  await gasCall("listSendQuoteEmail", [quoteId, to, html, bizcardImageUrl]);
 }
 
 type Bizcard = { id: string; name: string; image_url: string };
@@ -459,40 +459,51 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
   const [sendStatus, setSendStatus] = useState("");
 
-  const handleSend = async () => {
-    if (!form.email) return alert("이메일을 입력해주세요.");
+ const handleSend = async () => {
+  if (!form.email) return alert("이메일을 입력해주세요.");
 
-    try {
-      setSendStatus("전송 준비 중...");
+  try {
+    setSendStatus("전송 준비 중...");
 
-      let quoteId = currentQuoteId;
-      if (!quoteId) {
-        setSendStatus("견적서 저장 중...");
-        const newId = await handleSaveNew();
-        if (!newId) {
-          setSendStatus("");
-          return;
-        }
-        quoteId = newId;
+    let quoteId = currentQuoteId;
+    if (!quoteId) {
+      setSendStatus("견적서 저장 중...");
+      const newId = await handleSaveNew();
+      if (!newId) {
+        setSendStatus("");
+        return;
       }
-
-      const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
-      
-      setSendStatus("메일 전송 중...");
-      await sendQuoteEmailApi(quoteId, form.email, bizcardImageUrl);
-      
-      setSendStatus("전송 완료!");
-      alert("견적서가 성공적으로 전송되었습니다.");
-      
-      setTimeout(() => setSendStatus(""), 2000);
-    } catch (e: any) {
-      setSendStatus("전송 실패");
-      alert("전송 실패: " + (e?.message || String(e)));
-      console.error("handleSend error:", e);
+      quoteId = newId;
     }
-  };
 
+    // ✅ A4Quote HTML 캡처
+    const quotePreview = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
+    let htmlContent = "";
+    
+    if (quotePreview) {
+      // 스타일 태그도 포함
+      const styleTag = document.querySelector('#quotePreviewApp style');
+      const styleHtml = styleTag ? styleTag.outerHTML : `<style>${a4css}</style>`;
+      htmlContent = styleHtml + quotePreview.outerHTML;
+    }
+
+    const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
+    const bizcardImageUrl = selectedBizcard?.image_url || "";
+    
+    setSendStatus("메일 전송 중...");
+    // ✅ HTML을 세 번째 인자로 전달
+    await gasCall("listSendQuoteEmail", [quoteId, form.email, htmlContent, bizcardImageUrl]);
+    
+    setSendStatus("전송 완료!");
+    alert("견적서가 성공적으로 전송되었습니다.");
+    
+    setTimeout(() => setSendStatus(""), 2000);
+  } catch (e: any) {
+    setSendStatus("전송 실패");
+    alert("전송 실패: " + (e?.message || String(e)));
+    console.error("handleSend error:", e);
+  }
+};
   const downloadJpg = async () => {
     const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
     if (!originalSheet) {
