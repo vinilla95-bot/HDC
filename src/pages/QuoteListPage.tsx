@@ -952,6 +952,29 @@ const filteredOptions = useMemo(() => {
   function addOptionFromSearch(opt: any) {
   if (!editForm) return;
 
+  // ✅ sub_items가 있으면 여러 줄로 추가
+  if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+    const newRows = opt.sub_items.map((sub: any) => ({
+      category: "",
+      name: sub.name || "",
+      unit: sub.unit || "",
+      qty: sub.qty || 0,
+      unitPrice: sub.unitPrice || 0,
+      amount: (sub.qty || 0) * (sub.unitPrice || 0),
+      note: "",
+      showSpec: "n",
+    }));
+
+    setEditForm((prev: any) => ({
+      ...prev,
+      items: [...prev.items, ...newRows],
+    }));
+
+    setOptQ("");
+    return;
+  }
+
+  // 기존 로직 (sub_items 없는 일반 옵션)
   const w = Number(editForm.w) || 3;
   const l = Number(editForm.l) || 6;
   const res = calculateOptionLine(opt, w, l);
@@ -967,7 +990,6 @@ const filteredOptions = useMemo(() => {
   const customerUnitPrice = rent ? baseUnitPrice : baseAmount;
   const finalAmount = Math.round(displayQty * customerUnitPrice);
 
-  // ✅ show_spec 저장
   const showSpec = String(opt.show_spec || "").toLowerCase();
 
   setEditForm((prev: any) => ({
@@ -982,7 +1004,7 @@ const filteredOptions = useMemo(() => {
         unitPrice: customerUnitPrice,
         amount: finalAmount,
         note: res.memo || "",
-        showSpec,  // ✅ 추가
+        showSpec,
       },
     ],
   }));
