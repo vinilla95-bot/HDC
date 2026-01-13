@@ -459,7 +459,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
   const [sendStatus, setSendStatus] = useState("");
 
- const handleSend = async () => {
+const handleSend = async () => {
   if (!form.email) return alert("이메일을 입력해주세요.");
 
   try {
@@ -491,12 +491,11 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     
     setSendStatus("메일 전송 중...");
     
-    // ✅ POST 방식으로 GAS 호출 (URL 길이 제한 회피)
+    // ✅ 직접 POST fetch (gasCall 우회)
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
     
     const response = await fetch(GAS_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         fn: "listSendQuoteEmail",
         args: [quoteId, form.email, htmlContent, bizcardImageUrl]
@@ -504,7 +503,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     });
     
     const result = await response.json();
-    if (!result.ok) throw new Error(result.message || "전송 실패");
+    if (result.ok === false) throw new Error(result.message || "전송 실패");
     
     setSendStatus("전송 완료!");
     alert("견적서가 성공적으로 전송되었습니다.");
