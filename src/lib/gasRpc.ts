@@ -4,7 +4,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9
 export async function gasRpc(fn: string, args: any[] = []) {
   const payload = JSON.stringify({ fn, args });
   
-  // payload가 크면 POST, 작으면 GET
   const isLarge = payload.length > 2000;
   
   let res: Response;
