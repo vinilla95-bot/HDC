@@ -851,7 +851,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     );
   }, [current, bizcards, selectedBizcardId]);
 
-  // ✅ 임대차계약서 미리보기 - 원본과 동일
+  // ✅ 임대차계약서 미리보기 - HTML 양식에 맞춤
   const rentalPreviewHtml = useMemo(() => {
     if (!current) return null;
 
@@ -877,67 +877,93 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
       return acc + (it.unitPrice * it.qty);
     }, 0);
 
-    // 테이블 스타일
+    const MIN_ROWS = 8;
+
+    // 스타일 정의
     const thStyle: React.CSSProperties = {
-      border: '1px solid #333',
-      padding: '6px 8px',
-      background: '#f5f5f5',
+      border: '1px solid #999',
+      padding: '6px 4px',
+      background: '#fff',
       fontWeight: 700,
-      fontSize: 12,
+      fontSize: 11,
       textAlign: 'center' as const,
     };
     const tdStyle: React.CSSProperties = {
-      border: '1px solid #333',
-      padding: '6px 8px',
-      fontSize: 12,
+      border: '1px solid #999',
+      padding: '6px 4px',
+      fontSize: 11,
+      height: 22,
     };
-    const partyThStyle: React.CSSProperties = {
-      border: '1px solid #333',
-      padding: '5px 8px',
-      background: '#f5f5f5',
+    const conditionThStyle: React.CSSProperties = {
+      border: '1px solid #2e86de',
+      padding: '6px 8px',
+      background: '#fff',
       fontWeight: 700,
       fontSize: 11,
-      textAlign: 'right' as const,
-      width: 70,
+      textAlign: 'center' as const,
+    };
+    const conditionTdStyle: React.CSSProperties = {
+      border: '1px solid #2e86de',
+      padding: '6px 8px',
+      fontSize: 11,
+      textAlign: 'center' as const,
+    };
+    const partyThStyle: React.CSSProperties = {
+      border: '1px solid #999',
+      padding: '5px 8px',
+      background: '#fff',
+      fontWeight: 400,
+      fontSize: 11,
+      textAlign: 'center' as const,
+      width: 30,
     };
     const partyTdStyle: React.CSSProperties = {
-      border: '1px solid #333',
+      border: '1px solid #999',
       padding: '5px 8px',
       fontSize: 11,
+    };
+    const partyHeaderStyle: React.CSSProperties = {
+      border: '1px solid #999',
+      padding: '8px',
+      background: '#fff',
+      fontWeight: 900,
+      fontSize: 12,
+      textAlign: 'center' as const,
     };
 
     return (
-      <div className="a4Sheet" style={{ padding: '30px 40px' }}>
+      <div className="a4Sheet" style={{ background: '#fff', padding: '30px 40px', width: 794 }}>
         {/* 헤더 */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div style={{ position: 'relative', textAlign: 'center', marginBottom: 20 }}>
           <img 
             src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" 
             alt="logo" 
-            style={{ width: 100, height: 'auto', marginRight: 20 }} 
+            style={{ position: 'absolute', left: 0, top: 0, width: 110, height: 'auto' }} 
           />
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 32, fontWeight: 900, color: '#1a5276', letterSpacing: 12 }}>
-              임 대 차 계 약 서
-            </div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: '#000', letterSpacing: 14, paddingTop: 5 }}>
+            임 대 차 계 약 서
           </div>
         </div>
 
         {/* 소개 문구 */}
-        <div style={{ textAlign: 'center', fontSize: 13, lineHeight: 1.8, marginBottom: 25, color: '#333' }}>
+        <div style={{ textAlign: 'center', fontSize: 11, lineHeight: 1.8, marginBottom: 20, color: '#333' }}>
           "임대인(공급 하는 자)과, 임차인(공급 받는 자)이라 하여<br />
           아래와 같이 임대차 계약을 체결한다."
         </div>
 
+        {/* 파란선 */}
+        <div style={{ borderTop: '2px solid #2e86de', marginBottom: 15 }}></div>
+
         {/* 품목 테이블 */}
-        <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 15 }}>
+        <table style={{ borderCollapse: 'collapse', width: '90%', margin: '0 auto', marginBottom: 5 }}>
           <thead>
             <tr>
-              <th style={{ ...thStyle, width: '25%' }}>품목</th>
-              <th style={{ ...thStyle, width: '12%' }}>규격</th>
-              <th style={{ ...thStyle, width: '12%' }}>개월</th>
-              <th style={{ ...thStyle, width: '17%' }}>단가</th>
-              <th style={{ ...thStyle, width: '10%' }}>수량</th>
-              <th style={{ ...thStyle, width: '24%' }}>금액</th>
+              <th style={{ ...thStyle, width: '30%' }}>품목</th>
+              <th style={{ ...thStyle, width: '8%' }}>규격</th>
+              <th style={{ ...thStyle, width: '8%' }}>개월</th>
+              <th style={{ ...thStyle, width: '15%' }}>단가</th>
+              <th style={{ ...thStyle, width: '8%' }}>수량</th>
+              <th style={{ ...thStyle, width: '15%' }}>금액</th>
             </tr>
           </thead>
           <tbody>
@@ -965,9 +991,9 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
               </tr>
             )}
             {/* 빈 행 추가 */}
-            {rentalItems.length < 3 && Array.from({ length: 3 - rentalItems.length }).map((_, i) => (
+            {Array.from({ length: Math.max(0, MIN_ROWS - rentalItems.length) }).map((_, i) => (
               <tr key={`blank-${i}`}>
-                <td style={{ ...tdStyle, height: 28 }}>&nbsp;</td>
+                <td style={tdStyle}>&nbsp;</td>
                 <td style={tdStyle}></td>
                 <td style={tdStyle}></td>
                 <td style={tdStyle}></td>
@@ -979,46 +1005,52 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
         </table>
 
         {/* 합계 */}
-        <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 900, marginBottom: 25 }}>
+        <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, margin: '8px 0 15px 0' }}>
           합계(VAT별도) {money(totalAmount)}원
         </div>
 
         {/* 임대 조건 */}
-        <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 900, marginBottom: 10 }}>임대 조건</div>
-        <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 20 }}>
+        <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 900, marginBottom: 8 }}>임대 조건</div>
+        <table style={{ borderCollapse: 'collapse', width: '70%', margin: '0 auto 12px auto' }}>
           <tbody>
             <tr>
-              <th style={{ ...thStyle, width: '15%' }}>임대기간</th>
-              <td style={{ ...tdStyle, width: '25%' }}>{rentalForm.contractStart}~{rentalForm.contractEnd}</td>
-              <td style={{ ...tdStyle, width: '15%', textAlign: 'center' }}>{rentalForm.contractStart?.slice(3, 8)}</td>
-              <th style={{ ...thStyle, width: '10%' }}>로부터</th>
-              <td style={{ ...tdStyle, width: '15%', textAlign: 'center' }}>{rentalForm.months}</td>
-              <th style={{ ...thStyle, width: '10%' }}>개월</th>
+              <th style={{ ...conditionThStyle, width: '10%' }}>임대기간</th>
+              <td style={{ ...conditionTdStyle, width: '20%' }}>{rentalForm.contractStart}~{rentalForm.contractEnd}</td>
+              <td style={{ ...conditionTdStyle, width: '10%' }}>{rentalForm.contractStart?.slice(3, 8)}</td>
+              <th style={{ ...conditionThStyle, width: '8%' }}>로부터</th>
+              <td style={{ ...conditionTdStyle, width: '10%' }}>{rentalForm.months}</td>
+              <th style={{ ...conditionThStyle, width: '8%' }}>개월</th>
             </tr>
           </tbody>
         </table>
 
         {/* 주의사항 */}
-        <div style={{ fontSize: 11, lineHeight: 1.7, marginBottom: 20, textAlign: 'right' }}>
+        <div style={{ fontSize: 10, lineHeight: 1.7, marginBottom: 15 }}>
           <p style={{ margin: '2px 0' }}>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
           <p style={{ margin: '2px 0' }}>※ 계약기간의 연장 시 임차인은 만료 5일 전까지 통보해야 하며, 재 계약서를 작성하지 않고 연장하였을 시 본 계약서로서 대체한다.</p>
           <p style={{ margin: '2px 0' }}>※ 임대 계약기간 만료 전에 컨테이너를 회수하여도 임대료는 환불되지 않는다.</p>
           <p style={{ margin: '2px 0' }}>※ 임대기간 중 컨테이너를 임의대로 매매, 임대할 수 없다.</p>
           <p style={{ margin: '2px 0' }}>※ 냉난방기/에어컨 임대 사용시, 6개월 이후 냉난방기/에어컨 사용료 매월 5만원 청구됩니다.</p>
-          <p style={{ margin: '2px 0' }}>※ 계약서에 명시된 임대차 기간이 만료되면, 임차인과 연락이 안 될 경우 임대인이 임의대로 컨테이너를 회수하여도 무방하다. 컨테이너에 있는 내용물은 운반 도중 내용물이 파손되거나, 7일 이내 임의대로 처리하여도 민, 형사상 책임을 지지 않는다."</p>
+          <p style={{ margin: '2px 0' }}>"※ 계약서에 명시된 임대차 기간이 만료되면, 임차인과 연락이 안 될 경우 임대인이 임의대로 컨테이너를 회수하여도 무방하다. 컨테이너에 있는 내용물은 운반 도중 내용물이 파손되거나, 7일 이내 임의대로 처리하여도 민, 형사상 책임을 지지 않는다."</p>
           <p style={{ margin: '2px 0' }}>※ 임차인의 귀책사유로 컨테이너에 파손 및 훼손의 피해가 있을 경우 손해배상 청구할 수 있다.</p>
           <p style={{ margin: '2px 0' }}>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
         </div>
 
         {/* 날짜 */}
-        <div style={{ textAlign: 'center', fontSize: 13, marginBottom: 20 }}>{ymd}</div>
+        <div style={{ textAlign: 'center', fontSize: 12, marginBottom: 15 }}>{ymd}</div>
 
         {/* 임대인/임차인 정보 */}
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <table style={{ borderCollapse: 'collapse', width: '80%', margin: '0 auto 15px auto' }}>
+          <colgroup>
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '38%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '38%' }} />
+          </colgroup>
           <thead>
             <tr>
-              <th style={{ ...thStyle, background: '#d6eaf8', color: '#1a5276' }} colSpan={2}>임대인</th>
-              <th style={{ ...thStyle, background: '#d6eaf8', color: '#1a5276' }} colSpan={2}>임차인</th>
+              <th style={partyHeaderStyle} colSpan={2}>임대인</th>
+              <th style={partyHeaderStyle} colSpan={2}>임차인</th>
             </tr>
           </thead>
           <tbody>
@@ -1036,7 +1068,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
             </tr>
             <tr>
               <th style={partyThStyle}>대표:</th>
-              <td style={partyTdStyle}>류창석 (인)</td>
+              <td style={partyTdStyle}>류창석&nbsp;&nbsp;&nbsp;&nbsp;(인)</td>
               <th style={partyThStyle}>대표:</th>
               <td style={partyTdStyle}>{rentalForm.ceo}</td>
             </tr>
@@ -1066,7 +1098,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
             </tr>
             <tr>
               <th style={partyThStyle}>메일:</th>
-              <td style={partyTdStyle}><a href="mailto:hdcon20@naver.com" style={{ color: '#1a5276' }}>hdcon20@naver.com</a></td>
+              <td style={partyTdStyle}><a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a></td>
               <th style={partyThStyle}>메일:</th>
               <td style={partyTdStyle}>{customerEmail}</td>
             </tr>
@@ -1074,13 +1106,12 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
         </table>
 
         {/* 푸터 */}
-        <div style={{ textAlign: 'center', fontSize: 12, marginTop: 20, color: '#666' }}>
-          서명하시고 fax 0504-392-4298이나 이메일hdcon20@naver.com으로 회신부탁드립니다.
+        <div style={{ textAlign: 'center', fontSize: 11, color: '#333' }}>
+          서명하시고 fax 0504-392-4298이나 이메일<a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a>으로 회신부탁드립니다.
         </div>
       </div>
     );
   }, [current, rentalForm, bizcards, selectedBizcardId]);
-
   // 현재 탭에 따른 미리보기 컴포넌트
   const currentPreview = useMemo(() => {
     if (!current) {
