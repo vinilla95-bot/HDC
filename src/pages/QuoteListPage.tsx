@@ -1191,6 +1191,11 @@ const filteredOptions = useMemo(() => {
     <b>{money(it.total_amount)}</b>원
   </div>
 </div>
+                
+              </div>
+            ))}
+          </div>
+        </div>
         {/* RIGHT */}
         <div className="right">
           <div className="actions" style={{ justifyContent: "center" }}>
