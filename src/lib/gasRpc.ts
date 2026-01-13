@@ -1,3 +1,4 @@
+// src/lib/gasRpc.ts
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
 
 export async function gasRpc(fn: string, args: any[] = []) {
