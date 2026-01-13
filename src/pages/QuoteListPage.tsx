@@ -969,14 +969,15 @@ useEffect(() => {
             </tr>
           </thead>
           <tbody>
-            {rentalItems.length > 0 ? rentalItems.map((raw, idx) => {
-              const it = normItem(raw);
-              const amount = it.unitPrice * it.qty;
-              return (
-                <tr key={idx}>
-                  <td style={tdStyle}>{it.name}</td>
-                  <td style={{ ...tdStyle, textAlign: 'center' }}>{spec}</td>
-                  <td style={{ ...tdStyle, textAlign: 'center' }}>{rentalForm.months}</td>
+           {rentalItems.length > 0 ? rentalItems.map((raw, idx) => {
+  const it = normItem(raw);
+  const amount = it.unitPrice * it.qty;
+  const isRental = String(it.name).includes("임대");
+  return (
+    <tr key={idx}>
+      <td style={tdStyle}>{it.name}</td>
+      <td style={{ ...tdStyle, textAlign: 'center' }}>{spec}</td>
+      <td style={{ ...tdStyle, textAlign: 'center' }}>{isRental ? rentalForm.months : ""}</td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>{money(it.unitPrice)}</td>
                   <td style={{ ...tdStyle, textAlign: 'center' }}>{it.qty}</td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>{money(amount)}</td>
