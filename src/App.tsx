@@ -481,7 +481,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     let htmlContent = "";
     
     if (quotePreview) {
-      // 스타일 태그도 포함
       const styleTag = document.querySelector('#quotePreviewApp style');
       const styleHtml = styleTag ? styleTag.outerHTML : `<style>${a4css}</style>`;
       htmlContent = styleHtml + quotePreview.outerHTML;
@@ -491,8 +490,21 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     const bizcardImageUrl = selectedBizcard?.image_url || "";
     
     setSendStatus("메일 전송 중...");
-    // ✅ HTML을 세 번째 인자로 전달
-    await gasCall("listSendQuoteEmail", [quoteId, form.email, htmlContent, bizcardImageUrl]);
+    
+    // ✅ POST 방식으로 GAS 호출 (URL 길이 제한 회피)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
+    
+    const response = await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        fn: "listSendQuoteEmail",
+        args: [quoteId, form.email, htmlContent, bizcardImageUrl]
+      })
+    });
+    
+    const result = await response.json();
+    if (!result.ok) throw new Error(result.message || "전송 실패");
     
     setSendStatus("전송 완료!");
     alert("견적서가 성공적으로 전송되었습니다.");
