@@ -17,6 +17,12 @@ import { gasRpc as gasRpcRaw } from "./lib/gasRpc";
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
 
+// ✅ [수정 1] getWebAppUrl 함수 정의 추가
+// 에러의 원인입니다. 이 함수가 없어서 호출 시 오류가 발생했습니다.
+// handleSend 안에 있던 긴 URL을 여기로 옮겨서 공통으로 사용하도록 합니다.
+export const getWebAppUrl = () => {
+  return "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
+};
 
 // GAS 호출 래퍼
 async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
@@ -492,8 +498,8 @@ const handleSend = async () => {
     
     setSendStatus("메일 전송 중...");
     
-    // ✅ 직접 POST fetch (gasCall 우회)
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
+    // ✅ [수정 2] 정의한 getWebAppUrl() 함수 사용
+    const GAS_URL = getWebAppUrl();
     
     const response = await fetch(GAS_URL, {
       method: "POST",
@@ -516,6 +522,7 @@ const handleSend = async () => {
     console.error("handleSend error:", e);
   }
 };
+// ... 이하 코드 동일 ...
   const downloadJpg = async () => {
     const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
     if (!originalSheet) {
