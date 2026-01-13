@@ -344,10 +344,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     setStatusMsg(`검색 결과 ${filtered.length}개`);
   };
 
-  const supply_amount = computedItems.reduce((acc: number, cur: any) => acc + Number(cur.finalAmount || 0), 0);
-  const vat_amount = Math.round(supply_amount * 0.1);
-  const total_amount = supply_amount + vat_amount;
-// 이 부분 찾아서:
+ 
 const supply_amount = computedItems.reduce((acc: number, cur: any) => acc + Number(cur.finalAmount || 0), 0);
 const vat_amount = Math.round(supply_amount * 0.1);
 const total_amount = supply_amount + vat_amount;
