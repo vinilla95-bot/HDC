@@ -474,90 +474,93 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     const MIN_ROWS = 12;
 
     return (
-      <div className="a4Sheet" id="a4SheetCapture">
-        <div className="quoteHeader">
-          <div className="headerLeft">
-            <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" className="logo" />
+      <div className="a4Sheet quoteSheet" id="a4SheetCapture">
+        {/* 헤더 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 2px 10px', borderBottom: '2px solid #2e5b86', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style={{ width: 160, height: 140 }} />
           </div>
-          <div className="headerCenter">견 적 서</div>
-          <div className="headerRight"></div>
+          <div style={{ flex: 1, textAlign: 'center', fontSize: 34, fontWeight: 900, letterSpacing: 6 }}>견 적 서</div>
+          <div style={{ width: 140 }}></div>
         </div>
 
-        <table className="infoTable">
+        {/* 기본 정보 테이블 */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '1px solid #333', marginTop: 8 }}>
           <colgroup>
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "18%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "18%" }} />
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "22%" }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '22%' }} />
           </colgroup>
           <tbody>
             <tr>
-              <th>담당자</th>
-              <td colSpan={3}>{bizcardName}</td>
-              <th>견적일자</th>
-              <td>{ymd}</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>담당자</th>
+              <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>{bizcardName}</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>견적일자</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>{ymd}</td>
             </tr>
             <tr>
-              <th>고객명</th>
-              <td colSpan={3}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>고객명</th>
+              <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>{customerName}</span>
                   <span style={{ fontWeight: 900 }}>귀하</span>
                 </div>
               </td>
-              <th>공급자</th>
-              <td>현대컨테이너</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>공급자</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>현대컨테이너</td>
             </tr>
             <tr>
-              <th>이메일</th>
-              <td>{customerEmail}</td>
-              <th>전화</th>
-              <td>{customerPhone}</td>
-              <th>등록번호</th>
-              <td>130-41-38154</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>이메일</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>{customerEmail}</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>전화</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>{customerPhone}</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>등록번호</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>130-41-38154</td>
             </tr>
             <tr>
-              <th>현장</th>
-              <td>{siteName}</td>
-              <th>견적일</th>
-              <td>{today.toLocaleDateString("ko-KR")}</td>
-              <th>주소</th>
-              <td>경기도 화성시<br />향남읍 구문천안길16</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>현장</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>{siteName}</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>견적일</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>{today.toLocaleDateString("ko-KR")}</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>주소</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>경기도 화성시<br />향남읍 구문천안길16</td>
             </tr>
             <tr>
-              <td colSpan={4} className="msgCell">견적요청에 감사드리며 아래와 같이 견적합니다.</td>
-              <th>대표전화</th>
-              <td>1688-1447</td>
+              <td style={{ border: '1px solid #333', padding: 6, fontWeight: 700, textAlign: 'center' }} colSpan={4}>견적요청에 감사드리며 아래와 같이 견적합니다.</td>
+              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>대표전화</th>
+              <td style={{ border: '1px solid #333', padding: 6 }}>1688-1447</td>
             </tr>
             <tr>
-              <td colSpan={6} className="sumCell">합계금액 : ₩{money(totalAmount)} (부가세 포함)</td>
+              <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>합계금액 : ₩{money(totalAmount)} (부가세 포함)</td>
             </tr>
           </tbody>
         </table>
 
-        <table className="itemsTable">
+        {/* 품목 테이블 */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '1px solid #333', marginTop: 8 }}>
           <colgroup>
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "35%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "13%" }} />
-            <col style={{ width: "11%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '35%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '9%' }} />
           </colgroup>
           <thead>
             <tr>
-              <th>순번</th>
-              <th>품목</th>
-              <th>규격</th>
-              <th>수량</th>
-              <th>단가</th>
-              <th>공급가</th>
-              <th>세액</th>
-              <th>비고</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>순번</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>품목</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>규격</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>수량</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>단가</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>공급가</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>세액</th>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>비고</th>
             </tr>
           </thead>
           <tbody>
@@ -570,54 +573,57 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
 
               return (
                 <tr key={idx}>
-                  <td className="center">{idx + 1}</td>
-                  <td>{it.name}</td>
-                  <td className="center">{specText}</td>
-                  <td className="center">{it.qty}</td>
-                  <td className="right">{money(it.unitPrice)}</td>
-                  <td className="right">{money(supply)}</td>
-                  <td className="right">{money(vat)}</td>
-                  <td></td>
+                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{idx + 1}</td>
+                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'left' }}>{it.name}</td>
+                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{specText}</td>
+                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{it.qty}</td>
+                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(it.unitPrice)}</td>
+                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(supply)}</td>
+                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(vat)}</td>
+                  <td style={{ border: '1px solid #333', padding: 6 }}></td>
                 </tr>
               );
             })}
             {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
-              <tr key={`blank-${i}`}>
-                <td>&nbsp;</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+              <tr key={`blank-${i}`} style={{ height: 28 }}>
+                <td style={{ border: '1px solid #333', padding: 6 }}>&nbsp;</td>
+                <td style={{ border: '1px solid #333', padding: 6 }}></td>
+                <td style={{ border: '1px solid #333', padding: 6 }}></td>
+                <td style={{ border: '1px solid #333', padding: 6 }}></td>
+                <td style={{ border: '1px solid #333', padding: 6 }}></td>
+                <td style={{ border: '1px solid #333', padding: 6 }}></td>
+                <td style={{ border: '1px solid #333', padding: 6 }}></td>
+                <td style={{ border: '1px solid #333', padding: 6 }}></td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        <table className="bottomTable">
+        {/* 하단 합계/조건 테이블 */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '1px solid #333', marginTop: 8 }}>
           <colgroup>
-            <col style={{ width: "18%" }} />
-            <col style={{ width: "auto" }} />
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "13%" }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '37%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '16%' }} />
           </colgroup>
           <tbody>
-            <tr className="sumRow">
-              <td colSpan={2}>합계: {money(totalAmount)}원 (총공급가액 {money(supplyAmount)} / 총세액 {money(vatAmount)})</td>
-              <td className="right">{money(supplyAmount)}</td>
-              <td className="right">{money(vatAmount)}</td>
-              <td className="right">{money(totalAmount)}</td>
+            <tr>
+              <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'left' }} colSpan={2}>
+                합계: {money(totalAmount)}원 (총공급가액 {money(supplyAmount)} / 총세액 {money(vatAmount)})
+              </td>
+              <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(supplyAmount)}</td>
+              <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(vatAmount)}</td>
+              <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(totalAmount)}</td>
             </tr>
             <tr>
-              <th>결제조건</th>
-              <td colSpan={4} className="textCell">계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td>
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>결제조건</th>
+              <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.55 }} colSpan={4}>계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td>
             </tr>
             <tr>
-              <th>주의사항</th>
-              <td colSpan={4} className="textCell">
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>주의사항</th>
+              <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.55 }} colSpan={4}>
                 *견적서는 견적일로 부터 2주간 유효합니다.<br />
                 1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)<br />
                 2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고<br />
@@ -626,8 +632,8 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
               </td>
             </tr>
             <tr>
-              <th>중요사항</th>
-              <td colSpan={4} className="textCell">
+              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>중요사항</th>
+              <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.55 }} colSpan={4}>
                 *중요사항*<br />
                 1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />
                 2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />
@@ -641,7 +647,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     );
   }, [current, bizcards, selectedBizcardId]);
 
-  // ✅ 거래명세서 미리보기
+  // ✅ 거래명세서 미리보기 - 원본과 동일한 가로 레이아웃
   const statementPreviewHtml = useMemo(() => {
     if (!current) return null;
 
@@ -654,92 +660,147 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
 
     const today = new Date();
     const ymd = today.toISOString().slice(0, 10);
-    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
-    const bizcardName = selectedBizcard?.name || "고은희";
-    const bizcardPhone = "010-4138-9268";
 
-    const MIN_ROWS = 15;
+    const MIN_ROWS = 12;
+
+    // 스타일 정의
+    const thStyle: React.CSSProperties = { 
+      border: '1px solid #5b9bd5', 
+      padding: '4px 8px', 
+      background: '#d6eaf8', 
+      color: '#1a5276',
+      fontWeight: 700,
+      fontSize: 11,
+      textAlign: 'center' as const,
+      whiteSpace: 'nowrap' as const,
+    };
+    const tdStyle: React.CSSProperties = { 
+      border: '1px solid #5b9bd5', 
+      padding: '4px 8px', 
+      background: '#fff',
+      fontSize: 11,
+    };
+    const itemThStyle: React.CSSProperties = {
+      border: '1px solid #5b9bd5',
+      padding: '6px 4px',
+      background: '#d6eaf8',
+      color: '#1a5276',
+      fontWeight: 700,
+      fontSize: 11,
+      textAlign: 'center' as const,
+    };
+    const itemTdStyle: React.CSSProperties = {
+      border: '1px solid #5b9bd5',
+      padding: '4px 6px',
+      background: '#fff',
+      fontSize: 11,
+    };
 
     return (
-      <div className="a4Sheet statementSheet">
-        <div className="statementTitle">거래명세서</div>
-        <div className="statementSubtitle">[ 공급받는자 보관용 ]</div>
-
-        <div className="statementInfoWrap">
-          <div className="statementLeft">
-            <table className="statementInfoTable">
-              <tbody>
-                <tr>
-                  <th>일자</th>
-                  <td colSpan={3}>{ymd}</td>
-                </tr>
-                <tr>
-                  <th>거래처</th>
-                  <td colSpan={3}>{customerName}</td>
-                </tr>
-                <tr>
-                  <th>등록번호</th>
-                  <td colSpan={3}></td>
-                </tr>
-                <tr>
-                  <th>주소</th>
-                  <td colSpan={3}></td>
-                </tr>
-                <tr>
-                  <th>전화번호</th>
-                  <td colSpan={3}>{customerPhone}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="statementRight">
-            <table className="statementInfoTable">
-              <tbody>
-                <tr>
-                  <th>등록번호</th>
-                  <td>130-41-38154</td>
-                  <th>성명</th>
-                  <td>류창석</td>
-                </tr>
-                <tr>
-                  <th>상호</th>
-                  <td>현대컨테이너 <span className="stampIcon">印</span></td>
-                  <th>주소</th>
-                  <td>화성시구문천안길16</td>
-                </tr>
-                <tr>
-                  <th>업태</th>
-                  <td>컨테이너 판매 임대</td>
-                  <th>종목</th>
-                  <td>제조업,도소매</td>
-                </tr>
-                <tr>
-                  <th>전화번호</th>
-                  <td>{bizcardPhone}</td>
-                  <th>팩스번호</th>
-                  <td>031-359-8246</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <div className="a4Sheet" style={{ background: '#e8f4fc', padding: 30, width: 900, minHeight: 650 }}>
+        {/* 제목 */}
+        <div style={{ textAlign: 'center', marginBottom: 5 }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#1a5276', letterSpacing: 8 }}>거래명세서</div>
+          <div style={{ fontSize: 11, color: '#666' }}>[ 공급받는자 보관용 ]</div>
         </div>
 
-        <div className="statementSumRow">
-          <span className="sumLabel">합계금액:</span>
-          <span className="sumValue">{money(totalAmount)}</span>
-          <span className="bankInfo">기업은행 465-096127-04-015 현대컨테이너 류창석</span>
+        {/* 상단 정보 영역 */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 8 }}>
+          {/* 왼쪽 - 거래처 정보 */}
+          <table style={{ borderCollapse: 'collapse', width: '40%' }}>
+            <tbody>
+              <tr>
+                <th style={{ ...thStyle, width: 70 }}>일자</th>
+                <td style={{ ...tdStyle }} colSpan={3}>{ymd}</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>거래처</th>
+                <td style={tdStyle} colSpan={3}>{customerName}</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>등록번호</th>
+                <td style={tdStyle} colSpan={3}></td>
+              </tr>
+              <tr>
+                <th style={thStyle}>주소</th>
+                <td style={tdStyle} colSpan={3}></td>
+              </tr>
+              <tr>
+                <th style={thStyle}>전화번호</th>
+                <td style={tdStyle} colSpan={3}>{customerPhone}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* 오른쪽 - 공급자 정보 */}
+          <table style={{ borderCollapse: 'collapse', width: '60%' }}>
+            <tbody>
+              <tr>
+                <th style={{ ...thStyle, width: 70 }}>등록번호</th>
+                <td style={{ ...tdStyle, width: 100 }}>130-41-38154</td>
+                <th style={{ ...thStyle, width: 50 }}>성명</th>
+                <td style={tdStyle}>류창석</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>상호</th>
+                <td style={tdStyle}>
+                  현대컨테이너 
+                  <span style={{ 
+                    display: 'inline-block', 
+                    width: 18, height: 18, 
+                    border: '2px solid #c0392b', 
+                    borderRadius: '50%', 
+                    color: '#c0392b', 
+                    fontSize: 9, 
+                    textAlign: 'center', 
+                    lineHeight: '16px',
+                    marginLeft: 5,
+                  }}>印</span>
+                </td>
+                <th style={thStyle}>주소</th>
+                <td style={tdStyle}>화성시구문천안길16</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>업태</th>
+                <td style={tdStyle}>컨테이너 판매 임대</td>
+                <th style={thStyle}>종목</th>
+                <td style={tdStyle}>제조업,도소매</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>전화번호</th>
+                <td style={tdStyle}>010-4138-9268</td>
+                <th style={thStyle}>팩스번호</th>
+                <td style={tdStyle}>031-359-8246</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <table className="statementItemsTable">
+        {/* 합계금액 줄 */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          background: '#d6eaf8', 
+          border: '1px solid #5b9bd5',
+          padding: '8px 12px',
+          marginBottom: 8,
+        }}>
+          <span style={{ fontWeight: 900, color: '#1a5276', marginRight: 10 }}>합계금액:</span>
+          <span style={{ fontSize: 18, fontWeight: 900, marginRight: 30 }}>{money(totalAmount)}</span>
+          <span style={{ fontSize: 11, marginLeft: 'auto' }}>기업은행 465-096127-04-015 현대컨테이너 류창석</span>
+        </div>
+
+        {/* 품목 테이블 */}
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
             <tr>
-              <th style={{ width: "10%" }}>월일</th>
-              <th style={{ width: "30%" }}>품목명</th>
-              <th style={{ width: "8%" }}>수량</th>
-              <th style={{ width: "13%" }}>단가</th>
-              <th style={{ width: "15%" }}>공급가액</th>
-              <th style={{ width: "12%" }}>세액</th>
-              <th style={{ width: "12%" }}>비고</th>
+              <th style={{ ...itemThStyle, width: '8%' }}>월일</th>
+              <th style={{ ...itemThStyle, width: '32%' }}>품목명</th>
+              <th style={{ ...itemThStyle, width: '8%' }}>수량</th>
+              <th style={{ ...itemThStyle, width: '12%' }}>단가</th>
+              <th style={{ ...itemThStyle, width: '14%' }}>공급가액</th>
+              <th style={{ ...itemThStyle, width: '12%' }}>세액</th>
+              <th style={{ ...itemThStyle, width: '14%' }}>비고</th>
             </tr>
           </thead>
           <tbody>
@@ -751,34 +812,34 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
 
               return (
                 <tr key={idx}>
-                  <td className="center">{monthDay}</td>
-                  <td>{it.name}</td>
-                  <td className="center">{it.qty}</td>
-                  <td className="right">{money(it.unitPrice)}</td>
-                  <td className="right">{money(supply)}</td>
-                  <td className="right">{money(vat)}</td>
-                  <td></td>
+                  <td style={{ ...itemTdStyle, textAlign: 'center' }}>{monthDay}</td>
+                  <td style={itemTdStyle}>{it.name}</td>
+                  <td style={{ ...itemTdStyle, textAlign: 'center' }}>{it.qty}</td>
+                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(it.unitPrice)}</td>
+                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(supply)}</td>
+                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(vat)}</td>
+                  <td style={itemTdStyle}></td>
                 </tr>
               );
             })}
             {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
               <tr key={`blank-${i}`}>
-                <td>&nbsp;</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td style={{ ...itemTdStyle, height: 24 }}>&nbsp;</td>
+                <td style={itemTdStyle}></td>
+                <td style={itemTdStyle}></td>
+                <td style={itemTdStyle}></td>
+                <td style={itemTdStyle}></td>
+                <td style={itemTdStyle}></td>
+                <td style={itemTdStyle}></td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr className="totalRow">
-              <td colSpan={4} className="center"><strong>총금액</strong></td>
-              <td className="right"><strong>{money(supplyAmount)}</strong></td>
-              <td className="right"><strong>{money(vatAmount)}</strong></td>
-              <td></td>
+            <tr>
+              <td colSpan={4} style={{ ...itemTdStyle, textAlign: 'center', fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(supplyAmount)}</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(vatAmount)}</td>
+              <td style={itemTdStyle}></td>
             </tr>
           </tfoot>
         </table>
@@ -786,52 +847,93 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     );
   }, [current, bizcards, selectedBizcardId]);
 
-  // ✅ 임대차계약서 미리보기
+  // ✅ 임대차계약서 미리보기 - 원본과 동일
   const rentalPreviewHtml = useMemo(() => {
     if (!current) return null;
 
     const items = pickItems(current);
     const customerName = current.customer_name ?? "";
     const customerPhone = current.customer_phone ?? "";
+    const customerEmail = current.customer_email ?? "";
     const spec = current.spec ?? "3*6";
     const siteName = current.site_name ?? "";
 
     const today = new Date();
     const ymd = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 
-    // 임대 품목만 필터링
+    // 임대 품목 + 운송 품목
     const rentalItems = items.filter(it => {
       const name = it.optionName || it.displayName || it.item_name || "";
       return String(name).includes("임대") || String(name).includes("운송");
     });
 
-    // 합계 계산
+    // 합계 계산 (VAT 별도)
     const totalAmount = rentalItems.reduce((acc, raw) => {
       const it = normItem(raw);
       return acc + (it.unitPrice * it.qty);
     }, 0);
 
+    // 테이블 스타일
+    const thStyle: React.CSSProperties = {
+      border: '1px solid #333',
+      padding: '6px 8px',
+      background: '#f5f5f5',
+      fontWeight: 700,
+      fontSize: 12,
+      textAlign: 'center' as const,
+    };
+    const tdStyle: React.CSSProperties = {
+      border: '1px solid #333',
+      padding: '6px 8px',
+      fontSize: 12,
+    };
+    const partyThStyle: React.CSSProperties = {
+      border: '1px solid #333',
+      padding: '5px 8px',
+      background: '#f5f5f5',
+      fontWeight: 700,
+      fontSize: 11,
+      textAlign: 'right' as const,
+      width: 70,
+    };
+    const partyTdStyle: React.CSSProperties = {
+      border: '1px solid #333',
+      padding: '5px 8px',
+      fontSize: 11,
+    };
+
     return (
-      <div className="a4Sheet rentalSheet">
-        <div className="rentalHeader">
-          <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" className="rentalLogo" />
-          <div className="rentalTitle">임 대 차 계 약 서</div>
+      <div className="a4Sheet" style={{ padding: '30px 40px' }}>
+        {/* 헤더 */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 20 }}>
+          <img 
+            src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" 
+            alt="logo" 
+            style={{ width: 100, height: 'auto', marginRight: 20 }} 
+          />
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 32, fontWeight: 900, color: '#1a5276', letterSpacing: 12 }}>
+              임 대 차 계 약 서
+            </div>
+          </div>
         </div>
 
-        <div className="rentalIntro">
+        {/* 소개 문구 */}
+        <div style={{ textAlign: 'center', fontSize: 13, lineHeight: 1.8, marginBottom: 25, color: '#333' }}>
           "임대인(공급 하는 자)과, 임차인(공급 받는 자)이라 하여<br />
           아래와 같이 임대차 계약을 체결한다."
         </div>
 
-        <table className="rentalItemsTable">
+        {/* 품목 테이블 */}
+        <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 15 }}>
           <thead>
             <tr>
-              <th>품목</th>
-              <th>규격</th>
-              <th>개월</th>
-              <th>단가</th>
-              <th>수량</th>
-              <th>금액</th>
+              <th style={{ ...thStyle, width: '25%' }}>품목</th>
+              <th style={{ ...thStyle, width: '12%' }}>규격</th>
+              <th style={{ ...thStyle, width: '12%' }}>개월</th>
+              <th style={{ ...thStyle, width: '17%' }}>단가</th>
+              <th style={{ ...thStyle, width: '10%' }}>수량</th>
+              <th style={{ ...thStyle, width: '24%' }}>금액</th>
             </tr>
           </thead>
           <tbody>
@@ -840,126 +942,135 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
               const amount = it.unitPrice * it.qty;
               return (
                 <tr key={idx}>
-                  <td>{it.name}</td>
-                  <td className="center">{spec}</td>
-                  <td className="center">{it.months || rentalForm.months}</td>
-                  <td className="right">{money(it.unitPrice)}</td>
-                  <td className="center">{it.qty}</td>
-                  <td className="right">{money(amount)}</td>
+                  <td style={tdStyle}>{it.name}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center' }}>{spec}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center' }}>{it.months || rentalForm.months}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>{money(it.unitPrice)}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center' }}>{it.qty}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>{money(amount)}</td>
                 </tr>
               );
             }) : (
-              <>
-                <tr>
-                  <td>컨테이너 임대</td>
-                  <td className="center">{spec}</td>
-                  <td className="center">{rentalForm.months}</td>
-                  <td className="right">450,000</td>
-                  <td className="center">1</td>
-                  <td className="right">450,000</td>
-                </tr>
-                <tr>
-                  <td>&nbsp;</td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                </tr>
-              </>
+              <tr>
+                <td style={tdStyle}>컨테이너 임대</td>
+                <td style={{ ...tdStyle, textAlign: 'center' }}>{spec}</td>
+                <td style={{ ...tdStyle, textAlign: 'center' }}>{rentalForm.months}</td>
+                <td style={{ ...tdStyle, textAlign: 'right' }}>450,000</td>
+                <td style={{ ...tdStyle, textAlign: 'center' }}>1</td>
+                <td style={{ ...tdStyle, textAlign: 'right' }}>450,000</td>
+              </tr>
             )}
+            {/* 빈 행 추가 */}
+            {rentalItems.length < 3 && Array.from({ length: 3 - rentalItems.length }).map((_, i) => (
+              <tr key={`blank-${i}`}>
+                <td style={{ ...tdStyle, height: 28 }}>&nbsp;</td>
+                <td style={tdStyle}></td>
+                <td style={tdStyle}></td>
+                <td style={tdStyle}></td>
+                <td style={tdStyle}></td>
+                <td style={tdStyle}></td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
-        <div className="rentalSum">합계(VAT별도) {money(totalAmount)}원</div>
+        {/* 합계 */}
+        <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 900, marginBottom: 25 }}>
+          합계(VAT별도) {money(totalAmount)}원
+        </div>
 
-        <div className="rentalConditionTitle">임대 조건</div>
-        <table className="rentalConditionTable">
+        {/* 임대 조건 */}
+        <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 900, marginBottom: 10 }}>임대 조건</div>
+        <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 20 }}>
           <tbody>
             <tr>
-              <th>임대기간</th>
-              <td>{rentalForm.contractStart}~{rentalForm.contractEnd}</td>
-              <td>{rentalForm.contractStart?.slice(3, 8)}</td>
-              <th>로부터</th>
-              <td>{rentalForm.months}</td>
-              <th>개월</th>
+              <th style={{ ...thStyle, width: '15%' }}>임대기간</th>
+              <td style={{ ...tdStyle, width: '25%' }}>{rentalForm.contractStart}~{rentalForm.contractEnd}</td>
+              <td style={{ ...tdStyle, width: '15%', textAlign: 'center' }}>{rentalForm.contractStart?.slice(3, 8)}</td>
+              <th style={{ ...thStyle, width: '10%' }}>로부터</th>
+              <td style={{ ...tdStyle, width: '15%', textAlign: 'center' }}>{rentalForm.months}</td>
+              <th style={{ ...thStyle, width: '10%' }}>개월</th>
             </tr>
           </tbody>
         </table>
 
-        <div className="rentalNotes">
-          <p>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
-          <p>※ 계약기간의 연장 시 임차인은 만료 5일 전까지 통보해야 하며, 재 계약서를 작성하지 않고 연장하였을 시 본 계약서로서 대체한다.</p>
-          <p>※ 임대 계약기간 만료 전에 컨테이너를 회수하여도 임대료는 환불되지 않는다.</p>
-          <p>※ 임대기간 중 컨테이너를 임의대로 매매, 임대할 수 없다.</p>
-          <p>※ 냉난방기/에어컨 임대 사용시, 6개월 이후 냉난방기/에어컨 사용료 매월 5만원 청구됩니다.</p>
-          <p>※ 계약서에 명시된 임대차 기간이 만료되면, 임차인과 연락이 안 될 경우 임대인이 임의대로 컨테이너를 회수하여도 무방하다. 컨테이너에 있는 내용물은 운반 도중 내용물이 파손되거나, 7일 이내 임의대로 처리하여도 민, 형사상 책임을 지지 않는다."</p>
-          <p>※ 임차인의 귀책사유로 컨테이너에 파손 및 훼손의 피해가 있을 경우 손해배상 청구할 수 있다.</p>
-          <p>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
+        {/* 주의사항 */}
+        <div style={{ fontSize: 11, lineHeight: 1.7, marginBottom: 20, textAlign: 'right' }}>
+          <p style={{ margin: '2px 0' }}>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
+          <p style={{ margin: '2px 0' }}>※ 계약기간의 연장 시 임차인은 만료 5일 전까지 통보해야 하며, 재 계약서를 작성하지 않고 연장하였을 시 본 계약서로서 대체한다.</p>
+          <p style={{ margin: '2px 0' }}>※ 임대 계약기간 만료 전에 컨테이너를 회수하여도 임대료는 환불되지 않는다.</p>
+          <p style={{ margin: '2px 0' }}>※ 임대기간 중 컨테이너를 임의대로 매매, 임대할 수 없다.</p>
+          <p style={{ margin: '2px 0' }}>※ 냉난방기/에어컨 임대 사용시, 6개월 이후 냉난방기/에어컨 사용료 매월 5만원 청구됩니다.</p>
+          <p style={{ margin: '2px 0' }}>※ 계약서에 명시된 임대차 기간이 만료되면, 임차인과 연락이 안 될 경우 임대인이 임의대로 컨테이너를 회수하여도 무방하다. 컨테이너에 있는 내용물은 운반 도중 내용물이 파손되거나, 7일 이내 임의대로 처리하여도 민, 형사상 책임을 지지 않는다."</p>
+          <p style={{ margin: '2px 0' }}>※ 임차인의 귀책사유로 컨테이너에 파손 및 훼손의 피해가 있을 경우 손해배상 청구할 수 있다.</p>
+          <p style={{ margin: '2px 0' }}>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
         </div>
 
-        <div className="rentalDate">{ymd}</div>
+        {/* 날짜 */}
+        <div style={{ textAlign: 'center', fontSize: 13, marginBottom: 20 }}>{ymd}</div>
 
-        <table className="rentalPartyTable">
+        {/* 임대인/임차인 정보 */}
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
             <tr>
-              <th colSpan={2}>임대인</th>
-              <th colSpan={2}>임차인</th>
+              <th style={{ ...thStyle, background: '#d6eaf8', color: '#1a5276' }} colSpan={2}>임대인</th>
+              <th style={{ ...thStyle, background: '#d6eaf8', color: '#1a5276' }} colSpan={2}>임차인</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <th>상호:</th>
-              <td>현대 컨테이너</td>
-              <th>상호:</th>
-              <td>{rentalForm.companyName}</td>
+              <th style={partyThStyle}>상호:</th>
+              <td style={partyTdStyle}>현대 컨테이너</td>
+              <th style={partyThStyle}>상호:</th>
+              <td style={partyTdStyle}>{rentalForm.companyName}</td>
             </tr>
             <tr>
-              <th>등록번호:</th>
-              <td>130-41-38154</td>
-              <th>등록번호:</th>
-              <td>{rentalForm.regNo}</td>
+              <th style={partyThStyle}>등록번호:</th>
+              <td style={partyTdStyle}>130-41-38154</td>
+              <th style={partyThStyle}>등록번호:</th>
+              <td style={partyTdStyle}>{rentalForm.regNo}</td>
             </tr>
             <tr>
-              <th>대표:</th>
-              <td>류창석 (인)</td>
-              <th>대표:</th>
-              <td>{rentalForm.ceo}</td>
+              <th style={partyThStyle}>대표:</th>
+              <td style={partyTdStyle}>류창석 (인)</td>
+              <th style={partyThStyle}>대표:</th>
+              <td style={partyTdStyle}>{rentalForm.ceo}</td>
             </tr>
             <tr>
-              <th>주소:</th>
-              <td>화성시 향남읍 구문천안길16</td>
-              <th>현장주소:</th>
-              <td>{rentalForm.siteAddr || siteName}</td>
+              <th style={partyThStyle}>주소:</th>
+              <td style={partyTdStyle}>화성시 향남읍 구문천안길16</td>
+              <th style={partyThStyle}>현장주소:</th>
+              <td style={partyTdStyle}>{rentalForm.siteAddr || siteName}</td>
             </tr>
             <tr>
-              <th>연락처:</th>
-              <td>010-4775-7557</td>
-              <th>연락처:</th>
-              <td>{customerPhone}</td>
+              <th style={partyThStyle}>연락처:</th>
+              <td style={partyTdStyle}>010-4775-7557</td>
+              <th style={partyThStyle}>연락처:</th>
+              <td style={partyTdStyle}>{customerPhone}</td>
             </tr>
             <tr>
-              <th>연락처:</th>
-              <td>010-4138-9268</td>
-              <th>사무실:</th>
-              <td>{rentalForm.officePhone}</td>
+              <th style={partyThStyle}>연락처:</th>
+              <td style={partyTdStyle}>010-4138-9268</td>
+              <th style={partyThStyle}>사무실:</th>
+              <td style={partyTdStyle}>{rentalForm.officePhone}</td>
             </tr>
             <tr>
-              <th>팩스:</th>
-              <td>0504-392-4298</td>
-              <th>팩스:</th>
-              <td>{rentalForm.fax}</td>
+              <th style={partyThStyle}>팩스:</th>
+              <td style={partyTdStyle}>0504-392-4298</td>
+              <th style={partyThStyle}>팩스:</th>
+              <td style={partyTdStyle}>{rentalForm.fax}</td>
             </tr>
             <tr>
-              <th>메일:</th>
-              <td><a href="mailto:hdcon20@naver.com">hdcon20@naver.com</a></td>
-              <th>메일:</th>
-              <td>{current.customer_email}</td>
+              <th style={partyThStyle}>메일:</th>
+              <td style={partyTdStyle}><a href="mailto:hdcon20@naver.com" style={{ color: '#1a5276' }}>hdcon20@naver.com</a></td>
+              <th style={partyThStyle}>메일:</th>
+              <td style={partyTdStyle}>{customerEmail}</td>
             </tr>
           </tbody>
         </table>
 
-        <div className="rentalFooter">
+        {/* 푸터 */}
+        <div style={{ textAlign: 'center', fontSize: 12, marginTop: 20, color: '#666' }}>
           서명하시고 fax 0504-392-4298이나 이메일hdcon20@naver.com으로 회신부탁드립니다.
         </div>
       </div>
@@ -1335,11 +1446,13 @@ const css = `
   .content { flex: 1; overflow: auto; }
 
   .previewWrap {
-    background: #fff;
+    background: #f5f6f8;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
     overflow: auto;
     padding: 14px;
+    display: flex;
+    justify-content: center;
   }
 
   .muted { color: #666; font-size: 12px; }
@@ -1398,6 +1511,8 @@ const css = `
     padding: 20px;
     box-sizing: border-box;
     font-size: 12px;
+    border: 1px solid #ccc;
+    flex-shrink: 0;
   }
 
   .a4Sheet table {
