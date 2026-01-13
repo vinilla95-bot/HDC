@@ -1178,22 +1178,19 @@ const filteredOptions = useMemo(() => {
   }
 }}
               >
-                <div className="top">
-                  <span className="badge">{it.quote_title || ""}</span>
-<div className="muted">{formatKoDate(it.created_at || "")}</div>
+             <div className="top">
+  <div>
+    <span className="badge">{it.quote_title || ""}</span>
+  </div>
+  <div className="muted">{formatKoDate(it.created_at || "")}</div>
+</div>
 <div className="mid">{it.customer_name || it.quote_id || ""}</div>
-<div>{it.spec ? "· " + it.spec : ""}</div>
-                <div className="bot">
-                  <div>{it.spec ? "· " + escapeHtml(it.spec) : ""}</div>
-                  <div>
-                    <b>{money(it.total_amount)}</b>원
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
+<div className="bot">
+  <div>{it.spec ? "· " + it.spec : ""}</div>
+  <div>
+    <b>{money(it.total_amount)}</b>원
+  </div>
+</div>
         {/* RIGHT */}
         <div className="right">
           <div className="actions" style={{ justifyContent: "center" }}>
