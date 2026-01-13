@@ -1179,12 +1179,10 @@ const filteredOptions = useMemo(() => {
 }}
               >
                 <div className="top">
-                  <div>
-                    <span className="badge">{escapeHtml(it.quote_title || "")}</span>
-                  </div>
-                  <div className="muted">{escapeHtml(formatKoDate(it.created_at || ""))}</div>
-                </div>
-                <div className="mid">{escapeHtml(it.customer_name || it.quote_id || "")}</div>
+                  <span className="badge">{it.quote_title || ""}</span>
+<div className="muted">{formatKoDate(it.created_at || "")}</div>
+<div className="mid">{it.customer_name || it.quote_id || ""}</div>
+<div>{it.spec ? "· " + it.spec : ""}</div>
                 <div className="bot">
                   <div>{it.spec ? "· " + escapeHtml(it.spec) : ""}</div>
                   <div>
