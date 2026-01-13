@@ -7,6 +7,19 @@ const SB_KEY =
 
 export const supabase = createClient(SB_URL, SB_KEY);
 
+export const calculateOptionLine = (
+  opt: SupabaseOptionRow,
+  w: number,
+  l: number,
+  overrides: any = {}
+) => {
+  // ✅ 디버깅 로그 추가
+  console.log('calculateOptionLine:', {
+    name: opt.option_name,
+    qty_mode: opt.qty_mode,
+    w, l
+  });
+
 export const roundToTenThousand = (val: number) => {
   const n = Number(val || 0);
   return Math.round(n / 10000) * 10000;
@@ -235,29 +248,3 @@ export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
   return await supabase.from('quotes').insert([row]).select();
 };
 
-export const calculateOptionLine = (
-  opt: SupabaseOptionRow,
-  w: number,
-  l: number,
-  overrides: any = {}
-) => {
-  // ✅ 디버깅 로그 추가
-  console.log('calculateOptionLine:', {
-    name: opt.option_name,
-    qty_mode: opt.qty_mode,
-    w, l
-  });
-  
-  // ... 나머지 코드
-```
-
-그리고 브라우저 개발자도구(F12) → Console에서 데코타일 추가할 때 뭐라고 나오는지 확인해주세요!
-
-**예상 결과:**
-```
-{name: "데코타일", qty_mode: "AUTO_PYEONG", w: 3, l: 6}
-```
-
-**문제일 경우:**
-```
-{name: "데코타일", qty_mode: undefined, w: 3, l: 6}
