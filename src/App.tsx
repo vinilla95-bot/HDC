@@ -346,6 +346,145 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
   const supply_amount = computedItems.reduce((acc: number, cur: any) => acc + Number(cur.finalAmount || 0), 0);
   const vat_amount = Math.round(supply_amount * 0.1);
   const total_amount = supply_amount + vat_amount;
+// 이 부분 찾아서:
+const supply_amount = computedItems.reduce((acc: number, cur: any) => acc + Number(cur.finalAmount || 0), 0);
+const vat_amount = Math.round(supply_amount * 0.1);
+const total_amount = supply_amount + vat_amount;
+
+// ✅ 여기에 previewHtml 추가
+const previewHtml = useMemo(() => {
+  const today = new Date();
+  const ymd = today.toISOString().slice(0, 10);
+  const spec = `${form.w}x${form.l}`;
+  const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
+
+  const itemRows = computedItems.map((item: any, idx: number) => {
+    const unitSupply = Number(item.customerUnitPrice ?? 0);
+    const qty = Number(item.displayQty ?? 0);
+    const supply = unitSupply * qty;
+    const vat = Math.round(supply * 0.1);
+
+    const showSpec = String(item.showSpec || "").toLowerCase() === "y";
+    const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l 
+      ? `${item.lineSpec.w}x${item.lineSpec.l}` 
+      : "";
+
+    return `<tr><td style="border:1px solid #333;padding:6px;text-align:center;">${idx + 1}</td><td style="border:1px solid #333;padding:6px;text-align:left;">${String(item.displayName || "")}</td><td style="border:1px solid #333;padding:6px;text-align:center;">${specText}</td><td style="border:1px solid #333;padding:6px;text-align:center;">${qty}</td><td style="border:1px solid #333;padding:6px;text-align:right;">${fmt(unitSupply)}</td><td style="border:1px solid #333;padding:6px;text-align:right;">${fmt(supply)}</td><td style="border:1px solid #333;padding:6px;text-align:right;">${fmt(vat)}</td><td style="border:1px solid #333;padding:6px;"></td></tr>`;
+  });
+
+  const MIN_ROWS = 12;
+  const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
+  for (let i = 0; i < blanksCount; i++) {
+    itemRows.push(`<tr style="height:28px;"><td style="border:1px solid #333;padding:6px;">&nbsp;</td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td><td style="border:1px solid #333;padding:6px;"></td></tr>`);
+  }
+
+  return `
+    <div class="a4Wrap">
+      <div class="a4Sheet" style="width:800px;min-height:1123px;background:#fff;padding:16px;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;border-bottom:2px solid #2e5b86;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style="width:160px;height:140px;" />
+          </div>
+          <div style="flex:1;text-align:center;font-size:34px;font-weight:900;letter-spacing:6px;">견 적 서</div>
+          <div style="width:140px;"></div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+          <colgroup>
+            <col style="width:15%" /><col style="width:18%" /><col style="width:12%" /><col style="width:18%" /><col style="width:15%" /><col style="width:22%" />
+          </colgroup>
+          <tbody>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">담당자</th>
+              <td style="border:1px solid #333;padding:6px;" colspan="3">${selectedBizcard?.name || ""}</td>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">견적일자</th>
+              <td style="border:1px solid #333;padding:6px;">${ymd}</td>
+            </tr>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">고객명</th>
+              <td style="border:1px solid #333;padding:6px;" colspan="3">
+                <div style="display:flex;justify-content:space-between;"><span>${form.name || ""}</span><span style="font-weight:900;">귀하</span></div>
+              </td>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">공급자</th>
+              <td style="border:1px solid #333;padding:6px;">현대컨테이너</td>
+            </tr>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">이메일</th>
+              <td style="border:1px solid #333;padding:6px;">${form.email || ""}</td>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">전화</th>
+              <td style="border:1px solid #333;padding:6px;">${form.phone || ""}</td>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">등록번호</th>
+              <td style="border:1px solid #333;padding:6px;">130-41-38154</td>
+            </tr>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">현장</th>
+              <td style="border:1px solid #333;padding:6px;">${siteText}</td>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">견적일</th>
+              <td style="border:1px solid #333;padding:6px;">${today.toLocaleDateString("ko-KR")}</td>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">주소</th>
+              <td style="border:1px solid #333;padding:6px;">경기도 화성시<br />향남읍 구문천안길16</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #333;padding:6px;font-weight:700;text-align:center;" colspan="4">견적요청에 감사드리며 아래와 같이 견적합니다.</td>
+              <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">대표전화</th>
+              <td style="border:1px solid #333;padding:6px;">1688-1447</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #333;padding:6px;font-weight:900;" colspan="6">합계금액 : ₩${fmt(total_amount)} (부가세 포함)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+          <colgroup>
+            <col style="width:5%" /><col style="width:35%" /><col style="width:10%" /><col style="width:8%" /><col style="width:13%" /><col style="width:11%" /><col style="width:9%" /><col style="width:9%" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">순번</th>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">품목</th>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">규격</th>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">수량</th>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">단가</th>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">공급가</th>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">세액</th>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">비고</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows.join('')}</tbody>
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #333;margin-top:8px;">
+          <colgroup>
+            <col style="width:18%" /><col style="width:auto" /><col style="width:15%" /><col style="width:12%" /><col style="width:13%" />
+          </colgroup>
+          <tbody>
+            <tr>
+              <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:left;" colspan="2">합계: ${fmt(total_amount)}원 (총공급가액 ${fmt(supply_amount)} / 총세액 ${fmt(vat_amount)})</td>
+              <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:right;">${fmt(supply_amount)}</td>
+              <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:right;">${fmt(vat_amount)}</td>
+              <td style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:right;">${fmt(total_amount)}</td>
+            </tr>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">결제조건</th>
+              <td style="border:1px solid #333;padding:6px;font-size:12px;line-height:1.55;" colspan="4">계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td>
+            </tr>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">주의사항</th>
+              <td style="border:1px solid #333;padding:6px;font-size:12px;line-height:1.55;" colspan="4">*견적서는 견적일로 부터 2주간 유효합니다.<br />1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)<br />2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고<br />*출고 전날 오후 2시 이전 잔금 결제 조건*<br />3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)</td>
+            </tr>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;background:#e6e6e6;font-weight:900;text-align:center;">중요사항</th>
+              <td style="border:1px solid #333;padding:6px;font-size:12px;line-height:1.55;" colspan="4">*중요사항*<br />1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.<br />해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}, [form, computedItems, supply_amount, vat_amount, total_amount, selectedBizcard]);
+
+
 
   const buildPayload = (quote_id: string, version: number) => {
     const spec = `${form.w}x${form.l}`;
@@ -459,39 +598,40 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
   const [sendStatus, setSendStatus] = useState("");
 
-  const handleSend = async () => {
-    if (!form.email) return alert("이메일을 입력해주세요.");
+ const handleSend = async () => {
+  if (!form.email) return alert("이메일을 입력해주세요.");
 
-    try {
-      setSendStatus("전송 준비 중...");
+  try {
+    setSendStatus("전송 준비 중...");
 
-      let quoteId = currentQuoteId;
-      if (!quoteId) {
-        setSendStatus("견적서 저장 중...");
-        const newId = await handleSaveNew();
-        if (!newId) {
-          setSendStatus("");
-          return;
-        }
-        quoteId = newId;
+    let quoteId = currentQuoteId;
+    if (!quoteId) {
+      setSendStatus("견적서 저장 중...");
+      const newId = await handleSaveNew();
+      if (!newId) {
+        setSendStatus("");
+        return;
       }
-
-      const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
-      
-      setSendStatus("메일 전송 중...");
-      await sendQuoteEmailApi(quoteId, form.email, bizcardImageUrl);
-      
-      setSendStatus("전송 완료!");
-      alert("견적서가 성공적으로 전송되었습니다.");
-      
-      setTimeout(() => setSendStatus(""), 2000);
-    } catch (e: any) {
-      setSendStatus("전송 실패");
-      alert("전송 실패: " + (e?.message || String(e)));
-      console.error("handleSend error:", e);
+      quoteId = newId;
     }
-  };
+
+    const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
+    const bizcardImageUrl = selectedBizcard?.image_url || "";
+    
+    setSendStatus("메일 전송 중...");
+    // ✅ previewHtml 전달
+    await gasCall("listSendQuoteEmail", [quoteId, form.email, previewHtml, bizcardImageUrl]);
+    
+    setSendStatus("전송 완료!");
+    alert("견적서가 성공적으로 전송되었습니다.");
+    
+    setTimeout(() => setSendStatus(""), 2000);
+  } catch (e: any) {
+    setSendStatus("전송 실패");
+    alert("전송 실패: " + (e?.message || String(e)));
+    console.error("handleSend error:", e);
+  }
+};
 
   const downloadJpg = async () => {
     const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
