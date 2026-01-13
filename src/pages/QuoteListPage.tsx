@@ -439,39 +439,39 @@ const bizcardName = selectedBizcard?.name || "";
             </colgroup>
             <tbody style="display:table-row-group;">
            <tr style="display:table-row;">
-  <th style="border:1px solid #333;padding:6px;font-weight:900;">담당자</th>
+  <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">담당자</th>
   <td style="border:1px solid #333;padding:6px;" colspan="3">${escapeHtml(bizcardName)}</td>
-  <th style="border:1px solid #333;padding:6px;font-weight:900;">견적일자</th>
+  <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">견적일자</th>
   <td style="border:1px solid #333;padding:6px;">${ymd}</td>
 </tr>
 
              <tr style="display:table-row;">
-  <th style="border:1px solid #333;padding:6px;font-weight:900;">고객명</th>
+  <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">고객명</th>
   <td style="border:1px solid #333;padding:6px;" colspan="3">
     <div style="display:flex;justify-content:space-between;">
       <span>${escapeHtml(customerName)}</span>
       <span style="font-weight:900;">귀하</span>
     </div>
   </td>
-  <th style="border:1px solid #333;padding:6px;font-weight:900;">공급자</th>
+  <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">공급자</th>
   <td style="border:1px solid #333;padding:6px;">현대컨테이너</td>
 </tr>
 
               <tr style="display:table-row;">
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">이메일</th>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">이메일</th>
                 <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerEmail)}</td>
                 <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">전화</th>
                 <td style="border:1px solid #333;padding:6px;">${escapeHtml(customerPhone)}</td>
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">등록번호</th>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">등록번호</th>
                 <td style="border:1px solid #333;padding:6px;">130-41-38154</td>
               </tr>
 
               <tr style="display:table-row;">
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">현장</th>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">현장</th>
                 <td style="border:1px solid #333;padding:6px;">${escapeHtml(siteName)}</td>
                 <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">견적일</th>
                 <td style="border:1px solid #333;padding:6px;">${today.toLocaleDateString("ko-KR")}</td>
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">주소</th>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">주소</th>
                 <td style="border:1px solid #333;padding:6px;">경기도 화성시<br />향남읍 구문천안길16</td>
               </tr>
 
@@ -479,7 +479,7 @@ const bizcardName = selectedBizcard?.name || "";
                 <td style="border:1px solid #333;padding:6px;font-weight:700;text-align:center;" colspan="4">
                   견적요청에 감사드리며 아래와 같이 견적합니다.
                 </td>
-                <th style="border:1px solid #333;padding:6px;font-weight:900;">전화</th>
+                <th style="border:1px solid #333;padding:6px;font-weight:900;text-align:center;">대표전화</th>
                 <td style="border:1px solid #333;padding:6px;">1688-1447</td>
               </tr>
 
