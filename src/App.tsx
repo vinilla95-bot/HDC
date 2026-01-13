@@ -1334,39 +1334,39 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             </colgroup>
             <tbody>
               <tr>
-                <th className="k">담당자</th>
+                <th className="k center">담당자</th>
                 <td className="v" colSpan={3}>{bizcardName || ""}</td>
-                <th className="k">견적일자</th>
+                <th className="k center">견적일자</th>
                 <td className="v">{ymd}</td>
               </tr>
 
               <tr>
-                <th className="k">고객명</th>
+                <th className="k center">고객명</th>
                 <td className="v" colSpan={3}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span>{form.name || ""}</span>
                     <span style={{ fontWeight: 900 }}>귀하</span>
                   </div>
                 </td>
-                <th className="k">공급자</th>
-                <td className="v">현대컨테이너</td>
+                <th className="k center">공급자</th>
+                <td className="v center">현대컨테이너</td>
               </tr>
 
               <tr>
-                <th className="k">이메일</th>
+                <th className="k center">이메일</th>
                 <td className="v">{form.email || ""}</td>
                 <th className="k center">전화</th>
                 <td className="v">{form.phone || ""}</td>
-                <th className="k">등록번호</th>
+                <th className="k center">등록번호</th>
                 <td className="v">130-41-38154</td>
               </tr>
 
               <tr>
-  <th className="k">현장</th>
+  <th className="k center">현장</th>
   <td className="v">{siteText}</td>
   <th className="k center">견적일</th>
   <td className="v">{today.toLocaleDateString("ko-KR")}</td>
-  <th className="k">주소</th>
+  <th className="k center">주소</th>
   <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
 </tr>
 
@@ -1374,7 +1374,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
   <td className="msg" colSpan={4}>
     견적요청에 감사드리며 아래와 같이 견적합니다.
   </td>
-  <th className="k">전화</th>
+  <th className="k center">대표전화</th>
   <td className="v">1688-1447</td>
 </tr>
 
