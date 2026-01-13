@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
-import jsPDF from 'jspdf'; 
 
 import {
   supabase,
@@ -18,9 +17,7 @@ import { gasRpc as gasRpcRaw } from "./lib/gasRpc";
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
 
-// ✅ [수정 1] getWebAppUrl 함수 정의 추가
-// 에러의 원인입니다. 이 함수가 없어서 호출 시 오류가 발생했습니다.
-// handleSend 안에 있던 긴 URL을 여기로 옮겨서 공통으로 사용하도록 합니다.
+// ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
   return "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
 };
@@ -30,93 +27,6 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   const res = await gasRpcRaw(fn, args);
   if (res && typeof res === "object" && "error" in res) throw new Error(String(res.error));
   return res as T;
-}
-
-const handleSend = async () => {
-  if (!form.email) return alert("이메일을 입력해주세요.");
-
-  try {
-    setSendStatus("전송 준비 중...");
-
-    let quoteId = currentQuoteId;
-    if (!quoteId) {
-      setSendStatus("견적서 저장 중...");
-      const newId = await handleSaveNew();
-      if (!newId) {
-        setSendStatus("");
-        return;
-      }
-      quoteId = newId;
-    }
-
-    // ✅ 캡처해서 PDF 생성
-    setSendStatus("PDF 생성 중...");
-    
-    const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
-    if (!originalSheet) {
-      throw new Error("견적서를 찾을 수 없습니다.");
-    }
-
-    // 캡처 컨테이너 생성
-    const captureContainer = document.createElement('div');
-    captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
-    document.body.appendChild(captureContainer);
-    
-    const styleTag = document.querySelector('#quotePreviewApp style');
-    if (styleTag) {
-      captureContainer.appendChild(styleTag.cloneNode(true));
-    }
-    
-    const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-    clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
-    captureContainer.appendChild(clonedSheet);
-    
-    await new Promise(r => setTimeout(r, 300));
-    
-    const canvas = await html2canvas(clonedSheet, { 
-      scale: 2, 
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      width: 800,
-      windowWidth: 800,
-    });
-    
-    document.body.removeChild(captureContainer);
-    
-    // ✅ 이미지 Base64 데이터
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
-    
-    const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
-    const bizcardImageUrl = selectedBizcard?.image_url || "";
-    
-    setSendStatus("메일 전송 중...");
-    
-    const GAS_URL = getWebAppUrl();
-    
-    const response = await fetch(GAS_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        fn: "sendQuoteEmailWithPdf",
-        args: [quoteId, form.email, imgData, bizcardImageUrl, form.name]
-      })
-    });
-    
-    const result = await response.json();
-    if (result.ok === false) throw new Error(result.message || "전송 실패");
-    
-    setSendStatus("전송 완료!");
-    alert("견적서가 성공적으로 전송되었습니다.");
-    
-    setTimeout(() => setSendStatus(""), 2000);
-  } catch (e: any) {
-    setSendStatus("전송 실패");
-    alert("전송 실패: " + (e?.message || String(e)));
-    console.error("handleSend error:", e);
-  }
-};
-
-async function sendQuoteEmailApi(quoteId: string, to: string, html: string, bizcardImageUrl?: string) {
-  await gasCall("listSendQuoteEmail", [quoteId, to, html, bizcardImageUrl]);
 }
 
 type Bizcard = { id: string; name: string; image_url: string };
@@ -146,6 +56,7 @@ export default function App() {
   });
 
   const [statusMsg, setStatusMsg] = useState("");
+  const [sendStatus, setSendStatus] = useState("");
 
   // 모바일 전체화면 미리보기
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
@@ -154,16 +65,15 @@ export default function App() {
   // ✅ 모바일 스케일 - 화면에 꽉 차게
   const getMobileScale = () => {
     if (typeof window === 'undefined') return 0.45;
-    return (window.innerWidth - 32) / 800; // 좌우 패딩 16px씩 제외
+    return (window.innerWidth - 32) / 800;
   };
 
   const getMobileHeight = () => {
     const scale = getMobileScale();
-    return Math.round(1130 * scale); // A4 높이 * 스케일
+    return Math.round(1130 * scale);
   };
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
-  // ✅ "임대"가 포함된 옵션은 모두 임대로 처리
   const isRentRow = (row: SelectedRow) => String((row as any)?.optionName || "").includes("임대");
 
   useEffect(() => {
@@ -172,14 +82,12 @@ export default function App() {
       .select("*")
       .then(({ data }) => setOptions((data || []) as any));
 
-    // 명함 목록 로드
     supabase
       .from("bizcards")
       .select("*")
       .then(({ data }) => {
         const list = (data || []) as any[];
         setBizcards(list);
-        // 기본값: 고은희 명함
         const goeunhee = list.find((x: any) => String(x.name || "").includes("고은희"));
         if (goeunhee?.id) setSelectedBizcardId(goeunhee.id);
         else if (list[0]?.id) setSelectedBizcardId(list[0].id);
@@ -200,7 +108,6 @@ export default function App() {
 
     const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
     
-    // ✅ 임대의 경우: 개월 수 × 기본단가 = customerUnitPrice
     const months = Number((r as any).months ?? 1);
     let customerUnitPrice: number;
     
@@ -227,121 +134,114 @@ export default function App() {
 
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
- const filteredOptions = useMemo(() => {
-  const q = String(form.optQ || "").trim();
-  if (!q) return [];
+  const filteredOptions = useMemo(() => {
+    const q = String(form.optQ || "").trim();
+    if (!q) return [];
 
-  const matched = options.filter((o: any) => {
-    const name = String(o.option_name || "");
-    return matchKorean(name, q);
-  });
-
-  // ✅ 정렬: 검색어로 시작 > 검색어 포함 > 초성 매칭
-  const qLower = q.toLowerCase();
-  matched.sort((a: any, b: any) => {
-    const nameA = String(a.option_name || "").toLowerCase();
-    const nameB = String(b.option_name || "").toLowerCase();
-
-    const startsA = nameA.startsWith(qLower) ? 0 : 1;
-    const startsB = nameB.startsWith(qLower) ? 0 : 1;
-    if (startsA !== startsB) return startsA - startsB;
-
-    const includesA = nameA.includes(qLower) ? 0 : 1;
-    const includesB = nameB.includes(qLower) ? 0 : 1;
-    return includesA - includesB;
-  });
-
-  return matched.slice(0, 12);
-}, [form.optQ, options]);
-
-const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
-  // ✅ sub_items가 있으면 여러 줄로 추가
-  if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
-    const newRows = opt.sub_items.map((sub: any, idx: number) => {
-      const qty = sub.qty || 0;
-      const unitPrice = sub.unitPrice || 0;
-      const amount = qty * unitPrice;
-
-      return {
-        key: `${opt.option_id}_${Date.now()}_${idx}`,
-        optionId: `${opt.option_id}_${idx}`,
-        optionName: sub.name,
-        displayName: sub.name,
-        unit: sub.unit || "EA",
-        showSpec: "n",
-        baseQty: qty,
-        baseUnitPrice: unitPrice,
-        baseAmount: amount,              // ✅ 계산된 금액
-        displayQty: qty,
-        customerUnitPrice: unitPrice,
-        finalAmount: amount,             // ✅ 계산된 금액
-        memo: "",
-        months: 1,
-        lineSpec: { w: form.w, l: form.l },
-      };
+    const matched = options.filter((o: any) => {
+      const name = String(o.option_name || "");
+      return matchKorean(name, q);
     });
 
-    setSelectedItems((prev: any) => [...prev, ...newRows.map(recomputeRow)]);
-    setForm((prev) => ({ ...prev, optQ: "" }));
+    const qLower = q.toLowerCase();
+    matched.sort((a: any, b: any) => {
+      const nameA = String(a.option_name || "").toLowerCase();
+      const nameB = String(b.option_name || "").toLowerCase();
+
+      const startsA = nameA.startsWith(qLower) ? 0 : 1;
+      const startsB = nameB.startsWith(qLower) ? 0 : 1;
+      if (startsA !== startsB) return startsA - startsB;
+
+      const includesA = nameA.includes(qLower) ? 0 : 1;
+      const includesB = nameB.includes(qLower) ? 0 : 1;
+      return includesA - includesB;
+    });
+
+    return matched.slice(0, 12);
+  }, [form.optQ, options]);
+
+  const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
+    if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+      const newRows = opt.sub_items.map((sub: any, idx: number) => {
+        const qty = sub.qty || 0;
+        const unitPrice = sub.unitPrice || 0;
+        const amount = qty * unitPrice;
+
+        return {
+          key: `${opt.option_id}_${Date.now()}_${idx}`,
+          optionId: `${opt.option_id}_${idx}`,
+          optionName: sub.name,
+          displayName: sub.name,
+          unit: sub.unit || "EA",
+          showSpec: "n",
+          baseQty: qty,
+          baseUnitPrice: unitPrice,
+          baseAmount: amount,
+          displayQty: qty,
+          customerUnitPrice: unitPrice,
+          finalAmount: amount,
+          memo: "",
+          months: 1,
+          lineSpec: { w: form.w, l: form.l },
+        };
+      });
+
+      setSelectedItems((prev: any) => [...prev, ...newRows.map(recomputeRow)]);
+      setForm((prev) => ({ ...prev, optQ: "" }));
+      setSites([]);
+      return;
+    }
+
+    const res = calculateOptionLine(opt, form.w, form.l);
+    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+    const rent = rawName.includes("임대");
+
+    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
+    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+
+    const defaultMonths = rent ? 1 : 1;
+    const displayQty = 1;
+    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
+
+    let simplifiedLabel = label;
+    if (label && form.siteQ) {
+      const regions = label.split(',').map((r: string) => r.trim());
+      const searchQuery = form.siteQ.toLowerCase();
+      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
+      simplifiedLabel = matched || regions[0];
+    }
+
+    const displayName = isSpecial
+      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
+      : rent
+      ? `${rawName} ${defaultMonths}개월`
+      : rawName;
+
+    const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
+
+    const row: any = {
+      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+      optionId: String(opt.option_id || rawName),
+      optionName: rawName,
+      displayName,
+      unit: rent ? "개월" : res.unit || "EA",
+      showSpec,
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty,
+      customerUnitPrice,
+      finalAmount: Math.round(displayQty * customerUnitPrice),
+      months: defaultMonths,
+      memo: res.memo || "",
+      lineSpec: { w: form.w, l: form.l },
+    };
+
+    setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
+    setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
     setSites([]);
-    return;
-  }
-
-  const res = calculateOptionLine(opt, form.w, form.l);
-  const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-  const rent = rawName.includes("임대");  // ✅ "임대" 포함 여부로 체크
-
-  const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-  const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-  const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
-
-  // ✅ 임대: 기본 1개월, 수량 1
-  const defaultMonths = rent ? 1 : 1;
-  const displayQty = 1;
-  const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
-
-  let simplifiedLabel = label;
-  if (label && form.siteQ) {
-    const regions = label.split(',').map((r: string) => r.trim());
-    const searchQuery = form.siteQ.toLowerCase();
-    const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
-    simplifiedLabel = matched || regions[0];
-  }
-
-  const displayName = isSpecial
-    ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
-    : rent
-    ? `${rawName} ${defaultMonths}개월`  // ✅ 원래 이름 + 개월
-    : rawName;
-
-  const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
-
-  const row: any = {
-    key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-    optionId: String(opt.option_id || rawName),
-    optionName: rawName,
-    displayName,
-    unit: rent ? "개월" : res.unit || "EA",
-    showSpec,
-
-    baseQty,
-    baseUnitPrice,
-    baseAmount,
-
-    displayQty,
-    customerUnitPrice,
-    finalAmount: Math.round(displayQty * customerUnitPrice),
-    
-    months: defaultMonths,  // ✅ 개월 수 저장
-
-    memo: res.memo || "",
-    lineSpec: { w: form.w, l: form.l },
   };
-
-  setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
-  setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
-  setSites([]);
-};
 
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
@@ -359,11 +259,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
         if (field === "displayName") return { ...item, displayName: String(value ?? "") };
 
-        // ✅ 개월 수 변경 (임대 전용)
         if (field === "months" && rent) {
           const months = Math.max(1, Math.floor(Number(value || 1)));
           const newUnitPrice = item.baseUnitPrice * months;
-          // 원래 옵션 이름에서 기존 개월 표시 제거 후 새 개월 추가
           const baseName = String(item.optionName || "").replace(/\s*\d+개월$/, "").trim();
           return recomputeRow({ 
             ...item, 
@@ -375,17 +273,13 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
 
         if (field === "displayQty") {
           const qty = Math.max(0, Math.floor(Number(value || 0)));
-
           if (rent) {
-            // ✅ 임대: 수량 변경 시 개월 수 기반 단가는 유지, 수량만 변경
             return recomputeRow({ ...item, displayQty: Math.max(1, qty) });
           }
-
           return recomputeRow({ ...item, displayQty: qty });
         }
 
         if (field === "customerUnitPrice") {
-          // ✅ 임대가 아닌 경우에만 단가 직접 수정 허용
           if (rent) return item;
           const p = Math.max(0, Number(value || 0));
           return recomputeRow({ ...item, customerUnitPrice: p });
@@ -411,13 +305,11 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
       return matchKorean(alias, val);
     });
 
-    // ✅ 정렬: 검색어로 시작하는 지역 > 검색어 포함 > 나머지
     const qLower = val.toLowerCase();
     filtered.sort((a: any, b: any) => {
       const aliasA = String(a.alias || "").toLowerCase();
       const aliasB = String(b.alias || "").toLowerCase();
       
-      // 각 alias의 지역들 중 검색어로 시작하는 것이 있는지 체크
       const regionsA = aliasA.split(',').map((r: string) => r.trim());
       const regionsB = aliasB.split(',').map((r: string) => r.trim());
       
@@ -448,33 +340,24 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
       quote_id,
       version,
       quote_title: title,
-
       customer_name: form.name,
       customer_phone: form.phone,
       customer_email: form.email,
-
       site_name: form.sitePickedLabel || form.siteQ || "",
       site_addr: "",
-
       spec,
       w: form.w,
       l: form.l,
-
       product: "",
       qty: 1,
       memo: "",
-
       contract_start: "",
-
       supply_amount,
       vat_amount,
       total_amount,
-
       pdf_url: "",
       statement_url: "",
-
       bizcard_id: selectedBizcardId || null,
-
       items: computedItems.map((r: any) => ({
         optionId: r.optionId,
         optionName: r.optionName,
@@ -489,9 +372,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
         baseAmount: r.baseAmount,
         lineSpec: r.lineSpec,
         showSpec: r.showSpec,
-        months: r.months,  // ✅ 개월 수 저장
+        months: r.months,
       })),
-
       updated_at: new Date().toISOString(),
     };
   };
@@ -548,65 +430,90 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     setStatusMsg("수정 저장 완료");
   };
 
-  const [sendStatus, setSendStatus] = useState("");
+  // ✅ 캡처 → PDF → 메일 전송
+  const handleSend = async () => {
+    if (!form.email) return alert("이메일을 입력해주세요.");
 
-const handleSend = async () => {
-  if (!form.email) return alert("이메일을 입력해주세요.");
+    try {
+      setSendStatus("전송 준비 중...");
 
-  try {
-    setSendStatus("전송 준비 중...");
-
-    let quoteId = currentQuoteId;
-    if (!quoteId) {
-      setSendStatus("견적서 저장 중...");
-      const newId = await handleSaveNew();
-      if (!newId) {
-        setSendStatus("");
-        return;
+      let quoteId = currentQuoteId;
+      if (!quoteId) {
+        setSendStatus("견적서 저장 중...");
+        const newId = await handleSaveNew();
+        if (!newId) {
+          setSendStatus("");
+          return;
+        }
+        quoteId = newId;
       }
-      quoteId = newId;
-    }
 
-    // ✅ A4Quote HTML 캡처
-    const quotePreview = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
-    let htmlContent = "";
-    
-    if (quotePreview) {
+      // ✅ 캡처해서 이미지 생성
+      setSendStatus("PDF 생성 중...");
+      
+      const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
+      if (!originalSheet) {
+        throw new Error("견적서를 찾을 수 없습니다.");
+      }
+
+      // 캡처 컨테이너 생성
+      const captureContainer = document.createElement('div');
+      captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
+      document.body.appendChild(captureContainer);
+      
       const styleTag = document.querySelector('#quotePreviewApp style');
-      const styleHtml = styleTag ? styleTag.outerHTML : `<style>${a4css}</style>`;
-      htmlContent = styleHtml + quotePreview.outerHTML;
+      if (styleTag) {
+        captureContainer.appendChild(styleTag.cloneNode(true));
+      }
+      
+      const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+      captureContainer.appendChild(clonedSheet);
+      
+      await new Promise(r => setTimeout(r, 300));
+      
+      const canvas = await html2canvas(clonedSheet, { 
+        scale: 2, 
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        width: 800,
+        windowWidth: 800,
+      });
+      
+      document.body.removeChild(captureContainer);
+      
+      // ✅ 이미지 Base64 데이터
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      
+      const bizcard = bizcards.find(b => b.id === selectedBizcardId);
+      const bizcardImageUrl = bizcard?.image_url || "";
+      
+      setSendStatus("메일 전송 중...");
+      
+      const GAS_URL = getWebAppUrl();
+      
+      const response = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          fn: "sendQuoteEmailWithPdf",
+          args: [quoteId, form.email, imgData, bizcardImageUrl, form.name]
+        })
+      });
+      
+      const result = await response.json();
+      if (result.ok === false) throw new Error(result.message || "전송 실패");
+      
+      setSendStatus("전송 완료!");
+      alert("견적서가 성공적으로 전송되었습니다.");
+      
+      setTimeout(() => setSendStatus(""), 2000);
+    } catch (e: any) {
+      setSendStatus("전송 실패");
+      alert("전송 실패: " + (e?.message || String(e)));
+      console.error("handleSend error:", e);
     }
+  };
 
-    const selectedBizcard = bizcards.find(b => b.id === selectedBizcardId);
-    const bizcardImageUrl = selectedBizcard?.image_url || "";
-    
-    setSendStatus("메일 전송 중...");
-    
-    // ✅ [수정 2] 정의한 getWebAppUrl() 함수 사용
-    const GAS_URL = getWebAppUrl();
-    
-    const response = await fetch(GAS_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        fn: "listSendQuoteEmail",
-        args: [quoteId, form.email, htmlContent, bizcardImageUrl]
-      })
-    });
-    
-    const result = await response.json();
-    if (result.ok === false) throw new Error(result.message || "전송 실패");
-    
-    setSendStatus("전송 완료!");
-    alert("견적서가 성공적으로 전송되었습니다.");
-    
-    setTimeout(() => setSendStatus(""), 2000);
-  } catch (e: any) {
-    setSendStatus("전송 실패");
-    alert("전송 실패: " + (e?.message || String(e)));
-    console.error("handleSend error:", e);
-  }
-};
-// ... 이하 코드 동일 ...
   const downloadJpg = async () => {
     const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
     if (!originalSheet) {
@@ -617,19 +524,16 @@ const handleSend = async () => {
     setStatusMsg("JPG 생성 중...");
 
     try {
-      // ✅ 캡처 전용 숨겨진 컨테이너 생성
       const captureContainer = document.createElement('div');
       captureContainer.id = 'captureContainer';
       captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
       document.body.appendChild(captureContainer);
       
-      // 스타일 태그도 복제
       const styleTag = document.querySelector('#quotePreviewApp style');
       if (styleTag) {
         captureContainer.appendChild(styleTag.cloneNode(true));
       }
       
-      // a4Sheet 복제 (transform 없이 원본 크기)
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
       captureContainer.appendChild(clonedSheet);
@@ -645,7 +549,6 @@ const handleSend = async () => {
         windowWidth: 800,
       });
       
-      // 캡처 컨테이너 제거
       document.body.removeChild(captureContainer);
       
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
@@ -666,7 +569,6 @@ const handleSend = async () => {
       alert("JPG 생성 실패: " + (e?.message || String(e)));
     }
   };
-
 
   const MIN_ROWS = 12;
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
@@ -766,8 +668,7 @@ const handleSend = async () => {
             면적: {(form.w * form.l).toFixed(2)}㎡
           </p>
 
-
- <hr />
+          <hr />
 
           <div className="row" style={{ justifyContent: "space-between" }}>
             <p className="title" style={{ margin: 0 }}>
@@ -787,7 +688,6 @@ const handleSend = async () => {
 
           {String(form.optQ || "").trim() !== "" && (
             <div className="box">
-
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((o: any) => (
                   <div
@@ -811,9 +711,6 @@ const handleSend = async () => {
             </div>
           )}
 
-
-
-          
           <hr />
 
           <div className="row">
@@ -869,41 +766,36 @@ const handleSend = async () => {
             </div>
           )}
 
-         
-
-          {/* ✅ 자유 품목 추가 버튼 */}
-<button
-  className="btn"
-  style={{ marginTop: 8, width: "100%" }}
-  onClick={() => {
-    const newRow: any = {
-      key: `CUSTOM_${Date.now()}`,
-      optionId: `CUSTOM_${Date.now()}`,
-      optionName: "",
-      displayName: "",
-      unit: "EA",
-      showSpec: "n",
-      baseQty: 1,
-      baseUnitPrice: 0,
-      baseAmount: 0,
-      displayQty: 1,
-      customerUnitPrice: 0,
-      finalAmount: 0,
-      memo: "",
-      months: 1,
-      lineSpec: { w: form.w, l: form.l },
-    };
-    setSelectedItems((prev: any) => [...prev, newRow]);
-  }}
->
-  + 품목 추가
-</button>
+          <button
+            className="btn"
+            style={{ marginTop: 8, width: "100%" }}
+            onClick={() => {
+              const newRow: any = {
+                key: `CUSTOM_${Date.now()}`,
+                optionId: `CUSTOM_${Date.now()}`,
+                optionName: "",
+                displayName: "",
+                unit: "EA",
+                showSpec: "n",
+                baseQty: 1,
+                baseUnitPrice: 0,
+                baseAmount: 0,
+                displayQty: 1,
+                customerUnitPrice: 0,
+                finalAmount: 0,
+                memo: "",
+                months: 1,
+                lineSpec: { w: form.w, l: form.l },
+              };
+              setSelectedItems((prev: any) => [...prev, newRow]);
+            }}
+          >
+            + 품목 추가
+          </button>
 
           <div style={{ height: 10 }} />
           <div className="mini" style={{ marginBottom: 6 }}>
             좌측에서 수량/단가 수정 → 우측 A4 미리보기/저장에 동일 반영
-            <br />
-
           </div>
 
           <div className="box" style={{ marginTop: 10 }}>
@@ -923,85 +815,83 @@ const handleSend = async () => {
                 {computedItems.map((item: any) => {
                   const rent = isRentRow(item);
                   return (
-                  <tr key={item.key}>
-                    <td>
-                      <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>
-                        내부: {item.baseQty}
-                        {item.unit} × {fmt(item.baseUnitPrice)} = {fmt(item.baseAmount)}
-                      </div>
-                      <input
-                        value={item.displayName}
-                        onChange={(e) => updateRow(item.key, "displayName", e.target.value)}
-                        style={{ width: "100%", fontSize: 12, padding: 4, border: "1px solid #ddd" }}
-                      />
-                     
-                    </td>
-
-                    <td style={{ textAlign: "center" }}>{item.unit}</td>
-
-                    {/* ✅ 개월 컬럼 - 임대만 활성화 */}
-                    <td className="right">
-                      {rent ? (
+                    <tr key={item.key}>
+                      <td>
+                        <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>
+                          내부: {item.baseQty}
+                          {item.unit} × {fmt(item.baseUnitPrice)} = {fmt(item.baseAmount)}
+                        </div>
                         <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={item.months || 1}
-                          onChange={(e) => updateRow(item.key, "months", e.target.value)}
-                          style={{ width: 50, padding: 2, textAlign: "right" }}
+                          value={item.displayName}
+                          onChange={(e) => updateRow(item.key, "displayName", e.target.value)}
+                          style={{ width: "100%", fontSize: 12, padding: 4, border: "1px solid #ddd" }}
                         />
-                      ) : (
-                        <span style={{ color: "#ccc" }}>-</span>
-                      )}
-                    </td>
+                      </td>
 
-                    <td className="right">
-                      <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={item.displayQty}
-                        onChange={(e) => updateRow(item.key, "displayQty", e.target.value)}
-                        style={{ width: 50, padding: 2, textAlign: "right" }}
-                      />
-                    </td>
+                      <td style={{ textAlign: "center" }}>{item.unit}</td>
 
-                    <td className="right">
-                      {rent ? (
-                        // ✅ 임대: 단가 = 기본단가 × 개월 (자동계산, 읽기전용)
-                        <span style={{ fontWeight: 700 }}>{fmt(item.customerUnitPrice)}</span>
-                      ) : (
+                      <td className="right">
+                        {rent ? (
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={item.months || 1}
+                            onChange={(e) => updateRow(item.key, "months", e.target.value)}
+                            style={{ width: 50, padding: 2, textAlign: "right" }}
+                          />
+                        ) : (
+                          <span style={{ color: "#ccc" }}>-</span>
+                        )}
+                      </td>
+
+                      <td className="right">
                         <input
                           type="number"
                           min={0}
                           step={1}
-                          value={item.customerUnitPrice}
-                          onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
-                          style={{ width: 100, padding: 2, textAlign: "right" }}
+                          value={item.displayQty}
+                          onChange={(e) => updateRow(item.key, "displayQty", e.target.value)}
+                          style={{ width: 50, padding: 2, textAlign: "right" }}
                         />
-                      )}
-                    </td>
+                      </td>
 
-                    <td className="right" style={{ fontWeight: 900 }}>
-                      {fmt(item.finalAmount)}
-                    </td>
+                      <td className="right">
+                        {rent ? (
+                          <span style={{ fontWeight: 700 }}>{fmt(item.customerUnitPrice)}</span>
+                        ) : (
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={item.customerUnitPrice}
+                            onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
+                            style={{ width: 100, padding: 2, textAlign: "right" }}
+                          />
+                        )}
+                      </td>
 
-                    <td className="right">
-                      <button
-                        onClick={() => deleteRow(item.key)}
-                        style={{
-                          color: "red",
-                          border: "none",
-                          background: "none",
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        X
-                      </button>
-                    </td>
-                  </tr>
-                )})}
+                      <td className="right" style={{ fontWeight: 900 }}>
+                        {fmt(item.finalAmount)}
+                      </td>
+
+                      <td className="right">
+                        <button
+                          onClick={() => deleteRow(item.key)}
+                          style={{
+                            color: "red",
+                            border: "none",
+                            background: "none",
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          X
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 {computedItems.length === 0 && (
                   <tr>
@@ -1025,8 +915,8 @@ const handleSend = async () => {
               {sendStatus || "견적서 보내기"}
             </button>
             <button className="btn" onClick={downloadJpg}>
-    JPG저장
-  </button>
+              JPG저장
+            </button>
             <button className="btn" onClick={handlePreview}>
               인쇄
             </button>
@@ -1071,7 +961,6 @@ const handleSend = async () => {
                 }}>
                   탭하여 크게 보기
                 </div>
-                {/* transform scale 사용 - position absolute로 레이아웃 분리 */}
                 <div style={{
                   position: 'absolute',
                   top: 0,
@@ -1097,7 +986,6 @@ const handleSend = async () => {
             );
           })()
         ) : (
-          // 데스크톱: 기존 방식
           <div id="quotePreviewApp">
             <A4Quote
               form={form}
@@ -1113,7 +1001,7 @@ const handleSend = async () => {
         )}
       </div>
 
-      {/* ✅ 모바일 전체화면 미리보기 - 삼성 인터넷 호환 */}
+      {/* 모바일 전체화면 미리보기 */}
       {mobilePreviewOpen && (
         <div 
           style={{
@@ -1157,7 +1045,6 @@ const handleSend = async () => {
             background: '#f5f6f8',
             padding: '10px',
           }}>
-            {/* ✅ 전체화면: transform scale + 정확한 컨테이너 크기 */}
             {(() => {
               const scale = Math.min(0.95, (window.innerWidth - 20) / 800);
               const scaledWidth = Math.floor(800 * scale);
@@ -1285,7 +1172,6 @@ const handleSend = async () => {
                   <button
                     onClick={async () => {
                       document.getElementById('sendMenuApp')!.style.display = 'none';
-                      // ❌ setMobilePreviewOpen(false) 제거 - 캡처 후에 이동
                       
                       const originalSheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
                       if (!originalSheet) {
@@ -1296,7 +1182,6 @@ const handleSend = async () => {
                       try {
                         setStatusMsg('이미지 생성 중...');
                         
-                        // ✅ downloadJpg와 완전히 동일한 방식
                         const captureContainer = document.createElement('div');
                         captureContainer.id = 'captureContainerSms';
                         captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
@@ -1329,7 +1214,6 @@ const handleSend = async () => {
                         const msg = `안녕하세요 현대컨테이너입니다 문의 주셔서 감사합니다 ${form.name || '고객'}님 견적서를 보내드립니다.확인하시고 문의사항 있으시면 언제든 연락 주세요 감사합니다~`;
                         const phone = form.phone.replace(/[^0-9]/g, '');
                         
-                        // 이미지 다운로드
                         const a = document.createElement('a');
                         a.href = dataUrl;
                         a.download = `견적서_${form.name || 'quote'}.jpg`;
@@ -1338,9 +1222,8 @@ const handleSend = async () => {
                         document.body.removeChild(a);
                         
                         setStatusMsg('');
-                        setMobilePreviewOpen(false); // ✅ 캡처 완료 후 모달 닫기
+                        setMobilePreviewOpen(false);
                         
-                        // 다운로드 후 SMS 앱으로 이동
                         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                         const separator = isIOS ? '&' : '?';
                         
@@ -1386,7 +1269,6 @@ const handleSend = async () => {
   return view === "list" ? listScreen : rtScreen;
 }
 
-
 type A4QuoteProps = {
   form: {
     quoteTitle: string;
@@ -1399,7 +1281,6 @@ type A4QuoteProps = {
     sitePickedLabel: string;
     optQ: string;
   };
-
   computedItems: any[];
   blankRows: any[];
   fmt: (n: number) => string;
@@ -1409,7 +1290,7 @@ type A4QuoteProps = {
   bizcardImageUrl?: string;
   bizcardName?: string;
   noTransform?: boolean;
-  noPadding?: boolean;  // ✅ 추가: 모바일에서 .card padding 제거
+  noPadding?: boolean;
 };
 
 function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding }: A4QuoteProps) {
@@ -1422,16 +1303,13 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
     <div className="card" style={noPadding ? { padding: 0, margin: 0, border: 'none', background: 'transparent' } : undefined}>
       <style>{a4css}</style>
 
-      {/* ✅ noTransform일 때 transform 제거 + display: block으로 레이아웃 고정 */}
       <div className="a4Wrap" style={noTransform ? { transform: 'none', padding: 0, background: '#fff', display: 'block' } : undefined}>
         <div className="a4Sheet">
           <div className="a4Header">
             <div className="a4HeaderLeft">
               <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" className="a4Logo" />
             </div>
-
             <div className="a4HeaderCenter">견 적 서</div>
-
             <div className="a4HeaderRight" />
           </div>
 
@@ -1451,7 +1329,6 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="k center">견적일자</th>
                 <td className="v">{ymd}</td>
               </tr>
-
               <tr>
                 <th className="k center">고객명</th>
                 <td className="v" colSpan={3}>
@@ -1463,7 +1340,6 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="k center">공급자</th>
                 <td className="v ">현대컨테이너</td>
               </tr>
-
               <tr>
                 <th className="k center">이메일</th>
                 <td className="v">{form.email || ""}</td>
@@ -1472,29 +1348,26 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="k center">등록번호</th>
                 <td className="v">130-41-38154</td>
               </tr>
-
               <tr>
-  <th className="k center">현장</th>
-  <td className="v">{siteText}</td>
-  <th className="k center">견적일</th>
-  <td className="v">{today.toLocaleDateString("ko-KR")}</td>
-  <th className="k center">주소</th>
-  <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
-</tr>
-
-<tr>
-  <td className="msg" colSpan={4}>
-    견적요청에 감사드리며 아래와 같이 견적합니다.
-  </td>
-  <th className="k center">대표전화</th>
-  <td className="v">1688-1447</td>
-</tr>
-
-<tr>
-  <td className="sum" colSpan={6}>
-    합계금액 : ₩{fmt(total_amount)} (부가세 포함)
-  </td>
-</tr>
+                <th className="k center">현장</th>
+                <td className="v">{siteText}</td>
+                <th className="k center">견적일</th>
+                <td className="v">{today.toLocaleDateString("ko-KR")}</td>
+                <th className="k center">주소</th>
+                <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
+              </tr>
+              <tr>
+                <td className="msg" colSpan={4}>
+                  견적요청에 감사드리며 아래와 같이 견적합니다.
+                </td>
+                <th className="k center">대표전화</th>
+                <td className="v">1688-1447</td>
+              </tr>
+              <tr>
+                <td className="sum" colSpan={6}>
+                  합계금액 : ₩{fmt(total_amount)} (부가세 포함)
+                </td>
+              </tr>
             </tbody>
           </table>
 
@@ -1509,7 +1382,6 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
               <col style={{ width: "9%" }} />
               <col style={{ width: "9%" }} />
             </colgroup>
-
             <thead>
               <tr>
                 <th className="h">순번</th>
@@ -1522,16 +1394,12 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="h">비고</th>
               </tr>
             </thead>
-
             <tbody>
               {computedItems.map((item: any, idx: number) => {
                 const unitSupply = Number(item.customerUnitPrice ?? 0);
                 const qty = Number(item.displayQty ?? 0);
-
                 const supply = unitSupply * qty;
                 const vat = Math.round(supply * 0.1);
-
-                // ✅ show_spec이 'y'인 경우만 규격 표시
                 const showSpec = String(item.showSpec || "").toLowerCase() === "y";
                 const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l 
                   ? `${item.lineSpec.w}x${item.lineSpec.l}` 
@@ -1550,7 +1418,6 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                   </tr>
                 );
               })}
-
               {blankRows.map((_, i) => (
                 <tr key={`blank-${i}`}>
                   <td className="c">&nbsp;</td>
@@ -1566,14 +1433,14 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             </tbody>
           </table>
 
-  <table className="a4Bottom">
-  <colgroup>
-    <col style={{ width: "15%" }} />
-    <col style={{ width: "37%" }} />
-    <col style={{ width: "16%" }} />
-    <col style={{ width: "16%" }} />
-    <col style={{ width: "16%" }} />
-  </colgroup>
+          <table className="a4Bottom">
+            <colgroup>
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "37%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "16%" }} />
+            </colgroup>
             <tbody>
               <tr className="sumRow">
                 <td className="sumLeft" colSpan={2}>
@@ -1583,14 +1450,12 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <td className="sumNum right">{fmt(vat_amount)}</td>
                 <td className="sumNum right">{fmt(total_amount)}</td>
               </tr>
-
               <tr>
                 <th className="label">결제조건</th>
                 <td className="text" colSpan={4}>
                   계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고
                 </td>
               </tr>
-
               <tr>
                 <th className="label">주의사항</th>
                 <td className="text" colSpan={4}>
@@ -1605,7 +1470,6 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                   3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
                 </td>
               </tr>
-
               <tr>
                 <th className="label">중요사항</th>
                 <td className="text" colSpan={4}>
@@ -1776,7 +1640,6 @@ const a4css = `
     overflow-wrap:anywhere;
   }
 
-  /* ✅ 데스크톱 전용 - 모바일은 인라인 스타일로 처리 */
   @media print{
     @page {
       size: A4;
