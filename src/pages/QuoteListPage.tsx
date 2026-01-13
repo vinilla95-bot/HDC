@@ -700,7 +700,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
     };
 
     return (
-      <div className="a4Sheet" style={{ background: '#fff', padding: 30, width: 1000, minHeight: 500 }}>
+      <div className="a4Sheet" style={{ background: '#fff', padding: 30, width: 1100, minHeight: 500 }}>
         {/* 제목 */}
         <div style={{ textAlign: 'center', marginBottom: 5 }}>
           <div style={{ fontSize: 28, fontWeight: 900, color: '#1a5276', letterSpacing: 8 }}>거래명세서</div>
