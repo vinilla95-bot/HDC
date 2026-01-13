@@ -3,20 +3,18 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9
 export async function gasRpc(fn: string, args: any[] = []) {
   const payload = JSON.stringify({ fn, args });
   
-  // ✅ payload가 크면 POST, 작으면 GET
+  // payload가 크면 POST, 작으면 GET
   const isLarge = payload.length > 2000;
   
   let res: Response;
   
   if (isLarge) {
-    // POST 방식 (긴 HTML 등)
     res = await fetch(GAS_URL, {
       method: "POST",
       body: payload,
       redirect: "follow",
     });
   } else {
-    // GET 방식 (짧은 요청)
     const url = `${GAS_URL}?p=${encodeURIComponent(payload)}`;
     res = await fetch(url, {
       method: "GET",
