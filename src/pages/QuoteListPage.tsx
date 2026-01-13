@@ -146,17 +146,19 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
 
   // 임대차 폼 데이터
   const [rentalForm, setRentalForm] = useState({
-    contractStart: "",
-    contractEnd: "",
-    months: 3,
-    companyName: "",
-    regNo: "",
-    ceo: "",
-    siteAddr: "",
-    phone: "",
-    officePhone: "",
-    fax: "",
-  });
+   contractStart: "",
+  contractEnd: "",
+  months: 3,
+  companyName: "",   // 상호
+  regNo: "",         // 등록번호
+  ceo: "",           // 대표
+  siteAddr: "",      // 현장주소
+  phone: "",         // 연락처
+  officePhone: "",   // 사무실
+  fax: "",           // 팩스
+  email: "",         // 메일 ← 추가!
+});
+  
 
   // 견적 수정
   const [editForm, setEditForm] = useState<any>(null);
@@ -1101,7 +1103,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
               <th style={partyThStyle}>메일:</th>
               <td style={partyTdStyle}><a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a></td>
               <th style={partyThStyle}>메일:</th>
-              <td style={partyTdStyle}>{customerEmail}</td>
+             <td style={partyTdStyle}>{rentalForm.email || customerEmail}</td>
             </tr>
           </tbody>
         </table>
@@ -1269,10 +1271,32 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
                   value={rentalForm.siteAddr}
                   onChange={(e) => setRentalForm({ ...rentalForm, siteAddr: e.target.value })}
                 />
-              </div>
-            </div>
-          )}
-
+                <label>연락처</label>
+      <input
+        value={rentalForm.phone}
+        onChange={(e) => setRentalForm({ ...rentalForm, phone: e.target.value })}
+      />
+      <label>사무실</label>
+      <input
+        value={rentalForm.officePhone}
+        onChange={(e) => setRentalForm({ ...rentalForm, officePhone: e.target.value })}
+      />
+    </div>
+    <div className="formRow">
+      <label>팩스</label>
+      <input
+        value={rentalForm.fax}
+        onChange={(e) => setRentalForm({ ...rentalForm, fax: e.target.value })}
+      />
+      <label>메일</label>
+      <input
+        value={rentalForm.email}
+        onChange={(e) => setRentalForm({ ...rentalForm, email: e.target.value })}
+      />
+    </div>
+  </div>
+)}
+          
           {/* 미리보기 */}
           <div className="content">
             <div className="previewWrap" id="docPreview">
