@@ -56,7 +56,8 @@ export default function App() {
     siteQ: "",
     sitePickedLabel: "",
     optQ: "",
-      quoteDate: new Date().toISOString().slice(0, 10), 
+      quoteDate: new Date().toISOString().slice(0, 10),
+    vatIncluded: true,
   });
 
   const [statusMsg, setStatusMsg] = useState("");
@@ -642,6 +643,18 @@ export default function App() {
     onChange={(e) => setForm({ ...form, quoteDate: e.target.value })} 
   />
 </div>
+   {/* 부가세 선택 추가 */}
+<div className="row">
+  <label>부가세</label>
+  <select 
+    value={form.vatIncluded ? "included" : "excluded"} 
+    onChange={(e) => setForm({ ...form, vatIncluded: e.target.value === "included" })}
+  >
+    <option value="included">부가세 포함</option>
+    <option value="excluded">부가세 별도</option>
+  </select>
+</div>
+
           <div className="row">
             <label>고객명</label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -667,17 +680,28 @@ export default function App() {
             </select>
           </div>
 
-          <div className="row">
-            <label>가로(m)</label>
-            <input type="number" value={form.w} onChange={(e) => setForm({ ...form, w: Number(e.target.value) })} />
-          </div>
-          <div className="row">
-            <label>세로(m)</label>
-            <input type="number" value={form.l} onChange={(e) => setForm({ ...form, l: Number(e.target.value) })} />
-          </div>
-          <p className="muted" style={{ textAlign: "right" }}>
-            면적: {(form.w * form.l).toFixed(2)}㎡
-          </p>
+          <div className="row" style={{ alignItems: "center" }}>
+  <label>규격(m)</label>
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <span>가로:</span>
+    <input 
+      type="number" 
+      value={form.w} 
+      onChange={(e) => setForm({ ...form, w: Number(e.target.value) })} 
+      style={{ width: 60 }}
+    />
+    <span>세로:</span>
+    <input 
+      type="number" 
+      value={form.l} 
+      onChange={(e) => setForm({ ...form, l: Number(e.target.value) })} 
+      style={{ width: 60 }}
+    />
+  </div>
+</div>
+<p className="muted" style={{ textAlign: "right" }}>
+  면적: {(form.w * form.l).toFixed(2)}㎡
+</p>
 
           <hr />
 
@@ -1293,6 +1317,7 @@ type A4QuoteProps = {
     sitePickedLabel: string;
     optQ: string;
     quoteDate?: string; 
+    vatIncluded?: boolean;
   };
   computedItems: any[];
   blankRows: any[];
@@ -1378,6 +1403,11 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="k center">대표전화</th>
                 <td className="v">1688-1447</td>
               </tr>
+              <tr>
+  <td className="sum" colSpan={6}>
+    합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)} ({form.vatIncluded !== false ? "부가세 포함" : "부가세 별도"})
+  </td>
+</tr>
             </tbody>
           </table>
 
