@@ -1308,7 +1308,7 @@ type A4QuoteProps = {
 };
 
 function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding, quoteDate }: A4QuoteProps) {
-  const ymd = quoteDate || new Date().toISOString().slice(0, 10);
+  const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   // today 변수는 삭제하거나 그대로 두고, 아래 견적일 부분만 수정
   const today = new Date();
  
