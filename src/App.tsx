@@ -1304,6 +1304,7 @@ type A4QuoteProps = {
   bizcardName?: string;
   noTransform?: boolean;
   noPadding?: boolean;
+  quoteDate?: string;
 };
 
 function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding, quoteDate }: A4QuoteProps) {
