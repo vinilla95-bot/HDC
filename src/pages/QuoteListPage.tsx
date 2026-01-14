@@ -37,6 +37,7 @@ type QuoteRow = {
   updated_at: string | null;
   items: any;
   bizcard_id: string | null;
+  vat_included?: boolean;
 };
 
 type QuoteItem = {
@@ -207,7 +208,7 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
       "quote_id", "version", "quote_title", "customer_name", "customer_phone",
       "customer_email", "site_name", "site_addr", "spec", "w", "l", "product",
       "qty", "memo", "contract_start", "supply_amount", "vat_amount", "total_amount",
-      "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id",
+      "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id","vat_included",
     ].join(",");
 
     let query = supabase
@@ -489,6 +490,9 @@ useEffect(() => {
     const ymd = today.toISOString().slice(0, 10);
     const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
     const bizcardName = selectedBizcard?.name || "";
+    const vatIncluded = current.vat_included !== false;
+const displayTotal = vatIncluded ? totalAmount : supplyAmount;
+const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
 
     const MIN_ROWS = 12;
 
@@ -551,9 +555,12 @@ useEffect(() => {
               <td style={{ border: '1px solid #333', padding: 6, fontWeight: 700, textAlign: 'center' }} colSpan={4}>견적요청에 감사드리며 아래와 같이 견적합니다.</td>
               <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>대표전화</th>
               <td style={{ border: '1px solid #333', padding: 6 }}>1688-1447</td>
+              
             </tr>
             <tr>
-              <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>합계금액 : ₩{money(totalAmount)} (부가세 포함)</td>
+              <td style={{ ...cellStyle, fontWeight: 900, fontSize: 14 }} colSpan={6}>
+  합계금액 : ₩{money(displayTotal)} ({vatLabel})
+</td>
             </tr>
           </tbody>
         </table>
@@ -629,9 +636,9 @@ useEffect(() => {
           </colgroup>
           <tbody>
             <tr>
-              <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'left' }} colSpan={2}>
-                합계: {money(totalAmount)}원 (총공급가액 {money(supplyAmount)} / 총세액 {money(vatAmount)})
-              </td>
+              <td style={{ ... }} colSpan={5}>
+  합계: {money(displayTotal)}원 ({vatLabel})
+</td
               <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(supplyAmount)}</td>
               <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(vatAmount)}</td>
               <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(totalAmount)}</td>
@@ -1241,6 +1248,7 @@ function removeItem(index: number) {
   setEditForm((prev: any) => ({
     ...prev,
     items: prev.items.filter((_: any, i: number) => i !== index),
+    vat_included: current!.vat_included !== false,
   }));
 }
 
@@ -1333,6 +1341,7 @@ async function saveEdit() {
       total_amount,
       bizcard_id: editForm.bizcard_id || null,
       updated_at: new Date().toISOString(),
+      vat_included: editForm.vat_included,
     };
 
     // ✅ 날짜가 변경됐으면 created_at도 업데이트
@@ -1613,6 +1622,14 @@ async function saveEdit() {
     style={{ flex: "0 0 150px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
   />
 </div>
+          <select
+  value={editForm.vat_included ? "included" : "excluded"}
+  onChange={(e) => setEditForm({ ...editForm, vat_included: e.target.value === "included" })}
+  style={{ flex: "0 0 130px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+>
+  <option value="included">부가세 포함</option>
+  <option value="excluded">부가세 별도</option>
+</select>
           <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
             <input
               value={editForm.customer_name}
