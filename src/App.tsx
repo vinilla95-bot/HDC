@@ -1487,7 +1487,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
               <col style={{ width: "13%" }} />
               <col style={{ width: "13%" }} />
               <col style={{ width: "9%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "11%" }} />
             </colgroup>
             <tbody>
               <tr className="sumRow">
