@@ -201,44 +201,51 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   }
 
   async function loadList(keyword = ""): Promise<void> {
-    setLoading(true);
-    try {
-      const selectCols = [
-        "quote_id", "version", "quote_title", "customer_name", "customer_phone",
-        "customer_email", "site_name", "site_addr", "spec", "w", "l", "product",
-        "qty", "memo", "contract_start", "supply_amount", "vat_amount", "total_amount",
-        "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id",
-      ].join(",");
+  setLoading(true);
+  try {
+    const selectCols = [
+      "quote_id", "version", "quote_title", "customer_name", "customer_phone",
+      "customer_email", "site_name", "site_addr", "spec", "w", "l", "product",
+      "qty", "memo", "contract_start", "supply_amount", "vat_amount", "total_amount",
+      "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id",
+    ].join(",");
 
-      let query = supabase
-        .from("quotes")
-        .select(selectCols)
-        .order("created_at", { ascending: false })
-        .limit(200);
+    let query = supabase
+      .from("quotes")
+      .select(selectCols)
+      .order("created_at", { ascending: false })
+      .limit(200);
 
-      const kw = (keyword || "").trim();
-      if (kw) {
-        const like = `%${kw}%`;
-        query = query.or([
-          `quote_id.ilike.${like}`,
-          `customer_name.ilike.${like}`,
-          `spec.ilike.${like}`,
-          `quote_title.ilike.${like}`,
-          `site_name.ilike.${like}`,
-        ].join(","));
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      setList(((data ?? []) as unknown) as QuoteRow[]);
-    } catch (e: any) {
-      console.error(e);
-      toast("목록 로드 실패: " + (e?.message || String(e)));
-      setList([]);
-    } finally {
-      setLoading(false);
+    const kw = (keyword || "").trim();
+    if (kw) {
+      const like = `%${kw}%`;
+      query = query.or([
+        `quote_id.ilike.${like}`,
+        `customer_name.ilike.${like}`,
+        `spec.ilike.${like}`,
+        `quote_title.ilike.${like}`,
+        `site_name.ilike.${like}`,
+      ].join(","));
     }
+
+    // ✅ dateFilter를 state에서 직접 참조
+    if (dateFilter) {
+      const startOfDay = `${dateFilter}T00:00:00`;
+      const endOfDay = `${dateFilter}T23:59:59`;
+      query = query.gte("created_at", startOfDay).lte("created_at", endOfDay);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    setList(((data ?? []) as unknown) as QuoteRow[]);
+  } catch (e: any) {
+    console.error(e);
+    toast("목록 로드 실패: " + (e?.message || String(e)));
+    setList([]);
+  } finally {
+    setLoading(false);
   }
+}
 
   // ✅ 현재 탭에 따른 문서 제목
   const getDocTitle = () => {
@@ -1347,7 +1354,7 @@ async function saveEdit() {
     if (data && data[0]?.bizcard_id) {
       setSelectedBizcardId(data[0].bizcard_id);
     }
-    await loadList(q, dateFilter);
+    await loadList(q);
     if (data && data[0]) setCurrent(data[0] as QuoteRow);
   } catch (e: any) {
     toast("저장 실패: " + (e?.message || String(e)));
