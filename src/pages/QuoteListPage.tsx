@@ -493,6 +493,10 @@ useEffect(() => {
     const vatIncluded = current.vat_included !== false;
 const displayTotal = vatIncluded ? totalAmount : supplyAmount;
 const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
+     const cellStyle: React.CSSProperties = { border: '1px solid #333', padding: '6px 8px', fontSize: 13, verticalAlign: 'middle' };
+  const thStyle: React.CSSProperties = { ...cellStyle, background: '#fff', fontWeight: 900, textAlign: 'center' };
+  const headerStyle: React.CSSProperties = { ...cellStyle, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' };
+
 
     const MIN_ROWS = 12;
 
