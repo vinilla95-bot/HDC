@@ -250,77 +250,81 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
 
   // ✅ 이메일 전송 (캡처 → PDF)
   async function handleSendEmail() {
-    requireCurrent();
-    const quoteId = current!.quote_id;
-    const to = sendTo.trim() || (current!.customer_email || "").trim();
+  requireCurrent();
+  const quoteId = current!.quote_id;
+  const to = sendTo.trim() || (current!.customer_email || "").trim();
 
-    if (!to) {
-      setSendStatus("수신 이메일이 비어있습니다.");
-      return;
-    }
-
-    try {
-      setSendStatus("PDF 생성 중...");
-
-      const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
-      if (!sheetEl) {
-        throw new Error("문서를 찾을 수 없습니다.");
-      }
-
-      // 캡처 컨테이너 생성
-      const captureContainer = document.createElement('div');
-      captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
-      document.body.appendChild(captureContainer);
-
-      const styleTag = document.querySelector('#docPreview style');
-      if (styleTag) {
-        captureContainer.appendChild(styleTag.cloneNode(true));
-      }
-
-      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
-      clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
-      captureContainer.appendChild(clonedSheet);
-
-      await new Promise(r => setTimeout(r, 300));
-
-      const canvas = await html2canvas(clonedSheet, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        width: 794,
-        windowWidth: 794,
-      });
-
-      document.body.removeChild(captureContainer);
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-      const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
-      const customerName = current!.customer_name || "고객";
-
-      setSendStatus("메일 전송 중...");
-
-      // ✅ 문서 타입에 따라 다른 제목 사용
-      await gasCall("sendDocEmailWithPdf", [
-        quoteId,
-        to,
-        imgData,
-        bizcardImageUrl,
-        customerName,
-        getDocTitle()
-      ]);
-
-      setSendStatus("전송 완료!");
-      toast(`${getDocTitle()} 메일 전송 완료`);
-      setSendOpen(false);
-      loadList(q);
-    } catch (e: any) {
-      setSendStatus("전송 실패: " + (e?.message || String(e)));
-      toast("메일 전송 실패");
-    }
+  if (!to) {
+    setSendStatus("수신 이메일이 비어있습니다.");
+    return;
   }
 
+  try {
+    setSendStatus("PDF 생성 중...");
+
+    const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
+    if (!sheetEl) {
+      throw new Error("문서를 찾을 수 없습니다.");
+    }
+
+    // ✅ 거래명세서는 넓은 크기로 캡처
+    const isStatement = activeTab === 'statement';
+    const captureWidth = isStatement ? 1100 : 794;
+    const captureHeight = isStatement ? 600 : 1123;
+
+    // 캡처 컨테이너 생성
+    const captureContainer = document.createElement('div');
+    captureContainer.style.cssText = `position: fixed; top: -9999px; left: -9999px; width: ${captureWidth}px; background: #fff; z-index: -1;`;
+    document.body.appendChild(captureContainer);
+
+    const styleTag = document.querySelector('#docPreview style');
+    if (styleTag) {
+      captureContainer.appendChild(styleTag.cloneNode(true));
+    }
+
+    const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+    clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
+    captureContainer.appendChild(clonedSheet);
+
+    await new Promise(r => setTimeout(r, 300));
+
+    const canvas = await html2canvas(clonedSheet, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      width: captureWidth,
+      windowWidth: captureWidth,
+    });
+
+    document.body.removeChild(captureContainer);
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+    const bizcardImageUrl = selectedBizcard?.image_url || "";
+    const customerName = current!.customer_name || "고객";
+
+    setSendStatus("메일 전송 중...");
+
+    // ✅ 문서 타입에 따라 다른 제목 사용
+    await gasCall("sendDocEmailWithPdf", [
+      quoteId,
+      to,
+      imgData,
+      bizcardImageUrl,
+      customerName,
+      getDocTitle()
+    ]);
+
+    setSendStatus("전송 완료!");
+    toast(`${getDocTitle()} 메일 전송 완료`);
+    setSendOpen(false);
+    loadList(q);
+  } catch (e: any) {
+    setSendStatus("전송 실패: " + (e?.message || String(e)));
+    toast("메일 전송 실패");
+  }
+}
   // ✅ JPG 다운로드
   async function downloadJpg() {
   requireCurrent();
