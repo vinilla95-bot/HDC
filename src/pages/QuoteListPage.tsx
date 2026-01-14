@@ -2160,8 +2160,7 @@ const css = `
     .previewWrap { overflow-x: auto; }
     .a4Sheet { transform: scale(0.5); transform-origin: top left; }
   }
-
- @media print {
+@media print {
   .panel, 
   .tabBar, 
   .actions, 
@@ -2227,3 +2226,4 @@ const css = `
   size: A4;
   margin: 0;
 }
+';
