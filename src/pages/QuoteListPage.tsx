@@ -1794,12 +1794,23 @@ const css = `
   }
 
  
-    @media print {
-  .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast, button { display: none !important; }
-    .app { display: block; }
-    .right { display: block; }
-    .content { overflow: visible; }
-    .previewWrap { border: none; padding: 0; }
-    .a4Sheet { width: 210mm; min-height: auto; padding: 10mm; }
+   @media print {
+  .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast { display: none !important; }
+  .app { display: block; }
+  .right { display: block; }
+  .content { overflow: visible; }
+  .previewWrap { border: none; padding: 0; background: #fff !important; }
+  .a4Sheet { width: 210mm; min-height: auto; padding: 10mm; }
+  
+  /* 추가 */
+  body, html, .quoteListPage { 
+    background: #fff !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
   }
-`;
+  .a4Sheet { 
+    border: none !important; 
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+}
