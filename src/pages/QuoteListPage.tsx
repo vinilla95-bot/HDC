@@ -2163,32 +2163,61 @@ const css = `
 
  
 @media print {
-    .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast { display: none !important; }
-    .app { display: block; }
-    .right { display: block; }
-    .content { overflow: visible; }
-    .previewWrap { border: none; padding: 0; background: #fff !important; }
-    
-    body, html, .quoteListPage { 
-      background: #fff !important; 
-      margin: 0 !important; 
-      padding: 0 !important; 
-    }
-    
-    .a4Sheet { 
-      width: 210mm; 
-      min-height: auto; 
-      padding: 10mm;
-      border: none !important; 
-      box-shadow: none !important;
-      margin: 0 !important;
-    }
-    
-    .statementSheet {
-      width: 290mm !important;
-      padding: 5mm !important;
-      transform: scale(0.9);
-      transform-origin: top left;
-    }
+  /* 모든 UI 요소 숨기기 */
+  .panel, 
+  .tabBar, 
+  .actions, 
+  .rentalFormBox, 
+  .modal, 
+  .toast,
+  button {
+    display: none !important;
+    visibility: hidden !important;
   }
-`;
+  
+  .app { 
+    display: block !important; 
+    grid-template-columns: 1fr !important;
+  }
+  
+  .right { 
+    display: block !important; 
+  }
+  
+  .content { 
+    overflow: visible !important; 
+  }
+  
+  .previewWrap { 
+    border: none !important; 
+    padding: 0 !important; 
+    background: #fff !important; 
+  }
+  
+  body, html, .quoteListPage { 
+    background: #fff !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+  }
+  
+  .a4Sheet { 
+    width: 210mm !important; 
+    min-height: auto !important; 
+    padding: 10mm !important;
+    border: none !important; 
+    box-shadow: none !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+  
+  .statementSheet {
+    width: 290mm !important;
+    padding: 5mm !important;
+  }
+  
+  /* 거래명세서 가로 인쇄 */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}
