@@ -35,8 +35,14 @@ export default function App() {
   const [options, setOptions] = useState<SupabaseOptionRow[]>([]);
   const [sites, setSites] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedRow[]>([]);
-  const [view, setView] = useState<"rt" | "list">(() => {
+  
+const [view, setView] = useState<"rt" | "list">(() => {
   const params = new URLSearchParams(window.location.search);
+  const v = params.get('view');
+  if (v === 'list') return 'list';
+  if (v === 'rt') return 'rt';
+  return 'rt';  // 기본값은 실시간
+});
   return params.get('view') === 'list' ? 'list' : 'rt';
 });
 
@@ -1476,7 +1482,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
           <table className="a4Bottom">
             <colgroup>
               <col style={{ width: "15%" }} />
-              <col style={{ width: "30%" }} />
+              <col style={{ width: "35%" }} />
               <col style={{ width: "7%" }} />
               <col style={{ width: "7%" }} />
               <col style={{ width: "13%" }} />
