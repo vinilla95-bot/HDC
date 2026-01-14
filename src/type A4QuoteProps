@@ -56,6 +56,7 @@ export default function App() {
     siteQ: "",
     sitePickedLabel: "",
     optQ: "",
+      quoteDate: new Date().toISOString().slice(0, 10), 
   });
 
   const [statusMsg, setStatusMsg] = useState("");
@@ -633,7 +634,14 @@ export default function App() {
               placeholder="예: 강릉 3x6 / OO업체 39"
             />
           </div>
-
+<div className="row">
+  <label>견적일</label>
+  <input 
+    type="date" 
+    value={form.quoteDate} 
+    onChange={(e) => setForm({ ...form, quoteDate: e.target.value })} 
+  />
+</div>
           <div className="row">
             <label>고객명</label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -983,6 +991,7 @@ export default function App() {
                     bizcardName={selectedBizcard?.name || ""}
                     noTransform={true}
                     noPadding={true}
+                    quoteDate={form.quoteDate} 
                   />
                 </div>
               </div>
@@ -1283,6 +1292,7 @@ type A4QuoteProps = {
     siteQ: string;
     sitePickedLabel: string;
     optQ: string;
+    quoteDate?: string; 
   };
   computedItems: any[];
   blankRows: any[];
@@ -1296,9 +1306,11 @@ type A4QuoteProps = {
   noPadding?: boolean;
 };
 
-function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding }: A4QuoteProps) {
+function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding, quoteDate }: A4QuoteProps) {
+  const ymd = quoteDate || new Date().toISOString().slice(0, 10);
+  // today 변수는 삭제하거나 그대로 두고, 아래 견적일 부분만 수정
   const today = new Date();
-  const ymd = today.toISOString().slice(0, 10);
+ 
   const spec = `${form.w}x${form.l}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
@@ -1354,8 +1366,9 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
               <tr>
                 <th className="k center">현장</th>
                 <td className="v">{siteText}</td>
-                <th className="k center">견적일</th>
-                <td className="v">{today.toLocaleDateString("ko-KR")}</td>
+                <div className="row">
+  <th className="k center">견적일</th>
+<td className="v">{new Date(ymd + 'T00:00:00').toLocaleDateString("ko-KR")}</td>
                 <th className="k center">주소</th>
                 <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
               </tr>
@@ -1367,10 +1380,15 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <td className="v">1688-1447</td>
               </tr>
               <tr>
-                <td className="sum" colSpan={6}>
-                  합계금액 : ₩{fmt(total_amount)} (부가세 포함)
-                </td>
-              </tr>
+               <tr className="sumRow">
+  <td className="sumLeft" colSpan={2}>
+    합계금액
+  </td>
+  <td className="sumNum right">{fmt(supply_amount)}</td>
+  <td className="sumNum right">{fmt(vat_amount)}</td>
+  <td className="sumNum right">{fmt(total_amount)}</td>
+</tr>
+           
             </tbody>
           </table>
 
