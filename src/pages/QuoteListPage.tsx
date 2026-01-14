@@ -466,11 +466,11 @@ useEffect(() => {
     });
   }, []);
 
-  useEffect(() => {
-    const t = window.setTimeout(() => loadList(q), 200);
-    return () => window.clearTimeout(t);
-  }, [q]);
-
+ useEffect(() => {
+  const t = window.setTimeout(() => loadList(q), 200);
+  return () => window.clearTimeout(t);
+}, [q, dateFilter]);
+  
   // ✅ 견적서 미리보기 HTML
   const quotePreviewHtml = useMemo(() => {
     if (!current) return null;
