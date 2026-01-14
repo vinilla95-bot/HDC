@@ -634,7 +634,7 @@ const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '1px solid #333', marginTop: 8 }}>
   <colgroup>
     <col style={{ width: '7%' }} />
-    <col style={{ width: '34%' }} />
+    <col style={{ width: '37%' }} />
     <col style={{ width: '7%' }} />
     <col style={{ width: '7%' }} />
     <col style={{ width: '13%' }} />
