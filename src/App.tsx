@@ -35,7 +35,10 @@ export default function App() {
   const [options, setOptions] = useState<SupabaseOptionRow[]>([]);
   const [sites, setSites] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedRow[]>([]);
-  const [view, setView] = useState<"rt" | "list">("rt");
+  const [view, setView] = useState<"rt" | "list">(() => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('view') === 'list' ? 'list' : 'rt';
+});
 
   const [bizcards, setBizcards] = useState<Bizcard[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState<string>("");
