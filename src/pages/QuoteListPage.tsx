@@ -1279,12 +1279,12 @@ function openEditModal() {
     product: current!.product || "",
     qty: current!.qty || 1,
     memo: current!.memo || "",
+    created_at: current!.created_at ? current!.created_at.slice(0, 10) : "",  // ✅ 추가
     items: items,
   });
   setOptQ("");
   setEditOpen(true);
 }
-
 async function saveEdit() {
   if (!current || !editForm) return;
 
@@ -1306,28 +1306,36 @@ async function saveEdit() {
     const vat_amount = Math.round(supply_amount * 0.1);
     const total_amount = supply_amount + vat_amount;
 
+    // ✅ created_at 포함
+    const updateData: any = {
+      quote_title: editForm.quote_title,
+      customer_name: editForm.customer_name,
+      customer_phone: editForm.customer_phone,
+      customer_email: editForm.customer_email,
+      site_name: editForm.site_name,
+      site_addr: editForm.site_addr,
+      spec: editForm.spec,
+      w: Number(editForm.w) || null,
+      l: Number(editForm.l) || null,
+      product: editForm.product,
+      qty: Number(editForm.qty) || 1,
+      memo: editForm.memo,
+      items: itemsToSave,
+      supply_amount,
+      vat_amount,
+      total_amount,
+      bizcard_id: editForm.bizcard_id || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    // ✅ 날짜가 변경됐으면 created_at도 업데이트
+    if (editForm.created_at) {
+      updateData.created_at = new Date(editForm.created_at).toISOString();
+    }
+
     const { error, data } = await supabase
       .from("quotes")
-      .update({
-        quote_title: editForm.quote_title,
-        customer_name: editForm.customer_name,
-        customer_phone: editForm.customer_phone,
-        customer_email: editForm.customer_email,
-        site_name: editForm.site_name,
-        site_addr: editForm.site_addr,
-        spec: editForm.spec,
-        w: Number(editForm.w) || null,
-        l: Number(editForm.l) || null,
-        product: editForm.product,
-        qty: Number(editForm.qty) || 1,
-        memo: editForm.memo,
-        items: itemsToSave,
-        supply_amount,
-        vat_amount,
-        total_amount,
-        bizcard_id: editForm.bizcard_id || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("quote_id", current.quote_id)
       .select();
 
@@ -1339,7 +1347,7 @@ async function saveEdit() {
     if (data && data[0]?.bizcard_id) {
       setSelectedBizcardId(data[0].bizcard_id);
     }
-    await loadList(q);
+    await loadList(q, dateFilter);
     if (data && data[0]) setCurrent(data[0] as QuoteRow);
   } catch (e: any) {
     toast("저장 실패: " + (e?.message || String(e)));
@@ -1585,13 +1593,19 @@ async function saveEdit() {
         <div style={{ marginBottom: 16 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>기본 정보</h3>
           <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-            <input
-              value={editForm.quote_title}
-              onChange={(e) => setEditForm({ ...editForm, quote_title: e.target.value })}
-              placeholder="견적 제목"
-              style={{ flex: "1 1 300px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
-            />
-          </div>
+  <input
+    value={editForm.quote_title}
+    onChange={(e) => setEditForm({ ...editForm, quote_title: e.target.value })}
+    placeholder="견적 제목"
+    style={{ flex: "1 1 200px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+  />
+  <input
+    type="date"
+    value={editForm.created_at}
+    onChange={(e) => setEditForm({ ...editForm, created_at: e.target.value })}
+    style={{ flex: "0 0 150px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+  />
+</div>
           <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
             <input
               value={editForm.customer_name}
