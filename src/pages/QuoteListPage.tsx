@@ -1793,8 +1793,9 @@ const css = `
     .a4Sheet { transform: scale(0.5); transform-origin: top left; }
   }
 
-  @media print {
-    .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast { display: none !important; }
+ 
+    @media print {
+  .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast, button { display: none !important; }
     .app { display: block; }
     .right { display: block; }
     .content { overflow: visible; }
