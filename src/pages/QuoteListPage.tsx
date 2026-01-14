@@ -1221,12 +1221,13 @@ useEffect(() => {
 
           {/* 액션 버튼 */}
           <div className="actions">
-            <button onClick={() => (window.location.href = "/?view=rt")}>실시간견적</button>
-            <button className="primary" onClick={openSendModal}>{getDocTitle()} 보내기</button>
-            <button onClick={downloadJpg}>JPG저장</button>
-            <button onClick={handlePrint}>인쇄</button>
-            <button className="danger" onClick={handleDelete}>삭제</button>
-          </div>
+  <button onClick={() => (window.location.href = "/?view=rt")}>실시간견적</button>
+  <button className="primary" onClick={openSendModal}>{getDocTitle()} 보내기</button>
+  <button onClick={downloadJpg}>JPG저장</button>
+  <button onClick={handlePrint}>인쇄</button>
+  <button onClick={() => setEditOpen(true)}>견적수정</button>
+  <button className="danger" onClick={handleDelete}>삭제</button>
+</div>
 
           {/* ✅ 임대차 폼 (임대차 탭일 때만 표시) */}
           {activeTab === 'rental' && current && (
