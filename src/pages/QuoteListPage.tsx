@@ -323,56 +323,61 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
 
   // ✅ JPG 다운로드
   async function downloadJpg() {
-    requireCurrent();
+  requireCurrent();
 
-    const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
-    if (!sheetEl) {
-      toast("캡처 대상을 찾을 수 없습니다.");
-      return;
-    }
-
-    toast("JPG 생성 중...");
-
-    try {
-      const captureContainer = document.createElement('div');
-      captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
-      document.body.appendChild(captureContainer);
-
-      const styleTag = document.querySelector('#docPreview style');
-      if (styleTag) {
-        captureContainer.appendChild(styleTag.cloneNode(true));
-      }
-
-      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
-      clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
-      captureContainer.appendChild(clonedSheet);
-
-      await new Promise(r => setTimeout(r, 300));
-
-      const canvas = await html2canvas(clonedSheet, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: true,
-        width: 794,
-        windowWidth: 794,
-      });
-
-      document.body.removeChild(captureContainer);
-
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `${getDocTitle()}_${current!.quote_id}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      toast("다운로드 완료");
-    } catch (e: any) {
-      toast("JPG 생성 실패: " + (e?.message || String(e)));
-    }
+  const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
+  if (!sheetEl) {
+    toast("캡처 대상을 찾을 수 없습니다.");
+    return;
   }
+
+  toast("JPG 생성 중...");
+
+  try {
+    // 거래명세서는 넓은 크기로 캡처
+    const isStatement = activeTab === 'statement';
+    const captureWidth = isStatement ? 1100 : 794;
+    const captureHeight = isStatement ? 600 : 1123;
+
+    const captureContainer = document.createElement('div');
+    captureContainer.style.cssText = `position: fixed; top: -9999px; left: -9999px; width: ${captureWidth}px; background: #fff; z-index: -1;`;
+    document.body.appendChild(captureContainer);
+
+    const styleTag = document.querySelector('#docPreview style');
+    if (styleTag) {
+      captureContainer.appendChild(styleTag.cloneNode(true));
+    }
+
+    const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+    clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
+    captureContainer.appendChild(clonedSheet);
+
+    await new Promise(r => setTimeout(r, 300));
+
+    const canvas = await html2canvas(clonedSheet, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      width: captureWidth,
+      windowWidth: captureWidth,
+    });
+
+    document.body.removeChild(captureContainer);
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `${getDocTitle()}_${current!.quote_id}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    toast("다운로드 완료");
+  } catch (e: any) {
+    toast("JPG 생성 실패: " + (e?.message || String(e)));
+  }
+}
 
   function handlePrint() {
     requireCurrent();
@@ -702,7 +707,7 @@ useEffect(() => {
     };
 
     return (
-      <div className="a4Sheet" style={{ background: '#fff', padding: 30, width: 1100, minHeight: 500 }}>
+     <div className="a4Sheet statementSheet" style={{ background: '#fff', padding: 30, width: 1100, minHeight: 500 }}>
         {/* 제목 */}
         <div style={{ textAlign: 'center', marginBottom: 5 }}>
           <div style={{ fontSize: 28, fontWeight: 900, color: '#1a5276', letterSpacing: 8 }}>거래명세서</div>
@@ -1794,23 +1799,41 @@ const css = `
   }
 
  
-   @media print {
+  @media print {
   .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast { display: none !important; }
   .app { display: block; }
   .right { display: block; }
   .content { overflow: visible; }
   .previewWrap { border: none; padding: 0; background: #fff !important; }
-  .a4Sheet { width: 210mm; min-height: auto; padding: 10mm; }
   
-  /* 추가 */
   body, html, .quoteListPage { 
     background: #fff !important; 
     margin: 0 !important; 
     padding: 0 !important; 
   }
+  
+  /* 기본 A4 (견적서, 임대차계약서) */
   .a4Sheet { 
+    width: 210mm; 
+    min-height: auto; 
+    padding: 10mm;
     border: none !important; 
     box-shadow: none !important;
     margin: 0 !important;
+  }
+  
+  /* 거래명세서는 가로로 넓게 */
+  @page {
+    size: auto;
+  }
+}
+
+@media print {
+  /* 거래명세서는 가로 방향, 원본 크기 유지 */
+  .statementSheet {
+    width: 290mm !important;  /* 가로로 넓게 */
+    padding: 5mm !important;
+    transform: scale(0.9);
+    transform-origin: top left;
   }
 }
