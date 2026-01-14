@@ -43,8 +43,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
   if (v === 'rt') return 'rt';
   return 'rt';  // 기본값은 실시간
 });
-  return params.get('view') === 'list' ? 'list' : 'rt';
-});
+ 
 
   const [bizcards, setBizcards] = useState<Bizcard[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState<string>("");
