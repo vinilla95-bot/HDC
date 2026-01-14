@@ -2226,4 +2226,4 @@ const css = `
   size: A4;
   margin: 0;
 }
-';
+`;
