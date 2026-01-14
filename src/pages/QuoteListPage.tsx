@@ -130,6 +130,7 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
 
 export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
   const [q, setQ] = useState("");
+  const [dateFilter, setDateFilter] = useState("");  
   const [list, setList] = useState<QuoteRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState<QuoteRow | null>(null);
@@ -1359,12 +1360,25 @@ async function saveEdit() {
 
           <div className="search">
             <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="견적 검색 (견적번호/고객/규격/제목/현장)"
-            />
-          </div>
-
+    value={q}
+    onChange={(e) => setQ(e.target.value)}
+    placeholder="견적 검색 (견적번호/고객/규격/제목/현장)"
+  />
+  <input
+    type="date"
+    value={dateFilter}
+    onChange={(e) => setDateFilter(e.target.value)}
+    style={{ marginTop: 8 }}
+  />
+  {dateFilter && (
+    <button 
+      onClick={() => setDateFilter("")}
+      style={{ marginTop: 4, fontSize: 11, padding: '4px 8px' }}
+    >
+      날짜 필터 해제
+    </button>
+  )}
+</div>
           <div className="list">
             {!loading && list.length === 0 && (
               <div style={{ padding: 12 }} className="muted">검색 결과 없음</div>
