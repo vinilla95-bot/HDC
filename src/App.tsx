@@ -1445,59 +1445,62 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             </tbody>
           </table>
 
-          <table className="a4Bottom">
-            <colgroup>
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "37%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "16%" }} />
-            </colgroup>
-            <tbody>
-              <tr className="sumRow">
-                <td className="sumLeft" colSpan={2}>
-                  합계: {fmt(total_amount)}원 
-                </td>
-                <td className="sumNum right">{fmt(supply_amount)}</td>
-                <td className="sumNum right">{fmt(vat_amount)}</td>
-                <td className="sumNum right">{fmt(total_amount)}</td>
-              </tr>
-              <tr>
-                <th className="label">결제조건</th>
-                <td className="text" colSpan={4}>
-                  계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고
-                </td>
-              </tr>
-              <tr>
-                <th className="label">주의사항</th>
-                <td className="text" colSpan={4}>
-                  *견적서는 견적일로 부터 2주간 유효합니다.
-                  <br />
-                  1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
-                  <br />
-                  2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고 
-                  <br />
-                  *출고 전날 오후 2시 이전 잔금 결제 조건*
-                  <br />
-                  3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
-                </td>
-              </tr>
-              <tr>
-                <th className="label">중요사항</th>
-                <td className="text" colSpan={4}>
-                  *중요사항*
-                  <br />
-                  1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
-                  <br />
-                  2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
-                  <br />
-                  한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.
-                  <br />
-                  해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+         <table className="a4Bottom">
+  <colgroup>
+    <col style={{ width: "7%" }} />
+    <col style={{ width: "35%" }} />
+    <col style={{ width: "7%" }} />
+    <col style={{ width: "7%" }} />
+    <col style={{ width: "13%" }} />
+    <col style={{ width: "11%" }} />
+    <col style={{ width: "9%" }} />
+    <col style={{ width: "11%" }} />
+  </colgroup>
+  <tbody>
+    <tr className="sumRow">
+      <td className="sumLeft" colSpan={5}>
+        합계: {fmt(total_amount)}원
+      </td>
+      <td className="sumNum right">{fmt(supply_amount)}</td>
+      <td className="sumNum right">{fmt(vat_amount)}</td>
+      <td className="sumNum right">{fmt(total_amount)}</td>
+    </tr>
+    <tr>
+      <th className="label">결제조건</th>
+      <td className="text" colSpan={7}>
+        계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고
+      </td>
+    </tr>
+    <tr>
+      <th className="label">주의사항</th>
+      <td className="text" colSpan={7}>
+        *견적서는 견적일로 부터 2주간 유효합니다.
+        <br />
+        1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
+        <br />
+        2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고 
+        <br />
+        *출고 전날 오후 2시 이전 잔금 결제 조건*
+        <br />
+        3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
+      </td>
+    </tr>
+    <tr>
+      <th className="label">중요사항</th>
+      <td className="text" colSpan={7}>
+        *중요사항*
+        <br />
+        1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
+        <br />
+        2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
+        <br />
+        한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.
+        <br />
+        해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
+      </td>
+    </tr>
+  </tbody>
+</table>
         </div>
       </div>
     </div>
@@ -1555,13 +1558,21 @@ const a4css = `
     border-collapse: collapse; 
     table-layout: fixed;
   }
-  .a4Info, .a4Items, .a4Bottom{
-    width: 100% !important;
-    max-width: 100% !important;
-    table-layout: fixed;
-    border: 1px solid #333;
-    margin-top: 8px;
-  }
+  .a4Info, .a4Items{
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
+  border: 1px solid #333;
+  margin-top: 8px;
+}
+.a4Bottom{
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: auto;
+  border: 1px solid #333;
+  margin-top: 0;
+  border-top: none;
+}
   .a4Info th, .a4Info td,
   .a4Items th, .a4Items td,
   .a4Bottom th, .a4Bottom td{
@@ -1637,8 +1648,9 @@ const a4css = `
     text-align:left;
   }
   .a4Bottom .sumNum{
-    text-align:right;
-  }
+  text-align:right;
+  white-space: nowrap;
+}
   .a4Bottom .label{
     background:#e6e6e6;
     font-weight:900;
