@@ -1379,14 +1379,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="k center">대표전화</th>
                 <td className="v">1688-1447</td>
               </tr>
-              <tr className="sumRow">
-                <td className="sumLeft" colSpan={2}>
-                  합계금액
-                </td>
-                <td className="sumNum right">{fmt(supply_amount)}</td>
-                <td className="sumNum right">{fmt(vat_amount)}</td>
-                <td className="sumNum right">{fmt(total_amount)}</td>
-              </tr>
+            
             </tbody>
           </table>
 
@@ -1463,7 +1456,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
             <tbody>
               <tr className="sumRow">
                 <td className="sumLeft" colSpan={2}>
-                  합계: {fmt(total_amount)}원 (총공급가액 {fmt(supply_amount)} / 총세액 {fmt(vat_amount)})
+                  합계: {fmt(total_amount)}원 
                 </td>
                 <td className="sumNum right">{fmt(supply_amount)}</td>
                 <td className="sumNum right">{fmt(vat_amount)}</td>
