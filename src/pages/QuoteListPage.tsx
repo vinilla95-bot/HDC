@@ -2163,7 +2163,6 @@ const css = `
 
  
 @media print {
-  /* 모든 UI 요소 숨기기 */
   .panel, 
   .tabBar, 
   .actions, 
@@ -2177,7 +2176,6 @@ const css = `
   
   .app { 
     display: block !important; 
-    grid-template-columns: 1fr !important;
   }
   
   .right { 
@@ -2214,10 +2212,10 @@ const css = `
     width: 290mm !important;
     padding: 5mm !important;
   }
-  
-  /* 거래명세서 가로 인쇄 */
-  @page {
-    size: A4;
-    margin: 0;
-  }
 }
+
+@page {
+  size: A4;
+  margin: 0;
+}
+`;
