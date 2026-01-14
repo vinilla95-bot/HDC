@@ -1146,7 +1146,204 @@ useEffect(() => {
         return quotePreviewHtml;
     }
   }, [activeTab, current, quotePreviewHtml, statementPreviewHtml, rentalPreviewHtml]);
+// 옵션 검색 결과 필터링
+const filteredOptions = useMemo(() => {
+  const query = String(optQ || "").trim();
+  if (!query) return [];
 
+  const matched = options.filter((o: any) => {
+    const name = String(o.option_name || "");
+    return matchKorean(name, query);
+  });
+
+  const qLower = query.toLowerCase();
+  matched.sort((a: any, b: any) => {
+    const nameA = String(a.option_name || "").toLowerCase();
+    const nameB = String(b.option_name || "").toLowerCase();
+    const startsA = nameA.startsWith(qLower) ? 0 : 1;
+    const startsB = nameB.startsWith(qLower) ? 0 : 1;
+    if (startsA !== startsB) return startsA - startsB;
+    const includesA = nameA.includes(qLower) ? 0 : 1;
+    const includesB = nameB.includes(qLower) ? 0 : 1;
+    return includesA - includesB;
+  });
+
+  return matched.slice(0, 12);
+}, [optQ, options]);
+
+function addOptionFromSearch(opt: any) {
+  if (!editForm) return;
+
+  if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+    const newRows = opt.sub_items.map((sub: any) => ({
+      category: "",
+      name: sub.name || "",
+      unit: sub.unit || "",
+      qty: sub.qty || 0,
+      unitPrice: sub.unitPrice || 0,
+      amount: (sub.qty || 0) * (sub.unitPrice || 0),
+      note: "",
+      showSpec: "n",
+    }));
+    setEditForm((prev: any) => ({ ...prev, items: [...prev.items, ...newRows] }));
+    setOptQ("");
+    return;
+  }
+
+  const w = Number(editForm.w) || 3;
+  const l = Number(editForm.l) || 6;
+  const res = calculateOptionLine(opt, w, l);
+  const rawName = String(opt.option_name || "(이름없음)");
+  const rent = rawName.trim() === "임대";
+  const baseQty = Number(res.qty || 1);
+  const baseUnitPrice = Number(res.unitPrice || 0);
+  const baseAmount = Number(res.amount || baseQty * baseUnitPrice);
+  const displayQty = rent ? baseQty : 1;
+  const customerUnitPrice = rent ? baseUnitPrice : baseAmount;
+  const finalAmount = Math.round(displayQty * customerUnitPrice);
+  const showSpec = String(opt.show_spec || "").toLowerCase();
+
+  setEditForm((prev: any) => ({
+    ...prev,
+    items: [
+      ...prev.items,
+      {
+        category: "",
+        name: rawName,
+        unit: rent ? "개월" : (res.unit || "EA"),
+        qty: displayQty,
+        unitPrice: customerUnitPrice,
+        amount: finalAmount,
+        note: res.memo || "",
+        showSpec,
+      },
+    ],
+  }));
+  setOptQ("");
+}
+
+function addItem() {
+  setEditForm((prev: any) => ({
+    ...prev,
+    items: [...prev.items, { category: "", name: "", unit: "EA", qty: 1, unitPrice: 0, amount: 0, note: "" }],
+  }));
+}
+
+function removeItem(index: number) {
+  setEditForm((prev: any) => ({
+    ...prev,
+    items: prev.items.filter((_: any, i: number) => i !== index),
+  }));
+}
+
+function updateItem(index: number, field: string, value: any) {
+  setEditForm((prev: any) => {
+    const newItems = [...prev.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    if (field === "qty" || field === "unitPrice") {
+      const qty = Number(newItems[index].qty) || 0;
+      const unitPrice = Number(newItems[index].unitPrice) || 0;
+      newItems[index].amount = qty * unitPrice;
+    }
+    return { ...prev, items: newItems };
+  });
+}
+
+function openEditModal() {
+  requireCurrent();
+  const items = pickItems(current).map((raw) => {
+    const it = normItem(raw);
+    return {
+      category: it.category,
+      name: it.name,
+      unit: it.unit,
+      qty: it.qty,
+      unitPrice: it.unitPrice,
+      amount: it.amount,
+      note: it.note,
+    };
+  });
+
+  setEditForm({
+    quote_title: current!.quote_title || "",
+    bizcard_id: current!.bizcard_id || "",
+    customer_name: current!.customer_name || "",
+    customer_phone: current!.customer_phone || "",
+    customer_email: current!.customer_email || "",
+    site_name: current!.site_name || "",
+    site_addr: current!.site_addr || "",
+    spec: current!.spec || "",
+    w: current!.w || 0,
+    l: current!.l || 0,
+    product: current!.product || "",
+    qty: current!.qty || 1,
+    memo: current!.memo || "",
+    items: items,
+  });
+  setOptQ("");
+  setEditOpen(true);
+}
+
+async function saveEdit() {
+  if (!current || !editForm) return;
+
+  try {
+    toast("저장 중...");
+
+    const itemsToSave = editForm.items.map((it: any, idx: number) => ({
+      optionId: it.optionId || `ITEM_${idx + 1}`,
+      optionName: it.name || "",
+      itemName: it.name || "",
+      unit: it.unit || "EA",
+      qty: Number(it.qty) || 0,
+      unitPrice: Number(it.unitPrice) || 0,
+      amount: Number(it.amount) || 0,
+      memo: it.note || "",
+    }));
+
+    const supply_amount = itemsToSave.reduce((acc: number, it: any) => acc + Number(it.amount || 0), 0);
+    const vat_amount = Math.round(supply_amount * 0.1);
+    const total_amount = supply_amount + vat_amount;
+
+    const { error, data } = await supabase
+      .from("quotes")
+      .update({
+        quote_title: editForm.quote_title,
+        customer_name: editForm.customer_name,
+        customer_phone: editForm.customer_phone,
+        customer_email: editForm.customer_email,
+        site_name: editForm.site_name,
+        site_addr: editForm.site_addr,
+        spec: editForm.spec,
+        w: Number(editForm.w) || null,
+        l: Number(editForm.l) || null,
+        product: editForm.product,
+        qty: Number(editForm.qty) || 1,
+        memo: editForm.memo,
+        items: itemsToSave,
+        supply_amount,
+        vat_amount,
+        total_amount,
+        bizcard_id: editForm.bizcard_id || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("quote_id", current.quote_id)
+      .select();
+
+    if (error) throw error;
+
+    toast("저장 완료!");
+    setOptQ("");
+    setEditOpen(false);
+    if (data && data[0]?.bizcard_id) {
+      setSelectedBizcardId(data[0].bizcard_id);
+    }
+    await loadList(q);
+    if (data && data[0]) setCurrent(data[0] as QuoteRow);
+  } catch (e: any) {
+    toast("저장 실패: " + (e?.message || String(e)));
+  }
+}
   return (
     <div className="quoteListPage">
       <style>{css}</style>
@@ -1225,7 +1422,7 @@ useEffect(() => {
   <button className="primary" onClick={openSendModal}>{getDocTitle()} 보내기</button>
   <button onClick={downloadJpg}>JPG저장</button>
   <button onClick={handlePrint}>인쇄</button>
-  <button onClick={() => setEditOpen(true)}>견적수정</button>
+  <button onClick={openEditModal}>견적수정</button>
   <button className="danger" onClick={handleDelete}>삭제</button>
 </div>
 
