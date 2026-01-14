@@ -2161,8 +2161,7 @@ const css = `
     .a4Sheet { transform: scale(0.5); transform-origin: top left; }
   }
 
- 
-@media print {
+ @media print {
   .panel, 
   .tabBar, 
   .actions, 
@@ -2176,20 +2175,30 @@ const css = `
   
   .app { 
     display: block !important; 
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
   }
   
   .right { 
-    display: block !important; 
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
   }
   
   .content { 
-    overflow: visible !important; 
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
   .previewWrap { 
     border: none !important; 
     padding: 0 !important; 
-    background: #fff !important; 
+    margin: 0 !important;
+    background: #fff !important;
+    border-radius: 0 !important;
   }
   
   body, html, .quoteListPage { 
@@ -2218,4 +2227,3 @@ const css = `
   size: A4;
   margin: 0;
 }
-`;
