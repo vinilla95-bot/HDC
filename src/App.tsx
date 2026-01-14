@@ -1371,7 +1371,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <th className="k center">주소</th>
                 <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
               </tr>
-              <tr>
+           
                 <td className="msg" colSpan={4}>
                   견적요청에 감사드리며 아래와 같이 견적합니다.
                 </td>
