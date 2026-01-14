@@ -1564,13 +1564,13 @@ const a4css = `
     margin-top: 8px;
   }
   .a4Bottom{
-    width: 100% !important;
-    max-width: 100% !important;
-    table-layout: auto;
-    border: 1px solid #333;
-    margin-top: 8;
-   
-  }
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;  /* auto → fixed */
+  border: 1px solid #333;
+  margin-top: 10px;
+}
+
   .a4Info th, .a4Info td,
   .a4Items th, .a4Items td,
   .a4Bottom th, .a4Bottom td{
