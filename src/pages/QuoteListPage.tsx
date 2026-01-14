@@ -1360,7 +1360,168 @@ useEffect(() => {
           </div>
         </div>
       )}
+{/* ✅ 견적 수정 모달 */}
+{editOpen && editForm && (
+  <div className="modal" style={{ display: "flex" }} onMouseDown={() => { setOptQ(""); setEditOpen(false); }}>
+    <div className="modalCard" style={{ maxWidth: "1200px" }} onMouseDown={(e) => e.stopPropagation()}>
+      <div className="modalHdr">
+        <div style={{ fontWeight: 800 }}>견적 수정</div>
+        <span className="spacer" />
+        <button onClick={() => { setOptQ(""); setEditOpen(false); }}>닫기</button>
+      </div>
+      <div className="modalBody" style={{ maxHeight: "80vh", overflow: "auto" }}>
+        {/* 기본 정보 */}
+        <div style={{ marginBottom: 16 }}>
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>기본 정보</h3>
+          <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+            <input
+              value={editForm.quote_title}
+              onChange={(e) => setEditForm({ ...editForm, quote_title: e.target.value })}
+              placeholder="견적 제목"
+              style={{ flex: "1 1 300px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+          </div>
+          <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+            <input
+              value={editForm.customer_name}
+              onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+              placeholder="고객명"
+              style={{ flex: "1 1 220px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            <input
+              value={editForm.customer_phone}
+              onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
+              placeholder="연락처"
+              style={{ flex: "1 1 220px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            <input
+              value={editForm.customer_email}
+              onChange={(e) => setEditForm({ ...editForm, customer_email: e.target.value })}
+              placeholder="이메일"
+              style={{ flex: "1 1 220px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+          </div>
+          <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+            <input
+              value={editForm.site_name}
+              onChange={(e) => setEditForm({ ...editForm, site_name: e.target.value })}
+              placeholder="현장명"
+              style={{ flex: "1 1 220px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            <input
+              value={editForm.site_addr}
+              onChange={(e) => setEditForm({ ...editForm, site_addr: e.target.value })}
+              placeholder="현장 주소"
+              style={{ flex: "1 1 400px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+          </div>
+          <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+            <input
+              value={editForm.spec}
+              onChange={(e) => setEditForm({ ...editForm, spec: e.target.value })}
+              placeholder="규격"
+              style={{ flex: "1 1 150px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            <input
+              type="number"
+              value={editForm.w}
+              onChange={(e) => setEditForm({ ...editForm, w: e.target.value })}
+              placeholder="폭 (W)"
+              style={{ flex: "0 0 100px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            <input
+              type="number"
+              value={editForm.l}
+              onChange={(e) => setEditForm({ ...editForm, l: e.target.value })}
+              placeholder="길이 (L)"
+              style={{ flex: "0 0 100px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            <input
+              value={editForm.product}
+              onChange={(e) => setEditForm({ ...editForm, product: e.target.value })}
+              placeholder="품목"
+              style={{ flex: "1 1 150px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            <input
+              type="number"
+              value={editForm.qty}
+              onChange={(e) => setEditForm({ ...editForm, qty: e.target.value })}
+              placeholder="수량"
+              style={{ flex: "0 0 100px", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+          </div>
+          <textarea
+            value={editForm.memo}
+            onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
+            placeholder="메모"
+            style={{ width: "100%", minHeight: 60, padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10, resize: "vertical" }}
+          />
+        </div>
 
+        {/* 품목 리스트 */}
+        <div>
+          <div className="row" style={{ marginBottom: 8 }}>
+            <h3 style={{ fontSize: 14, margin: 0 }}>품목</h3>
+            <span className="spacer" />
+            <button onClick={addItem}>+ 빈 품목 추가</button>
+          </div>
+
+          {/* 옵션 검색 */}
+          <div style={{ marginBottom: 12, position: "relative" }}>
+            <input
+              value={optQ}
+              onChange={(e) => setOptQ(e.target.value)}
+              placeholder="옵션 검색 (예: 모노륨, 단열, 도어... 초성검색 가능)"
+              style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+            />
+            {optQ.trim() && filteredOptions.length > 0 && (
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #d7dbe2", borderRadius: 10, maxHeight: 250, overflow: "auto", zIndex: 100, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+                {filteredOptions.map((o: any) => (
+                  <div
+                    key={o.option_id}
+                    onClick={() => addOptionFromSearch(o)}
+                    style={{ padding: "10px 12px", cursor: "pointer", borderBottom: "1px solid #eef0f3" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f7f8fd")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                  >
+                    <div style={{ fontWeight: 700 }}>{o.option_name}</div>
+                    <div style={{ fontSize: 12, color: "#666" }}>{o.unit || "EA"} · {Number(o.unit_price || 0).toLocaleString()}원</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {optQ.trim() && filteredOptions.length === 0 && (
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #d7dbe2", borderRadius: 10, padding: "10px 12px", color: "#999", zIndex: 100 }}>
+                검색 결과 없음
+              </div>
+            )}
+          </div>
+
+          {editForm.items.map((item: any, idx: number) => (
+            <div key={idx} style={{ marginBottom: 12, padding: 12, border: "1px solid #eef0f3", borderRadius: 10 }}>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <input value={item.category} onChange={(e) => updateItem(idx, "category", e.target.value)} placeholder="구분" style={{ flex: "0 0 100px", padding: "8px 10px", border: "1px solid #d7dbe2", borderRadius: 8, fontSize: 12 }} />
+                <input value={item.name} onChange={(e) => updateItem(idx, "name", e.target.value)} placeholder="항목명" style={{ flex: "1 1 200px", padding: "8px 10px", border: "1px solid #d7dbe2", borderRadius: 8, fontSize: 12 }} />
+                <input value={item.unit} onChange={(e) => updateItem(idx, "unit", e.target.value)} placeholder="단위" style={{ flex: "0 0 80px", padding: "8px 10px", border: "1px solid #d7dbe2", borderRadius: 8, fontSize: 12 }} />
+                <input type="number" value={item.qty} onChange={(e) => updateItem(idx, "qty", e.target.value)} placeholder="수량" style={{ flex: "0 0 80px", padding: "8px 10px", border: "1px solid #d7dbe2", borderRadius: 8, fontSize: 12 }} />
+                <input type="number" value={item.unitPrice} onChange={(e) => updateItem(idx, "unitPrice", e.target.value)} placeholder="단가" style={{ flex: "0 0 120px", padding: "8px 10px", border: "1px solid #d7dbe2", borderRadius: 8, fontSize: 12 }} />
+                <input type="number" value={item.amount} onChange={(e) => updateItem(idx, "amount", e.target.value)} placeholder="금액" style={{ flex: "0 0 120px", padding: "8px 10px", border: "1px solid #d7dbe2", borderRadius: 8, fontSize: 12 }} />
+                <button onClick={() => removeItem(idx)} style={{ flex: "0 0 auto", padding: "8px 12px", fontSize: 12 }}>삭제</button>
+              </div>
+              <input value={item.note} onChange={(e) => updateItem(idx, "note", e.target.value)} placeholder="비고" style={{ width: "100%", marginTop: 8, padding: "8px 10px", border: "1px solid #d7dbe2", borderRadius: 8, fontSize: 12 }} />
+            </div>
+          ))}
+        </div>
+
+        <div className="row" style={{ marginTop: 16, gap: 8 }}>
+          <span className="spacer" />
+          <button onClick={() => { setOptQ(""); setEditOpen(false); }}>취소</button>
+          <button className="primary" onClick={saveEdit}>저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       <div className="toast" ref={toastRef} />
     </div>
   );
