@@ -1799,41 +1799,33 @@ const css = `
   }
 
  
-  @media print {
-  .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast { display: none !important; }
-  .app { display: block; }
-  .right { display: block; }
-  .content { overflow: visible; }
-  .previewWrap { border: none; padding: 0; background: #fff !important; }
-  
-  body, html, .quoteListPage { 
-    background: #fff !important; 
-    margin: 0 !important; 
-    padding: 0 !important; 
-  }
-  
-  /* 기본 A4 (견적서, 임대차계약서) */
-  .a4Sheet { 
-    width: 210mm; 
-    min-height: auto; 
-    padding: 10mm;
-    border: none !important; 
-    box-shadow: none !important;
-    margin: 0 !important;
-  }
-  
-  /* 거래명세서는 가로로 넓게 */
-  @page {
-    size: auto;
-  }
-}
-
 @media print {
-  /* 거래명세서는 가로 방향, 원본 크기 유지 */
-  .statementSheet {
-    width: 290mm !important;  /* 가로로 넓게 */
-    padding: 5mm !important;
-    transform: scale(0.9);
-    transform-origin: top left;
+    .panel, .tabBar, .actions, .rentalFormBox, .modal, .toast { display: none !important; }
+    .app { display: block; }
+    .right { display: block; }
+    .content { overflow: visible; }
+    .previewWrap { border: none; padding: 0; background: #fff !important; }
+    
+    body, html, .quoteListPage { 
+      background: #fff !important; 
+      margin: 0 !important; 
+      padding: 0 !important; 
+    }
+    
+    .a4Sheet { 
+      width: 210mm; 
+      min-height: auto; 
+      padding: 10mm;
+      border: none !important; 
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+    
+    .statementSheet {
+      width: 290mm !important;
+      padding: 5mm !important;
+      transform: scale(0.9);
+      transform-origin: top left;
+    }
   }
-}
+`;
