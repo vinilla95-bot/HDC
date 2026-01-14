@@ -601,9 +601,9 @@ export default function App() {
   const rtScreen = (
     <>
       <div style={{ padding: 12, display: "flex", justifyContent: "flex-end" }}>
-        <button className="btn" onClick={() => setView("list")}>
-          견적목록
-        </button>
+        <button className="btn" onClick={() => window.location.href = "/?view=list"}>
+  견적목록
+</button>
       </div>
 
       <div className="wrap">
