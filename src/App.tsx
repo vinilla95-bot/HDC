@@ -1365,9 +1365,8 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
               </tr>
               <tr>
                 <th className="k center">현장</th>
-                <td className="v">{siteText}</td>
-                <div className="row">
-  <th className="k center">견적일</th>
+<td className="v">{siteText}</td>
+<th className="k center">견적일</th>
 <td className="v">{new Date(ymd + 'T00:00:00').toLocaleDateString("ko-KR")}</td>
                 <th className="k center">주소</th>
                 <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
