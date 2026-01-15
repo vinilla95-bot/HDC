@@ -90,7 +90,8 @@ export const calculateOptionLine = (
   };
 
   // ✅ 컨테이너 관련 옵션인지 확인 (신품컨테이너, 중고컨테이너 등)
-  const isContainerOption = rawName.includes('컨테이너') || rawName.includes('신품') || rawName.includes('중고');
+  // ✅ "신품 컨테이너"에만 적용
+const isContainerOption = rawName.includes('신품') && rawName.includes('컨테이너');
 
   if (isRent) {
     const months = Math.max(1, Math.floor(Number(qty || 1)));
