@@ -830,7 +830,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
                 baseUnitPrice: 0,
                 baseAmount: 0,
                 displayQty: 1,
-                customerUnitPrice: ,
+                customerUnitPrice: 0,
                 finalAmount: 0,
                 memo: "",
                 months: 1,
@@ -913,7 +913,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
                             type="number"
                             min={0}
                             step={1}
-                            value={item.customerUnitPrice}
+                           value={item.customerUnitPrice === 0 ? "" : item.customerUnitPrice} 
                             onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
                             style={{ width: 100, padding: 2, textAlign: "right" }}
                           />
