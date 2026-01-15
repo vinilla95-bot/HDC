@@ -88,18 +88,17 @@ export const calculateOptionLine = (
     return 1.5;
   };
 
-  // ✅ 컨테이너 관련 옵션인지 확인
   // ✅ "신품 컨테이너"에만 적용
-const isContainerOption = rawName.includes('신품') && rawName.includes('컨테이너');
+  const isContainerOption = rawName.includes('신품') && rawName.includes('컨테이너');
 
-// ✅ 신품 컨테이너 단가 설정 (DB에서 가져옴)
-if (isContainerOption) {
-  const smallPrice = Number(opt.unit_price_small || 0);
-  const largePrice = Number(opt.unit_price_large || 0);
-  if (smallPrice > 0 || largePrice > 0) {
-    unitPrice = (w <= 3 && l <= 4) ? smallPrice : largePrice;
+  // ✅ 신품 컨테이너 단가 설정 (DB에서 가져옴)
+  if (isContainerOption) {
+    const smallPrice = Number(opt.unit_price_small || 0);
+    const largePrice = Number(opt.unit_price_large || 0);
+    if (smallPrice > 0 || largePrice > 0) {
+      unitPrice = (w <= 3 && l <= 4) ? smallPrice : largePrice;
+    }
   }
-}
   
   // ✅ 높이 배수
   const heightMultiplier = (isContainerOption && h >= 3) ? getHeightMultiplier() : 1;
@@ -127,48 +126,43 @@ if (isContainerOption) {
   }
 
   if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
-  // ✅ 모노륨은 평 계산 안 함 - 4미터여도 m 단위 유지하고 1.5배 적용
-  const isMonoleum = rawName.includes('모노륨');
-  
-  if (w >= 4 && !hasWPrice && !isMonoleum) {
-    const area = w * l;
-    const pyeong = area / 3.3;
-    qty = Math.round(pyeong * 10) / 10;
-    unit = '평';
-    let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
-    let amount = pyeong * finalUnitPrice;
-    amount = roundToTenThousand(amount);
-    memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
-    if (heightMultiplier > 1) memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
-    return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
-  }
-  
-  qty = l;
-  memo = `자동계산(m): 길이 ${l}m`;
-  const mMinBill = Number(opt.m_min_bill || 0);
-  const mMinUntil = Number(opt.m_min_until || 0);
-  if (mMinBill > 0 && mMinUntil > 0) {
-    if (qty > 0 && qty < mMinUntil) {
-      const before = qty;
-      qty = Math.max(qty, mMinBill);
-      memo += `\n최소청구: ${before}m → ${qty}m`;
+    // ✅ 모노륨은 평 계산 안 함 - 4미터여도 m 단위 유지하고 1.5배 적용
+    const isMonoleum = rawName.includes('모노륨');
+    
+    if (w >= 4 && !hasWPrice && !isMonoleum) {
+      const area = w * l;
+      const pyeong = area / 3.3;
+      qty = Math.round(pyeong * 10) / 10;
+      unit = '평';
+      let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
+      let amount = pyeong * finalUnitPrice;
+      amount = roundToTenThousand(amount);
+      memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
+      if (heightMultiplier > 1) memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+      return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
     }
-  }
-  
-  // ✅ 모노륨 4미터 1.5배 적용
-  let finalUnitPrice = unitPrice;
-  if (isMonoleum && w >= 4) {
-    finalUnitPrice = Math.round(unitPrice * 1.5);
-    memo += ` (4m 광폭 1.5배)`;
-  } else if (heightMultiplier > 1) {
-    finalUnitPrice = Math.round(unitPrice * heightMultiplier);
-    memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
-  }
-  
-  let amount = qty * finalUnitPrice;
-  amount = roundToTenThousand(amount);
-  return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
-}
+    
+    qty = l;
+    memo = `자동계산(m): 길이 ${l}m`;
+    const mMinBill = Number(opt.m_min_bill || 0);
+    const mMinUntil = Number(opt.m_min_until || 0);
+    if (mMinBill > 0 && mMinUntil > 0) {
+      if (qty > 0 && qty < mMinUntil) {
+        const before = qty;
+        qty = Math.max(qty, mMinBill);
+        memo += `\n최소청구: ${before}m → ${qty}m`;
+      }
+    }
+    
+    // ✅ 모노륨 4미터 1.5배 적용
+    let finalUnitPrice = unitPrice;
+    if (isMonoleum && w >= 4) {
+      finalUnitPrice = Math.round(unitPrice * 1.5);
+      memo += ` (4m 광폭 1.5배)`;
+    } else if (heightMultiplier > 1) {
+      finalUnitPrice = Math.round(unitPrice * heightMultiplier);
+      memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+    }
     
     let amount = qty * finalUnitPrice;
     amount = roundToTenThousand(amount);
@@ -187,55 +181,6 @@ if (isContainerOption) {
   if (overrides.amount !== undefined) amount = Number(overrides.amount);
   amount = roundToTenThousand(amount);
   return { qty, unit, unitPrice, amount, memo };
-};
-export const searchSiteRates = async (keyword: string, w: number, l: number) => {
-  const kw = normNoSpace(keyword);
-  if (!kw) return { list: [] };
-
-  const W = Number(w || 0);
-  const L = Number(l || 0);
-  const bucket = W > 0 && L > 0 && W <= 3 && L <= 6 ? '36' : '39';
-
-  const { data, error } = await supabase.from('site_rates').select('*');
-  if (error || !data) return { list: [] };
-
-  const list: any[] = [];
-  for (const r of data as any[]) {
-    const k = r.keyword || '';
-    const a = r.alias || '';
-    if (!k && !a) continue;
-
-    const hay = `${k} ${a}`;
-    if (!matchKorean(hay, kw)) continue;
-
-    // 기본 운송비 (세로 길이 기준)
-    const isLong = L >= 9;
-    const deliveryBase = isLong ? Number(r.delivery_39 || 0) : Number(r.delivery_36 || 0);
-    
-    // 광폭(4미터) 추가금: 4x6은 wide_add, 4x9는 wide_39
-    let wideAdd = 0;
-    if (W >= 4) {
-      wideAdd = isLong ? Number(r.wide_39 || 0) : Number(r.wide_add || 0);
-    }
-    
-    const priority = Number(r.priority || 9999);
-
-    list.push({
-      id: r.id,
-      keyword: k,
-      alias: a,
-      bucket,
-      wideAdd,
-      priority,
-      delivery: deliveryBase + wideAdd,
-      crane: 0,  // 크레인 제거
-    });
-
-    if (list.length >= 50) break;
-  }
-
-  list.sort((a, b) => a.priority - b.priority);
-  return { list };
 };
 
 export const loadBizcards = async () => {
