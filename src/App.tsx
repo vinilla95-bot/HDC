@@ -713,8 +713,6 @@ const [view, setView] = useState<"rt" | "list">(() => {
     />
   </div>
 </div>
-  </div>
-</div>
 <p className="muted" style={{ textAlign: "right" }}>
   면적: {(form.w * form.l).toFixed(2)}㎡
 </p>
