@@ -127,36 +127,48 @@ if (isContainerOption) {
   }
 
   if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
-    if (w >= 4 && !hasWPrice) {
-      const area = w * l;
-      const pyeong = area / 3.3;
-      qty = Math.round(pyeong * 10) / 10;
-      unit = '평';
-      let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
-      let amount = pyeong * finalUnitPrice;
-      amount = roundToTenThousand(amount);
-      memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
-      if (heightMultiplier > 1) memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
-      return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
-    }
-    
-    qty = l;
-    memo = `자동계산(m): 길이 ${l}m`;
-    const mMinBill = Number(opt.m_min_bill || 0);
-    const mMinUntil = Number(opt.m_min_until || 0);
-    if (mMinBill > 0 && mMinUntil > 0) {
-      if (qty > 0 && qty < mMinUntil) {
-        const before = qty;
-        qty = Math.max(qty, mMinBill);
-        memo += `\n최소청구: ${before}m → ${qty}m`;
-      }
-    }
-    
-    // ✅ 컨테이너 옵션이면 높이 배수 적용
+  // ✅ 모노륨은 평 계산 안 함 - 4미터여도 m 단위 유지하고 1.5배 적용
+  const isMonoleum = rawName.includes('모노륨');
+  
+  if (w >= 4 && !hasWPrice && !isMonoleum) {
+    const area = w * l;
+    const pyeong = area / 3.3;
+    qty = Math.round(pyeong * 10) / 10;
+    unit = '평';
     let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
-    if (heightMultiplier > 1) {
-      memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+    let amount = pyeong * finalUnitPrice;
+    amount = roundToTenThousand(amount);
+    memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
+    if (heightMultiplier > 1) memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+    return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
+  }
+  
+  qty = l;
+  memo = `자동계산(m): 길이 ${l}m`;
+  const mMinBill = Number(opt.m_min_bill || 0);
+  const mMinUntil = Number(opt.m_min_until || 0);
+  if (mMinBill > 0 && mMinUntil > 0) {
+    if (qty > 0 && qty < mMinUntil) {
+      const before = qty;
+      qty = Math.max(qty, mMinBill);
+      memo += `\n최소청구: ${before}m → ${qty}m`;
     }
+  }
+  
+  // ✅ 모노륨 4미터 1.5배 적용
+  let finalUnitPrice = unitPrice;
+  if (isMonoleum && w >= 4) {
+    finalUnitPrice = Math.round(unitPrice * 1.5);
+    memo += ` (4m 광폭 1.5배)`;
+  } else if (heightMultiplier > 1) {
+    finalUnitPrice = Math.round(unitPrice * heightMultiplier);
+    memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+  }
+  
+  let amount = qty * finalUnitPrice;
+  amount = roundToTenThousand(amount);
+  return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
+}
     
     let amount = qty * finalUnitPrice;
     amount = roundToTenThousand(amount);
