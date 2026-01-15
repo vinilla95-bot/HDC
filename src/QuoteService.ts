@@ -181,16 +181,20 @@ export const calculateOptionLine = (
   return { qty, unit, unitPrice, amount, memo };
 };
 
-export const searchSiteRates = async (keyword: string, w: number, l: number) => {
+export const searchSiteRates = async (keyword: string, w: number, l: number, h: number = 2.6) => {
   const kw = normNoSpace(keyword);
   if (!kw) return { list: [] };
 
   const W = Number(w || 0);
   const L = Number(l || 0);
+  const H = Number(h || 2.6);
   const bucket = W > 0 && L > 0 && W <= 3 && L <= 6 ? '36' : '39';
 
   const { data, error } = await supabase.from('site_rates').select('*');
   if (error || !data) return { list: [] };
+
+  // ✅ 높이 3m 이상이면 1.5배
+  const heightMultiplier = H >= 3 ? 1.5 : 1;
 
   const list: any[] = [];
   for (const r of data as any[]) {
@@ -211,6 +215,9 @@ export const searchSiteRates = async (keyword: string, w: number, l: number) => 
       wideAdd = isLong ? Number(r.wide_39 || 0) : Number(r.wide_add || 0);
     }
     
+    // ✅ 높이 배수 적용
+    const delivery = Math.round((deliveryBase + wideAdd) * heightMultiplier);
+    
     const priority = Number(r.priority || 9999);
 
     list.push({
@@ -220,8 +227,9 @@ export const searchSiteRates = async (keyword: string, w: number, l: number) => 
       bucket,
       wideAdd,
       priority,
-      delivery: deliveryBase + wideAdd,
+      delivery,
       crane: 0,
+      heightMultiplier,
     });
 
     if (list.length >= 50) break;
