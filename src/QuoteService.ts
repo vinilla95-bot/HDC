@@ -52,7 +52,7 @@ export const calculateOptionLine = (
   opt: SupabaseOptionRow,
   w: number,
   l: number,
-  h: number = 2.6,  // ✅ 높이 추가 (기본값 2.6)
+  h: number = 2.6,
   overrides: any = {}
 ) => {
   w = Number(w || 0);
@@ -61,7 +61,6 @@ export const calculateOptionLine = (
   let qty = overrides.qty !== undefined ? Number(overrides.qty) : 1;
   let unitPrice = Number(opt.unit_price || 0);
 
-  // ✅ w별 단가 확인
   const hasWPrice = opt.unit_price_w3 || opt.unit_price_w4;
   if (w <= 3 && opt.unit_price_w3) {
     unitPrice = Number(opt.unit_price_w3);
@@ -84,37 +83,31 @@ export const calculateOptionLine = (
   // ✅ 높이 3m 배수 계산 함수
   const getHeightMultiplier = () => {
     if (h < 3) return 1;
-    if (w >= 4) return 1.7;           // 4*(숫자) → 1.7배
-    if (w <= 3 && l <= 4) return 1.6; // 3*4 이하 → 1.6배
-    return 1.5;                        // 3*4 초과 → 1.5배
+    if (w >= 4) return 1.7;
+    if (w <= 3 && l <= 4) return 1.6;
+    return 1.5;
   };
 
-  // ✅ 컨테이너 관련 옵션인지 확인 (신품컨테이너, 중고컨테이너 등)
-  // ✅ "신품 컨테이너"에만 적용
-const isContainerOption = rawName.includes('신품') && rawName.includes('컨테이너');
+  // ✅ 컨테이너 관련 옵션인지 확인
+  const isContainerOption = rawName.includes('컨테이너') || rawName.includes('신품') || rawName.includes('중고');
+  
+  // ✅ 높이 배수
+  const heightMultiplier = (isContainerOption && h >= 3) ? getHeightMultiplier() : 1;
 
   if (isRent) {
     const months = Math.max(1, Math.floor(Number(qty || 1)));
     unitPrice = rentUnitPriceBySpec(w, l);
     
-    // ✅ 임대도 높이 배수 적용
-    if (h >= 3) {
-      const multiplier = getHeightMultiplier();
-      unitPrice = Math.round(unitPrice * multiplier);
-      memo = `${months}개월 임대 (${w}x${l}x${h}m, ${multiplier}배 적용)`;
+    if (heightMultiplier > 1) {
+      unitPrice = Math.round(unitPrice * heightMultiplier);
+      memo = `${months}개월 임대 (${w}x${l}x${h}m, ${heightMultiplier}배)`;
     } else {
       memo = `${months}개월 임대 (${w}x${l})`;
     }
     
     let amount = Math.round(months * unitPrice);
     amount = roundToTenThousand(amount);
-    return {
-      qty: months,
-      unit: '개월',
-      unitPrice,
-      amount,
-      memo,
-    };
+    return { qty: months, unit: '개월', unitPrice, amount, memo };
   }
 
   if (qtyMode === 'AUTO_PYEONG') {
@@ -124,16 +117,17 @@ const isContainerOption = rawName.includes('신품') && rawName.includes('컨테
   }
 
   if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
-    // ✅ w별 단가가 있으면 평 계산 안 하고 미터로 계산
     if (w >= 4 && !hasWPrice) {
       const area = w * l;
       const pyeong = area / 3.3;
       qty = Math.round(pyeong * 10) / 10;
       unit = '평';
-      let amount = pyeong * unitPrice;
+      let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
+      let amount = pyeong * finalUnitPrice;
       amount = roundToTenThousand(amount);
       memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
-      return { qty, unit, unitPrice, amount, memo };
+      if (heightMultiplier > 1) memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+      return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
     }
     
     qty = l;
@@ -148,18 +142,23 @@ const isContainerOption = rawName.includes('신품') && rawName.includes('컨테
       }
     }
     
-    let amount = qty * unitPrice;
+    // ✅ 컨테이너 옵션이면 높이 배수 적용
+    let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
+    if (heightMultiplier > 1) {
+      memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+    }
+    
+    let amount = qty * finalUnitPrice;
     amount = roundToTenThousand(amount);
-    return { qty, unit, unitPrice, amount, memo };
+    return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
   }
 
   if (overrides.unitPrice !== undefined) unitPrice = Number(overrides.unitPrice);
   
   // ✅ 컨테이너 옵션에 높이 배수 적용
-  if (isContainerOption && h >= 3) {
-    const multiplier = getHeightMultiplier();
-    unitPrice = Math.round(unitPrice * multiplier);
-    memo = `높이 ${h}m (${multiplier}배 적용)`;
+  if (heightMultiplier > 1) {
+    unitPrice = Math.round(unitPrice * heightMultiplier);
+    memo = `높이 ${h}m (${heightMultiplier}배)`;
   }
   
   let amount = qty * unitPrice;
@@ -167,7 +166,6 @@ const isContainerOption = rawName.includes('신품') && rawName.includes('컨테
   amount = roundToTenThousand(amount);
   return { qty, unit, unitPrice, amount, memo };
 };
-
 export const searchSiteRates = async (keyword: string, w: number, l: number) => {
   const kw = normNoSpace(keyword);
   if (!kw) return { list: [] };
