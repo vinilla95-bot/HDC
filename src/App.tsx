@@ -117,7 +117,8 @@ const [view, setView] = useState<"rt" | "list">(() => {
     const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
     const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
 
-    const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
+    // ✅ 빈값도 허용
+displayName: (r as any).displayName ?? (r as any).optionName,
     
     const months = Number((r as any).months ?? 1);
     let customerUnitPrice: number;
