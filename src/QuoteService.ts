@@ -33,10 +33,24 @@ export const matchKorean = (target: string, keyword: string) => {
   const t = normNoSpace(target);
   const k = normNoSpace(keyword);
   if (!k) return true;
-  if (t.toLowerCase().includes(k.toLowerCase())) return true;
+  
+  // ✅ 쉼표나 공백으로 분리된 단어 중 하나라도 키워드로 시작하면 매칭
+  const words = t.split(/[,\s]+/);
+  for (const word of words) {
+    if (word.toLowerCase().startsWith(k.toLowerCase())) return true;
+  }
+  
+  // 초성 검색
   const tc = getChosung(t);
   const kc = getChosung(k);
-  return tc.includes(kc);
+  
+  // ✅ 초성도 단어 시작 기준으로 매칭
+  const tcWords = tc.split(/[,\s]+/);
+  for (const tcWord of tcWords) {
+    if (tcWord.startsWith(kc)) return true;
+  }
+  
+  return false;
 };
 
 const rentUnitPriceBySpec = (w: number, l: number) => {
