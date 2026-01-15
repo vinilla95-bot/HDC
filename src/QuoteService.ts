@@ -89,7 +89,17 @@ export const calculateOptionLine = (
   };
 
   // ✅ 컨테이너 관련 옵션인지 확인
-  const isContainerOption = rawName.includes('컨테이너') || rawName.includes('신품') || rawName.includes('중고');
+  // ✅ "신품 컨테이너"에만 적용
+const isContainerOption = rawName.includes('신품') && rawName.includes('컨테이너');
+
+// ✅ 신품 컨테이너 단가 설정 (DB에서 가져옴)
+if (isContainerOption) {
+  const smallPrice = Number(opt.unit_price_small || 0);
+  const largePrice = Number(opt.unit_price_large || 0);
+  if (smallPrice > 0 || largePrice > 0) {
+    unitPrice = (w <= 3 && l <= 4) ? smallPrice : largePrice;
+  }
+}
   
   // ✅ 높이 배수
   const heightMultiplier = (isContainerOption && h >= 3) ? getHeightMultiplier() : 1;
