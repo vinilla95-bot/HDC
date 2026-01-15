@@ -702,6 +702,16 @@ const [view, setView] = useState<"rt" | "list">(() => {
       onChange={(e) => setForm({ ...form, l: Number(e.target.value) })} 
       style={{ width: 60 }}
     />
+    <span>높이:</span>
+    <input 
+      type="number" 
+      step="0.1"
+      value={form.h} 
+      onChange={(e) => setForm({ ...form, h: Number(e.target.value) })} 
+      style={{ width: 60 }}
+    />
+  </div>
+</div>
   </div>
 </div>
 <p className="muted" style={{ textAlign: "right" }}>
