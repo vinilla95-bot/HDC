@@ -156,10 +156,16 @@ export const searchSiteRates = async (keyword: string, w: number, l: number) => 
     const hay = `${k} ${a}`;
     if (!matchKorean(hay, kw)) continue;
 
-    const deliveryBase = bucket === '36' ? Number(r.delivery_36 || 0) : Number(r.delivery_39 || 0);
-    const craneBase = bucket === '36' ? Number(r.crane_36 || 0) : Number(r.crane_39 || 0);
-    const wideAdd = Number(r.wide_add || 0);
-    const add = W >= 4 ? wideAdd : 0;
+    // 기본 운송비 (세로 길이 기준)
+    const isLong = L >= 9;
+    const deliveryBase = isLong ? Number(r.delivery_39 || 0) : Number(r.delivery_36 || 0);
+    
+    // 광폭(4미터) 추가금: 4x6은 wide_add, 4x9는 wide_39
+    let wideAdd = 0;
+    if (W >= 4) {
+      wideAdd = isLong ? Number(r.wide_39 || 0) : Number(r.wide_add || 0);
+    }
+    
     const priority = Number(r.priority || 9999);
 
     list.push({
@@ -169,8 +175,8 @@ export const searchSiteRates = async (keyword: string, w: number, l: number) => 
       bucket,
       wideAdd,
       priority,
-      delivery: deliveryBase + add,
-      crane: craneBase + add,
+      delivery: deliveryBase + wideAdd,
+      crane: 0,  // 크레인 제거
     });
 
     if (list.length >= 50) break;
