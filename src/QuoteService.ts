@@ -243,20 +243,25 @@ export const searchSiteRates = async (keyword: string, w: number, l: number, h: 
       wideAdd = isLong ? Number(r.wide_39 || 0) : Number(r.wide_add || 0);
     }
     
-    const delivery = Math.round((deliveryBase + wideAdd) * heightMultiplier);
-    const priority = Number(r.priority || 9999);
+   const delivery = Math.round((deliveryBase + wideAdd) * heightMultiplier);
 
-    list.push({
-      id: r.id,
-      keyword: k,
-      alias: a,
-      bucket,
-      wideAdd,
-      priority,
-      delivery,
-      crane: 0,
-      heightMultiplier,
-    });
+// ✅ 크레인 운송비 계산
+const craneBase = isLong ? Number(r.crane_39 || 0) : Number(r.crane_36 || 0);
+const crane = Math.round(craneBase * heightMultiplier);
+
+const priority = Number(r.priority || 9999);
+
+list.push({
+  id: r.id,
+  keyword: k,
+  alias: a,
+  bucket,
+  wideAdd,
+  priority,
+  delivery,
+  crane,  // ✅ 0 대신 계산된 값
+  heightMultiplier,
+});
 
     if (list.length >= 50) break;
   }
