@@ -129,7 +129,10 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   return res && typeof res === "object" && "value" in res ? (res.value as T) : (res as T);
 }
 
-export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
+export default function QuoteListPage({ onGoLive, onConfirmContract }: { 
+  onGoLive?: () => void;
+  onConfirmContract?: (quote: QuoteRow) => void;
+}) {
   const [q, setQ] = useState("");
   const [dateFilter, setDateFilter] = useState("");  
   const [list, setList] = useState<QuoteRow[]>([]);
@@ -200,6 +203,36 @@ export default function QuoteListPage({ onGoLive }: { onGoLive?: () => void }) {
       throw new Error("no current quote");
     }
   }
+  async function handleConfirmContract() {
+  requireCurrent();
+  const confirmed = window.confirm(
+    `이 견적을 계약 확정하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n금액: ${money(current!.total_amount)}원`
+  );
+  if (!confirmed) return;
+
+  try {
+    toast("계약 확정 중...");
+    const { error } = await supabase
+      .from("quotes")
+      .update({ 
+        status: "confirmed",
+        contract_date: new Date().toISOString().slice(0, 10)
+      })
+      .eq("quote_id", current!.quote_id);
+
+    if (error) throw error;
+    toast("계약 확정 완료!");
+    
+    if (onConfirmContract) {
+      onConfirmContract(current!);
+    }
+    
+    await loadList(q);
+  } catch (e: any) {
+    toast("계약 확정 실패: " + (e?.message || String(e)));
+  }
+}
+
 
   async function loadList(keyword = ""): Promise<void> {
   setLoading(true);
@@ -1463,12 +1496,18 @@ async function saveEdit() {
           </div>
 
           {/* 액션 버튼 */}
-          <div className="actions">
+         <div className="actions">
   <button onClick={() => (window.location.href = "/?view=rt")}>실시간견적</button>
   <button className="primary" onClick={openSendModal}>{getDocTitle()} 보내기</button>
   <button onClick={downloadJpg}>JPG저장</button>
   <button onClick={handlePrint}>인쇄</button>
   <button onClick={openEditModal}>견적수정</button>
+  <button 
+    onClick={handleConfirmContract}
+    style={{ background: '#059669', color: '#fff', borderColor: '#059669' }}
+  >
+    계약확정
+  </button>
   <button className="danger" onClick={handleDelete}>삭제</button>
 </div>
 
