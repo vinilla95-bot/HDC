@@ -1511,9 +1511,9 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 const supply = unitSupply * qty;
                 const vat = Math.round(supply * 0.1);
                 const showSpec = String(item.showSpec || "").toLowerCase() === "y";
-                const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l 
-                  ? `${item.lineSpec.w}x${item.lineSpec.l}` 
-                  : "";
+               const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l 
+  ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}` 
+  : "";
 
                 return (
                   <tr key={item.key ?? idx}>
