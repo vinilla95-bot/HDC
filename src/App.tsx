@@ -31,6 +31,8 @@ import { gasRpc as gasRpcRaw } from "./lib/gasRpc";
 
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
+import ContractListPage from "./pages/ContractListPage";
+import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 
 // ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
@@ -51,12 +53,13 @@ export default function App() {
   const [sites, setSites] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedRow[]>([]);
   
-const [view, setView] = useState<"rt" | "list">(() => {
+const [view, setView] = useState<"rt" | "list" | "contract" | "calendar">(() => {
   const params = new URLSearchParams(window.location.search);
   const v = params.get('view');
   if (v === 'list') return 'list';
-  if (v === 'rt') return 'rt';
-  return 'rt';  // 기본값은 실시간
+  if (v === 'contract') return 'contract';
+  if (v === 'calendar') return 'calendar';
+  return 'rt';
 });
  
 
@@ -617,34 +620,85 @@ const handleDragEnd = (event: DragEndEvent) => {
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
   const blankRows = Array.from({ length: blanksCount });
 
-  const listScreen = (
-    <div style={{ minHeight: "100vh" }}>
-      <div
-        style={{
-          padding: 12,
-          borderBottom: "1px solid #eee",
-          background: "#fff",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-        }}
+ const listScreen = (
+  <div style={{ minHeight: "100vh" }}>
+    <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
+      <button className="btn" onClick={() => setView("rt")}>← 실시간견적</button>
+      <button 
+        className="btn" 
+        style={{ background: '#2e5b86', color: '#fff' }}
       >
-        <button className="btn" onClick={() => setView("rt")}>
-          ← 실시간견적
-        </button>
-      </div>
-
-      <QuoteListPage onGoLive={() => setView("rt")} />
+        전체견적
+      </button>
+      <button className="btn" onClick={() => setView("contract")}>계약견적</button>
+      <button className="btn" onClick={() => setView("calendar")}>출고일정</button>
     </div>
-  );
-
+    <QuoteListPage 
+      onGoLive={() => setView("rt")} 
+      onConfirmContract={() => setView("contract")}
+    />
+  </div>
+);
+  
   const rtScreen = (
     <>
-      <div style={{ padding: 12, display: "flex", justifyContent: "flex-end" }}>
-        <button className="btn" onClick={() => window.location.href = "/?view=list"}>
-  견적목록
-</button>
-      </div>
+     <div style={{ padding: 12, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+  <button 
+    className="btn" 
+    onClick={() => window.location.href = "/?view=list"}
+    style={{ background: view === 'list' ? '#2e5b86' : '#fff', color: view === 'list' ? '#fff' : '#333' }}
+  >
+    전체견적
+  </button>
+  <button 
+    className="btn" 
+    onClick={() => window.location.href = "/?view=contract"}
+    style={{ background: view === 'contract' ? '#2e5b86' : '#fff', color: view === 'contract' ? '#fff' : '#333' }}
+  >
+    계약견적
+  </button>
+  <button 
+    className="btn" 
+    onClick={() => window.location.href = "/?view=calendar"}
+    style={{ background: view === 'calendar' ? '#2e5b86' : '#fff', color: view === 'calendar' ? '#fff' : '#333' }}
+  >
+    출고일정
+  </button>
+</div>
+     const contractScreen = (
+  <div style={{ minHeight: "100vh" }}>
+    <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
+      <button className="btn" onClick={() => setView("rt")}>← 실시간견적</button>
+      <button className="btn" onClick={() => setView("list")}>전체견적</button>
+      <button 
+        className="btn" 
+        style={{ background: '#2e5b86', color: '#fff' }}
+      >
+        계약견적
+      </button>
+      <button className="btn" onClick={() => setView("calendar")}>출고일정</button>
+    </div>
+    <ContractListPage onBack={() => setView("list")} />
+  </div>
+);
+
+// calendarScreen 추가
+const calendarScreen = (
+  <div style={{ minHeight: "100vh" }}>
+    <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
+      <button className="btn" onClick={() => setView("rt")}>← 실시간견적</button>
+      <button className="btn" onClick={() => setView("list")}>전체견적</button>
+      <button className="btn" onClick={() => setView("contract")}>계약견적</button>
+      <button 
+        className="btn" 
+        style={{ background: '#2e5b86', color: '#fff' }}
+      >
+        출고일정
+      </button>
+    </div>
+    <DeliveryCalendarPage onBack={() => setView("contract")} />
+  </div>
+);
 
       <div className="wrap">
         {/* LEFT */}
