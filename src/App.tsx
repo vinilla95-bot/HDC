@@ -830,7 +830,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
                 baseUnitPrice: 0,
                 baseAmount: 0,
                 displayQty: 1,
-                customerUnitPrice: 0,
+                customerUnitPrice: ,
                 finalAmount: 0,
                 memo: "",
                 months: 1,
