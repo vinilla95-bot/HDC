@@ -33,6 +33,7 @@ import { gasRpc as gasRpcRaw } from "./lib/gasRpc";
 
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
+import InventoryPage from "./pages/InventoryPage";
 
 // ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
@@ -53,14 +54,15 @@ export default function App() {
   const [sites, setSites] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedRow[]>([]);
 
-  const [view, setView] = useState<"rt" | "list" | "contract" | "calendar">(() => {
-    const params = new URLSearchParams(window.location.search);
-    const v = params.get('view');
-    if (v === 'list') return 'list';
-    if (v === 'contract') return 'contract';
-    if (v === 'calendar') return 'calendar';
-    return 'rt';
-  });
+  const [view, setView] = useState<"rt" | "list" | "contract" | "calendar" | "inventory">(() => {
+  const params = new URLSearchParams(window.location.search);
+  const v = params.get('view');
+  if (v === 'list') return 'list';
+  if (v === 'contract') return 'contract';
+  if (v === 'calendar') return 'calendar';
+  if (v === 'inventory') return 'inventory';
+  return 'rt';
+});
 
   const [bizcards, setBizcards] = useState<Bizcard[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState<string>("");
@@ -649,6 +651,13 @@ export default function App() {
       >
         출고일정
       </button>
+      <button
+  className="btn"
+  onClick={() => setView("inventory")}
+  style={current === 'inventory' ? { background: '#2e5b86', color: '#fff' } : {}}
+>
+  재고현황
+</button>
     </div>
   );
 
@@ -679,6 +688,13 @@ export default function App() {
     </div>
   );
 
+const inventoryScreen = (
+  <div style={{ minHeight: "100vh" }}>
+    <NavBar current="inventory" />
+    <InventoryPage onBack={() => setView("contract")} />
+  </div>
+);
+  
   // ✅ 실시간견적 화면
   const rtScreen = (
     <>
@@ -1324,6 +1340,7 @@ export default function App() {
   if (view === "list") return listScreen;
   if (view === "contract") return contractScreen;
   if (view === "calendar") return calendarScreen;
+  if (view === "inventory") return inventoryScreen;
   return rtScreen;
 }
 
