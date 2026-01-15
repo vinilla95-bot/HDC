@@ -58,8 +58,28 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
+  // ✅ 테이블 헤더 스타일 - 글자색 명확히 지정
+  const thStyle: React.CSSProperties = {
+    padding: "10px 8px",
+    border: "1px solid #1e4a6e",
+    whiteSpace: "nowrap",
+    backgroundColor: "#2e5b86",
+    color: "#ffffff",
+    fontWeight: 700,
+    fontSize: 13,
+    textAlign: "center",
+  };
+
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
+      <style>{`
+        .contract-table th {
+          background-color: #2e5b86 !important;
+          color: #ffffff !important;
+          font-weight: 700 !important;
+        }
+      `}</style>
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>계약견적</h2>
         <button 
@@ -85,24 +105,23 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
           계약 확정된 견적이 없습니다.
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <div style={{ overflowX: "auto", background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb" }}>
+          <table className="contract-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: "#2e5b86", color: "#fff" }}>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>내린날짜</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>도면번호</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>규격</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>계좌</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>세발</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>입금</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>발주처</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", minWidth: 150 }}>옵션</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>특수주문</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>철&페</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>내장</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>입금자</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>출고일</th>
-                <th style={{ padding: 10, border: "1px solid #ddd", whiteSpace: "nowrap" }}>보기</th>
+              <tr>
+                <th style={thStyle}>내린날짜</th>
+                <th style={thStyle}>도면번호</th>
+                <th style={thStyle}>규격</th>
+                <th style={thStyle}>계좌</th>
+                <th style={thStyle}>세발</th>
+                <th style={thStyle}>입금</th>
+                <th style={thStyle}>발주처</th>
+                <th style={{ ...thStyle, minWidth: 150 }}>옵션</th>
+                <th style={thStyle}>특수주문</th>
+                <th style={thStyle}>내장</th>
+                <th style={thStyle}>입금자</th>
+                <th style={thStyle}>출고일</th>
+                <th style={thStyle}>보기</th>
               </tr>
             </thead>
             <tbody>
@@ -138,6 +157,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                       <option value="현대">현대</option>
                       <option value="국민">국민</option>
                       <option value="기업">기업</option>
+                      <option value="현금영수증">현금영수증</option>
+                      <option value="현찰">현찰</option>
                     </select>
                   </td>
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
@@ -175,13 +196,6 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                       type="checkbox"
                       checked={c.special_order || false}
                       onChange={(e) => updateField(c.id, "special_order", e.target.checked)}
-                    />
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={c.steel_paint || false}
-                      onChange={(e) => updateField(c.id, "steel_paint", e.target.checked)}
                     />
                   </td>
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
@@ -282,10 +296,10 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
               <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: "#f5f5f5" }}>
-                    <th style={{ padding: 6, border: "1px solid #ddd" }}>품명</th>
-                    <th style={{ padding: 6, border: "1px solid #ddd" }}>수량</th>
-                    <th style={{ padding: 6, border: "1px solid #ddd" }}>단가</th>
-                    <th style={{ padding: 6, border: "1px solid #ddd" }}>금액</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>품명</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>수량</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>단가</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>금액</th>
                   </tr>
                 </thead>
                 <tbody>
