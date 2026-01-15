@@ -111,38 +111,37 @@ const [view, setView] = useState<"rt" | "list">(() => {
   );
 
   const recomputeRow = (r: SelectedRow): SelectedRow => {
-    const rent = isRentRow(r);
+  const rent = isRentRow(r);
 
-    const baseQty = Number((r as any).baseQty || 1);
-    const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
-    const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
+  const baseQty = Number((r as any).baseQty || 1);
+  const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
+  const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
 
-    // ✅ 빈값도 허용
-displayName: (r as any).displayName ?? (r as any).optionName,
-    
-    const months = Number((r as any).months ?? 1);
-    let customerUnitPrice: number;
-    
-    if (rent) {
-      customerUnitPrice = Math.max(0, Math.round(baseUnitPrice * months));
-    } else {
-      customerUnitPrice = Math.max(0, Math.round(Number((r as any).customerUnitPrice ?? 0)));
-    }
+  const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
+  
+  const months = Number((r as any).months ?? 1);
+  let customerUnitPrice: number;
+  
+  if (rent) {
+    customerUnitPrice = Math.max(0, Math.round(baseUnitPrice * months));
+  } else {
+    customerUnitPrice = Math.max(0, Math.round(Number((r as any).customerUnitPrice ?? 0)));
+  }
 
-    const finalAmount = Math.round(displayQty * customerUnitPrice);
+  const finalAmount = Math.round(displayQty * customerUnitPrice);
 
-    return {
-      ...(r as any),
-      baseQty,
-      baseUnitPrice,
-      baseAmount,
-      displayQty: rent ? Math.max(1, displayQty) : displayQty,
-      customerUnitPrice,
-      finalAmount,
-      months: rent ? Math.max(1, months) : months,
-      displayName: (r as any).displayName || (r as any).optionName,
-    } as any;
-  };
+  return {
+    ...(r as any),
+    baseQty,
+    baseUnitPrice,
+    baseAmount,
+    displayQty: rent ? Math.max(1, displayQty) : displayQty,
+    customerUnitPrice,
+    finalAmount,
+    months: rent ? Math.max(1, months) : months,
+    displayName: (r as any).displayName ?? (r as any).optionName,  // ✅ || 대신 ?? 사용
+  } as any;
+};
 
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
