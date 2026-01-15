@@ -1,9 +1,9 @@
 // src/pages/ContractListPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "../QuoteService";
 
 type ContractQuote = {
-  id: string;
+  id?: string;
   quote_id: string;
   contract_date: string;
   drawing_no: string;
@@ -19,12 +19,41 @@ type ContractQuote = {
   depositor: string;
   delivery_date: string;
   total_amount: number;
+  contract_type: string;
 };
 
+type TabType = "order" | "branch" | "used";
+
 export default function ContractListPage({ onBack }: { onBack: () => void }) {
-  const [contracts, setContracts] = useState<ContractQuote[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>("order");
+  const [allContracts, setAllContracts] = useState<ContractQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState<ContractQuote | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItem, setNewItem] = useState({
+    customer_name: "",
+    spec: "",
+    total_amount: 0,
+  });
+
+  // ✅ 현재 월의 다음 도면번호 계산
+  const nextDrawingNo = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const thisMonthNumbers = allContracts
+      .filter(c => {
+        if (!c.contract_date) return false;
+        const d = new Date(c.contract_date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .map(c => parseInt(c.drawing_no) || 0)
+      .filter(n => n > 0);
+
+    const maxNo = thisMonthNumbers.length > 0 ? Math.max(...thisMonthNumbers) : 0;
+    return maxNo + 1;
+  }, [allContracts]);
 
   const loadContracts = async () => {
     setLoading(true);
@@ -34,8 +63,11 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
       .eq("status", "confirmed")
       .order("contract_date", { ascending: false });
 
-    if (!error && data) {
-      setContracts(data as ContractQuote[]);
+    if (error) {
+      console.error("Load error:", error);
+    }
+    if (data) {
+      setAllContracts(data as ContractQuote[]);
     }
     setLoading(false);
   };
@@ -44,8 +76,82 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     loadContracts();
   }, []);
 
-  const updateField = async (id: string, field: string, value: any) => {
-    await supabase.from("quotes").update({ [field]: value }).eq("id", id);
+  // ✅ 탭별 데이터 필터링
+  const contracts = useMemo(() => {
+    return allContracts.filter(c => {
+      const type = c.contract_type || "order";
+      return type === activeTab;
+    });
+  }, [allContracts, activeTab]);
+
+  // ✅ 업데이트
+  const updateField = async (quote_id: string, field: string, value: any) => {
+    const { error } = await supabase
+      .from("quotes")
+      .update({ [field]: value })
+      .eq("quote_id", quote_id);
+
+    if (error) {
+      console.error("Update error:", error);
+      alert(`업데이트 실패: ${error.message}`);
+      return;
+    }
+
+    setAllContracts(prev => prev.map(c =>
+      c.quote_id === quote_id ? { ...c, [field]: value } : c
+    ));
+  };
+
+  // ✅ 도면번호 자동 입력
+  const autoFillDrawingNo = (quote_id: string) => {
+    updateField(quote_id, "drawing_no", String(nextDrawingNo));
+  };
+
+  // ✅ 새 항목 추가 (영업소/중고)
+  const handleAddNew = async () => {
+    if (!newItem.customer_name.trim()) {
+      alert("발주처(고객명)를 입력해주세요.");
+      return;
+    }
+
+    const quote_id = `${activeTab.toUpperCase()}_${Date.now()}`;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { error } = await supabase.from("quotes").insert({
+      quote_id,
+      status: "confirmed",
+      contract_type: activeTab,
+      contract_date: today,
+      customer_name: newItem.customer_name,
+      spec: newItem.spec,
+      total_amount: newItem.total_amount,
+      items: [],
+    });
+
+    if (error) {
+      alert("추가 실패: " + error.message);
+      return;
+    }
+
+    setShowAddModal(false);
+    setNewItem({ customer_name: "", spec: "", total_amount: 0 });
+    loadContracts();
+  };
+
+  // ✅ 삭제
+  const handleDelete = async (quote_id: string, customer_name: string) => {
+    if (!confirm(`"${customer_name}" 항목을 삭제하시겠습니까?`)) return;
+
+    const { error } = await supabase
+      .from("quotes")
+      .delete()
+      .eq("quote_id", quote_id);
+
+    if (error) {
+      alert("삭제 실패: " + error.message);
+      return;
+    }
+
     loadContracts();
   };
 
@@ -58,7 +164,6 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  // ✅ 테이블 헤더 스타일 - 글자색 명확히 지정
   const thStyle: React.CSSProperties = {
     padding: "10px 8px",
     border: "1px solid #1e4a6e",
@@ -70,45 +175,34 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     textAlign: "center",
   };
 
-  return (
-    <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
-      <style>{`
-        .contract-table th {
-          background-color: #2e5b86 !important;
-          color: #ffffff !important;
-          font-weight: 700 !important;
-        }
-      `}</style>
+  const tabStyle = (isActive: boolean): React.CSSProperties => ({
+    padding: "12px 24px",
+    border: "none",
+    borderBottom: isActive ? "3px solid #2e5b86" : "3px solid transparent",
+    background: isActive ? "#fff" : "#f5f5f5",
+    color: isActive ? "#2e5b86" : "#666",
+    fontWeight: isActive ? 800 : 500,
+    fontSize: 14,
+    cursor: "pointer",
+    transition: "all 0.2s",
+  });
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>계약견적</h2>
-        <button 
-          onClick={onBack}
-          style={{
-            padding: "8px 16px",
-            background: "#111",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          ← 돌아가기
-        </button>
-      </div>
-
+  const renderTable = () => (
+    <>
       {loading ? (
         <div style={{ textAlign: "center", padding: 40, color: "#888" }}>로딩 중...</div>
       ) : contracts.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40, color: "#888" }}>
-          계약 확정된 견적이 없습니다.
+          {activeTab === "order" && "수주 데이터가 없습니다."}
+          {activeTab === "branch" && "영업소 데이터가 없습니다."}
+          {activeTab === "used" && "중고 데이터가 없습니다."}
         </div>
       ) : (
-        <div style={{ overflowX: "auto", background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb" }}>
+        <div style={{ overflowX: "auto", background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e5e7eb", borderTop: "none" }}>
           <table className="contract-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr>
+                <th style={thStyle}>구분</th>
                 <th style={thStyle}>내린날짜</th>
                 <th style={thStyle}>도면번호</th>
                 <th style={thStyle}>규격</th>
@@ -116,33 +210,64 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                 <th style={thStyle}>세발</th>
                 <th style={thStyle}>입금</th>
                 <th style={thStyle}>발주처</th>
-                <th style={{ ...thStyle, minWidth: 150 }}>옵션</th>
-                <th style={thStyle}>특수주문</th>
+                <th style={{ ...thStyle, minWidth: 120 }}>옵션</th>
+                <th style={thStyle}>특수</th>
                 <th style={thStyle}>내장</th>
                 <th style={thStyle}>입금자</th>
                 <th style={thStyle}>출고일</th>
                 <th style={thStyle}>보기</th>
+                <th style={thStyle}>삭제</th>
               </tr>
             </thead>
             <tbody>
               {contracts.map((c) => (
-                <tr 
-                  key={c.id} 
-                  style={{ 
-                    background: c.delivery_date ? "#fff0f0" : "#fff",
-                    borderBottom: "1px solid #eee" 
+                <tr
+                  key={c.quote_id}
+                  style={{
+                    background: c.delivery_date ? "#e8f5e9" : "#fff",
+                    borderBottom: "1px solid #eee"
                   }}
                 >
+                  <td style={{ padding: 8, border: "1px solid #eee" }}>
+                    <select
+                      value={c.contract_type || "order"}
+                      onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
+                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                    >
+                      <option value="order">수주</option>
+                      <option value="branch">영업소</option>
+                      <option value="used">중고</option>
+                    </select>
+                  </td>
                   <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                     {c.contract_date || "-"}
                   </td>
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <input
-                      value={c.drawing_no || ""}
-                      onChange={(e) => updateField(c.id, "drawing_no", e.target.value)}
-                      style={{ width: 60, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
-                      placeholder="번호"
-                    />
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <input
+                        value={c.drawing_no || ""}
+                        onChange={(e) => updateField(c.quote_id, "drawing_no", e.target.value)}
+                        style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
+                        placeholder={String(nextDrawingNo)}
+                      />
+                      {!c.drawing_no && (
+                        <button
+                          onClick={() => autoFillDrawingNo(c.quote_id)}
+                          style={{
+                            padding: "2px 6px",
+                            background: "#2e5b86",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            fontSize: 10,
+                            cursor: "pointer",
+                          }}
+                          title={`${nextDrawingNo}번 자동입력`}
+                        >
+                          {nextDrawingNo}
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                     {c.spec || "-"}
@@ -150,8 +275,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
                     <select
                       value={c.bank_account || ""}
-                      onChange={(e) => updateField(c.id, "bank_account", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                      onChange={(e) => updateField(c.quote_id, "bank_account", e.target.value)}
+                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
                     >
                       <option value="">-</option>
                       <option value="현대">현대</option>
@@ -164,8 +289,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
                     <select
                       value={c.tax_invoice || ""}
-                      onChange={(e) => updateField(c.id, "tax_invoice", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                      onChange={(e) => updateField(c.quote_id, "tax_invoice", e.target.value)}
+                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
                     >
                       <option value="">-</option>
                       <option value="완료">완료</option>
@@ -176,8 +301,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
                     <select
                       value={c.deposit_status || ""}
-                      onChange={(e) => updateField(c.id, "deposit_status", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                      onChange={(e) => updateField(c.quote_id, "deposit_status", e.target.value)}
+                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
                     >
                       <option value="">-</option>
                       <option value="완료">완료</option>
@@ -195,22 +320,22 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                     <input
                       type="checkbox"
                       checked={c.special_order || false}
-                      onChange={(e) => updateField(c.id, "special_order", e.target.checked)}
+                      onChange={(e) => updateField(c.quote_id, "special_order", e.target.checked)}
                     />
                   </td>
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
                     <input
                       value={c.interior || ""}
-                      onChange={(e) => updateField(c.id, "interior", e.target.value)}
-                      style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
+                      onChange={(e) => updateField(c.quote_id, "interior", e.target.value)}
+                      style={{ width: 35, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
                       placeholder="-"
                     />
                   </td>
                   <td style={{ padding: 8, border: "1px solid #eee" }}>
                     <input
                       value={c.depositor || ""}
-                      onChange={(e) => updateField(c.id, "depositor", e.target.value)}
-                      style={{ width: 60, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                      onChange={(e) => updateField(c.quote_id, "depositor", e.target.value)}
+                      style={{ width: 50, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
                       placeholder="입금자"
                     />
                   </td>
@@ -218,8 +343,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                     <input
                       type="date"
                       value={c.delivery_date || ""}
-                      onChange={(e) => updateField(c.id, "delivery_date", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                      onChange={(e) => updateField(c.quote_id, "delivery_date", e.target.value)}
+                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
                     />
                   </td>
                   <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
@@ -238,10 +363,208 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                       보기
                     </button>
                   </td>
+                  <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                    <button
+                      onClick={() => handleDelete(c.quote_id, c.customer_name)}
+                      style={{
+                        padding: "4px 8px",
+                        background: "#dc3545",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        fontSize: 11,
+                        cursor: "pointer",
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+    </>
+  );
+
+  const orderCount = allContracts.filter(c => (c.contract_type || "order") === "order").length;
+  const branchCount = allContracts.filter(c => c.contract_type === "branch").length;
+  const usedCount = allContracts.filter(c => c.contract_type === "used").length;
+
+  const currentMonthLabel = (() => {
+    const now = new Date();
+    return `${now.getMonth() + 1}월`;
+  })();
+
+  return (
+    <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
+      <style>{`
+        .contract-table th {
+          background-color: #2e5b86 !important;
+          color: #ffffff !important;
+          font-weight: 700 !important;
+        }
+      `}</style>
+
+      {/* 헤더 */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
+          계약관리
+          <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>
+            ({currentMonthLabel} 도면: {nextDrawingNo - 1}개)
+          </span>
+        </h2>
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{
+            padding: "8px 16px",
+            background: "#28a745",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          + 새 항목 추가
+        </button>
+      </div>
+
+      {/* 탭 버튼 */}
+      <div style={{
+        display: "flex",
+        background: "#fff",
+        borderRadius: "12px 12px 0 0",
+        border: "1px solid #e5e7eb",
+        borderBottom: "none",
+        overflow: "hidden"
+      }}>
+        <button
+          style={tabStyle(activeTab === "order")}
+          onClick={() => setActiveTab("order")}
+        >
+          📋 수주 ({orderCount})
+        </button>
+        <button
+          style={tabStyle(activeTab === "branch")}
+          onClick={() => setActiveTab("branch")}
+        >
+          🏢 영업소 ({branchCount})
+        </button>
+        <button
+          style={tabStyle(activeTab === "used")}
+          onClick={() => setActiveTab("used")}
+        >
+          📦 중고 ({usedCount})
+        </button>
+      </div>
+
+      {/* 테이블 */}
+      {renderTable()}
+
+      {/* 새 항목 추가 모달 */}
+      {showAddModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+          onClick={() => setShowAddModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              width: "90%",
+              maxWidth: 400,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 16px 0" }}>새 항목 추가</h3>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>구분</label>
+              <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value as TabType)}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+              >
+                <option value="order">수주</option>
+                <option value="branch">영업소</option>
+                <option value="used">중고</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>발주처 (고객명) *</label>
+              <input
+                value={newItem.customer_name}
+                onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                placeholder="발주처 입력"
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>규격</label>
+              <input
+                value={newItem.spec}
+                onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                placeholder="예: 3x6x2.6"
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>금액</label>
+              <input
+                type="number"
+                value={newItem.total_amount || ""}
+                onChange={(e) => setNewItem({ ...newItem, total_amount: Number(e.target.value) })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                placeholder="0"
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  background: "#f5f5f5",
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleAddNew}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  background: "#28a745",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                추가
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
