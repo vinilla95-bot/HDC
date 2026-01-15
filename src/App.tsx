@@ -1,6 +1,8 @@
 // src/App.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
+import ContractListPage from "./pages/ContractListPage";
+import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
 import {
   DndContext,
@@ -8,7 +10,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-   DragEndEvent,
+  DragEndEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -31,8 +33,6 @@ import { gasRpc as gasRpcRaw } from "./lib/gasRpc";
 
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
-import ContractListPage from "./pages/ContractListPage";
-import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 
 // ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
@@ -52,16 +52,15 @@ export default function App() {
   const [options, setOptions] = useState<SupabaseOptionRow[]>([]);
   const [sites, setSites] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedRow[]>([]);
-  
-const [view, setView] = useState<"rt" | "list" | "contract" | "calendar">(() => {
-  const params = new URLSearchParams(window.location.search);
-  const v = params.get('view');
-  if (v === 'list') return 'list';
-  if (v === 'contract') return 'contract';
-  if (v === 'calendar') return 'calendar';
-  return 'rt';
-});
- 
+
+  const [view, setView] = useState<"rt" | "list" | "contract" | "calendar">(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('view');
+    if (v === 'list') return 'list';
+    if (v === 'contract') return 'contract';
+    if (v === 'calendar') return 'calendar';
+    return 'rt';
+  });
 
   const [bizcards, setBizcards] = useState<Bizcard[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState<string>("");
@@ -76,11 +75,11 @@ const [view, setView] = useState<"rt" | "list" | "contract" | "calendar">(() => 
     phone: "",
     w: 3,
     l: 6,
-     h: 2.6,
+    h: 2.6,
     siteQ: "",
     sitePickedLabel: "",
     optQ: "",
-      quoteDate: new Date().toISOString().slice(0, 10),
+    quoteDate: new Date().toISOString().slice(0, 10),
     vatIncluded: true,
   });
 
@@ -129,37 +128,37 @@ const [view, setView] = useState<"rt" | "list" | "contract" | "calendar">(() => 
   );
 
   const recomputeRow = (r: SelectedRow): SelectedRow => {
-  const rent = isRentRow(r);
+    const rent = isRentRow(r);
 
-  const baseQty = Number((r as any).baseQty || 1);
-  const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
-  const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
+    const baseQty = Number((r as any).baseQty || 1);
+    const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
+    const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
 
-  const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
-  
-  const months = Number((r as any).months ?? 1);
-  let customerUnitPrice: number;
-  
-  if (rent) {
-    customerUnitPrice = Math.max(0, Math.round(baseUnitPrice * months));
-  } else {
-    customerUnitPrice = Math.max(0, Math.round(Number((r as any).customerUnitPrice ?? 0)));
-  }
+    const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
 
-  const finalAmount = Math.round(displayQty * customerUnitPrice);
+    const months = Number((r as any).months ?? 1);
+    let customerUnitPrice: number;
 
-  return {
-    ...(r as any),
-    baseQty,
-    baseUnitPrice,
-    baseAmount,
-    displayQty: rent ? Math.max(1, displayQty) : displayQty,
-    customerUnitPrice,
-    finalAmount,
-    months: rent ? Math.max(1, months) : months,
-    displayName: (r as any).displayName ?? (r as any).optionName,  // ✅ || 대신 ?? 사용
-  } as any;
-};
+    if (rent) {
+      customerUnitPrice = Math.max(0, Math.round(baseUnitPrice * months));
+    } else {
+      customerUnitPrice = Math.max(0, Math.round(Number((r as any).customerUnitPrice ?? 0)));
+    }
+
+    const finalAmount = Math.round(displayQty * customerUnitPrice);
+
+    return {
+      ...(r as any),
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty: rent ? Math.max(1, displayQty) : displayQty,
+      customerUnitPrice,
+      finalAmount,
+      months: rent ? Math.max(1, months) : months,
+      displayName: (r as any).displayName ?? (r as any).optionName,
+    } as any;
+  };
 
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
@@ -264,31 +263,33 @@ const [view, setView] = useState<"rt" | "list" | "contract" | "calendar">(() => 
       finalAmount: Math.round(displayQty * customerUnitPrice),
       months: defaultMonths,
       memo: res.memo || "",
-     lineSpec: { w: form.w, l: form.l, h: form.h },
+      lineSpec: { w: form.w, l: form.l, h: form.h },
     };
 
     setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
     setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
     setSites([]);
   };
-const sensors = useSensors(
-  useSensor(PointerSensor, {
-    activationConstraint: {
-      distance: 8,
-    },
-  })
-);
 
-const handleDragEnd = (event: DragEndEvent) => {
-  const { active, over } = event;
-  if (over && active.id !== over.id) {
-    setSelectedItems((items) => {
-      const oldIndex = items.findIndex((i: any) => i.key === active.id);
-      const newIndex = items.findIndex((i: any) => i.key === over.id);
-      return arrayMove(items, oldIndex, newIndex);
-    });
-  }
-};
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setSelectedItems((items) => {
+        const oldIndex = items.findIndex((i: any) => i.key === active.id);
+        const newIndex = items.findIndex((i: any) => i.key === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
@@ -309,8 +310,8 @@ const handleDragEnd = (event: DragEndEvent) => {
           const months = Math.max(1, Math.floor(Number(value || 1)));
           const newUnitPrice = item.baseUnitPrice * months;
           const baseName = String(item.optionName || "").replace(/\s*\d+개월$/, "").trim();
-          return recomputeRow({ 
-            ...item, 
+          return recomputeRow({
+            ...item,
             months,
             customerUnitPrice: newUnitPrice,
             displayName: `${baseName} ${months}개월`,
@@ -355,14 +356,14 @@ const handleDragEnd = (event: DragEndEvent) => {
     filtered.sort((a: any, b: any) => {
       const aliasA = String(a.alias || "").toLowerCase();
       const aliasB = String(b.alias || "").toLowerCase();
-      
+
       const regionsA = aliasA.split(',').map((r: string) => r.trim());
       const regionsB = aliasB.split(',').map((r: string) => r.trim());
-      
+
       const startsA = regionsA.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
       const startsB = regionsB.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
       if (startsA !== startsB) return startsA - startsB;
-      
+
       const includesA = regionsA.some((r: string) => r.includes(qLower)) ? 0 : 1;
       const includesB = regionsB.some((r: string) => r.includes(qLower)) ? 0 : 1;
       return includesA - includesB;
@@ -377,7 +378,7 @@ const handleDragEnd = (event: DragEndEvent) => {
   const total_amount = supply_amount + vat_amount;
 
   const buildPayload = (quote_id: string, version: number) => {
-  const spec = `${form.w}x${form.l}x${form.h}`;  // ✅ 높이 추가
+    const spec = `${form.w}x${form.l}x${form.h}`;
     const title =
       String(form.quoteTitle || "").trim() ||
       `${form.sitePickedLabel || form.siteQ || ""} ${spec}`.trim();
@@ -494,50 +495,47 @@ const handleDragEnd = (event: DragEndEvent) => {
         quoteId = newId;
       }
 
-      // ✅ 캡처해서 이미지 생성
       setSendStatus("PDF 생성 중...");
-      
+
       const originalSheet = document.querySelector("#quotePreviewApp .a4Sheet") as HTMLElement;
       if (!originalSheet) {
         throw new Error("견적서를 찾을 수 없습니다.");
       }
 
-      // 캡처 컨테이너 생성
       const captureContainer = document.createElement('div');
       captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
       document.body.appendChild(captureContainer);
-      
+
       const styleTag = document.querySelector('#quotePreviewApp style');
       if (styleTag) {
         captureContainer.appendChild(styleTag.cloneNode(true));
       }
-      
+
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
       captureContainer.appendChild(clonedSheet);
-      
+
       await new Promise(r => setTimeout(r, 300));
-      
-      const canvas = await html2canvas(clonedSheet, { 
-        scale: 2, 
+
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         width: 800,
         windowWidth: 800,
       });
-      
+
       document.body.removeChild(captureContainer);
-      
-      // ✅ 이미지 Base64 데이터
+
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      
+
       const bizcard = bizcards.find(b => b.id === selectedBizcardId);
       const bizcardImageUrl = bizcard?.image_url || "";
-      
+
       setSendStatus("메일 전송 중...");
-      
+
       const GAS_URL = getWebAppUrl();
-      
+
       const response = await fetch(GAS_URL, {
         method: "POST",
         body: JSON.stringify({
@@ -545,13 +543,13 @@ const handleDragEnd = (event: DragEndEvent) => {
           args: [quoteId, form.email, imgData, bizcardImageUrl, form.name]
         })
       });
-      
+
       const result = await response.json();
       if (result.ok === false) throw new Error(result.message || "전송 실패");
-      
+
       setSendStatus("전송 완료!");
       alert("견적서가 성공적으로 전송되었습니다.");
-      
+
       setTimeout(() => setSendStatus(""), 2000);
     } catch (e: any) {
       setSendStatus("전송 실패");
@@ -574,29 +572,29 @@ const handleDragEnd = (event: DragEndEvent) => {
       captureContainer.id = 'captureContainer';
       captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
       document.body.appendChild(captureContainer);
-      
+
       const styleTag = document.querySelector('#quotePreviewApp style');
       if (styleTag) {
         captureContainer.appendChild(styleTag.cloneNode(true));
       }
-      
+
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
       captureContainer.appendChild(clonedSheet);
-      
+
       await new Promise(r => setTimeout(r, 300));
-      
-      const canvas = await html2canvas(clonedSheet, { 
-        scale: 2, 
+
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: true,
         width: 800,
         windowWidth: 800,
       });
-      
+
       document.body.removeChild(captureContainer);
-      
+
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
 
       const a = document.createElement("a");
@@ -620,85 +618,71 @@ const handleDragEnd = (event: DragEndEvent) => {
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
   const blankRows = Array.from({ length: blanksCount });
 
- const listScreen = (
-  <div style={{ minHeight: "100vh" }}>
+  // ✅ 네비게이션 바 컴포넌트
+  const NavBar = ({ current }: { current: string }) => (
     <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
-      <button className="btn" onClick={() => setView("rt")}>← 실시간견적</button>
-      <button 
-        className="btn" 
-        style={{ background: '#2e5b86', color: '#fff' }}
+      <button
+        className="btn"
+        onClick={() => setView("rt")}
+        style={current === 'rt' ? { background: '#2e5b86', color: '#fff' } : {}}
+      >
+        {current !== 'rt' ? '← ' : ''}실시간견적
+      </button>
+      <button
+        className="btn"
+        onClick={() => setView("list")}
+        style={current === 'list' ? { background: '#2e5b86', color: '#fff' } : {}}
       >
         전체견적
       </button>
-      <button className="btn" onClick={() => setView("contract")}>계약견적</button>
-      <button className="btn" onClick={() => setView("calendar")}>출고일정</button>
-    </div>
-    <QuoteListPage 
-      onGoLive={() => setView("rt")} 
-      onConfirmContract={() => setView("contract")}
-    />
-  </div>
-);
-  
-  const rtScreen = (
-    <>
-     <div style={{ padding: 12, display: "flex", justifyContent: "flex-end", gap: 8 }}>
-  <button 
-    className="btn" 
-    onClick={() => window.location.href = "/?view=list"}
-    style={{ background: view === 'list' ? '#2e5b86' : '#fff', color: view === 'list' ? '#fff' : '#333' }}
-  >
-    전체견적
-  </button>
-  <button 
-    className="btn" 
-    onClick={() => window.location.href = "/?view=contract"}
-    style={{ background: view === 'contract' ? '#2e5b86' : '#fff', color: view === 'contract' ? '#fff' : '#333' }}
-  >
-    계약견적
-  </button>
-  <button 
-    className="btn" 
-    onClick={() => window.location.href = "/?view=calendar"}
-    style={{ background: view === 'calendar' ? '#2e5b86' : '#fff', color: view === 'calendar' ? '#fff' : '#333' }}
-  >
-    출고일정
-  </button>
-</div>
-     const contractScreen = (
-  <div style={{ minHeight: "100vh" }}>
-    <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
-      <button className="btn" onClick={() => setView("rt")}>← 실시간견적</button>
-      <button className="btn" onClick={() => setView("list")}>전체견적</button>
-      <button 
-        className="btn" 
-        style={{ background: '#2e5b86', color: '#fff' }}
+      <button
+        className="btn"
+        onClick={() => setView("contract")}
+        style={current === 'contract' ? { background: '#2e5b86', color: '#fff' } : {}}
       >
         계약견적
       </button>
-      <button className="btn" onClick={() => setView("calendar")}>출고일정</button>
-    </div>
-    <ContractListPage onBack={() => setView("list")} />
-  </div>
-);
-
-// calendarScreen 추가
-const calendarScreen = (
-  <div style={{ minHeight: "100vh" }}>
-    <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
-      <button className="btn" onClick={() => setView("rt")}>← 실시간견적</button>
-      <button className="btn" onClick={() => setView("list")}>전체견적</button>
-      <button className="btn" onClick={() => setView("contract")}>계약견적</button>
-      <button 
-        className="btn" 
-        style={{ background: '#2e5b86', color: '#fff' }}
+      <button
+        className="btn"
+        onClick={() => setView("calendar")}
+        style={current === 'calendar' ? { background: '#2e5b86', color: '#fff' } : {}}
       >
         출고일정
       </button>
     </div>
-    <DeliveryCalendarPage onBack={() => setView("contract")} />
-  </div>
-);
+  );
+
+  // ✅ 전체견적 화면
+  const listScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="list" />
+      <QuoteListPage
+        onGoLive={() => setView("rt")}
+        onConfirmContract={() => setView("contract")}
+      />
+    </div>
+  );
+
+  // ✅ 계약견적 화면
+  const contractScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="contract" />
+      <ContractListPage onBack={() => setView("list")} />
+    </div>
+  );
+
+  // ✅ 출고일정 화면
+  const calendarScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="calendar" />
+      <DeliveryCalendarPage onBack={() => setView("contract")} />
+    </div>
+  );
+
+  // ✅ 실시간견적 화면
+  const rtScreen = (
+    <>
+      <NavBar current="rt" />
 
       <div className="wrap">
         {/* LEFT */}
@@ -727,25 +711,25 @@ const calendarScreen = (
               placeholder="예: 강릉 3x6 / OO업체 39"
             />
           </div>
-<div className="row">
-  <label>견적일</label>
-  <input 
-    type="date" 
-    value={form.quoteDate} 
-    onChange={(e) => setForm({ ...form, quoteDate: e.target.value })} 
-  />
-</div>
-   {/* 부가세 선택 추가 */}
-<div className="row">
-  <label>부가세</label>
-  <select 
-    value={form.vatIncluded ? "included" : "excluded"} 
-    onChange={(e) => setForm({ ...form, vatIncluded: e.target.value === "included" })}
-  >
-    <option value="included">부가세 포함</option>
-    <option value="excluded">부가세 별도</option>
-  </select>
-</div>
+          <div className="row">
+            <label>견적일</label>
+            <input
+              type="date"
+              value={form.quoteDate}
+              onChange={(e) => setForm({ ...form, quoteDate: e.target.value })}
+            />
+          </div>
+          {/* 부가세 선택 추가 */}
+          <div className="row">
+            <label>부가세</label>
+            <select
+              value={form.vatIncluded ? "included" : "excluded"}
+              onChange={(e) => setForm({ ...form, vatIncluded: e.target.value === "included" })}
+            >
+              <option value="included">부가세 포함</option>
+              <option value="excluded">부가세 별도</option>
+            </select>
+          </div>
 
           <div className="row">
             <label>고객명</label>
@@ -773,35 +757,35 @@ const calendarScreen = (
           </div>
 
           <div className="row" style={{ alignItems: "center" }}>
-  <label>규격(m)</label>
-  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-    <span>가로:</span>
-    <input 
-      type="number" 
-      value={form.w} 
-      onChange={(e) => setForm({ ...form, w: Number(e.target.value) })} 
-      style={{ width: 60 }}
-    />
-    <span>세로:</span>
-    <input 
-      type="number" 
-      value={form.l} 
-      onChange={(e) => setForm({ ...form, l: Number(e.target.value) })} 
-      style={{ width: 60 }}
-    />
-    <span>높이:</span>
-    <input 
-      type="number" 
-      step="0.1"
-      value={form.h} 
-      onChange={(e) => setForm({ ...form, h: Number(e.target.value) })} 
-      style={{ width: 60 }}
-    />
-  </div>
-</div>
-<p className="muted" style={{ textAlign: "right" }}>
-  면적: {(form.w * form.l).toFixed(2)}㎡
-</p>
+            <label>규격(m)</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>가로:</span>
+              <input
+                type="number"
+                value={form.w}
+                onChange={(e) => setForm({ ...form, w: Number(e.target.value) })}
+                style={{ width: 60 }}
+              />
+              <span>세로:</span>
+              <input
+                type="number"
+                value={form.l}
+                onChange={(e) => setForm({ ...form, l: Number(e.target.value) })}
+                style={{ width: 60 }}
+              />
+              <span>높이:</span>
+              <input
+                type="number"
+                step="0.1"
+                value={form.h}
+                onChange={(e) => setForm({ ...form, h: Number(e.target.value) })}
+                style={{ width: 60 }}
+              />
+            </div>
+          </div>
+          <p className="muted" style={{ textAlign: "right" }}>
+            면적: {(form.w * form.l).toFixed(2)}㎡
+          </p>
 
           <hr />
 
@@ -932,46 +916,46 @@ const calendarScreen = (
           <div className="mini" style={{ marginBottom: 6 }}>
             좌측에서 수량/단가 수정 → 우측 A4 미리보기/저장에 동일 반영
           </div>
-<div className="box" style={{ marginTop: 10 }}>
-  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-    <table>
-      <thead>
-        <tr>
-          <th style={{ width: "5%" }}></th>
-          <th style={{ width: "30%" }}>품명(수정)</th>
-          <th style={{ width: "8%" }}>단위</th>
-          <th className="right" style={{ width: "12%" }}>개월</th>
-          <th className="right" style={{ width: "12%" }}>수량</th>
-          <th className="right" style={{ width: "18%" }}>단가</th>
-          <th className="right" style={{ width: "10%" }}>금액</th>
-          <th className="right" style={{ width: "5%" }}></th>
-        </tr>
-      </thead>
-      <tbody>
-        <SortableContext items={computedItems.map((i: any) => i.key)} strategy={verticalListSortingStrategy}>
-          {computedItems.map((item: any, index: number) => (
-            <SortableRow
-              key={item.key}
-              item={item}
-              index={index}
-              rent={isRentRow(item)}
-              fmt={fmt}
-              updateRow={updateRow}
-              deleteRow={deleteRow}
-            />
-          ))}
-        </SortableContext>
-        {computedItems.length === 0 && (
-          <tr>
-            <td colSpan={8} style={{ textAlign: "center", padding: 20, color: "#ccc" }}>
-              항목이 없습니다.
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </DndContext>
-</div>
+          <div className="box" style={{ marginTop: 10 }}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ width: "5%" }}></th>
+                    <th style={{ width: "30%" }}>품명(수정)</th>
+                    <th style={{ width: "8%" }}>단위</th>
+                    <th className="right" style={{ width: "12%" }}>개월</th>
+                    <th className="right" style={{ width: "12%" }}>수량</th>
+                    <th className="right" style={{ width: "18%" }}>단가</th>
+                    <th className="right" style={{ width: "10%" }}>금액</th>
+                    <th className="right" style={{ width: "5%" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <SortableContext items={computedItems.map((i: any) => i.key)} strategy={verticalListSortingStrategy}>
+                    {computedItems.map((item: any, index: number) => (
+                      <SortableRow
+                        key={item.key}
+                        item={item}
+                        index={index}
+                        rent={isRentRow(item)}
+                        fmt={fmt}
+                        updateRow={updateRow}
+                        deleteRow={deleteRow}
+                      />
+                    ))}
+                  </SortableContext>
+                  {computedItems.length === 0 && (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: "center", padding: 20, color: "#ccc" }}>
+                        항목이 없습니다.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </DndContext>
+          </div>
 
           <div className="actions">
             <button className="btn" onClick={handleSaveNew}>
@@ -998,13 +982,13 @@ const calendarScreen = (
             const scale = getMobileScale();
             const scaledWidth = Math.floor(800 * scale);
             const scaledHeight = Math.floor(1130 * scale);
-            
+
             return (
-              <div 
+              <div
                 id="quotePreviewApp"
                 onClick={() => setMobilePreviewOpen(true)}
-                style={{ 
-                  cursor: 'pointer', 
+                style={{
+                  cursor: 'pointer',
                   width: scaledWidth,
                   height: scaledHeight,
                   margin: '0 auto',
@@ -1049,7 +1033,7 @@ const calendarScreen = (
                     bizcardName={selectedBizcard?.name || ""}
                     noTransform={true}
                     noPadding={true}
-                    quoteDate={form.quoteDate} 
+                    quoteDate={form.quoteDate}
                   />
                 </div>
               </div>
@@ -1073,7 +1057,7 @@ const calendarScreen = (
 
       {/* 모바일 전체화면 미리보기 */}
       {mobilePreviewOpen && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -1093,7 +1077,7 @@ const calendarScreen = (
             flexShrink: 0,
           }}>
             <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
-            <button 
+            <button
               onClick={() => setMobilePreviewOpen(false)}
               style={{
                 padding: '8px 16px',
@@ -1120,7 +1104,7 @@ const calendarScreen = (
               const scaledWidth = Math.floor(800 * scale);
               const scaledHeight = Math.floor(1130 * scale);
               return (
-                <div 
+                <div
                   style={{
                     width: scaledWidth,
                     height: scaledHeight,
@@ -1165,7 +1149,7 @@ const calendarScreen = (
             position: 'relative',
             flexShrink: 0,
           }}>
-            <button 
+            <button
               onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
               style={{
                 flex: 1,
@@ -1180,7 +1164,7 @@ const calendarScreen = (
               JPG 저장
             </button>
             <div style={{ flex: 1, position: 'relative' }}>
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   const menu = document.getElementById('sendMenuApp');
@@ -1199,7 +1183,7 @@ const calendarScreen = (
               >
                 전송 ▼
               </button>
-              <div 
+              <div
                 id="sendMenuApp"
                 style={{
                   display: 'none',
@@ -1218,10 +1202,10 @@ const calendarScreen = (
               >
                 {form.email && (
                   <button
-                    onClick={() => { 
+                    onClick={() => {
                       document.getElementById('sendMenuApp')!.style.display = 'none';
-                      setMobilePreviewOpen(false); 
-                      handleSend(); 
+                      setMobilePreviewOpen(false);
+                      handleSend();
                     }}
                     style={{
                       padding: '14px 16px',
@@ -1242,65 +1226,65 @@ const calendarScreen = (
                   <button
                     onClick={async () => {
                       document.getElementById('sendMenuApp')!.style.display = 'none';
-                      
+
                       const originalSheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
                       if (!originalSheet) {
                         alert('견적서를 찾을 수 없습니다.');
                         return;
                       }
-                      
+
                       try {
                         setStatusMsg('이미지 생성 중...');
-                        
+
                         const captureContainer = document.createElement('div');
                         captureContainer.id = 'captureContainerSms';
                         captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
                         document.body.appendChild(captureContainer);
-                        
+
                         const styleTag = document.querySelector('#quotePreviewApp style');
                         if (styleTag) {
                           captureContainer.appendChild(styleTag.cloneNode(true));
                         }
-                        
+
                         const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
                         clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
                         captureContainer.appendChild(clonedSheet);
-                        
+
                         await new Promise(r => setTimeout(r, 300));
-                        
-                        const canvas = await html2canvas(clonedSheet, { 
-                          scale: 1.5, 
+
+                        const canvas = await html2canvas(clonedSheet, {
+                          scale: 1.5,
                           backgroundColor: '#ffffff',
                           useCORS: true,
                           allowTaint: true,
                           width: 800,
                           windowWidth: 800,
                         });
-                        
+
                         document.body.removeChild(captureContainer);
-                        
+
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-                        
+
                         const msg = `안녕하세요 현대컨테이너입니다 문의 주셔서 감사합니다 ${form.name || '고객'}님 견적서를 보내드립니다.확인하시고 문의사항 있으시면 언제든 연락 주세요 감사합니다~`;
                         const phone = form.phone.replace(/[^0-9]/g, '');
-                        
+
                         const a = document.createElement('a');
                         a.href = dataUrl;
                         a.download = `견적서_${form.name || 'quote'}.jpg`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
-                        
+
                         setStatusMsg('');
                         setMobilePreviewOpen(false);
-                        
+
                         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                         const separator = isIOS ? '&' : '?';
-                        
+
                         setTimeout(() => {
                           window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
                         }, 1500);
-                        
+
                       } catch (e) {
                         console.error(e);
                         setStatusMsg('');
@@ -1336,7 +1320,11 @@ const calendarScreen = (
     </>
   );
 
-  return view === "list" ? listScreen : rtScreen;
+  // ✅ view에 따라 화면 렌더링
+  if (view === "list") return listScreen;
+  if (view === "contract") return contractScreen;
+  if (view === "calendar") return calendarScreen;
+  return rtScreen;
 }
 
 type A4QuoteProps = {
@@ -1347,11 +1335,11 @@ type A4QuoteProps = {
     phone: string;
     w: number;
     l: number;
-    h: number;  // ✅ 추가
+    h: number;
     siteQ: string;
     sitePickedLabel: string;
     optQ: string;
-    quoteDate?: string; 
+    quoteDate?: string;
     vatIncluded?: boolean;
   };
   computedItems: any[];
@@ -1366,6 +1354,7 @@ type A4QuoteProps = {
   noPadding?: boolean;
   quoteDate?: string;
 };
+
 function SortableRow({ item, index, rent, fmt, updateRow, deleteRow }: any) {
   const {
     attributes,
@@ -1456,10 +1445,10 @@ function SortableRow({ item, index, rent, fmt, updateRow, deleteRow }: any) {
     </tr>
   );
 }
+
 function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding, quoteDate }: A4QuoteProps) {
   const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
-  const today = new Date();
- 
+
   const spec = `${form.w}x${form.l}x${form.h}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
@@ -1528,10 +1517,10 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 <td className="v">1688-1447</td>
               </tr>
               <tr>
-  <td className="sum" colSpan={6}>
-    합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)} ({form.vatIncluded !== false ? "부가세 포함" : "부가세 별도"})
-  </td>
-</tr>
+                <td className="sum" colSpan={6}>
+                  합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)} ({form.vatIncluded !== false ? "부가세 포함" : "부가세 별도"})
+                </td>
+              </tr>
             </tbody>
           </table>
 
@@ -1565,9 +1554,9 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                 const supply = unitSupply * qty;
                 const vat = Math.round(supply * 0.1);
                 const showSpec = String(item.showSpec || "").toLowerCase() === "y";
-               const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l 
-  ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}` 
-  : "";
+                const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l
+                  ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}`
+                  : "";
 
                 return (
                   <tr key={item.key ?? idx}>
@@ -1630,7 +1619,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
                   <br />
                   1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
                   <br />
-                  2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고 
+                  2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고
                   <br />
                   *출고 전날 오후 2시 이전 잔금 결제 조건*
                   <br />
@@ -1720,7 +1709,7 @@ const a4css = `
   .a4Bottom{
   width: 100% !important;
   max-width: 100% !important;
-  table-layout: fixed;  /* auto → fixed */
+  table-layout: fixed;
   border: 1px solid #333;
   margin-top: 10px;
 }
