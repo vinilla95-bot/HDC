@@ -7,8 +7,6 @@ const SB_KEY =
 
 export const supabase = createClient(SB_URL, SB_KEY);
 
-
-
 export const roundToTenThousand = (val: number) => {
   const n = Number(val || 0);
   return Math.round(n / 10000) * 10000;
@@ -183,6 +181,56 @@ export const calculateOptionLine = (
   return { qty, unit, unitPrice, amount, memo };
 };
 
+export const searchSiteRates = async (keyword: string, w: number, l: number) => {
+  const kw = normNoSpace(keyword);
+  if (!kw) return { list: [] };
+
+  const W = Number(w || 0);
+  const L = Number(l || 0);
+  const bucket = W > 0 && L > 0 && W <= 3 && L <= 6 ? '36' : '39';
+
+  const { data, error } = await supabase.from('site_rates').select('*');
+  if (error || !data) return { list: [] };
+
+  const list: any[] = [];
+  for (const r of data as any[]) {
+    const k = r.keyword || '';
+    const a = r.alias || '';
+    if (!k && !a) continue;
+
+    const hay = `${k} ${a}`;
+    if (!matchKorean(hay, kw)) continue;
+
+    // 기본 운송비 (세로 길이 기준)
+    const isLong = L >= 9;
+    const deliveryBase = isLong ? Number(r.delivery_39 || 0) : Number(r.delivery_36 || 0);
+    
+    // 광폭(4미터) 추가금: 4x6은 wide_add, 4x9는 wide_39
+    let wideAdd = 0;
+    if (W >= 4) {
+      wideAdd = isLong ? Number(r.wide_39 || 0) : Number(r.wide_add || 0);
+    }
+    
+    const priority = Number(r.priority || 9999);
+
+    list.push({
+      id: r.id,
+      keyword: k,
+      alias: a,
+      bucket,
+      wideAdd,
+      priority,
+      delivery: deliveryBase + wideAdd,
+      crane: 0,
+    });
+
+    if (list.length >= 50) break;
+  }
+
+  list.sort((a, b) => a.priority - b.priority);
+  return { list };
+};
+
 export const loadBizcards = async () => {
   const { data, error } = await supabase.from('business_cards').select('*').order('created_at', { ascending: true });
   if (error) return { list: [] as any[] };
@@ -239,4 +287,3 @@ export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
   
   return await supabase.from('quotes').insert([row]).select();
 };
-
