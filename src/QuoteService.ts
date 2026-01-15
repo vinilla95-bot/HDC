@@ -52,10 +52,12 @@ export const calculateOptionLine = (
   opt: SupabaseOptionRow,
   w: number,
   l: number,
+  h: number = 2.6,  // ✅ 높이 추가 (기본값 2.6)
   overrides: any = {}
 ) => {
   w = Number(w || 0);
   l = Number(l || 0);
+  h = Number(h || 2.6);
   let qty = overrides.qty !== undefined ? Number(overrides.qty) : 1;
   let unitPrice = Number(opt.unit_price || 0);
 
@@ -79,9 +81,30 @@ export const calculateOptionLine = (
     unitRaw.includes('METRE') ||
     opt.unit === 'm';
 
+  // ✅ 높이 3m 배수 계산 함수
+  const getHeightMultiplier = () => {
+    if (h < 3) return 1;
+    if (w >= 4) return 1.7;           // 4*(숫자) → 1.7배
+    if (w <= 3 && l <= 4) return 1.6; // 3*4 이하 → 1.6배
+    return 1.5;                        // 3*4 초과 → 1.5배
+  };
+
+  // ✅ 컨테이너 관련 옵션인지 확인 (신품컨테이너, 중고컨테이너 등)
+  const isContainerOption = rawName.includes('컨테이너') || rawName.includes('신품') || rawName.includes('중고');
+
   if (isRent) {
     const months = Math.max(1, Math.floor(Number(qty || 1)));
     unitPrice = rentUnitPriceBySpec(w, l);
+    
+    // ✅ 임대도 높이 배수 적용
+    if (h >= 3) {
+      const multiplier = getHeightMultiplier();
+      unitPrice = Math.round(unitPrice * multiplier);
+      memo = `${months}개월 임대 (${w}x${l}x${h}m, ${multiplier}배 적용)`;
+    } else {
+      memo = `${months}개월 임대 (${w}x${l})`;
+    }
+    
     let amount = Math.round(months * unitPrice);
     amount = roundToTenThousand(amount);
     return {
@@ -89,7 +112,7 @@ export const calculateOptionLine = (
       unit: '개월',
       unitPrice,
       amount,
-      memo: `${months}개월 임대 (${w}x${l})`,
+      memo,
     };
   }
 
@@ -130,6 +153,14 @@ export const calculateOptionLine = (
   }
 
   if (overrides.unitPrice !== undefined) unitPrice = Number(overrides.unitPrice);
+  
+  // ✅ 컨테이너 옵션에 높이 배수 적용
+  if (isContainerOption && h >= 3) {
+    const multiplier = getHeightMultiplier();
+    unitPrice = Math.round(unitPrice * multiplier);
+    memo = `높이 ${h}m (${multiplier}배 적용)`;
+  }
+  
   let amount = qty * unitPrice;
   if (overrides.amount !== undefined) amount = Number(overrides.amount);
   amount = roundToTenThousand(amount);
