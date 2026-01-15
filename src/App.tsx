@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 import {
   supabase,
@@ -253,7 +254,15 @@ const [view, setView] = useState<"rt" | "list">(() => {
     setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
     setSites([]);
   };
-
+const handleDragEnd = (result: any) => {
+  if (!result.destination) return;
+  
+  const items = Array.from(selectedItems);
+  const [reorderedItem] = items.splice(result.source.index, 1);
+  items.splice(result.destination.index, 0, reorderedItem);
+  
+  setSelectedItems(items);
+};
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
