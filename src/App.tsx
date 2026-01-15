@@ -2,7 +2,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import html2canvas from "html2canvas";
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import {
   supabase,
@@ -254,14 +267,23 @@ const [view, setView] = useState<"rt" | "list">(() => {
     setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
     setSites([]);
   };
-const handleDragEnd = (result: any) => {
-  if (!result.destination) return;
-  
-  const items = Array.from(selectedItems);
-  const [reorderedItem] = items.splice(result.source.index, 1);
-  items.splice(result.destination.index, 0, reorderedItem);
-  
-  setSelectedItems(items);
+const sensors = useSensors(
+  useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8,
+    },
+  })
+);
+
+const handleDragEnd = (event: DragEndEvent) => {
+  const { active, over } = event;
+  if (over && active.id !== over.id) {
+    setSelectedItems((items) => {
+      const oldIndex = items.findIndex((i: any) => i.key === active.id);
+      const newIndex = items.findIndex((i: any) => i.key === over.id);
+      return arrayMove(items, oldIndex, newIndex);
+    });
+  }
 };
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
@@ -855,112 +877,46 @@ const handleDragEnd = (result: any) => {
           <div className="mini" style={{ marginBottom: 6 }}>
             좌측에서 수량/단가 수정 → 우측 A4 미리보기/저장에 동일 반영
           </div>
-
-          <div className="box" style={{ marginTop: 10 }}>
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ width: "35%" }}>품명(수정)</th>
-                  <th style={{ width: "8%" }}>단위</th>
-                  <th className="right" style={{ width: "12%" }}>개월</th>
-                  <th className="right" style={{ width: "12%" }}>수량</th>
-                  <th className="right" style={{ width: "18%" }}>단가</th>
-                  <th className="right" style={{ width: "10%" }}>금액</th>
-                  <th className="right" style={{ width: "5%" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {computedItems.map((item: any) => {
-                  const rent = isRentRow(item);
-                  return (
-                    <tr key={item.key}>
-                      <td>
-                        <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>
-                          내부: {item.baseQty}
-                          {item.unit} × {fmt(item.baseUnitPrice)} = {fmt(item.baseAmount)}
-                        </div>
-                        <input
-                          value={item.displayName}
-                          onChange={(e) => updateRow(item.key, "displayName", e.target.value)}
-                          style={{ width: "100%", fontSize: 12, padding: 4, border: "1px solid #ddd" }}
-                        />
-                      </td>
-
-                      <td style={{ textAlign: "center" }}>{item.unit}</td>
-
-                      <td className="right">
-                        {rent ? (
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={item.months || 1}
-                            onChange={(e) => updateRow(item.key, "months", e.target.value)}
-                            style={{ width: 50, padding: 2, textAlign: "right" }}
-                          />
-                        ) : (
-                          <span style={{ color: "#ccc" }}>-</span>
-                        )}
-                      </td>
-
-                      <td className="right">
-                        <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={item.displayQty}
-                          onChange={(e) => updateRow(item.key, "displayQty", e.target.value)}
-                          style={{ width: 50, padding: 2, textAlign: "right" }}
-                        />
-                      </td>
-
-                      <td className="right">
-                        {rent ? (
-                          <span style={{ fontWeight: 700 }}>{fmt(item.customerUnitPrice)}</span>
-                        ) : (
-                          <input
-                            type="number"
-                            min={0}
-                            step={1}
-                           value={item.customerUnitPrice === 0 ? "" : item.customerUnitPrice} 
-                            onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
-                            style={{ width: 100, padding: 2, textAlign: "right" }}
-                          />
-                        )}
-                      </td>
-
-                      <td className="right" style={{ fontWeight: 900 }}>
-                        {fmt(item.finalAmount)}
-                      </td>
-
-                      <td className="right">
-                        <button
-                          onClick={() => deleteRow(item.key)}
-                          style={{
-                            color: "red",
-                            border: "none",
-                            background: "none",
-                            cursor: "pointer",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          X
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-
-                {computedItems.length === 0 && (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#ccc" }}>
-                      항목이 없습니다.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+<div className="box" style={{ marginTop: 10 }}>
+  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <table>
+      <thead>
+        <tr>
+          <th style={{ width: "5%" }}></th>
+          <th style={{ width: "30%" }}>품명(수정)</th>
+          <th style={{ width: "8%" }}>단위</th>
+          <th className="right" style={{ width: "12%" }}>개월</th>
+          <th className="right" style={{ width: "12%" }}>수량</th>
+          <th className="right" style={{ width: "18%" }}>단가</th>
+          <th className="right" style={{ width: "10%" }}>금액</th>
+          <th className="right" style={{ width: "5%" }}></th>
+        </tr>
+      </thead>
+      <tbody>
+        <SortableContext items={computedItems.map((i: any) => i.key)} strategy={verticalListSortingStrategy}>
+          {computedItems.map((item: any, index: number) => (
+            <SortableRow
+              key={item.key}
+              item={item}
+              index={index}
+              rent={isRentRow(item)}
+              fmt={fmt}
+              updateRow={updateRow}
+              deleteRow={deleteRow}
+            />
+          ))}
+        </SortableContext>
+        {computedItems.length === 0 && (
+          <tr>
+            <td colSpan={8} style={{ textAlign: "center", padding: 20, color: "#ccc" }}>
+              항목이 없습니다.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </DndContext>
+</div>
 
           <div className="actions">
             <button className="btn" onClick={handleSaveNew}>
@@ -1355,7 +1311,96 @@ type A4QuoteProps = {
   noPadding?: boolean;
   quoteDate?: string;
 };
+function SortableRow({ item, index, rent, fmt, updateRow, deleteRow }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.key });
 
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    background: isDragging ? '#f0f0f0' : '#fff',
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style}>
+      <td {...attributes} {...listeners} style={{ cursor: 'grab', textAlign: 'center' }}>
+        ☰
+      </td>
+      <td>
+        <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>
+          내부: {item.baseQty}{item.unit} × {fmt(item.baseUnitPrice)} = {fmt(item.baseAmount)}
+        </div>
+        <input
+          value={item.displayName}
+          onChange={(e) => updateRow(item.key, "displayName", e.target.value)}
+          style={{ width: "100%", fontSize: 12, padding: 4, border: "1px solid #ddd" }}
+        />
+      </td>
+      <td style={{ textAlign: "center" }}>{item.unit}</td>
+      <td className="right">
+        {rent ? (
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={item.months || 1}
+            onChange={(e) => updateRow(item.key, "months", e.target.value)}
+            style={{ width: 50, padding: 2, textAlign: "right" }}
+          />
+        ) : (
+          <span style={{ color: "#ccc" }}>-</span>
+        )}
+      </td>
+      <td className="right">
+        <input
+          type="number"
+          min={0}
+          step={1}
+          value={item.displayQty === 0 ? "" : item.displayQty}
+          onChange={(e) => updateRow(item.key, "displayQty", e.target.value)}
+          style={{ width: 50, padding: 2, textAlign: "right" }}
+        />
+      </td>
+      <td className="right">
+        {rent ? (
+          <span style={{ fontWeight: 700 }}>{fmt(item.customerUnitPrice)}</span>
+        ) : (
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={item.customerUnitPrice === 0 ? "" : item.customerUnitPrice}
+            onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
+            style={{ width: 100, padding: 2, textAlign: "right" }}
+          />
+        )}
+      </td>
+      <td className="right" style={{ fontWeight: 900 }}>
+        {fmt(item.finalAmount)}
+      </td>
+      <td className="right">
+        <button
+          onClick={() => deleteRow(item.key)}
+          style={{
+            color: "red",
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          X
+        </button>
+      </td>
+    </tr>
+  );
+}
 function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, noTransform, noPadding, quoteDate }: A4QuoteProps) {
   const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   const today = new Date();
