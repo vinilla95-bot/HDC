@@ -58,6 +58,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
     phone: "",
     w: 3,
     l: 6,
+     h: 2.6,
     siteQ: "",
     sitePickedLabel: "",
     optQ: "",
@@ -202,7 +203,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
       return;
     }
 
-    const res = calculateOptionLine(opt, form.w, form.l);
+    const res = calculateOptionLine(opt, form.w, form.l, form.h);
     const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
     const rent = rawName.includes("임대");
 
@@ -245,7 +246,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
       finalAmount: Math.round(displayQty * customerUnitPrice),
       months: defaultMonths,
       memo: res.memo || "",
-      lineSpec: { w: form.w, l: form.l },
+     lineSpec: { w: form.w, l: form.l, h: form.h },
     };
 
     setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
