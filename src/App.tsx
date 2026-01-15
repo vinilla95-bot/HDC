@@ -342,7 +342,7 @@ const [view, setView] = useState<"rt" | "list">(() => {
   const total_amount = supply_amount + vat_amount;
 
   const buildPayload = (quote_id: string, version: number) => {
-    const spec = `${form.w}x${form.l}`;
+  const spec = `${form.w}x${form.l}x${form.h}`;  // ✅ 높이 추가
     const title =
       String(form.quoteTitle || "").trim() ||
       `${form.sitePickedLabel || form.siteQ || ""} ${spec}`.trim();
@@ -1327,6 +1327,7 @@ type A4QuoteProps = {
     phone: string;
     w: number;
     l: number;
+    h: number;  // ✅ 추가
     siteQ: string;
     sitePickedLabel: string;
     optQ: string;
@@ -1350,7 +1351,7 @@ function A4Quote({ form, computedItems, blankRows, fmt, supply_amount, vat_amoun
   const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   const today = new Date();
  
-  const spec = `${form.w}x${form.l}`;
+  const spec = `${form.w}x${form.l}x${form.h}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
   return (
