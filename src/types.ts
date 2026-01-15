@@ -54,3 +54,20 @@ export interface SelectedRow {
   memo: string;
   lineSpec: { w: number; l: number };
 }
+export interface SupabaseOptionRow {
+  option_id: string;
+  option_name: string;
+  unit: string;
+  unit_price: number;
+  qty_mode?: string;
+  price_mode?: string;
+  m_min_bill?: number;
+  m_min_until?: number;
+  unit_price_w3?: number;
+  unit_price_w4?: number;
+  keywords?: string;
+  // ✅ 추가
+  unit_price_small?: number;
+  unit_price_large?: number;
+  show_spec?: string;
+}
