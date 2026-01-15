@@ -1,96 +1,38 @@
 // src/pages/DeliveryCalendarPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "../QuoteService";
 
 type DeliveryItem = {
-  id: string;
   quote_id: string;
+  contract_type: string;
   customer_name: string;
   spec: string;
+  items: any[];
   delivery_date: string;
-  site_name: string;
-  drawing_no: string;
-};
-
-// ✅ 한국 법정공휴일 (2024-2026)
-const KOREAN_HOLIDAYS: Record<string, string> = {
-  // 2024
-  "2024-01-01": "신정",
-  "2024-02-09": "설날 연휴",
-  "2024-02-10": "설날",
-  "2024-02-11": "설날 연휴",
-  "2024-02-12": "대체공휴일",
-  "2024-03-01": "삼일절",
-  "2024-04-10": "국회의원선거",
-  "2024-05-05": "어린이날",
-  "2024-05-06": "대체공휴일",
-  "2024-05-15": "부처님오신날",
-  "2024-06-06": "현충일",
-  "2024-08-15": "광복절",
-  "2024-09-16": "추석 연휴",
-  "2024-09-17": "추석",
-  "2024-09-18": "추석 연휴",
-  "2024-10-03": "개천절",
-  "2024-10-09": "한글날",
-  "2024-12-25": "크리스마스",
-  
-  // 2025
-  "2025-01-01": "신정",
-  "2025-01-28": "설날 연휴",
-  "2025-01-29": "설날",
-  "2025-01-30": "설날 연휴",
-  "2025-03-01": "삼일절",
-  "2025-03-03": "대체공휴일",
-  "2025-05-05": "어린이날",
-  "2025-05-06": "부처님오신날",
-  "2025-06-06": "현충일",
-  "2025-08-15": "광복절",
-  "2025-10-03": "개천절",
-  "2025-10-05": "추석 연휴",
-  "2025-10-06": "추석",
-  "2025-10-07": "추석 연휴",
-  "2025-10-08": "대체공휴일",
-  "2025-10-09": "한글날",
-  "2025-12-25": "크리스마스",
-  
-  // 2026
-  "2026-01-01": "신정",
-  "2026-02-16": "설날 연휴",
-  "2026-02-17": "설날",
-  "2026-02-18": "설날 연휴",
-  "2026-03-01": "삼일절",
-  "2026-03-02": "대체공휴일",
-  "2026-05-05": "어린이날",
-  "2026-05-24": "부처님오신날",
-  "2026-05-25": "대체공휴일",
-  "2026-06-06": "현충일",
-  "2026-08-15": "광복절",
-  "2026-08-17": "대체공휴일",
-  "2026-09-24": "추석 연휴",
-  "2026-09-25": "추석",
-  "2026-09-26": "추석 연휴",
-  "2026-10-03": "개천절",
-  "2026-10-05": "대체공휴일",
-  "2026-10-09": "한글날",
-  "2026-12-25": "크리스마스",
+  site_name?: string;
 };
 
 export default function DeliveryCalendarPage({ onBack }: { onBack: () => void }) {
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
 
   const loadDeliveries = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("quotes")
-      .select("id, quote_id, customer_name, spec, delivery_date, site_name, drawing_no")
+      .select("*")
       .eq("status", "confirmed")
-      .not("delivery_date", "is", null)
-      .order("delivery_date", { ascending: true });
+      .not("delivery_date", "is", null);
 
-    if (!error && data) {
-      setDeliveries(data as DeliveryItem[]);
+    if (error) {
+      console.error("Load error:", error);
+    }
+    if (data) {
+      setDeliveries(data.filter((d: any) => d.delivery_date) as DeliveryItem[]);
     }
     setLoading(false);
   };
@@ -99,59 +41,113 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     loadDeliveries();
   }, []);
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
+  // ✅ 옵션 요약
+  const summarizeOptions = (items: any[]) => {
+    if (!items || items.length === 0) return "";
+    const names = items.slice(0, 2).map((i: any) => {
+      const name = i.optionName || i.displayName || i.itemName || "";
+      // 긴 이름 줄이기
+      return name.length > 8 ? name.slice(0, 8) + ".." : name;
+    });
+    const summary = names.join(", ");
+    return items.length > 2 ? `${summary} 외${items.length - 2}` : summary;
+  };
+
+  // ✅ 현장명 가져오기
+  const getSiteName = (item: DeliveryItem) => {
+    // site_name이 있으면 사용
+    if (item.site_name) return item.site_name;
+    // items에서 운송비 품목의 현장 정보 찾기
+    if (item.items && item.items.length > 0) {
+      const deliveryItem = item.items.find((i: any) => 
+        (i.optionName || i.displayName || "").includes("운송")
+      );
+      if (deliveryItem && deliveryItem.displayName) {
+        const match = deliveryItem.displayName.match(/운송비[^\-]*-(.+)/);
+        if (match) return match[1];
+      }
+    }
+    return "";
+  };
+
+  // ✅ 출고 라벨 생성
+  const getDeliveryLabel = (item: DeliveryItem) => {
+    const type = item.contract_type || "order";
+    const spec = item.spec || "";
+    const options = summarizeOptions(item.items);
+    const site = getSiteName(item);
+    const customer = item.customer_name || "";
+
+    // 수량 (기본 1동)
+    const qty = item.items?.length > 0 
+      ? item.items.find((i: any) => i.qty > 0)?.qty || 1 
+      : 1;
+    const qtyText = qty > 1 ? `-${qty}동` : "";
+
+    let prefix = "";
+    let label = "";
+
+    if (type === "used") {
+      // 중고: [중고](사이즈-수량동) 옵션요약 현장
+      prefix = "[중고]";
+      label = `${prefix}(${spec}${qtyText}) ${options} ${site}`.trim();
+    } else if (type === "branch") {
+      // 영업소: [신품]영업소이름(사이즈-수량동) 옵션요약 현장
+      prefix = "[신품]";
+      label = `${prefix}${customer}(${spec}${qtyText}) ${options} ${site}`.trim();
+    } else {
+      // 수주(신품): [신품](사이즈-수량동) 옵션요약 현장
+      prefix = "[신품]";
+      label = `${prefix}(${spec}${qtyText}) ${options} ${site}`.trim();
+    }
+
+    return label;
+  };
+
+  // ✅ 날짜별 출고 그룹핑
+  const deliveriesByDate = useMemo(() => {
+    const map: Record<string, DeliveryItem[]> = {};
+    deliveries.forEach((d) => {
+      const date = d.delivery_date;
+      if (!map[date]) map[date] = [];
+      map[date].push(d);
+    });
+    return map;
+  }, [deliveries]);
+
+  // ✅ 캘린더 데이터 생성
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    // 이번 달 첫날과 마지막날
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const days: Date[] = [];
 
-    for (let i = 0; i < firstDay.getDay(); i++) {
-      days.push(new Date(year, month, -firstDay.getDay() + i + 1));
-    }
+    // 첫째주 시작 요일 (0=일, 1=월, ...)
+    const startDayOfWeek = firstDay.getDay();
 
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      days.push(new Date(year, month, i));
-    }
+    // 캘린더 시작일 (이전 달 포함)
+    const calendarStart = new Date(firstDay);
+    calendarStart.setDate(calendarStart.getDate() - startDayOfWeek);
 
-    const remaining = 7 - (days.length % 7);
-    if (remaining < 7) {
-      for (let i = 1; i <= remaining; i++) {
-        days.push(new Date(year, month + 1, i));
-      }
+    const days: { date: Date; isCurrentMonth: boolean }[] = [];
+
+    // 6주 (42일) 생성
+    for (let i = 0; i < 42; i++) {
+      const date = new Date(calendarStart);
+      date.setDate(calendarStart.getDate() + i);
+      days.push({
+        date,
+        isCurrentMonth: date.getMonth() === month,
+      });
     }
 
     return days;
-  };
+  }, [currentMonth]);
 
-  const formatDate = (date: Date) => {
+  const formatDateKey = (date: Date) => {
     return date.toISOString().slice(0, 10);
-  };
-
-  const getDeliveriesForDate = (date: Date) => {
-    const dateStr = formatDate(date);
-    return deliveries.filter((d) => d.delivery_date === dateStr);
-  };
-
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return formatDate(date) === formatDate(today);
-  };
-
-  const isTomorrow = (date: Date) => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return formatDate(date) === formatDate(tomorrow);
-  };
-
-  const isCurrentMonth = (date: Date) => {
-    return date.getMonth() === currentMonth.getMonth();
-  };
-
-  // ✅ 공휴일 체크
-  const getHoliday = (date: Date) => {
-    const dateStr = formatDate(date);
-    return KOREAN_HOLIDAYS[dateStr] || null;
   };
 
   const prevMonth = () => {
@@ -162,83 +158,72 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
-  const days = getDaysInMonth(currentMonth);
+  const goToday = () => {
+    const now = new Date();
+    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+  };
+
+  const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
+
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
-  const tomorrowDeliveries = deliveries.filter((d) => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return d.delivery_date === formatDate(tomorrow);
-  });
+  // 오늘 날짜
+  const today = new Date();
+  const todayKey = formatDateKey(today);
 
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
       {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>출고일정</h2>
-        <button
-          onClick={onBack}
-          style={{
-            padding: "8px 16px",
-            background: "#111",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          ← 돌아가기
-        </button>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
+          출고일정
+          <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>
+            (총 {deliveries.length}건)
+          </span>
+        </h2>
       </div>
 
-      {/* 내일 출고 알림 */}
-      {tomorrowDeliveries.length > 0 && (
-        <div
-          style={{
-            background: "#fff3cd",
-            border: "1px solid #ffc107",
-            borderRadius: 8,
-            padding: 12,
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ fontWeight: 800, marginBottom: 8, color: "#856404" }}>
-            ⚠️ 내일 출고 예정 ({tomorrowDeliveries.length}건)
-          </div>
-          {tomorrowDeliveries.map((d) => (
-            <div key={d.id} style={{ fontSize: 13, marginBottom: 4 }}>
-              • {d.customer_name} ({d.spec}) - {d.site_name || "현장미정"}
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* 월 네비게이션 */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-          padding: "8px 0",
-        }}
-      >
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+        background: "#fff",
+        padding: "12px 16px",
+        borderRadius: 12,
+        border: "1px solid #e5e7eb",
+      }}>
         <button
           onClick={prevMonth}
           style={{
             padding: "8px 16px",
             background: "#f5f5f5",
             border: "1px solid #ddd",
-            borderRadius: 6,
+            borderRadius: 8,
             cursor: "pointer",
-            fontWeight: 700,
+            fontWeight: 600,
           }}
         >
           ◀ 이전
         </button>
-        <div style={{ fontSize: 18, fontWeight: 800 }}>
-          {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>{monthLabel}</span>
+          <button
+            onClick={goToday}
+            style={{
+              padding: "6px 12px",
+              background: "#2e5b86",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            오늘
+          </button>
         </div>
         <button
           onClick={nextMonth}
@@ -246,9 +231,9 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
             padding: "8px 16px",
             background: "#f5f5f5",
             border: "1px solid #ddd",
-            borderRadius: 6,
+            borderRadius: 8,
             cursor: "pointer",
-            fontWeight: 700,
+            fontWeight: 600,
           }}
         >
           다음 ▶
@@ -258,17 +243,27 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
       {loading ? (
         <div style={{ textAlign: "center", padding: 40, color: "#888" }}>로딩 중...</div>
       ) : (
-        <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #ddd", overflow: "hidden" }}>
+        <div style={{
+          background: "#fff",
+          borderRadius: 12,
+          border: "1px solid #e5e7eb",
+          overflow: "hidden",
+        }}>
           {/* 요일 헤더 */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#2e5b86" }}>
-            {weekDays.map((day, i) => (
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            background: "#2e5b86",
+          }}>
+            {weekDays.map((day, idx) => (
               <div
                 key={day}
                 style={{
-                  padding: 10,
+                  padding: "10px 4px",
                   textAlign: "center",
                   fontWeight: 700,
-                  color: i === 0 ? "#ffcccc" : i === 6 ? "#cce5ff" : "#fff",
+                  fontSize: 13,
+                  color: idx === 0 ? "#ffcccc" : idx === 6 ? "#cce5ff" : "#fff",
                 }}
               >
                 {day}
@@ -276,83 +271,83 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
             ))}
           </div>
 
-          {/* 날짜 그리드 */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-            {days.map((date, idx) => {
-              const dateDeliveries = getDeliveriesForDate(date);
+          {/* 캘린더 그리드 */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+          }}>
+            {calendarDays.map(({ date, isCurrentMonth }, idx) => {
+              const dateKey = formatDateKey(date);
+              const dayDeliveries = deliveriesByDate[dateKey] || [];
+              const isToday = dateKey === todayKey;
               const dayOfWeek = date.getDay();
-              const holiday = getHoliday(date);
+              const isSunday = dayOfWeek === 0;
+              const isSaturday = dayOfWeek === 6;
 
               return (
                 <div
                   key={idx}
                   style={{
-                    minHeight: 80,
-                    padding: 6,
-                    border: "1px solid #eee",
-                    background: isToday(date)
-                      ? "#e3f2fd"
-                      : isTomorrow(date) && dateDeliveries.length > 0
-                      ? "#fff3cd"
-                      : holiday
-                      ? "#ffebee"  // ✅ 공휴일 배경색
-                      : !isCurrentMonth(date)
-                      ? "#f9f9f9"
-                      : "#fff",
+                    minHeight: 100,
+                    padding: 4,
+                    borderRight: idx % 7 !== 6 ? "1px solid #eee" : "none",
+                    borderBottom: "1px solid #eee",
+                    background: isToday ? "#fffde7" : isCurrentMonth ? "#fff" : "#f9f9f9",
+                    opacity: isCurrentMonth ? 1 : 0.5,
                   }}
                 >
-                  <div
-                    style={{
-                      fontWeight: isToday(date) ? 900 : 600,
-                      fontSize: 12,
-                      marginBottom: 2,
-                      color: !isCurrentMonth(date)
-                        ? "#ccc"
-                        : holiday || dayOfWeek === 0
-                        ? "#e53935"  // ✅ 공휴일/일요일 빨간색
-                        : dayOfWeek === 6
-                        ? "#1976d2"
-                        : "#333",
-                    }}
-                  >
+                  {/* 날짜 */}
+                  <div style={{
+                    fontSize: 12,
+                    fontWeight: isToday ? 800 : 600,
+                    color: isSunday ? "#e53935" : isSaturday ? "#1976d2" : "#333",
+                    marginBottom: 4,
+                    padding: "2px 4px",
+                    borderRadius: 4,
+                    background: isToday ? "#2e5b86" : "transparent",
+                    ...(isToday && { color: "#fff" }),
+                    display: "inline-block",
+                  }}>
                     {date.getDate()}
-                    {isToday(date) && <span style={{ marginLeft: 4, fontSize: 10 }}>(오늘)</span>}
                   </div>
 
-                  {/* ✅ 공휴일 이름 표시 */}
-                  {holiday && (
-                    <div
-                      style={{
-                        fontSize: 9,
-                        color: "#e53935",
-                        marginBottom: 2,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {holiday}
-                    </div>
-                  )}
+                  {/* 출고 항목들 */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {dayDeliveries.slice(0, 3).map((d, i) => {
+                      const type = d.contract_type || "order";
+                      const bgColor = type === "used" ? "#fff3e0" : type === "branch" ? "#e3f2fd" : "#e8f5e9";
+                      const borderColor = type === "used" ? "#ff9800" : type === "branch" ? "#2196f3" : "#4caf50";
 
-                  {dateDeliveries.map((d) => (
-                    <div
-                      key={d.id}
-                      style={{
-                        background: "#2e5b86",
-                        color: "#fff",
-                        padding: "3px 6px",
-                        borderRadius: 4,
+                      return (
+                        <div
+                          key={d.quote_id + i}
+                          style={{
+                            fontSize: 10,
+                            padding: "3px 4px",
+                            background: bgColor,
+                            borderLeft: `3px solid ${borderColor}`,
+                            borderRadius: 2,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            cursor: "pointer",
+                          }}
+                          title={getDeliveryLabel(d)}
+                        >
+                          {getDeliveryLabel(d)}
+                        </div>
+                      );
+                    })}
+                    {dayDeliveries.length > 3 && (
+                      <div style={{
                         fontSize: 10,
-                        marginBottom: 2,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                      title={`${d.customer_name} (${d.spec}) - ${d.site_name || ""}`}
-                    >
-                      {d.drawing_no ? `#${d.drawing_no} ` : ""}
-                      {d.customer_name}
-                    </div>
-                  ))}
+                        color: "#666",
+                        padding: "2px 4px",
+                      }}>
+                        +{dayDeliveries.length - 3}건 더
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -360,40 +355,29 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
         </div>
       )}
 
-      {/* 하단 리스트 */}
-      <div style={{ marginTop: 20 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>이번 달 출고 예정</h3>
-        {deliveries
-          .filter((d) => {
-            const date = new Date(d.delivery_date);
-            return (
-              date.getMonth() === currentMonth.getMonth() &&
-              date.getFullYear() === currentMonth.getFullYear()
-            );
-          })
-          .map((d) => (
-            <div
-              key={d.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: 10,
-                background: "#fff",
-                borderRadius: 6,
-                marginBottom: 6,
-                border: "1px solid #eee",
-              }}
-            >
-              <div>
-                <span style={{ fontWeight: 700 }}>{d.customer_name}</span>
-                <span style={{ marginLeft: 8, color: "#666" }}>({d.spec})</span>
-                {d.drawing_no && (
-                  <span style={{ marginLeft: 8, color: "#2e5b86" }}>#{d.drawing_no}</span>
-                )}
-              </div>
-              <div style={{ fontWeight: 700, color: "#2e5b86" }}>{d.delivery_date}</div>
-            </div>
-          ))}
+      {/* 범례 */}
+      <div style={{
+        display: "flex",
+        gap: 16,
+        marginTop: 16,
+        padding: "12px 16px",
+        background: "#fff",
+        borderRadius: 12,
+        border: "1px solid #e5e7eb",
+        fontSize: 12,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 16, height: 16, background: "#e8f5e9", borderLeft: "3px solid #4caf50", borderRadius: 2 }}></div>
+          <span>신품 (수주)</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 16, height: 16, background: "#e3f2fd", borderLeft: "3px solid #2196f3", borderRadius: 2 }}></div>
+          <span>영업소</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 16, height: 16, background: "#fff3e0", borderLeft: "3px solid #ff9800", borderRadius: 2 }}></div>
+          <span>중고</span>
+        </div>
       </div>
     </div>
   );
