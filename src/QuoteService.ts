@@ -182,8 +182,14 @@ export const calculateOptionLine = (
 };
 
 export const searchSiteRates = async (keyword: string, w: number, l: number, h: number = 2.6) => {
-  const kw = normNoSpace(keyword);
+  let kw = normNoSpace(keyword);
   if (!kw) return { list: [] };
+
+  // ✅ 마침표로 끝나면 정확한 단어 매칭
+  const exactMatch = kw.endsWith('.');
+  if (exactMatch) {
+    kw = kw.slice(0, -1); // 마침표 제거
+  }
 
   const W = Number(w || 0);
   const L = Number(l || 0);
@@ -193,7 +199,6 @@ export const searchSiteRates = async (keyword: string, w: number, l: number, h: 
   const { data, error } = await supabase.from('site_rates').select('*');
   if (error || !data) return { list: [] };
 
-  // ✅ 높이 3m 이상이면 1.5배
   const heightMultiplier = H >= 3 ? 1.5 : 1;
 
   const list: any[] = [];
@@ -203,21 +208,28 @@ export const searchSiteRates = async (keyword: string, w: number, l: number, h: 
     if (!k && !a) continue;
 
     const hay = `${k} ${a}`;
-    if (!matchKorean(hay, kw)) continue;
+    
+    // ✅ 정확한 매칭 vs 부분 매칭
+    let matched = false;
+    if (exactMatch) {
+      // 쉼표나 공백으로 분리된 단어 중 정확히 일치하는지 확인
+      const words = hay.split(/[,\s]+/).map(w => w.trim().toLowerCase());
+      matched = words.includes(kw.toLowerCase());
+    } else {
+      matched = matchKorean(hay, kw);
+    }
+    
+    if (!matched) continue;
 
-    // 기본 운송비 (세로 길이 기준)
     const isLong = L >= 9;
     const deliveryBase = isLong ? Number(r.delivery_39 || 0) : Number(r.delivery_36 || 0);
     
-    // 광폭(4미터) 추가금: 4x6은 wide_add, 4x9는 wide_39
     let wideAdd = 0;
     if (W >= 4) {
       wideAdd = isLong ? Number(r.wide_39 || 0) : Number(r.wide_add || 0);
     }
     
-    // ✅ 높이 배수 적용
     const delivery = Math.round((deliveryBase + wideAdd) * heightMultiplier);
-    
     const priority = Number(r.priority || 9999);
 
     list.push({
