@@ -164,6 +164,19 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
+  // ✅ 행 상태 판단 함수
+  const getRowStatus = (c: ContractQuote) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // 완료 상태: 입금완료 + 출고일이 오늘 또는 이전
+    const isCompleted = c.deposit_status === "완료" && c.delivery_date && new Date(c.delivery_date) <= today;
+    // 미완료 상태: 입금이 "완료"가 아닌 모든 경우 (빈값, 계약금, 미입금 등)
+    const isNotPaid = c.deposit_status !== "완료";
+    
+    return { isCompleted, isNotPaid };
+  };
+
   const thStyle: React.CSSProperties = {
     padding: "10px 8px",
     border: "1px solid #1e4a6e",
@@ -199,7 +212,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
         </div>
       ) : (
         <div style={{ overflowX: "auto", background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e5e7eb", borderTop: "none" }}>
-          <table className="contract-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table className="contract-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px", fontSize: 13 }}>
             <thead>
               <tr>
                 <th style={thStyle}>구분</th>
@@ -220,167 +233,181 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
               </tr>
             </thead>
             <tbody>
-              {contracts.map((c) => (
-                <tr
-                  key={c.quote_id}
-                  style={{
-                    background: c.delivery_date ? "#e8f5e9" : "#fff",
-                    borderBottom: "1px solid #eee"
-                  }}
-                >
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <select
-                      value={c.contract_type || "order"}
-                      onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                    >
-                      <option value="order">수주</option>
-                      <option value="branch">영업소</option>
-                      <option value="used">중고</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                    {c.contract_date || "-"}
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              {contracts.map((c) => {
+                const { isCompleted, isNotPaid } = getRowStatus(c);
+                
+                // 배경색 결정: 완료 → 회색, 출고일만 있음 → 연두색, 기본 → 흰색
+                let bgColor = "#fff";
+                if (isCompleted) {
+                  bgColor = "#d0d0d0";
+                } else if (c.delivery_date) {
+                  bgColor = "#e8f5e9";
+                }
+                
+                return (
+                  <tr
+                    key={c.quote_id}
+                    style={{
+                      background: bgColor,
+                      outline: isNotPaid && !isCompleted ? "2px solid #dc3545" : "none",
+                      outlineOffset: "-1px",
+                      opacity: isCompleted ? 0.6 : 1,
+                    }}
+                  >
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.contract_type || "order"}
+                        onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="order">수주</option>
+                        <option value="branch">영업소</option>
+                        <option value="used">중고</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      {c.contract_date || "-"}
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <input
+                          value={c.drawing_no || ""}
+                          onChange={(e) => updateField(c.quote_id, "drawing_no", e.target.value)}
+                          style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
+                          placeholder={String(nextDrawingNo)}
+                        />
+                        {!c.drawing_no && (
+                          <button
+                            onClick={() => autoFillDrawingNo(c.quote_id)}
+                            style={{
+                              padding: "2px 6px",
+                              background: "#2e5b86",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 4,
+                              fontSize: 10,
+                              cursor: "pointer",
+                            }}
+                            title={`${nextDrawingNo}번 자동입력`}
+                          >
+                            {nextDrawingNo}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      {c.spec || "-"}
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.bank_account || ""}
+                        onChange={(e) => updateField(c.quote_id, "bank_account", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="">-</option>
+                        <option value="현대">현대</option>
+                        <option value="국민">국민</option>
+                        <option value="기업">기업</option>
+                        <option value="현금영수증">현금영수증</option>
+                        <option value="현찰">현찰</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.tax_invoice || ""}
+                        onChange={(e) => updateField(c.quote_id, "tax_invoice", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="">-</option>
+                        <option value="완료">완료</option>
+                        <option value="계약금만">계약금만</option>
+                        <option value="대기">대기</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.deposit_status || ""}
+                        onChange={(e) => updateField(c.quote_id, "deposit_status", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="">-</option>
+                        <option value="완료">완료</option>
+                        <option value="계약금">계약금</option>
+                        <option value="미입금">미입금</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", fontWeight: 700 }}>
+                      {c.customer_name || "-"}
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
+                      {summarizeOptions(c.items)}
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                       <input
-                        value={c.drawing_no || ""}
-                        onChange={(e) => updateField(c.quote_id, "drawing_no", e.target.value)}
-                        style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
-                        placeholder={String(nextDrawingNo)}
+                        type="checkbox"
+                        checked={c.special_order || false}
+                        onChange={(e) => updateField(c.quote_id, "special_order", e.target.checked)}
                       />
-                      {!c.drawing_no && (
-                        <button
-                          onClick={() => autoFillDrawingNo(c.quote_id)}
-                          style={{
-                            padding: "2px 6px",
-                            background: "#2e5b86",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 4,
-                            fontSize: 10,
-                            cursor: "pointer",
-                          }}
-                          title={`${nextDrawingNo}번 자동입력`}
-                        >
-                          {nextDrawingNo}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                    {c.spec || "-"}
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <select
-                      value={c.bank_account || ""}
-                      onChange={(e) => updateField(c.quote_id, "bank_account", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                    >
-                      <option value="">-</option>
-                      <option value="현대">현대</option>
-                      <option value="국민">국민</option>
-                      <option value="기업">기업</option>
-                      <option value="현금영수증">현금영수증</option>
-                      <option value="현찰">현찰</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <select
-                      value={c.tax_invoice || ""}
-                      onChange={(e) => updateField(c.quote_id, "tax_invoice", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                    >
-                      <option value="">-</option>
-                      <option value="완료">완료</option>
-                      <option value="계약금만">계약금만</option>
-                      <option value="대기">대기</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <select
-                      value={c.deposit_status || ""}
-                      onChange={(e) => updateField(c.quote_id, "deposit_status", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                    >
-                      <option value="">-</option>
-                      <option value="완료">완료</option>
-                      <option value="계약금">계약금</option>
-                      <option value="미입금">미입금</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", fontWeight: 700 }}>
-                    {c.customer_name || "-"}
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
-                    {summarizeOptions(c.items)}
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={c.special_order || false}
-                      onChange={(e) => updateField(c.quote_id, "special_order", e.target.checked)}
-                    />
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <input
-                      value={c.interior || ""}
-                      onChange={(e) => updateField(c.quote_id, "interior", e.target.value)}
-                      style={{ width: 35, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
-                      placeholder="-"
-                    />
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <input
-                      value={c.depositor || ""}
-                      onChange={(e) => updateField(c.quote_id, "depositor", e.target.value)}
-                      style={{ width: 50, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
-                      placeholder="입금자"
-                    />
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee" }}>
-                    <input
-                      type="date"
-                      value={c.delivery_date || ""}
-                      onChange={(e) => updateField(c.quote_id, "delivery_date", e.target.value)}
-                      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                    />
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                    <button
-                      onClick={() => setSelectedQuote(c)}
-                      style={{
-                        padding: "4px 8px",
-                        background: "#2e5b86",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        fontSize: 11,
-                        cursor: "pointer",
-                      }}
-                    >
-                      보기
-                    </button>
-                  </td>
-                  <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                    <button
-                      onClick={() => handleDelete(c.quote_id, c.customer_name)}
-                      style={{
-                        padding: "4px 8px",
-                        background: "#dc3545",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        fontSize: 11,
-                        cursor: "pointer",
-                      }}
-                    >
-                      삭제
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <input
+                        value={c.interior || ""}
+                        onChange={(e) => updateField(c.quote_id, "interior", e.target.value)}
+                        style={{ width: 35, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
+                        placeholder="-"
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <input
+                        value={c.depositor || ""}
+                        onChange={(e) => updateField(c.quote_id, "depositor", e.target.value)}
+                        style={{ width: 50, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                        placeholder="입금자"
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <input
+                        type="date"
+                        value={c.delivery_date || ""}
+                        onChange={(e) => updateField(c.quote_id, "delivery_date", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      <button
+                        onClick={() => setSelectedQuote(c)}
+                        style={{
+                          padding: "4px 8px",
+                          background: "#2e5b86",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 4,
+                          fontSize: 11,
+                          cursor: "pointer",
+                        }}
+                      >
+                        보기
+                      </button>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      <button
+                        onClick={() => handleDelete(c.quote_id, c.customer_name)}
+                        style={{
+                          padding: "4px 8px",
+                          background: "#dc3545",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 4,
+                          fontSize: 11,
+                          cursor: "pointer",
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
