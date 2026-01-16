@@ -58,7 +58,7 @@ export default function InventoryPage({
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
     qty: 1,
-    deposit_status: "",
+    deposit_status: "대기",
   });
 
   const loadInventory = async () => {
@@ -109,13 +109,13 @@ export default function InventoryPage({
   const filteredItems = useMemo(() => {
     if (depositTab === "all") return allItems;
     if (depositTab === "paid") return allItems.filter(item => item.deposit_status === "완료");
-    if (depositTab === "unpaid") return allItems.filter(item => item.deposit_status !== "완료");
+    if (depositTab === "unpaid") return allItems.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기");
     return allItems;
   }, [allItems, depositTab]);
 
   // ✅ 탭별 카운트
   const paidCount = useMemo(() => allItems.filter(item => item.deposit_status === "완료").length, [allItems]);
-  const unpaidCount = useMemo(() => allItems.filter(item => item.deposit_status !== "완료").length, [allItems]);
+  const unpaidCount = useMemo(() => allItems.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기").length, [allItems]);
 
   // ✅ 작업지시 완료 카운트 (규격별)
   const completedCounts = useMemo(() => {
@@ -512,7 +512,7 @@ export default function InventoryPage({
               <tbody>
                 {filteredItems.map((item) => {
                   const isCompleted = item.inventory_status === "출고완료";
-                  const isUnpaid = item.deposit_status !== "완료";
+                 const isUnpaid = item.deposit_status !== "완료" && item.deposit_status !== "대기";
                   
                   return (
                     <tr
@@ -680,10 +680,11 @@ export default function InventoryPage({
                             fontWeight: 600
                           }}
                         >
-                          <option value="">-</option>
-                          <option value="완료">완료</option>
-                          <option value="계약금">계약금</option>
-                          <option value="미입금">미입금</option>
+                         <option value="">-</option>
+<option value="대기">대기</option>
+<option value="완료">완료</option>
+<option value="계약금">계약금</option>
+<option value="미입금">미입금</option>
                         </select>
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee" }}>
