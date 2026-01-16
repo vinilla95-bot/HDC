@@ -75,6 +75,7 @@ export default function InventoryPage({
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
+    qty: 1
   });
 const loadInventory = async () => {
   setLoading(true);
@@ -219,9 +220,9 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     return;
   }
 
-  const quote_id = `INV_${Date.now()}`;
+  const qty = (newItem as any).qty || 1;  // 수량
   
-  // 같은 월의 최대 도면번호 + 1
+  // 같은 월의 최대 도면번호 찾기
   const [year, month] = newItem.contract_date.split("-");
   const sameMonthItems = allItems.filter(item => {
     const [y, m] = (item.contract_date || "").split("-");
@@ -230,19 +231,24 @@ const updateField = async (quote_id: string, field: string, value: any) => {
   const maxNo = sameMonthItems.length > 0 
     ? Math.max(...sameMonthItems.map(item => Number(item.drawing_no) || 0))
     : 0;
-  const drawing_no = String(maxNo + 1);
 
-  const { error } = await supabase.from("inventory").insert({
-    quote_id,
-    contract_date: newItem.contract_date,
-    drawing_no,
-    customer_name: newItem.customer_name,
-    spec: newItem.spec,
-    inventory_status: newItem.inventory_status,
-    container_type: newItem.container_type,
-    total_amount: newItem.total_amount,
-    items: [],
-  });
+  // 여러 개 추가
+  const inserts = [];
+  for (let i = 0; i < qty; i++) {
+    inserts.push({
+      quote_id: `INV_${Date.now()}_${i}`,
+      contract_date: newItem.contract_date,
+      drawing_no: String(maxNo + 1 + i),
+      customer_name: newItem.customer_name,
+      spec: newItem.spec,
+      inventory_status: newItem.inventory_status,
+      container_type: newItem.container_type,
+      total_amount: newItem.total_amount,
+      items: [],
+    });
+  }
+
+  const { error } = await supabase.from("inventory").insert(inserts);
 
   if (error) {
     alert("추가 실패: " + error.message);
@@ -256,7 +262,7 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     inventory_status: "작업완료", 
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
-    total_amount: 0 
+    total_amount: 0,
   });
   loadInventory();
 };
@@ -634,14 +640,14 @@ const updateField = async (quote_id: string, field: string, value: any) => {
   />
 </td>
 
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        <input
-                          value={item.interior || ""}
-                          onChange={(e) => updateField(item.quote_id, "interior", e.target.value)}
-                          style={{ width: 35, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
-                          placeholder="-"
-                        />
-                      </td>
+                     <td style={{ padding: 8, border: "1px solid #eee" }}>
+  <input
+    defaultValue={item.interior || ""}
+    onBlur={(e) => updateField(item.quote_id, "interior", e.target.value)}
+    style={{ width: 120, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+    placeholder="메모"
+  />
+</td>
                       <td style={{ padding: 8, border: "1px solid #eee" }}>
                         <input
                           type="date"
@@ -749,7 +755,17 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                 ))}
               </select>
             </div>
-
+<div style={{ marginBottom: 12 }}>
+  <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label>
+  <input
+    type="number"
+    min={1}
+    max={20}
+    value={(newItem as any).qty || 1}
+    onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 } as any)}
+    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+  />
+</div>
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>발주처</label>
               <input
