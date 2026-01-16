@@ -84,27 +84,17 @@ const loadInventory = async () => {
     console.error("Load error:", error);
   }
   if (data) {
-    console.log("=== DB 원본 데이터 ===");
-    data.forEach(d => {
-      console.log(`날짜: ${d.contract_date}, 도면번호: ${d.drawing_no}, 타입: ${typeof d.drawing_no}`);
-    });
-    
     const sorted = [...data].sort((a, b) => {
-  const sorted = [...data].sort((a, b) => {
-  // 1. 날짜 최신순
-  const dateA = a.contract_date || "";
-  const dateB = b.contract_date || "";
-  if (dateA !== dateB) {
-    return dateB.localeCompare(dateA);
-  }
-  // 2. 같은 날짜면 도면번호 오름차순 (숫자로 변환)
-  const numA = Number(a.drawing_no) || 0;
-  const numB = Number(b.drawing_no) || 0;
-  return numA - numB;
-});
-      console.log("=== 정렬 후 ===");
-    sorted.forEach(d => {
-      console.log(`날짜: ${d.contract_date}, 도면번호: ${d.drawing_no}`);
+      // 1. 날짜 최신순
+      const dateA = a.contract_date || "";
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      // 2. 같은 날짜면 도면번호 오름차순
+      const numA = Number(a.drawing_no) || 0;
+      const numB = Number(b.drawing_no) || 0;
+      return numA - numB;
     });
     setAllItems(sorted as InventoryItem[]);
   }
