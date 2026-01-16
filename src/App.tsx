@@ -1,17 +1,19 @@
 // src/App.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import QuoteListPage from "./pages/QuoteListPage";
-import ContractListPage from "./pages/ContractListPage";
-import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
-import html2canvas from "html2canvas";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
+// import {
+//   DndContext,
+//   closestCenter,
+//   PointerSensor,
+//   useSensor,
+//   useSensors,
+//   DragEndEvent,
+// } from '@dnd-kit/core';
+// import {
+//   arrayMove,
+//   SortableContext,
+//   useSortable,
+//   verticalListSortingStrategy,
+// } from '@dnd-kit/sortable';
+// import { CSS } from '@dnd-kit/utilities';
 import {
   arrayMove,
   SortableContext,
@@ -439,24 +441,24 @@ useEffect(() => {
     setSites([]);
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  //const sensors = useSensors(
+   // useSensor(PointerSensor, {
+   //   activationConstraint: {
+      //  distance: 8,
+    //  },
+  //  })
+//  );
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setSelectedItems((items) => {
-        const oldIndex = items.findIndex((i: any) => i.key === active.id);
-        const newIndex = items.findIndex((i: any) => i.key === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
+//const handleDragEnd = (event: DragEndEvent) => {
+  //  const { active, over } = event;
+  //  if (over && active.id !== over.id) {
+   //   setSelectedItems((items) => {
+     //   const oldIndex = items.findIndex((i: any) => i.key === active.id);
+     //   const newIndex = items.findIndex((i: any) => i.key === over.id);
+     //   return arrayMove(items, oldIndex, newIndex);
+  //    });
+//    }
+//  };
 
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
