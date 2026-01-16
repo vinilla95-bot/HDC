@@ -711,11 +711,13 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
                       );
                     })}
                     {dayDeliveries.length > 3 && (
-  <div 
-    onClick={(e) => {
-      e.stopPropagation();
-      setSelectedDateItems({ date: dateKey, items: dayDeliveries });
-    }}
+  <div
+   // 캘린더 내 일정 항목 클릭 부분
+onClick={(e) => {
+  e.stopPropagation();  // ← 추가
+  setSelectedDelivery(d);
+  setEditForm(d);
+}}
     style={{
       fontSize: 10,
       color: "#2e5b86",
