@@ -49,28 +49,18 @@ const loadInventory = async () => {
   setLoading(true);
   const { data, error } = await supabase
     .from("inventory")
-    .select("*");
+    .select("*")
+    .order("contract_date", { ascending: false })
+    .order("drawing_no", { ascending: true });
     
   if (error) {
     console.error("Load error:", error);
   }
   if (data) {
-   const sorted = [...data].sort((a, b) => {
-  const dateA = a.contract_date || "";
-  const dateB = b.contract_date || "";
-  if (dateA !== dateB) {
-    return dateB.localeCompare(dateA);  // 날짜 최신순
-  }
-  // 같은 날짜면 도면번호 작은 순
-  const numA = parseInt(a.drawing_no) || 9999;
-  const numB = parseInt(b.drawing_no) || 9999;
-  return numA - numB;
-});
-    setAllItems(sorted as InventoryItem[]);
+    setAllItems(data as InventoryItem[]);
   }
   setLoading(false);
-};  // ← 여기서 함수 끝!
-
+};
 // ✅ useEffect는 함수 바깥에!
 useEffect(() => {
   loadInventory();
