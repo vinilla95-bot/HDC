@@ -1,16 +1,10 @@
-
-// TestInlineQuote.tsx
-// 경리나라 스타일 - 견적서 내 인라인 편집 + 드롭다운 검색
-// GitHub에 src/TestInlineQuote.tsx 로 추가하고
-// App.tsx 대신 이 파일을 import 해서 테스트
-
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+// src/TestInlineQuote.tsx
+import React from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import InventoryPage from "./pages/InventoryPage";
 import html2canvas from "html2canvas";
-
 import {
   supabase,
   calculateOptionLine,
@@ -18,9 +12,10 @@ import {
   saveQuoteToDb,
   insertNextVersionToDb,
 } from "./QuoteService";
-
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
+
+const { useEffect, useMemo, useRef, useState, useCallback } = React;
 
 // 초성 검색
 const CHOSUNG_LIST = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
@@ -112,7 +107,7 @@ export default function TestInlineQuote() {
 
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
-  const getFilteredOptions = (query: string) => {
+  const getFilteredOptions = useCallback((query: string) => {
     const q = String(query || "").trim();
     if (!q) return [];
     const matched = options.filter((o: any) => matchKorean(String(o.option_name || ""), q));
@@ -121,7 +116,7 @@ export default function TestInlineQuote() {
       return (String(a.option_name || "").toLowerCase().startsWith(qL) ? 0 : 1) - (String(b.option_name || "").toLowerCase().startsWith(qL) ? 0 : 1);
     });
     return matched.slice(0, 10);
-  };
+  }, [options]);
 
   const addEmptyRow = () => {
     const newRow: any = { key: `EMPTY_${Date.now()}`, optionId: "", optionName: "", displayName: "", unit: "EA", showSpec: "n", baseQty: 1, baseUnitPrice: 0, baseAmount: 0, displayQty: 1, customerUnitPrice: 0, finalAmount: 0, memo: "", months: 1, lineSpec: { w: form.w, l: form.l } };
@@ -229,7 +224,7 @@ export default function TestInlineQuote() {
     return (
       <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #333', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 1000, maxHeight: 250, overflowY: 'auto', ...style }}>
         {items.map((item, idx) => (
-          <div key={idx} onClick={() => onSelect(item)} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee', fontSize: 13 }} onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+          <div key={idx} onClick={() => onSelect(item)} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee', fontSize: 13 }} onMouseEnter={e => (e.currentTarget.style.background = '#f5f5f5')} onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
             {renderItem(item)}
           </div>
         ))}
@@ -242,7 +237,7 @@ export default function TestInlineQuote() {
     const [localQuery, setLocalQuery] = useState(item.displayName || "");
     const [showDropdown, setShowDropdown] = useState(false);
     const rowRef = useRef<HTMLTableRowElement>(null);
-    const filteredOpts = useMemo(() => getFilteredOptions(localQuery), [localQuery, options]);
+    const filteredOpts = useMemo(() => getFilteredOptions(localQuery), [localQuery]);
 
     const handleSelectOption = (opt: any) => {
       const res = calculateOptionLine(opt, form.w, form.l, form.h);
@@ -254,13 +249,13 @@ export default function TestInlineQuote() {
       setLocalQuery(rawName); setShowDropdown(false);
     };
 
-    useEffect(() => {
+    React.useEffect(() => {
       const handler = (e: MouseEvent) => { if (rowRef.current && !rowRef.current.contains(e.target as Node)) setShowDropdown(false); };
       document.addEventListener('mousedown', handler);
       return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    useEffect(() => { setLocalQuery(item.displayName || ""); }, [item.displayName]);
+    React.useEffect(() => { setLocalQuery(item.displayName || ""); }, [item.displayName]);
 
     const unitSupply = Number(item.customerUnitPrice ?? 0), qty = Number(item.displayQty ?? 0);
     const supply = unitSupply * qty, vat = Math.round(supply * 0.1);
@@ -353,7 +348,7 @@ export default function TestInlineQuote() {
 
   // 실시간 견적 화면
   const rtScreen = (
-    <>
+    <React.Fragment>
       <NavBar current="rt" />
       <div style={{ padding: '12px 20px', background: '#f8f9fa', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -370,7 +365,7 @@ export default function TestInlineQuote() {
         </div>
       </div>
       <div style={{ padding: 20, background: '#e8e8e8', minHeight: 'calc(100vh - 120px)' }}><InlineQuoteSheet /></div>
-    </>
+    </React.Fragment>
   );
 
   if (view === "list") return <div style={{ minHeight: "100vh" }}><NavBar current="list" /><QuoteListPage onGoLive={() => setView("rt")} onConfirmContract={() => setView("contract")} /></div>;
