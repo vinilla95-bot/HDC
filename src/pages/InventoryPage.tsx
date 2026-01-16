@@ -608,10 +608,12 @@ useEffect(() => {
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
   <input
-    value={item.drawing_no || ""}
-    onChange={(e) => {
+    defaultValue={item.drawing_no || ""}
+    onBlur={(e) => {
       const val = e.target.value.replace(/\D/g, "").slice(0, 3);
-      updateField(item.quote_id, "drawing_no", val);
+      if (val !== item.drawing_no) {
+        updateField(item.quote_id, "drawing_no", val);
+      }
     }}
     style={{ 
       width: 40, 
