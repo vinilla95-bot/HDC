@@ -95,6 +95,17 @@ export default function App() {
   return 'rt';
 });
 
+// ✅ 이 useEffect 추가
+useEffect(() => {
+  const url = new URL(window.location.href);
+  if (view === 'rt') {
+    url.searchParams.delete('view');
+  } else {
+    url.searchParams.set('view', view);
+  }
+  window.history.replaceState({}, '', url.toString());
+}, [view]);
+  
   const [bizcards, setBizcards] = useState<Bizcard[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState<string>("");
 
