@@ -145,8 +145,8 @@ useEffect(() => {
     return grouped;
   }, [waitingItems]);
 
-  // ✅ 업데이트
-  const updateField = async (quote_id: string, field: string, value: any) => {
+// ✅ 업데이트
+const updateField = async (quote_id: string, field: string, value: any) => {
   const { error } = await supabase
     .from("inventory")
     .update({ [field]: value })
@@ -158,20 +158,8 @@ useEffect(() => {
     return;
   }
 
-  // 값 업데이트 + 재정렬
-  setAllItems(prev => {
-    const updated = prev.map(c =>
-      c.quote_id === quote_id ? { ...c, [field]: value } : c
-    );
-    return updated.sort((a, b) => {
-      const dateA = a.contract_date || "";
-      const dateB = b.contract_date || "";
-      if (dateA !== dateB) {
-        return dateB.localeCompare(dateA);
-      }
-      return Number(a.drawing_no) - Number(b.drawing_no);
-    });
-  });
+  // 수정 후 DB에서 다시 불러오기 (정렬 포함)
+  loadInventory();
 };
    
 
