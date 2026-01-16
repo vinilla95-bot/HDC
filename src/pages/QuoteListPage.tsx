@@ -263,11 +263,12 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     ].join(",");
 
     let query = supabase
-      .from("quotes")
-      .select(selectCols)
-      .is("source", null)  // ✅ 이 줄 추가 - 계약관리에서 직접 추가한 항목 제외
-      .order("created_at", { ascending: false })
-      .limit(200);
+  .from("quotes")
+  .select(selectCols)
+  .is("source", null)
+  .not("quote_id", "like", "SCHEDULE_%")  // ✅ 캘린더 일정 제외
+  .order("created_at", { ascending: false })
+  .limit(200);
     const kw = (keyword || "").trim();
     if (kw) {
       const like = `%${kw}%`;
