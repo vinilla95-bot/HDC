@@ -1,6 +1,7 @@
 // InlineEditTest.tsx - Supabase 연동 + 인라인 편집 테스트
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { supabase, calculateOptionLine } from "./QuoteService";
+import { supabase, calculateOptionLine, searchSiteRates } from "./QuoteService";
 // 초성 검색 유틸리티
 const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 
@@ -149,7 +150,7 @@ function InlineItemCell({
                     borderBottom: "1px solid #eee",
                     fontSize: 12,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fffde7")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                 >
                   <div style={{ fontWeight: 700 }}>{highlightMatch(opt.option_name, searchQuery)}</div>
@@ -171,13 +172,10 @@ function InlineItemCell({
     <td
       className="c wrap"
       onClick={() => setIsEditing(true)}
-      style={{ cursor: "pointer", background: "#fffde7" }}
+      style={{ cursor: "pointer", background: "#e3f2fd" }}
       title="클릭하여 품목 변경"
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span style={{ flex: 1 }}>{String(item.displayName || "")}</span>
-        <span style={{ color: "#2e5b86", fontSize: 10 }}>🔍</span>
-      </div>
+      <span>{String(item.displayName || "")}</span>
     </td>
   );
 }
@@ -285,7 +283,7 @@ function EmptyRowCell({
                       borderBottom: "1px solid #eee",
                       fontSize: 12,
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fffde7")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                   >
                     <div style={{ fontWeight: 700 }}>{highlightMatch(opt.option_name, searchQuery)}</div>
@@ -399,7 +397,7 @@ function EditableNumberCell({
       onClick={() => { setTempValue(String(value)); setIsEditing(true); }}
       style={{
         cursor: "pointer",
-        background: "#fffde7",
+        background: "#e3f2fd",
         padding: "2px 4px",
         display: "block",
         textAlign: "right",
@@ -680,7 +678,42 @@ export default function InlineEditTest() {
           면적: {(form.w * form.l).toFixed(2)}㎡ | 옵션 {options.length}개 로드됨
         </div>
       </div>
+ {/* 현장지역 검색 추가 */}
+        <div style={{ marginTop: 12 }}>
+          <label style={{ fontSize: 12, color: "#666" }}>현장지역 (운송비 검색)</label>
+          <input
+            value={siteQuery}
+            onChange={(e) => handleSiteSearch(e.target.value)}
+            placeholder="예: 강릉, ㄱㄹ (초성 가능)"
+            style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4, marginTop: 4 }}
+          />
+          {sites.length > 0 && (
+            <div style={{ marginTop: 8, border: "1px solid #ddd", borderRadius: 4, maxHeight: 200, overflowY: "auto" }}>
+              {sites.map((s: any, i: number) => (
+                <div key={i} style={{ padding: "8px 12px", borderBottom: "1px solid #eee" }}>
+                  <div style={{ fontWeight: 700 }}>{s.alias}</div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                    <button
+                      onClick={() => handleAddDelivery(s, "일반")}
+                      style={{ padding: "4px 8px", fontSize: 11, cursor: "pointer" }}
+                    >
+                      일반운송 {fmt(s.delivery)}원
+                    </button>
+                    <button
+                      onClick={() => handleAddDelivery(s, "크레인")}
+                      style={{ padding: "4px 8px", fontSize: 11, cursor: "pointer" }}
+                    >
+                      크레인 {fmt(s.crane)}원
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
+      <div className="a4Wrap">
       <div className="a4Wrap">
         <div className="a4Sheet">
           {/* 헤더 */}
