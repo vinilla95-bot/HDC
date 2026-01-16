@@ -45,6 +45,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     contract_type: "order",
     site_addr: "",
     memo: "",
+    delivery_color: "auto" as ColorType,
   });
 
   const loadDeliveries = async () => {
@@ -366,6 +367,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
         spec: newSchedule.spec,
         site_addr: newSchedule.site_addr,
         memo: newSchedule.memo,
+        delivery_color: newSchedule.delivery_color,
         total_amount: 0,
         items: [],
       });
@@ -385,6 +387,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
       spec: newSchedule.spec,
       site_addr: newSchedule.site_addr,
       memo: newSchedule.memo,
+      delivery_color: newSchedule.delivery_color,
       total_amount: 0,
       items: [],
     };
@@ -399,6 +402,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
       contract_type: "order",
       site_addr: "",
       memo: "",
+      delivery_color: "auto",
     });
   };
 
@@ -860,6 +864,30 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
                   placeholder="메모 입력"
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
                 />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setNewSchedule({ ...newSchedule, delivery_color: c })}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: 6,
+                        border: newSchedule.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
+                        background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
+                        color: c === "auto" ? "#666" : colorStyles[c].text,
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
