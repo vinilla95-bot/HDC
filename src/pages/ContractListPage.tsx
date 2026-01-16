@@ -236,12 +236,10 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
               {contracts.map((c) => {
                 const { isCompleted, isNotPaid } = getRowStatus(c);
                 
-                // 배경색 결정: 완료 → 회색, 출고일만 있음 → 연두색, 기본 → 흰색
+                // 배경색 결정: 완료 → 회색, 기본 → 흰색
                 let bgColor = "#fff";
                 if (isCompleted) {
                   bgColor = "#d0d0d0";
-                } else if (c.delivery_date) {
-                  bgColor = "#e8f5e9";
                 }
                 
                 return (
@@ -337,10 +335,48 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                       </select>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", fontWeight: 700 }}>
-                      {c.customer_name || "-"}
+                      {activeTab === "branch" ? (
+                        <select
+                          value={c.customer_name || ""}
+                          onChange={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
+                          style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700 }}
+                        >
+                          <option value="">-</option>
+                          <option value="라인">라인</option>
+                          <option value="한진">한진</option>
+                          <option value="한진더조은">한진더조은</option>
+                          <option value="동부A">동부A</option>
+                          <option value="동부B">동부B</option>
+                          <option value="태광">태광</option>
+                        </select>
+                      ) : (
+                        <input
+                          value={c.customer_name || ""}
+                          onChange={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
+                          style={{ width: 70, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontWeight: 700 }}
+                          placeholder="발주처"
+                        />
+                      )}
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
-                      {summarizeOptions(c.items)}
+                      <input
+                        value={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
+                        onChange={(e) => {
+                          const newItems = c.items && c.items.length > 0 
+                            ? [{ ...c.items[0], displayName: e.target.value }]
+                            : [{ displayName: e.target.value }];
+                          updateField(c.quote_id, "items", newItems);
+                        }}
+                        style={{ 
+                          width: "100%", 
+                          padding: 4, 
+                          border: "1px solid #ddd", 
+                          borderRadius: 4, 
+                          fontSize: 11,
+                          boxSizing: "border-box"
+                        }}
+                        placeholder="옵션 입력"
+                      />
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                       <input
