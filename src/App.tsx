@@ -1538,7 +1538,24 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
-function InlineItemCell({ ... }) {
+// 인라인 품목 셀 (기존 품목 클릭 시 검색/변경)
+function InlineItemCell({
+  item,
+  options,
+  form,
+  calculateOptionLine,
+  recomputeRow,
+  setSelectedItems,
+  fmt,
+}: {
+  item: any;
+  options: any[];
+  form: any;
+  calculateOptionLine: (opt: any, w: number, l: number, h: number) => any;
+  recomputeRow: (row: any) => any;
+  setSelectedItems: React.Dispatch<React.SetStateAction<any[]>>;
+  fmt: (n: number) => string;
+}) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [showDropdown, setShowDropdown] = React.useState(false);
@@ -1558,10 +1575,14 @@ function InlineItemCell({ ... }) {
     return matched.slice(0, 15);
   }, [searchQuery, options]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-          inputRef.current && !inputRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
         setShowDropdown(false);
         setIsEditing(false);
       }
@@ -1589,14 +1610,18 @@ function InlineItemCell({ ... }) {
       displayName,
       unit: rent ? "개월" : res.unit || "EA",
       showSpec: String(opt.show_spec || "").toLowerCase(),
-      baseQty, baseUnitPrice, baseAmount, displayQty, customerUnitPrice,
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty,
+      customerUnitPrice,
       finalAmount: Math.round(displayQty * customerUnitPrice),
       months: defaultMonths,
       memo: res.memo || "",
       lineSpec: { w: form.w, l: form.l, h: form.h },
     });
 
-    setSelectedItems((prev: any[]) => prev.map((r: any) => r.key === item.key ? updatedRow : r));
+    setSelectedItems((prev: any[]) => prev.map((r: any) => (r.key === item.key ? updatedRow : r)));
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
@@ -1609,26 +1634,60 @@ function InlineItemCell({ ... }) {
           ref={inputRef}
           type="text"
           value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);
+          }}
           onFocus={() => setShowDropdown(true)}
           placeholder="품목 검색 (초성 가능)..."
           autoFocus
-          style={{ width: "100%", padding: "6px 8px", border: "2px solid #2e5b86", fontSize: 12, boxSizing: "border-box" }}
+          style={{
+            width: "100%",
+            padding: "6px 8px",
+            border: "2px solid #2e5b86",
+            fontSize: 12,
+            boxSizing: "border-box",
+          }}
         />
         {showDropdown && (
-          <div ref={dropdownRef} style={{
-            position: "absolute", top: "100%", left: 0, right: 0, maxHeight: 250, overflowY: "auto",
-            background: "#fff", border: "1px solid #ccc", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 1000,
-          }}>
-            {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-              <div key={opt.option_id} onClick={() => handleSelectOption(opt)}
-                style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#fffde7")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
-                <div style={{ fontWeight: 700 }}>{highlightMatch(opt.option_name, searchQuery)}</div>
-                <div style={{ fontSize: 10, color: "#888" }}>{opt.unit || "EA"} · {fmt(Number(opt.unit_price || 0))}원</div>
-              </div>
-            )) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>}
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              maxHeight: 250,
+              overflowY: "auto",
+              background: "#fff",
+              border: "1px solid #ccc",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              zIndex: 1000,
+            }}
+          >
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt: any) => (
+                <div
+                  key={opt.option_id}
+                  onClick={() => handleSelectOption(opt)}
+                  style={{
+                    padding: "8px 10px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee",
+                    fontSize: 12,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fffde7")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                >
+                  <div style={{ fontWeight: 700 }}>{highlightMatch(opt.option_name, searchQuery)}</div>
+                  <div style={{ fontSize: 10, color: "#888" }}>
+                    {opt.unit || "EA"} · {fmt(Number(opt.unit_price || 0))}원
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>
+            )}
           </div>
         )}
       </td>
@@ -1636,8 +1695,12 @@ function InlineItemCell({ ... }) {
   }
 
   return (
-    <td className="c wrap" onClick={() => setIsEditing(true)}
-      style={{ cursor: "pointer", position: "relative", background: "#fffde7" }} title="클릭하여 품목 변경">
+    <td
+      className="c wrap"
+      onClick={() => setIsEditing(true)}
+      style={{ cursor: "pointer", position: "relative", background: "#fffde7" }}
+      title="클릭하여 품목 변경"
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <span style={{ flex: 1 }}>{String(item.displayName || "")}</span>
         <span style={{ color: "#2e5b86", fontSize: 10, flexShrink: 0 }}>🔍</span>
@@ -1647,7 +1710,21 @@ function InlineItemCell({ ... }) {
 }
 
 // 빈 행 클릭 시 품목 추가
-function EmptyRowCell({ ... }) {
+function EmptyRowCell({
+  options,
+  form,
+  calculateOptionLine,
+  recomputeRow,
+  setSelectedItems,
+  fmt,
+}: {
+  options: any[];
+  form: any;
+  calculateOptionLine: (opt: any, w: number, l: number, h: number) => any;
+  recomputeRow: (row: any) => any;
+  setSelectedItems: React.Dispatch<React.SetStateAction<any[]>>;
+  fmt: (n: number) => string;
+}) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [showDropdown, setShowDropdown] = React.useState(false);
@@ -1667,10 +1744,14 @@ function EmptyRowCell({ ... }) {
     return matched.slice(0, 15);
   }, [searchQuery, options]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-          inputRef.current && !inputRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
         setShowDropdown(false);
         setIsEditing(false);
       }
@@ -1698,7 +1779,11 @@ function EmptyRowCell({ ... }) {
       displayName,
       unit: rent ? "개월" : res.unit || "EA",
       showSpec: String(opt.show_spec || "").toLowerCase(),
-      baseQty, baseUnitPrice, baseAmount, displayQty, customerUnitPrice,
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty,
+      customerUnitPrice,
       finalAmount: Math.round(displayQty * customerUnitPrice),
       months: defaultMonths,
       memo: res.memo || "",
@@ -1716,29 +1801,73 @@ function EmptyRowCell({ ... }) {
       <>
         <td className="c center">&nbsp;</td>
         <td className="c" style={{ position: "relative", padding: 0 }}>
-          <input ref={inputRef} type="text" value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-            onFocus={() => setShowDropdown(true)} placeholder="품목 검색..." autoFocus
-            style={{ width: "100%", padding: "6px 8px", border: "2px solid #2e5b86", fontSize: 12, boxSizing: "border-box" }}
+          <input
+            ref={inputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="품목 검색..."
+            autoFocus
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              border: "2px solid #2e5b86",
+              fontSize: 12,
+              boxSizing: "border-box",
+            }}
           />
           {showDropdown && (
-            <div ref={dropdownRef} style={{
-              position: "absolute", top: "100%", left: 0, right: 0, maxHeight: 250, overflowY: "auto",
-              background: "#fff", border: "1px solid #ccc", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 1000,
-            }}>
-              {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-                <div key={opt.option_id} onClick={() => handleSelectOption(opt)}
-                  style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fffde7")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
-                  <div style={{ fontWeight: 700 }}>{highlightMatch(opt.option_name, searchQuery)}</div>
-                  <div style={{ fontSize: 10, color: "#888" }}>{opt.unit || "EA"} · {fmt(Number(opt.unit_price || 0))}원</div>
-                </div>
-              )) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>}
+            <div
+              ref={dropdownRef}
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                maxHeight: 250,
+                overflowY: "auto",
+                background: "#fff",
+                border: "1px solid #ccc",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                zIndex: 1000,
+              }}
+            >
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((opt: any) => (
+                  <div
+                    key={opt.option_id}
+                    onClick={() => handleSelectOption(opt)}
+                    style={{
+                      padding: "8px 10px",
+                      cursor: "pointer",
+                      borderBottom: "1px solid #eee",
+                      fontSize: 12,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fffde7")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                  >
+                    <div style={{ fontWeight: 700 }}>{highlightMatch(opt.option_name, searchQuery)}</div>
+                    <div style={{ fontSize: 10, color: "#888" }}>
+                      {opt.unit || "EA"} · {fmt(Number(opt.unit_price || 0))}원
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>
+              )}
             </div>
           )}
         </td>
-        <td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
       </>
     );
   }
@@ -1746,43 +1875,90 @@ function EmptyRowCell({ ... }) {
   return (
     <>
       <td className="c center">&nbsp;</td>
-      <td className="c" onClick={() => setIsEditing(true)} style={{ cursor: "pointer" }} title="클릭하여 품목 추가">
+      <td
+        className="c"
+        onClick={() => setIsEditing(true)}
+        style={{ cursor: "pointer" }}
+        title="클릭하여 품목 추가"
+      >
         <span style={{ color: "#999", fontSize: 11 }}>+ 클릭하여 품목 추가</span>
       </td>
-      <td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
     </>
   );
 }
 
 // 인라인 숫자 편집 셀
-function EditableNumberCell({ ... }) {
-const [isEditing, setIsEditing] = useState(false);
-const [searchQuery, setSearchQuery] = useState("");
-const inputRef = useRef<HTMLInputElement>(null);
-const filteredOptions = useMemo(() => { ... }, [...]);
-useEffect(() => { ... }, []);
+function EditableNumberCell({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: number;
+  onChange: (val: number) => void;
+  disabled?: boolean;
+}) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [tempValue, setTempValue] = React.useState(String(value));
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-    if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
   }, [isEditing]);
 
-  const handleBlur = () => { setIsEditing(false); onChange(Number(tempValue) || 0); };
+  const handleBlur = () => {
+    setIsEditing(false);
+    onChange(Number(tempValue) || 0);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleBlur();
-    else if (e.key === "Escape") { setTempValue(String(value)); setIsEditing(false); }
+    else if (e.key === "Escape") {
+      setTempValue(String(value));
+      setIsEditing(false);
+    }
   };
 
   if (disabled) return <span>{value.toLocaleString("ko-KR")}</span>;
+
   if (isEditing) {
     return (
-      <input ref={inputRef} type="number" value={tempValue}
-        onChange={(e) => setTempValue(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown}
-        style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "2px solid #2e5b86", fontSize: 12, boxSizing: "border-box" }}
+      <input
+        ref={inputRef}
+        type="number"
+        value={tempValue}
+        onChange={(e) => setTempValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: "100%",
+          padding: "2px 4px",
+          textAlign: "right",
+          border: "2px solid #2e5b86",
+          fontSize: 12,
+          boxSizing: "border-box",
+        }}
       />
     );
   }
+
   return (
-    <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }}
-      style={{ cursor: "pointer", background: "#fffde7", padding: "2px 4px", display: "block" }} title="클릭하여 수정">
+    <span
+      onClick={() => {
+        setTempValue(String(value));
+        setIsEditing(true);
+      }}
+      style={{ cursor: "pointer", background: "#fffde7", padding: "2px 4px", display: "block" }}
+      title="클릭하여 수정"
+    >
       {value.toLocaleString("ko-KR")}
     </span>
   );
