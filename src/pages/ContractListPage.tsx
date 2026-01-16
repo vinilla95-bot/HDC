@@ -22,7 +22,7 @@ type ContractQuote = {
   contract_type: string;
 };
 
-type TabType = "order" | "branch" | "used";
+type TabType = "order" | "branch" | "used" | "rental";
 
 export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<TabType>("order");
@@ -210,6 +210,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
           {activeTab === "order" && "수주 데이터가 없습니다."}
           {activeTab === "branch" && "영업소 데이터가 없습니다."}
           {activeTab === "used" && "중고 데이터가 없습니다."}
+          {activeTab === "rental" && "임대 데이터가 없습니다."} 
         </div>
       ) : (
         <div style={{ overflowX: "auto", background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e5e7eb", borderTop: "none" }}>
@@ -455,6 +456,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const orderCount = allContracts.filter(c => (c.contract_type || "order") === "order").length;
   const branchCount = allContracts.filter(c => c.contract_type === "branch").length;
   const usedCount = allContracts.filter(c => c.contract_type === "used").length;
+  const rentalCount = allContracts.filter(c => c.contract_type === "rental").length; 
 
   const currentMonthLabel = (() => {
     const now = new Date();
@@ -522,6 +524,12 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
         >
           📦 중고 ({usedCount})
         </button>
+        <button
+  style={tabStyle(activeTab === "rental")}
+  onClick={() => setActiveTab("rental")}
+>
+  🏠 임대 ({rentalCount})
+</button>
       </div>
 
       {/* 테이블 */}
@@ -563,6 +571,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                 <option value="order">수주</option>
                 <option value="branch">영업소</option>
                 <option value="used">중고</option>
+                <option value="rental">임대</option>
+                
               </select>
             </div>
 
