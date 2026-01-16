@@ -121,7 +121,7 @@ export default function InventoryPage({
   const completedCounts = useMemo(() => {
     const counts: { [key: string]: number } = { "3x3": 0, "3x4": 0, "3x6": 0, "3x9": 0 };
     allItems
-     .filter(item => item.inventory_status === "작업완료" && item.inventory_status !== "찜")
+    .filter(item => item.inventory_status === "작업완료")
       .forEach(item => {
         const specKey = normalizeSpec(item.spec);
         if (specKey && specKey in counts) {
@@ -133,7 +133,7 @@ export default function InventoryPage({
 
   // ✅ 출고대기 항목
   const waitingItems = useMemo(() => {
-    return allItems.filter(item => item.inventory_status === "출고대기" && item.inventory_status !== "찜");
+   return allItems.filter(item => item.inventory_status === "출고대기");
   }, [allItems]);
 
   const waitingBySpec = useMemo(() => {
