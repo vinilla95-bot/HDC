@@ -174,10 +174,7 @@ useEffect(() => {
   });
 };
 
-    setAllItems(prev => prev.map(c =>
-      c.quote_id === quote_id ? { ...c, [field]: value } : c
-    ));
-  };
+   
 
   // ✅ 구분 클릭 시 해당 항목을 quotes 테이블로 이동
   const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
