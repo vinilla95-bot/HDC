@@ -147,16 +147,32 @@ useEffect(() => {
 
   // ✅ 업데이트
   const updateField = async (quote_id: string, field: string, value: any) => {
-    const { error } = await supabase
-      .from("inventory")
-      .update({ [field]: value })
-      .eq("quote_id", quote_id);
+  const { error } = await supabase
+    .from("inventory")
+    .update({ [field]: value })
+    .eq("quote_id", quote_id);
 
-    if (error) {
-      console.error("Update error:", error);
-      alert(`업데이트 실패: ${error.message}`);
-      return;
-    }
+  if (error) {
+    console.error("Update error:", error);
+    alert(`업데이트 실패: ${error.message}`);
+    return;
+  }
+
+  setAllItems(prev => {
+    const updated = prev.map(c =>
+      c.quote_id === quote_id ? { ...c, [field]: value } : c
+    );
+    // 재정렬
+    return updated.sort((a, b) => {
+      const dateA = a.contract_date || "";
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      return Number(a.drawing_no) - Number(b.drawing_no);
+    });
+  });
+};
 
     setAllItems(prev => prev.map(c =>
       c.quote_id === quote_id ? { ...c, [field]: value } : c
