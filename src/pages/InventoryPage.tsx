@@ -624,12 +624,14 @@ const updateField = async (quote_id: string, field: string, value: any) => {
   <input
     key={item.quote_id}
     defaultValue={item.drawing_no || ""}
+    onBlur={(e) => {
+      const val = (e.target as HTMLInputElement).value.replace(/\D/g, "").slice(0, 3);
+      if (val && val !== item.drawing_no) {
+        updateField(item.quote_id, "drawing_no", val);
+      }
+    }}
     onKeyDown={(e) => {
       if (e.key === "Enter") {
-        const val = (e.target as HTMLInputElement).value.replace(/\D/g, "").slice(0, 3);
-        if (val && val !== item.drawing_no) {
-          updateField(item.quote_id, "drawing_no", val);
-        }
         (e.target as HTMLInputElement).blur();
       }
     }}
