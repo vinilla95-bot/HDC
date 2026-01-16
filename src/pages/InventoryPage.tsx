@@ -158,11 +158,11 @@ useEffect(() => {
     return;
   }
 
+  // 값 업데이트 + 재정렬
   setAllItems(prev => {
     const updated = prev.map(c =>
       c.quote_id === quote_id ? { ...c, [field]: value } : c
     );
-    // 재정렬
     return updated.sort((a, b) => {
       const dateA = a.contract_date || "";
       const dateB = b.contract_date || "";
@@ -173,7 +173,6 @@ useEffect(() => {
     });
   });
 };
-
    
 
   // ✅ 구분 클릭 시 해당 항목을 quotes 테이블로 이동
