@@ -147,6 +147,7 @@ export default function InventoryPage({
       bank_account: item.bank_account || "",
       tax_invoice: item.tax_invoice || "",
       depositor: item.depositor || "",
+      source: "contract",
     });
 
     if (insertError) {
@@ -534,8 +535,8 @@ export default function InventoryPage({
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee" }}>
                         <input
-                          value={item.customer_name || ""}
-                          onChange={(e) => updateField(item.quote_id, "customer_name", e.target.value)}
+  defaultValue={item.customer_name || ""}
+  onBlur={(e) => updateField(item.quote_id, "customer_name", e.target.value)}
                           style={{ width: 80, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
                           placeholder="발주처"
                         />
