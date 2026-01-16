@@ -126,6 +126,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
       spec: newItem.spec,
       total_amount: newItem.total_amount,
       items: [],
+      source: "contract",
     });
 
     if (error) {
