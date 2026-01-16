@@ -84,16 +84,16 @@ const loadInventory = async () => {
     console.error("Load error:", error);
   }
   if (data) {
-    const sorted = [...data].sort((a, b) => {
+  const sorted = [...data].sort((a, b) => {
   // 1. 날짜 최신순
-  const dateA = a.contract_date || "0000-00-00";
-  const dateB = b.contract_date || "0000-00-00";
+  const dateA = a.contract_date || "";
+  const dateB = b.contract_date || "";
   if (dateA !== dateB) {
-    return dateB.localeCompare(dateA);  // 최신순
+    return dateB.localeCompare(dateA);
   }
-  // 2. 같은 날짜면 도면번호 오름차순
-  const numA = parseInt(a.drawing_no, 10) || 0;
-  const numB = parseInt(b.drawing_no, 10) || 0;
+  // 2. 같은 날짜면 도면번호 오름차순 (숫자로 변환)
+  const numA = Number(a.drawing_no) || 0;
+  const numB = Number(b.drawing_no) || 0;
   return numA - numB;
 });
     setAllItems(sorted as InventoryItem[]);
