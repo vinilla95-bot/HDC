@@ -247,9 +247,9 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     let query = supabase
       .from("quotes")
       .select(selectCols)
+      .is("source", null)  // ✅ 이 줄 추가 - 계약관리에서 직접 추가한 항목 제외
       .order("created_at", { ascending: false })
       .limit(200);
-
     const kw = (keyword || "").trim();
     if (kw) {
       const like = `%${kw}%`;
