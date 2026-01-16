@@ -385,26 +385,7 @@ const handleSiteSearch = async (val: string) => {
     return matchKoreanLocal(alias, val);
   });
 
-  const qLower = val.toLowerCase();
-  filtered.sort((a: any, b: any) => {
-    const aliasA = String(a.alias || "").toLowerCase();
-    const aliasB = String(b.alias || "").toLowerCase();
-
-    const regionsA = aliasA.split(',').map((r: string) => r.trim());
-    const regionsB = aliasB.split(',').map((r: string) => r.trim());
-
-    const startsA = regionsA.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
-    const startsB = regionsB.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
-    if (startsA !== startsB) return startsA - startsB;
-
-    const includesA = regionsA.some((r: string) => r.includes(qLower)) ? 0 : 1;
-    const includesB = regionsB.some((r: string) => r.includes(qLower)) ? 0 : 1;
-    return includesA - includesB;
-  });
-
-  setSites(filtered);
-  setStatusMsg(`검색 결과 ${filtered.length}개`);
-};
+ 
     const qLower = val.toLowerCase();
     filtered.sort((a: any, b: any) => {
       const aliasA = String(a.alias || "").toLowerCase();
