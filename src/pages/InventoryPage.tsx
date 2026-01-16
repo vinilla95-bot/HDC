@@ -594,12 +594,13 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                           placeholder="발주처"
                         />
                       </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
   <input
+    key={item.quote_id + "_" + item.drawing_no}
     defaultValue={item.drawing_no || ""}
     onBlur={(e) => {
       const val = e.target.value.replace(/\D/g, "").slice(0, 3);
-      if (val !== item.drawing_no) {
+      if (val && val !== item.drawing_no) {
         updateField(item.quote_id, "drawing_no", val);
       }
     }}
@@ -614,8 +615,7 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     }}
     placeholder="-"
   />
-</td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+</td>           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <input
                           value={item.interior || ""}
                           onChange={(e) => updateField(item.quote_id, "interior", e.target.value)}
