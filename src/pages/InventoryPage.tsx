@@ -47,33 +47,36 @@ export default function InventoryPage({
   });
 
   const loadInventory = async () => {
-    setLoading(true);
-   const { data, error } = await supabase
-  .from("inventory")
-  .select("*")
-  .order("drawing_no", { ascending: true });  // 도면번호 작은 수부터
-
-    if (error) {
-      console.error("Load error:", error);
-    }
-    if (data) {
+  setLoading(true);
+  const { data, error } = await supabase
+    .from("inventory")
+    .select("*");
+    
+  if (error) {
+    console.error("Load error:", error);
+  }
+  if (data) {
+    const sorted = [...data].sort((a, b) => {
+      // 1. 날짜 먼저 정렬 (오래된 순)
       const dateA = a.contract_date || "";
-    const dateB = b.contract_date || "";
-    if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
-    }
-    // 2. 같은 날짜면 도면번호 순 (작은 수부터)
-    const numA = parseInt(a.drawing_no) || 0;
-    const numB = parseInt(b.drawing_no) || 0;
-    return numA - numB;
-  });
-  setInventory(sorted as InventoryItem[]);
-}
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
+      }
+      // 2. 같은 날짜면 도면번호 순 (작은 수부터)
+      const numA = parseInt(a.drawing_no) || 0;
+      const numB = parseInt(b.drawing_no) || 0;
+      return numA - numB;
+    });
+    setInventory(sorted as InventoryItem[]);
+  }
+  setLoading(false);
+};
 
-  useEffect(() => {
-    loadInventory();
-  }, []);
-
+useEffect(() => {
+  loadInventory();
+}, []);
+  
   // ✅ 규격 정규화 함수
   const normalizeSpec = (spec: string) => {
     if (!spec) return null;
@@ -432,7 +435,7 @@ export default function InventoryPage({
                   <th style={thStyle}>규격</th>
                   <th style={thStyle}>발주처</th>
                   <th style={thStyle}>도면번호</th>
-                  <th style={thStyle}>내장</th>
+                  <th style={thStyle}>메모</th>
                   <th style={thStyle}>출고일</th>
                   <th style={thStyle}>삭제</th>
                 </tr>
