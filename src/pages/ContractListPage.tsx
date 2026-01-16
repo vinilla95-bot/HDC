@@ -454,25 +454,24 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                       )}
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
-                      <input
-                        value={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
-                        onChange={(e) => {
-                          const newItems = c.items && c.items.length > 0 
-                            ? [{ ...c.items[0], displayName: e.target.value }]
-                            : [{ displayName: e.target.value }];
-                          updateField(c.quote_id, "items", newItems);
-                        }}
-                        style={{ 
-                          width: "100%", 
-                          padding: 4, 
-                          border: "1px solid #ddd", 
-                          borderRadius: 4, 
-                          fontSize: 11,
-                          boxSizing: "border-box"
-                        }}
-                        placeholder="옵션 입력"
-                      />
-                    </td>
+  <input
+    key={c.quote_id}
+    defaultValue={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
+    onBlur={(e) => {
+      const newItems = [{ displayName: e.target.value }];
+      updateField(c.quote_id, "items", newItems);
+    }}
+    style={{ 
+      width: "100%", 
+      padding: 4, 
+      border: "1px solid #ddd", 
+      borderRadius: 4, 
+      fontSize: 11,
+      boxSizing: "border-box"
+    }}
+    placeholder="옵션 입력"
+  />
+</td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                       <input
                         type="checkbox"
