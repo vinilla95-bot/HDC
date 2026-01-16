@@ -18,7 +18,7 @@ type DeliveryItem = {
   delivery_color?: string;
 };
 
-type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto";
+type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto" | "purple" | "navy";
 
 export default function DeliveryCalendarPage({ onBack }: { onBack: () => void }) {
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
@@ -102,15 +102,17 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
   }, []);
 
   // ✅ 색상 스타일
-  const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
-    red: { bg: "#ffebee", border: "#f44336", text: "#c62828" },
-    orange: { bg: "#fff3e0", border: "#ff9800", text: "#e65100" },
-    blue: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
-    yellow: { bg: "#fffde7", border: "#ffc107", text: "#f57f17" },
-    gray: { bg: "#f5f5f5", border: "#9e9e9e", text: "#616161" },
-    green: { bg: "#e8f5e9", border: "#4caf50", text: "#2e7d32" },
-    auto: { bg: "#e8f5e9", border: "#4caf50", text: "#2e7d32" },
-  };
+ const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
+  red: { bg: "#ffebee", border: "#f44336", text: "#c62828" },
+  orange: { bg: "#fff3e0", border: "#ff9800", text: "#e65100" },
+  blue: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
+  yellow: { bg: "#fffde7", border: "#ffc107", text: "#f57f17" },
+  gray: { bg: "#f5f5f5", border: "#9e9e9e", text: "#616161" },
+  green: { bg: "#e8f5e9", border: "#4caf50", text: "#2e7d32" },
+  purple: { bg: "#f3e5f5", border: "#9c27b0", text: "#6a1b9a" },  // ✅ 보라색
+  navy: { bg: "#e8eaf6", border: "#3f51b5", text: "#283593" },    // ✅ 남색
+  auto: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
+};
 
   // ✅ 옵션 요약
   const summarizeOptions = (items: any[], short = true) => {
@@ -174,7 +176,10 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
 
   // ✅ 출고 라벨 생성
   const getDeliveryLabel = (item: DeliveryItem) => {
-    const type = item.contract_type || "order";
+    // 4. 기본 색상 (타입별) - 신품/임대/중고 파란색 통일
+const type = item.contract_type || "order";
+if (type === "branch") return "blue";  // 영업소
+return "blue";  // 신품, 임대, 중고 모두 파란색
     const spec = item.spec || "";
     const options = summarizeOptions(item.items, true);
     const site = getSiteName(item);
@@ -719,42 +724,35 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
       )}
 
       {/* 범례 */}
-      <div style={{
-        display: "flex",
-        gap: 12,
-        marginTop: 16,
-        padding: "12px 16px",
-        background: "#fff",
-        borderRadius: 12,
-        border: "1px solid #e5e7eb",
-        fontSize: 11,
-        flexWrap: "wrap",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.green.bg, borderLeft: `3px solid ${colorStyles.green.border}`, borderRadius: 2 }}></div>
-          <span>신품(입금)</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.blue.bg, borderLeft: `3px solid ${colorStyles.blue.border}`, borderRadius: 2 }}></div>
-          <span>영업소</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.orange.bg, borderLeft: `3px solid ${colorStyles.orange.border}`, borderRadius: 2 }}></div>
-          <span>중고</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.red.bg, borderLeft: `3px solid ${colorStyles.red.border}`, borderRadius: 2 }}></div>
-          <span>미입금</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.gray.bg, borderLeft: `3px solid ${colorStyles.gray.border}`, borderRadius: 2 }}></div>
-          <span>완료(출고지남)</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
-          <span style={{ fontWeight: 700 }}>크</span>
-          <span>= 크레인 운송</span>
-        </div>
-      </div>
+     {/* 범례 */}
+<div style={{
+  display: "flex",
+  gap: 12,
+  marginTop: 16,
+  padding: "12px 16px",
+  background: "#fff",
+  borderRadius: 12,
+  border: "1px solid #e5e7eb",
+  fontSize: 11,
+  flexWrap: "wrap",
+}}>
+  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+    <div style={{ width: 14, height: 14, background: colorStyles.blue.bg, borderLeft: `3px solid ${colorStyles.blue.border}`, borderRadius: 2 }}></div>
+    <span>신품/임대/중고</span>
+  </div>
+  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+    <div style={{ width: 14, height: 14, background: colorStyles.red.bg, borderLeft: `3px solid ${colorStyles.red.border}`, borderRadius: 2 }}></div>
+    <span>미입금</span>
+  </div>
+  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+    <div style={{ width: 14, height: 14, background: colorStyles.gray.bg, borderLeft: `3px solid ${colorStyles.gray.border}`, borderRadius: 2 }}></div>
+    <span>완료(출고지남)</span>
+  </div>
+  <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
+    <span style={{ fontWeight: 700 }}>크</span>
+    <span>= 크레인 운송</span>
+  </div>
+</div>
 
       {/* ✅ 일정 추가 모달 */}
       {showAddModal && (
@@ -1003,7 +1001,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
 
               {/* 색상 선택 */}
               <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
-                {(["red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
+              {(["red", "orange", "yellow", "green", "blue", "purple", "navy", "gray"] as ColorType[]).map((c) => (
                   <button
                     key={c}
                     onClick={() => handleColorChange(selectedDelivery.quote_id, c)}
@@ -1248,7 +1246,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
                         fontWeight: 600,
                       }}
                     >
-                      {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
+                    {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : c === "purple" ? "보라" : c === "navy" ? "남색" : "회색"}
                     </button>
                   ))}
                 </div>
