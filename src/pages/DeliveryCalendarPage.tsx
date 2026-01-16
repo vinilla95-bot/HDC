@@ -710,24 +710,30 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
                         </div>
                       );
                     })}
-                    {dayDeliveries.length > 3 && (
-  <div
-   // 캘린더 내 일정 항목 클릭 부분
-onClick={(e) => {
-  e.stopPropagation();  // ← 추가
-  setSelectedDelivery(d);
-  setEditForm(d);
-}}
-    style={{
-      fontSize: 10,
-      color: "#2e5b86",
-      padding: "2px 4px",
-      cursor: "pointer",
-      fontWeight: 700,
-    }}>
-    +{dayDeliveries.length - 3}건 더보기
-  </div>
-)}
+               {dayDeliveries.length > 3 && (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDateItems({ date: dateKey, items: dayDeliveries });
+                        }}
+                        style={{
+                          fontSize: 10,
+                          color: "#2e5b86",
+                          padding: "2px 4px",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                        }}
+                      >
+                        +{dayDeliveries.length - 3}건 더보기
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 범례 */}
      {/* 범례 */}
