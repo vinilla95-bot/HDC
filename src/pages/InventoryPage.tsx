@@ -69,6 +69,11 @@ export default function InventoryPage({
     setAllItems(sorted as InventoryItem[]);
   }
   setLoading(false);
+
+   // ✅ 이 부분 추가!
+useEffect(() => {
+  loadInventory();
+}, []);
 };
   // ✅ 규격 정규화 함수
   const normalizeSpec = (spec: string) => {
