@@ -55,23 +55,11 @@ const loadInventory = async () => {
     console.error("Load error:", error);
   }
   if (data) {
-    console.log("===== 정렬 전 =====");
-    data.forEach(d => console.log(`날짜: ${d.contract_date}, 도면: ${d.drawing_no}`));
-    
     const sorted = [...data].sort((a, b) => {
-      const dateA = a.contract_date || "0000-00-00";
-      const dateB = b.contract_date || "0000-00-00";
-      if (dateA !== dateB) {
-        return dateB.localeCompare(dateA);
-      }
       const numA = parseInt(a.drawing_no) || 0;
       const numB = parseInt(b.drawing_no) || 0;
       return numA - numB;
     });
-    
-    console.log("===== 정렬 후 =====");
-    sorted.forEach(d => console.log(`날짜: ${d.contract_date}, 도면: ${d.drawing_no}`));
-    
     setAllItems(sorted as InventoryItem[]);
   }
   setLoading(false);
