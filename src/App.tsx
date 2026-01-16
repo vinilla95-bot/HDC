@@ -1106,18 +1106,24 @@ const inventoryScreen = (
           })()
         ) : (
           <div id="quotePreviewApp">
-            <A4Quote
-              form={form}
-              computedItems={computedItems}
-              blankRows={blankRows}
-              fmt={fmt}
-              supply_amount={supply_amount}
-              vat_amount={vat_amount}
-              total_amount={total_amount}
-              bizcardName={selectedBizcard?.name || ""}
-            />
-          </div>
-        )}
+    <A4Quote
+      form={form}
+      computedItems={computedItems}
+      blankRows={blankRows}
+      fmt={fmt}
+      supply_amount={supply_amount}
+      vat_amount={vat_amount}
+      total_amount={total_amount}
+      bizcardName={selectedBizcard?.name || ""}
+      options={options}
+      onUpdateRow={updateRow}
+      onDeleteRow={deleteRow}
+      calculateOptionLine={calculateOptionLine}
+      recomputeRow={recomputeRow}
+      setSelectedItems={setSelectedItems}
+    />
+  </div>
+)}
       </div>
 
       {/* 모바일 전체화면 미리보기 */}
