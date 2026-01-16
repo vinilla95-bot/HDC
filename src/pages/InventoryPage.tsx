@@ -107,15 +107,7 @@ useEffect(() => {
   loadInventory();
 }, []);
 
-  const getDisplayDrawingNo = (item: InventoryItem) => {
-    const [year, month] = (item.contract_date || "").split("-");
-    const sameMonthItems = allItems.filter(i => {
-      const [y, m] = (i.contract_date || "").split("-");
-      return y === year && m === month;
-    });
-    const idx = sameMonthItems.findIndex(i => i.quote_id === item.quote_id);
-    return idx + 1;
-  };
+ 
   // ✅ 규격 정규화 함수
   const normalizeSpec = (spec: string) => {
     if (!spec) return null;
@@ -170,10 +162,11 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     return;
   }
 
-  // 수정 후 DB에서 다시 불러오기 (정렬 포함)
-  loadInventory();
+  // 로컬만 업데이트 (정렬 안 함)
+  setAllItems(prev => prev.map(c =>
+    c.quote_id === quote_id ? { ...c, [field]: value } : c
+  ));
 };
-   
 
   // ✅ 구분 클릭 시 해당 항목을 quotes 테이블로 이동
   const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
@@ -606,17 +599,33 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                           placeholder="발주처"
                         />
                       </td>
-                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700, fontSize: 14 }}>
-  {(() => {
-    const [year, month] = (item.contract_date || "").split("-");
-    const sameMonthItems = allItems.filter(i => {
-      const [y, m] = (i.contract_date || "").split("-");
-      return y === year && m === month;
-    });
-    const idx = sameMonthItems.findIndex(i => i.quote_id === item.quote_id);
-    return idx + 1;
-  })()}
-</td>    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+  <input
+    key={item.quote_id}
+    defaultValue={item.drawing_no || ""}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        const val = (e.target as HTMLInputElement).value.replace(/\D/g, "").slice(0, 3);
+        if (val && val !== item.drawing_no) {
+          updateField(item.quote_id, "drawing_no", val);
+        }
+        (e.target as HTMLInputElement).blur();
+      }
+    }}
+    style={{ 
+      width: 40, 
+      padding: 4, 
+      border: "1px solid #ddd", 
+      borderRadius: 4, 
+      textAlign: "center",
+      fontWeight: 700,
+      fontSize: 14
+    }}
+    placeholder="-"
+  />
+</td>
+
+                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <input
                           value={item.interior || ""}
                           onChange={(e) => updateField(item.quote_id, "interior", e.target.value)}
