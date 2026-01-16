@@ -57,10 +57,18 @@ export default function InventoryPage({
       console.error("Load error:", error);
     }
     if (data) {
-      setAllItems(data as InventoryItem[]);
+      const dateA = a.contract_date || "";
+    const dateB = b.contract_date || "";
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB);
     }
-    setLoading(false);
-  };
+    // 2. 같은 날짜면 도면번호 순 (작은 수부터)
+    const numA = parseInt(a.drawing_no) || 0;
+    const numB = parseInt(b.drawing_no) || 0;
+    return numA - numB;
+  });
+  setInventory(sorted as InventoryItem[]);
+}
 
   useEffect(() => {
     loadInventory();
