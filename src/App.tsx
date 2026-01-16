@@ -654,45 +654,44 @@ const handleSiteSearch = async (val: string) => {
 
   // ✅ 네비게이션 바 컴포넌트
   const NavBar = ({ current }: { current: string }) => (
-    <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
-      <button
-        className="btn"
-        onClick={() => setView("rt")}
-        style={current === 'rt' ? { background: '#2e5b86', color: '#fff' } : {}}
-      >
-        {current !== 'rt' ? '← ' : ''}실시간견적
-      </button>
-      <button
-        className="btn"
-        onClick={() => setView("list")}
-        style={current === 'list' ? { background: '#2e5b86', color: '#fff' } : {}}
-      >
-        전체견적
-      </button>
-      <button
-        className="btn"
-        onClick={() => setView("contract")}
-        style={current === 'contract' ? { background: '#2e5b86', color: '#fff' } : {}}
-      >
-        계약견적
-      </button>
-      <button
-        className="btn"
-        onClick={() => setView("calendar")}
-        style={current === 'calendar' ? { background: '#2e5b86', color: '#fff' } : {}}
-      >
-        출고일정
-      </button>
-      <button
-  className="btn"
-  onClick={() => setView("inventory")}
-  style={current === 'inventory' ? { background: '#2e5b86', color: '#fff' } : {}}
->
-  재고현황
-</button>
-    </div>
-  );
-
+  <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
+    <button
+      className="btn"
+      onClick={() => setView("rt")}
+      style={current === 'rt' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      {current !== 'rt' ? '← ' : ''}실시간견적
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("list")}
+      style={current === 'list' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      전체견적
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("contract")}
+      style={current === 'contract' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      계약견적
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("inventory")}
+      style={current === 'inventory' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      재고현황
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("calendar")}
+      style={current === 'calendar' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      출고일정
+    </button>
+  </div>
+);
   // ✅ 전체견적 화면
   const listScreen = (
     <div style={{ minHeight: "100vh" }}>
