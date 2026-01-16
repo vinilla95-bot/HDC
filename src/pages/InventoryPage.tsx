@@ -49,15 +49,25 @@ const loadInventory = async () => {
   setLoading(true);
   const { data, error } = await supabase
     .from("inventory")
-    .select("*")
-    .order("contract_date", { ascending: false })
-    .order("drawing_no", { ascending: true });
+    .select("*");
     
   if (error) {
     console.error("Load error:", error);
   }
   if (data) {
-    setAllItems(data as InventoryItem[]);
+    const sorted = [...data].sort((a, b) => {
+      // 1. 날짜 최신순
+      const dateA = a.contract_date || "0000-00-00";
+      const dateB = b.contract_date || "0000-00-00";
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      // 2. 도면번호 숫자로 변환해서 정렬
+      const numA = parseInt(a.drawing_no) || 0;
+      const numB = parseInt(b.drawing_no) || 0;
+      return numA - numB;
+    });
+    setAllItems(sorted as InventoryItem[]);
   }
   setLoading(false);
 };
