@@ -85,17 +85,17 @@ const loadInventory = async () => {
   }
   if (data) {
     const sorted = [...data].sort((a, b) => {
-      // 1. 날짜 최신순
-      const dateA = a.contract_date || "";
-      const dateB = b.contract_date || "";
-      if (dateA !== dateB) {
-        return dateB.localeCompare(dateA);  // 최신순
-      }
-      // 2. 같은 날짜면 도면번호 순
-      const numA = parseInt(a.drawing_no) || 0;
-      const numB = parseInt(b.drawing_no) || 0;
-      return numA - numB;
-    });
+  // 1. 날짜 최신순
+  const dateA = a.contract_date || "0000-00-00";
+  const dateB = b.contract_date || "0000-00-00";
+  if (dateA !== dateB) {
+    return dateB.localeCompare(dateA);  // 최신순
+  }
+  // 2. 같은 날짜면 도면번호 오름차순
+  const numA = parseInt(a.drawing_no, 10) || 0;
+  const numB = parseInt(b.drawing_no, 10) || 0;
+  return numA - numB;
+});
     setAllItems(sorted as InventoryItem[]);
   }
   setLoading(false);
