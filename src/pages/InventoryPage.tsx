@@ -87,16 +87,16 @@ const loadInventory = async () => {
   }
   if (data) {
     const sorted = [...data].sort((a, b) => {
-      // 1. 날짜 최신순
+      // 1. 날짜 내림차순 (최신 먼저)
       const dateA = a.contract_date || "";
       const dateB = b.contract_date || "";
       if (dateA !== dateB) {
         return dateB.localeCompare(dateA);
       }
-      // 2. 같은 날짜면 도면번호 오름차순
+      // 2. 같은 날짜면 도면번호 내림차순
       const numA = Number(a.drawing_no) || 0;
       const numB = Number(b.drawing_no) || 0;
-      return numA - numB;
+      return numB - numA;  // 내림차순
     });
     setAllItems(sorted as InventoryItem[]);
   }
