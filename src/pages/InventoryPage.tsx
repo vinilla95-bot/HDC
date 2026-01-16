@@ -368,26 +368,27 @@ export default function InventoryPage({
           }}>
             ✅ 작업지시 완료
           </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {["3x3", "3x4", "3x6", "3x9"].map(spec => (
-              <div 
-                key={spec}
-                style={{ 
-                  background: "#f0f9f0", 
-                  padding: "10px 16px", 
-                  borderRadius: 8,
-                  textAlign: "center",
-                  minWidth: 60
-                }}
-              >
-                <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>
-                  {completedCounts[spec] || 0}
-                </div>
-                <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
+           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {["3x3", "3x4", "3x6", "3x9"].map(spec => (
+            <div 
+              key={spec}
+              style={{ 
+                background: "#fffbeb", 
+                padding: "10px 16px", 
+                borderRadius: 8,
+                textAlign: "center",
+                minWidth: 60
+              }}
+            >
+              <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>
+                {waitingBySpec[spec] || 0}
               </div>
-            ))}
-          </div>
+              <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
+            </div>
+          ))}
         </div>
+        </div>
+      </div>
 
         {/* 출고 가능 카드 */}
         <div style={{
