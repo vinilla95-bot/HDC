@@ -26,6 +26,35 @@ type InventoryItem = {
 // 규격 옵션
 const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
 
+const formatDateDisplay = (dateStr: string) => {
+  if (!dateStr) return "-";
+  const [year, month, day] = dateStr.split("-");
+  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+  const yy = year.slice(2);
+  return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
+};
+
+// 도면번호 자동 채번 (월별 리셋)
+const getNextDrawingNo = (items: InventoryItem[], contractDate: string) => {
+  if (!contractDate) return "01";
+  
+  const [year, month] = contractDate.split("-");
+  const targetYearMonth = `${year}-${month}`;
+  
+  const sameMonthNos = items
+    .filter(item => item.contract_date?.startsWith(targetYearMonth))
+    .map(item => parseInt(item.drawing_no) || 0)
+    .filter(n => n > 0);
+  
+  if (sameMonthNos.length === 0) return "01";
+  
+  const maxNo = Math.max(...sameMonthNos);
+  return String(maxNo + 1).padStart(2, "0");
+};
+
+
+
 export default function InventoryPage({ 
   onBack,
   onNavigate 
@@ -179,25 +208,26 @@ useEffect(() => {
     loadInventory();
   };
 
-  // ✅ 새 항목 추가
   const handleAddNew = async () => {
-    if (!newItem.spec) {
-      alert("규격을 선택해주세요.");
-      return;
-    }
+  if (!newItem.spec) {
+    alert("규격을 선택해주세요.");
+    return;
+  }
 
-    const quote_id = `INV_${Date.now()}`;
+  const quote_id = `INV_${Date.now()}`;
+  const drawing_no = getNextDrawingNo(allItems, newItem.contract_date);  // ✅ 자동 채번
 
-    const { error } = await supabase.from("inventory").insert({
-      quote_id,
-      contract_date: newItem.contract_date,
-      customer_name: newItem.customer_name,
-      spec: newItem.spec,
-      inventory_status: newItem.inventory_status,
-      container_type: newItem.container_type,
-      total_amount: newItem.total_amount,
-      items: [],
-    });
+  const { error } = await supabase.from("inventory").insert({
+    quote_id,
+    contract_date: newItem.contract_date,
+    drawing_no,  // ✅ 추가
+    customer_name: newItem.customer_name,
+    spec: newItem.spec,
+    inventory_status: newItem.inventory_status,
+    container_type: newItem.container_type,
+    total_amount: newItem.total_amount,
+    items: [],
+  });
 
     if (error) {
       alert("추가 실패: " + error.message);
@@ -517,14 +547,28 @@ useEffect(() => {
                           <option value="리스">리스</option>
                         </select>
                       </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        <input
-                          type="date"
-                          value={item.contract_date || ""}
-                          onChange={(e) => updateField(item.quote_id, "contract_date", e.target.value)}
-                          style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                        />
-                      </td>
+                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", whiteSpace: "nowrap" }}>
+  <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+    <span style={{ fontWeight: 600, fontSize: 12 }}>
+      {formatDateDisplay(item.contract_date)}
+    </span>
+    <input
+      type="date"
+      value={item.contract_date || ""}
+      onChange={(e) => updateField(item.quote_id, "contract_date", e.target.value)}
+      style={{ 
+        width: 18, 
+        padding: 0, 
+        border: "none", 
+        background: "transparent",
+        cursor: "pointer",
+        opacity: 0.5
+      }}
+      title="날짜 변경"
+    />
+  </div>
+</td>/>
+                    
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <select
                           value={normalizeSpec(item.spec) || item.spec || "3x6"}
@@ -551,13 +595,24 @@ useEffect(() => {
                         />
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        <input
-                          value={item.drawing_no || ""}
-                          onChange={(e) => updateField(item.quote_id, "drawing_no", e.target.value)}
-                          style={{ width: 50, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
-                          placeholder="-"
-                        />
-                      </td>
+  <input
+    value={item.drawing_no || ""}
+    onChange={(e) => {
+      const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+      updateField(item.quote_id, "drawing_no", val.padStart(2, "0"));
+    }}
+    style={{ 
+      width: 40, 
+      padding: 4, 
+      border: "1px solid #ddd", 
+      borderRadius: 4, 
+      textAlign: "center",
+      fontWeight: 700,
+      fontSize: 14
+    }}
+    placeholder="00"
+  />
+</td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <input
                           value={item.interior || ""}
