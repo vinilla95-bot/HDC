@@ -121,7 +121,7 @@ export default function InventoryPage({
   const completedCounts = useMemo(() => {
     const counts: { [key: string]: number } = { "3x3": 0, "3x4": 0, "3x6": 0, "3x9": 0 };
     allItems
-      .filter(item => item.inventory_status === "작업완료")
+     .filter(item => item.inventory_status === "작업완료" && item.inventory_status !== "찜")
       .forEach(item => {
         const specKey = normalizeSpec(item.spec);
         if (specKey && specKey in counts) {
@@ -133,7 +133,7 @@ export default function InventoryPage({
 
   // ✅ 출고대기 항목
   const waitingItems = useMemo(() => {
-    return allItems.filter(item => item.inventory_status === "출고대기");
+    return allItems.filter(item => item.inventory_status === "출고대기" && item.inventory_status !== "찜");
   }, [allItems]);
 
   const waitingBySpec = useMemo(() => {
@@ -286,15 +286,16 @@ export default function InventoryPage({
     fontSize: 13,
     textAlign: "center",
   };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "작업완료": return "#28a745";
-      case "출고대기": return "#ffc107";
-      case "출고완료": return "#6c757d";
-      default: return "#17a2b8";
-    }
-  };
+  
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "작업완료": return "#28a745";
+    case "출고대기": return "#ffc107";
+    case "찜": return "#e91e63";  // 핑크색
+    case "출고완료": return "#6c757d";
+    default: return "#17a2b8";
+  }
+};
 
   const tabStyle = (isActive: boolean): React.CSSProperties => ({
     padding: "12px 24px",
@@ -510,7 +511,7 @@ export default function InventoryPage({
               </thead>
               <tbody>
                 {filteredItems.map((item) => {
-                  const isCompleted = item.inventory_status === "출고완료";
+                 const isCompleted = item.inventory_status === "출고완료" || item.inventory_status === "찜";
                  const isUnpaid = item.deposit_status !== "완료" && item.deposit_status !== "대기";
                   
                   return (
@@ -540,6 +541,7 @@ export default function InventoryPage({
                         >
                           <option value="작업완료">작업완료</option>
                           <option value="출고대기">출고대기</option>
+                          <option value="찜">찜</option>
                           <option value="출고완료">출고완료</option>
                         </select>
                       </td>
@@ -773,6 +775,7 @@ export default function InventoryPage({
               >
                 <option value="작업완료">작업완료</option>
                 <option value="출고대기">출고대기</option>
+                <option value="찜">찜</option>
                 <option value="출고완료">출고완료</option>
               </select>
             </div>
