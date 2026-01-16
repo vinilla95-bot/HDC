@@ -35,6 +35,22 @@ const formatDateDisplay = (dateStr: string) => {
   return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
 };
 
+// 화면 표시용 도면번호 계산
+const getDisplayDrawingNo = (item: InventoryItem, index: number) => {
+  // 같은 날짜의 첫 번째 항목 찾기
+  const sameDate = allItems.filter(i => i.contract_date === item.contract_date);
+  const orderInDate = sameDate.findIndex(i => i.quote_id === item.quote_id) + 1;
+  
+  // 해당 월의 시작 번호 계산
+  const [year, month] = (item.contract_date || "").split("-");
+  const prevMonthItems = allItems.filter(i => {
+    const [y, m] = (i.contract_date || "").split("-");
+    return y === year && m === month && i.contract_date < item.contract_date;
+  });
+  
+  return prevMonthItems.length + orderInDate;
+};
+
 // 도면번호 자동 채번 (월별 리셋)
 const getNextDrawingNo = (items: InventoryItem[], contractDate: string) => {
   if (!contractDate) return "01";
@@ -594,28 +610,17 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                           placeholder="발주처"
                         />
                       </td>
-                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-  <input
-    key={item.quote_id + "_" + item.drawing_no}
-    defaultValue={item.drawing_no || ""}
-    onBlur={(e) => {
-      const val = e.target.value.replace(/\D/g, "").slice(0, 3);
-      if (val && val !== item.drawing_no) {
-        updateField(item.quote_id, "drawing_no", val);
-      }
-    }}
-    style={{ 
-      width: 40, 
-      padding: 4, 
-      border: "1px solid #ddd", 
-      borderRadius: 4, 
-      textAlign: "center",
-      fontWeight: 700,
-      fontSize: 14
-    }}
-    placeholder="-"
-  />
-</td>           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700, fontSize: 14 }}>
+  {(() => {
+    const [year, month] = (item.contract_date || "").split("-");
+    const sameMonthItems = allItems.filter(i => {
+      const [y, m] = (i.contract_date || "").split("-");
+      return y === year && m === month;
+    });
+    const idx = sameMonthItems.findIndex(i => i.quote_id === item.quote_id);
+    return idx + 1;
+  })()}
+</td>    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <input
                           value={item.interior || ""}
                           onChange={(e) => updateField(item.quote_id, "interior", e.target.value)}
