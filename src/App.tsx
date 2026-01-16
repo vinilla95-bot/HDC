@@ -1537,30 +1537,14 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
-function InlineItemCell({
-  item,
-  options,
-  form,
-  calculateOptionLine,
-  recomputeRow,
-  setSelectedItems,
-  fmt,
-}: {
-  item: any;
-  options: any[];
-  form: any;
-  calculateOptionLine: (opt: any, w: number, l: number, h: number) => any;
-  recomputeRow: (row: any) => any;
-  setSelectedItems: React.Dispatch<React.SetStateAction<any[]>>;
-  fmt: (n: number) => string;
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+function InlineItemCell({ ... }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [showDropdown, setShowDropdown] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  const filteredOptions = useMemo(() => {
+  const filteredOptions = React.useMemo(() => {
     const q = searchQuery.trim();
     if (!q) return options.slice(0, 15);
     const matched = options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q));
@@ -1662,22 +1646,14 @@ function InlineItemCell({
 }
 
 // 빈 행 클릭 시 품목 추가
-function EmptyRowCell({
-  options, form, calculateOptionLine, recomputeRow, setSelectedItems, fmt,
-}: {
-  options: any[]; form: any;
-  calculateOptionLine: (opt: any, w: number, l: number, h: number) => any;
-  recomputeRow: (row: any) => any;
-  setSelectedItems: React.Dispatch<React.SetStateAction<any[]>>;
-  fmt: (n: number) => string;
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+function EmptyRowCell({ ... }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [showDropdown, setShowDropdown] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  const filteredOptions = useMemo(() => {
+  const filteredOptions = React.useMemo(() => {
     const q = searchQuery.trim();
     if (!q) return options.slice(0, 15);
     const matched = options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q));
@@ -1778,12 +1754,13 @@ function EmptyRowCell({
 }
 
 // 인라인 숫자 편집 셀
-function EditableNumberCell({ value, onChange, disabled }: { value: number; onChange: (val: number) => void; disabled?: boolean; }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempValue, setTempValue] = useState(String(value));
-  const inputRef = useRef<HTMLInputElement>(null);
+function EditableNumberCell({ ... }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [tempValue, setTempValue] = React.useState(String(value));
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
+
     if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }
   }, [isEditing]);
 
