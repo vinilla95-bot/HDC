@@ -177,27 +177,28 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   const site = getSiteName(item);
   const customer = item.customer_name || "";
   const qty = getQty(item);
-  const qtyText = qty > 1 ? `-${qty}동` : "";
   const transportType = getTransportType(item);
 
   let prefix = "";
-
-  // 운송 타입에 따른 prefix
   if (transportType === "crane") {
     prefix = "크";
   }
 
-  // ✅ 임대 추가
+  // 수량은 항상 표시
+  const qtyText = `-${qty}동`;
+
   if (type === "rental") {
-    return `${prefix}[임대]${spec}${qtyText} ${options} ${site}`.trim();
+    return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
   } else if (type === "used") {
-    return `${prefix}[중고]${spec}${qtyText} ${options} ${site}`.trim();
+    return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
   } else if (type === "branch") {
-    return `${prefix}[신품]${customer}${spec${qtyText} ${options} ${site}`.trim();
+    return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
   } else {
-    return `${prefix}[신품]${spec}${qtyText} ${options} ${site}`.trim();
+    return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
   }
 };
+
+
 
   // ✅ 배차 양식 생성
   const generateDispatchText = (item: DeliveryItem) => {
