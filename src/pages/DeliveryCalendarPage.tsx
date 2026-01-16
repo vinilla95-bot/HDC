@@ -69,58 +69,32 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     loadDeliveries();
   }, []);
 
-  // ✅ 색상 결정 로직
- const getItemColor = useCallback((item: DeliveryItem): ColorType => {
+  /// ✅ 색상 결정 로직
+const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   // 1. 수동 색상이 설정되어 있으면 사용
   if (item.delivery_color && item.delivery_color !== "auto") {
     return item.delivery_color as ColorType;
   }
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [year, month, day] = item.delivery_date.split('-').map(Number);
   const deliveryDate = new Date(year, month - 1, day);
   deliveryDate.setHours(0, 0, 0, 0);
   const isPast = deliveryDate < today;
-
+  
   // 2. 미입금 상태면 빨간색
   if (item.deposit_status !== "완료") {
     return "red";
   }
-
+  
   // 3. 입금 완료 + 출고일 지남 → 회색
   if (item.deposit_status === "완료" && isPast) {
     return "gray";
   }
-
+  
   // 4. 기본 색상 - 신품/임대/중고/영업소 모두 파란색
   return "blue";
 }, []);
-
-    // ✅ timezone 이슈 수정 - 로컬 날짜로 파싱
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const [year, month, day] = item.delivery_date.split('-').map(Number);
-    const deliveryDate = new Date(year, month - 1, day);
-    deliveryDate.setHours(0, 0, 0, 0);
-    const isPast = deliveryDate < today;
-
-    // 2. 미입금 상태면 빨간색
-    if (item.deposit_status === "미입금" || !item.deposit_status) {
-      return "red";
-    }
-
-    // 3. 입금 완료 + 출고일 지남 → 회색
-    if (item.deposit_status === "완료" && isPast) {
-      return "gray";
-    }
-
-    // 4. 기본 색상 (타입별)
-    const type = item.contract_type || "order";
-    if (type === "used") return "orange";
-    if (type === "branch") return "blue";
-    return "green";
-  }, []);
 
   // ✅ 색상 스타일
  const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
