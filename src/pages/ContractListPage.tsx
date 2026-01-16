@@ -379,18 +379,14 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                      <select
-                        value={c.spec || ""}
-                        onChange={(e) => updateField(c.quote_id, "spec", e.target.value)}
-                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                      >
-                        <option value="">-</option>
-                        {SPEC_OPTIONS.map(spec => (
-                          <option key={spec} value={spec}>{spec}</option>
-                        ))}
-                      </select>
-                    </td>
+                   <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+  <input
+    defaultValue={c.spec || ""}
+    onBlur={(e) => updateField(c.quote_id, "spec", e.target.value)}
+    style={{ width: 60, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, textAlign: "center" }}
+    placeholder="규격"
+  />
+</td>
                     <td style={{ padding: 8, border: "1px solid #eee" }}>
                       <select
                         value={c.bank_account || ""}
