@@ -681,7 +681,7 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
                             setEditForm(d);
                           }}
                           style={{
-                            fontSize: 10,
+                            fontSize: 11,
                             padding: "3px 4px",
                             background: style.bg,
                             borderLeft: `3px solid ${style.border}`,
