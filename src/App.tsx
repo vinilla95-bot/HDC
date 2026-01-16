@@ -73,8 +73,8 @@ export const getWebAppUrl = () => {
 
 // ============ 인라인 숫자 편집 셀 ============
 function EditableNumberCell({ value, onChange, disabled = false }: { value: number; onChange: (val: number) => void; disabled?: boolean }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [tempValue, setTempValue] = React.useState(String(value));
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(String(value));
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [isEditing]);
@@ -91,9 +91,9 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
 
 // ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [showDropdown, setShowDropdown] = React.useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
