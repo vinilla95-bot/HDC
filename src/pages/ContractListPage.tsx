@@ -30,6 +30,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState<ContractQuote | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [allInventory, setAllInventory] = useState<{quote_id: string; contract_date: string; drawing_no: string}[]>([]);
   const [newItem, setNewItem] = useState({
     customer_name: "",
     spec: "",
@@ -37,41 +38,68 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   });
 
   // ✅ 현재 월의 다음 도면번호 계산
-  const nextDrawingNo = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+ // ✅ 현재 월의 다음 도면번호 계산 (quotes + inventory 통합)
+const nextDrawingNo = useMemo(() => {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
-    const thisMonthNumbers = allContracts
-      .filter(c => {
-        if (!c.contract_date) return false;
-        const d = new Date(c.contract_date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      })
-      .map(c => parseInt(c.drawing_no) || 0)
-      .filter(n => n > 0);
+  // quotes에서 이번 달 도면번호
+  const quotesNumbers = allContracts
+    .filter(c => {
+      if (!c.contract_date) return false;
+      const d = new Date(c.contract_date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .map(c => parseInt(c.drawing_no) || 0);
 
-    const maxNo = thisMonthNumbers.length > 0 ? Math.max(...thisMonthNumbers) : 0;
-    return maxNo + 1;
-  }, [allContracts]);
+  // inventory에서 이번 달 도면번호
+  const inventoryNumbers = allInventory
+    .filter(c => {
+      if (!c.contract_date) return false;
+      const d = new Date(c.contract_date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .map(c => parseInt(c.drawing_no) || 0);
+
+  // ✅ 통합
+  const allNumbers = [...quotesNumbers, ...inventoryNumbers].filter(n => n > 0);
+  const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
+  
+  return maxNo + 1;
+}, [allContracts, allInventory]);
 
   const loadContracts = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("quotes")
-      .select("*")
-      .eq("status", "confirmed")
-      .order("contract_date", { ascending: false });
+  setLoading(true);
+  
+  // ✅ quotes와 inventory 둘 다 조회
+  const [quotesRes, inventoryRes] = await Promise.all([
+    supabase.from("quotes").select("*").eq("status", "confirmed"),
+    supabase.from("inventory").select("quote_id, contract_date, drawing_no")
+  ]);
 
-    if (error) {
-      console.error("Load error:", error);
-    }
-    if (data) {
-      setAllContracts(data as ContractQuote[]);
-    }
-    setLoading(false);
-  };
+  if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
+  if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
 
+  const quotesData = quotesRes.data || [];
+  const inventoryData = inventoryRes.data || [];
+
+  // ✅ 정렬 (날짜 내림차순 → 도면번호 내림차순)
+  const sorted = [...quotesData].sort((a, b) => {
+    const dateA = a.contract_date || "";
+    const dateB = b.contract_date || "";
+    if (dateA !== dateB) {
+      return dateB.localeCompare(dateA);
+    }
+    const numA = Number(a.drawing_no) || 0;
+    const numB = Number(b.drawing_no) || 0;
+    return numB - numA;
+  });
+
+  setAllContracts(sorted as ContractQuote[]);
+  setAllInventory(inventoryData); // ✅ 재고 데이터 저장
+  setLoading(false);
+};
   useEffect(() => {
     loadContracts();
   }, []);
