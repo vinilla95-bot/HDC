@@ -1,5 +1,6 @@
-// InlineEditTest.tsx - 견적서 양식 + 인라인 편집 테스트
+// InlineEditTest.tsx - Supabase 연동 + 인라인 편집 테스트
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { supabase, calculateOptionLine } from "../QuoteService";
 
 // 초성 검색 유틸리티
 const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
@@ -27,24 +28,6 @@ const matchKoreanLocal = (target: string, query: string): boolean => {
   return t.includes(q);
 };
 
-// 테스트용 옵션 데이터
-const SAMPLE_OPTIONS = [
-  { option_id: "1", option_name: "모노륨 바닥재", unit: "㎡", unit_price: 15000 },
-  { option_id: "2", option_name: "단열재 50T", unit: "㎡", unit_price: 8000 },
-  { option_id: "3", option_name: "도어 방화문", unit: "EA", unit_price: 250000 },
-  { option_id: "4", option_name: "창문 이중창", unit: "EA", unit_price: 180000 },
-  { option_id: "5", option_name: "에어컨 설치", unit: "EA", unit_price: 350000 },
-  { option_id: "6", option_name: "전기 배선", unit: "식", unit_price: 200000 },
-  { option_id: "7", option_name: "조명 LED", unit: "EA", unit_price: 25000 },
-  { option_id: "8", option_name: "싱크대", unit: "EA", unit_price: 450000 },
-  { option_id: "9", option_name: "화장실 설치", unit: "식", unit_price: 800000 },
-  { option_id: "10", option_name: "임대 3x6 기본형", unit: "개월", unit_price: 150000 },
-  { option_id: "11", option_name: "벽걸이형 에어컨", unit: "EA", unit_price: 420000 },
-  { option_id: "12", option_name: "벽걸이형 냉난방기", unit: "EA", unit_price: 580000 },
-  { option_id: "13", option_name: "5톤 일반트럭 운송비(하차별도)", unit: "EA", unit_price: 150000 },
-  { option_id: "14", option_name: "크레인 운송비", unit: "EA", unit_price: 250000 },
-];
-
 // 숫자 포맷
 const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
@@ -62,15 +45,19 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
+type Bizcard = { id: string; name: string; image_url: string };
+
 // ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({
   item,
   options,
+  form,
   onSelectOption,
 }: {
   item: any;
   options: any[];
-  onSelectOption: (item: any, opt: any) => void;
+  form: { w: number; l: number; h: number };
+  onSelectOption: (item: any, opt: any, calculated: any) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,13 +67,16 @@ function InlineItemCell({
 
   const filteredOptions = useMemo(() => {
     const q = searchQuery.trim();
-    if (!q) return options.slice(0, 15);
+    if (!q) return []; // 검색어 없으면 목록 안 보임
     const matched = options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q));
     const qLower = q.toLowerCase();
     matched.sort((a: any, b: any) => {
       const nameA = String(a.option_name || "").toLowerCase();
       const nameB = String(b.option_name || "").toLowerCase();
-      return (nameA.startsWith(qLower) ? 0 : 1) - (nameB.startsWith(qLower) ? 0 : 1);
+      const startsA = nameA.startsWith(qLower) ? 0 : 1;
+      const startsB = nameB.startsWith(qLower) ? 0 : 1;
+      if (startsA !== startsB) return startsA - startsB;
+      return nameA.includes(qLower) ? 0 : 1 - (nameB.includes(qLower) ? 0 : 1);
     });
     return matched.slice(0, 15);
   }, [searchQuery, options]);
@@ -107,7 +97,8 @@ function InlineItemCell({
   }, []);
 
   const handleSelect = (opt: any) => {
-    onSelectOption(item, opt);
+    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+    onSelectOption(item, opt, calculated);
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
@@ -132,7 +123,7 @@ function InlineItemCell({
             boxSizing: "border-box",
           }}
         />
-        {showDropdown && (
+        {showDropdown && searchQuery.trim() && (
           <div
             ref={dropdownRef}
             style={{
@@ -185,7 +176,7 @@ function InlineItemCell({
       title="클릭하여 품목 변경"
     >
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span style={{ flex: 1 }}>{String(item.name || "")}</span>
+        <span style={{ flex: 1 }}>{String(item.displayName || "")}</span>
         <span style={{ color: "#2e5b86", fontSize: 10 }}>🔍</span>
       </div>
     </td>
@@ -195,10 +186,12 @@ function InlineItemCell({
 // ============ 빈 행 클릭 시 품목 추가 ============
 function EmptyRowCell({
   options,
+  form,
   onAddItem,
 }: {
   options: any[];
-  onAddItem: (opt: any) => void;
+  form: { w: number; l: number; h: number };
+  onAddItem: (opt: any, calculated: any) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,13 +201,16 @@ function EmptyRowCell({
 
   const filteredOptions = useMemo(() => {
     const q = searchQuery.trim();
-    if (!q) return options.slice(0, 15);
+    if (!q) return []; // 검색어 없으면 목록 안 보임
     const matched = options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q));
     const qLower = q.toLowerCase();
     matched.sort((a: any, b: any) => {
       const nameA = String(a.option_name || "").toLowerCase();
       const nameB = String(b.option_name || "").toLowerCase();
-      return (nameA.startsWith(qLower) ? 0 : 1) - (nameB.startsWith(qLower) ? 0 : 1);
+      const startsA = nameA.startsWith(qLower) ? 0 : 1;
+      const startsB = nameB.startsWith(qLower) ? 0 : 1;
+      if (startsA !== startsB) return startsA - startsB;
+      return nameA.includes(qLower) ? 0 : 1 - (nameB.includes(qLower) ? 0 : 1);
     });
     return matched.slice(0, 15);
   }, [searchQuery, options]);
@@ -235,7 +231,8 @@ function EmptyRowCell({
   }, []);
 
   const handleSelect = (opt: any) => {
-    onAddItem(opt);
+    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+    onAddItem(opt, calculated);
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
@@ -252,7 +249,7 @@ function EmptyRowCell({
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
             onFocus={() => setShowDropdown(true)}
-            placeholder="품목 검색..."
+            placeholder="품목 검색 (초성 가능)..."
             autoFocus
             style={{
               width: "100%",
@@ -262,7 +259,7 @@ function EmptyRowCell({
               boxSizing: "border-box",
             }}
           />
-          {showDropdown && (
+          {showDropdown && searchQuery.trim() && (
             <div
               ref={dropdownRef}
               style={{
@@ -417,62 +414,173 @@ function EditableNumberCell({
 
 // ============ 메인 테스트 컴포넌트 ============
 export default function InlineEditTest() {
-  const [items, setItems] = useState<any[]>([
-    { key: "1", name: "모노륨 바닥재", unit: "㎡", qty: 18, unitPrice: 15000, spec: "3x6" },
-    { key: "2", name: "단열재 50T", unit: "㎡", qty: 18, unitPrice: 8000, spec: "3x6" },
-  ]);
+  // Supabase에서 데이터 로드
+  const [options, setOptions] = useState<any[]>([]);
+  const [bizcards, setBizcards] = useState<Bizcard[]>([]);
+  const [selectedBizcardId, setSelectedBizcardId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
-  const [form] = useState({
-    name: "홍길동",
-    email: "test@test.com",
-    phone: "010-1234-5678",
+  // 품목 목록
+  const [items, setItems] = useState<any[]>([]);
+
+  // 폼 데이터
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
     quoteDate: new Date().toISOString().slice(0, 10),
-    sitePickedLabel: "강릉",
+    sitePickedLabel: "",
     vatIncluded: true,
+    w: 3,
+    l: 6,
+    h: 2.6,
   });
 
-  const handleSelectOption = (item: any, opt: any) => {
+  // 데이터 로드
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      
+      // 옵션 로드
+      const { data: optData } = await supabase.from("options").select("*");
+      setOptions((optData || []) as any[]);
+
+      // 명함 로드
+      const { data: cardData } = await supabase.from("bizcards").select("*");
+      const cards = (cardData || []) as Bizcard[];
+      setBizcards(cards);
+      
+      // 기본 담당자 설정 (고은희)
+      const defaultCard = cards.find((c) => c.name?.includes("고은희"));
+      if (defaultCard) setSelectedBizcardId(defaultCard.id);
+      else if (cards[0]) setSelectedBizcardId(cards[0].id);
+
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
+  const selectedBizcard = useMemo(
+    () => bizcards.find((b) => b.id === selectedBizcardId),
+    [bizcards, selectedBizcardId]
+  );
+
+  // 임대 여부 체크
+  const isRentRow = (row: any) => String(row?.optionName || "").includes("임대");
+
+  // 품목 선택 시 (기존 행 변경)
+  const handleSelectOption = (item: any, opt: any, calculated: any) => {
+    const rawName = String(opt.option_name || "(이름없음)");
+    const rent = rawName.includes("임대");
+    const baseQty = Number(calculated.qty || 1);
+    const baseUnitPrice = Number(calculated.unitPrice || 0);
+    const baseAmount = Number(calculated.amount || 0);
+    const defaultMonths = 1;
+    const displayQty = 1;
+    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
+    const displayName = rent ? `${rawName} ${defaultMonths}개월` : rawName;
+
     setItems(prev => prev.map(i => {
       if (i.key !== item.key) return i;
       return {
         ...i,
-        name: opt.option_name,
-        unit: opt.unit || "EA",
-        unitPrice: Number(opt.unit_price || 0),
+        optionId: String(opt.option_id || rawName),
+        optionName: rawName,
+        displayName,
+        unit: rent ? "개월" : calculated.unit || "EA",
+        showSpec: String(opt.show_spec || "").toLowerCase(),
+        baseQty,
+        baseUnitPrice,
+        baseAmount,
+        displayQty,
+        customerUnitPrice,
+        finalAmount: Math.round(displayQty * customerUnitPrice),
+        months: defaultMonths,
+        memo: calculated.memo || "",
+        lineSpec: { w: form.w, l: form.l, h: form.h },
       };
     }));
   };
 
-  const handleAddItem = (opt: any) => {
+  // 품목 추가 (빈 행 클릭)
+  const handleAddItem = (opt: any, calculated: any) => {
+    const rawName = String(opt.option_name || "(이름없음)");
+    const rent = rawName.includes("임대");
+    const baseQty = Number(calculated.qty || 1);
+    const baseUnitPrice = Number(calculated.unitPrice || 0);
+    const baseAmount = Number(calculated.amount || 0);
+    const defaultMonths = 1;
+    const displayQty = 1;
+    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
+    const displayName = rent ? `${rawName} ${defaultMonths}개월` : rawName;
+
     const newItem = {
-      key: `item_${Date.now()}`,
-      name: opt.option_name,
-      unit: opt.unit || "EA",
-      qty: 1,
-      unitPrice: Number(opt.unit_price || 0),
-      spec: "",
+      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+      optionId: String(opt.option_id || rawName),
+      optionName: rawName,
+      displayName,
+      unit: rent ? "개월" : calculated.unit || "EA",
+      showSpec: String(opt.show_spec || "").toLowerCase(),
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty,
+      customerUnitPrice,
+      finalAmount: Math.round(displayQty * customerUnitPrice),
+      months: defaultMonths,
+      memo: calculated.memo || "",
+      lineSpec: { w: form.w, l: form.l, h: form.h },
     };
     setItems(prev => [...prev, newItem]);
   };
 
+  // 수량 업데이트
   const handleUpdateQty = (key: string, qty: number) => {
-    setItems(prev => prev.map(i => i.key === key ? { ...i, qty } : i));
+    setItems(prev => prev.map(i => {
+      if (i.key !== key) return i;
+      const newQty = Math.max(0, Math.floor(qty));
+      return {
+        ...i,
+        displayQty: isRentRow(i) ? Math.max(1, newQty) : newQty,
+        finalAmount: Math.round(newQty * i.customerUnitPrice),
+      };
+    }));
   };
 
+  // 단가 업데이트
   const handleUpdatePrice = (key: string, unitPrice: number) => {
-    setItems(prev => prev.map(i => i.key === key ? { ...i, unitPrice } : i));
+    setItems(prev => prev.map(i => {
+      if (i.key !== key) return i;
+      if (isRentRow(i)) return i; // 임대는 단가 수정 불가
+      const newPrice = Math.max(0, unitPrice);
+      return {
+        ...i,
+        customerUnitPrice: newPrice,
+        finalAmount: Math.round(i.displayQty * newPrice),
+      };
+    }));
   };
 
+  // 삭제
   const handleDelete = (key: string) => {
     setItems(prev => prev.filter(i => i.key !== key));
   };
 
-  const supply_amount = items.reduce((sum, i) => sum + i.qty * i.unitPrice, 0);
+  // 합계 계산
+  const supply_amount = items.reduce((sum, i) => sum + (i.finalAmount || 0), 0);
   const vat_amount = Math.round(supply_amount * 0.1);
   const total_amount = supply_amount + vat_amount;
 
   const MIN_ROWS = 12;
   const blankCount = Math.max(0, MIN_ROWS - items.length);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 40, textAlign: "center" }}>
+        <p>데이터 로딩 중...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: "#f5f6f8", minHeight: "100vh", padding: "20px 0" }}>
@@ -480,8 +588,98 @@ export default function InlineEditTest() {
       
       <div style={{ textAlign: "center", marginBottom: 16 }}>
         <span style={{ background: "#2e5b86", color: "#fff", padding: "8px 16px", borderRadius: 8, fontSize: 14 }}>
-          🧪 인라인 편집 테스트 - 품목/수량/단가 클릭해서 수정해보세요
+          🧪 인라인 편집 테스트 - Supabase 연동
         </span>
+      </div>
+
+      {/* 상단 입력 폼 */}
+      <div style={{ maxWidth: 800, margin: "0 auto 20px", padding: "16px", background: "#fff", borderRadius: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>고객명</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>이메일</label>
+            <input
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>전화번호</label>
+            <input
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>담당자</label>
+            <select
+              value={selectedBizcardId}
+              onChange={(e) => setSelectedBizcardId(e.target.value)}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            >
+              {bizcards.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>현장</label>
+            <input
+              value={form.sitePickedLabel}
+              onChange={(e) => setForm({ ...form, sitePickedLabel: e.target.value })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>견적일</label>
+            <input
+              type="date"
+              value={form.quoteDate}
+              onChange={(e) => setForm({ ...form, quoteDate: e.target.value })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>가로(m)</label>
+            <input
+              type="number"
+              value={form.w}
+              onChange={(e) => setForm({ ...form, w: Number(e.target.value) })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>세로(m)</label>
+            <input
+              type="number"
+              value={form.l}
+              onChange={(e) => setForm({ ...form, l: Number(e.target.value) })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "#666" }}>높이(m)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={form.h}
+              onChange={(e) => setForm({ ...form, h: Number(e.target.value) })}
+              style={{ width: "100%", padding: 8, border: "1px solid #ddd", borderRadius: 4 }}
+            />
+          </div>
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
+          면적: {(form.w * form.l).toFixed(2)}㎡ | 옵션 {options.length}개 로드됨
+        </div>
       </div>
 
       <div className="a4Wrap">
@@ -508,7 +706,7 @@ export default function InlineEditTest() {
             <tbody>
               <tr>
                 <th className="k center">담당자</th>
-                <td className="v" colSpan={3}>고은희</td>
+                <td className="v" colSpan={3}>{selectedBizcard?.name || ""}</td>
                 <th className="k center">견적일자</th>
                 <td className="v">{form.quoteDate}</td>
               </tr>
@@ -516,7 +714,7 @@ export default function InlineEditTest() {
                 <th className="k center">고객명</th>
                 <td className="v" colSpan={3}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>{form.name}</span>
+                    <span>{form.name || ""}</span>
                     <span style={{ fontWeight: 900 }}>귀하</span>
                   </div>
                 </td>
@@ -525,15 +723,15 @@ export default function InlineEditTest() {
               </tr>
               <tr>
                 <th className="k center">이메일</th>
-                <td className="v">{form.email}</td>
+                <td className="v">{form.email || ""}</td>
                 <th className="k center">전화</th>
-                <td className="v">{form.phone}</td>
+                <td className="v">{form.phone || ""}</td>
                 <th className="k center">등록번호</th>
                 <td className="v">130-41-38154</td>
               </tr>
               <tr>
                 <th className="k center">현장</th>
-                <td className="v">{form.sitePickedLabel}</td>
+                <td className="v">{form.sitePickedLabel || ""}</td>
                 <th className="k center">견적일</th>
                 <td className="v">{new Date(form.quoteDate + 'T00:00:00').toLocaleDateString("ko-KR")}</td>
                 <th className="k center">주소</th>
@@ -580,28 +778,37 @@ export default function InlineEditTest() {
             </thead>
             <tbody>
               {items.map((item, idx) => {
-                const supply = item.qty * item.unitPrice;
+                const unitSupply = Number(item.customerUnitPrice ?? 0);
+                const qty = Number(item.displayQty ?? 0);
+                const supply = unitSupply * qty;
                 const vat = Math.round(supply * 0.1);
+                const showSpec = String(item.showSpec || "").toLowerCase() === "y";
+                const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l
+                  ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}`
+                  : "";
+                const rent = isRentRow(item);
                 
                 return (
                   <tr key={item.key}>
                     <td className="c center">{idx + 1}</td>
                     <InlineItemCell
                       item={item}
-                      options={SAMPLE_OPTIONS}
+                      options={options}
+                      form={form}
                       onSelectOption={handleSelectOption}
                     />
-                    <td className="c center">{item.spec}</td>
+                    <td className="c center">{specText}</td>
                     <td className="c center">
                       <EditableNumberCell
-                        value={item.qty}
+                        value={qty}
                         onChange={(val) => handleUpdateQty(item.key, val)}
                       />
                     </td>
                     <td className="c right">
                       <EditableNumberCell
-                        value={item.unitPrice}
+                        value={unitSupply}
                         onChange={(val) => handleUpdatePrice(item.key, val)}
+                        disabled={rent}
                       />
                     </td>
                     <td className="c right">{fmt(supply)}</td>
@@ -631,7 +838,8 @@ export default function InlineEditTest() {
                 <tr key={`blank-${i}`}>
                   {i === 0 ? (
                     <EmptyRowCell
-                      options={SAMPLE_OPTIONS}
+                      options={options}
+                      form={form}
                       onAddItem={handleAddItem}
                     />
                   ) : (
