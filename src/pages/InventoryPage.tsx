@@ -68,7 +68,7 @@ export default function InventoryPage({
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const [newItem, setNewItem] = useState({
+  const [newItem, ] = useState({
     customer_name: "",
     spec: "3x6",
     inventory_status: "작업완료",
@@ -263,6 +263,7 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
+    qty: 1,
   });
   loadInventory();
 };
