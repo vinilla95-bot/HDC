@@ -1,5 +1,6 @@
 // src/App.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QuoteListPage from "./pages/QuoteListPage";
 import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
@@ -1755,11 +1756,11 @@ function EmptyRowCell({ ... }) {
 
 // 인라인 숫자 편집 셀
 function EditableNumberCell({ ... }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [tempValue, setTempValue] = React.useState(String(value));
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
+const [isEditing, setIsEditing] = useState(false);
+const [searchQuery, setSearchQuery] = useState("");
+const inputRef = useRef<HTMLInputElement>(null);
+const filteredOptions = useMemo(() => { ... }, [...]);
+useEffect(() => { ... }, []);
 
     if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }
   }, [isEditing]);
