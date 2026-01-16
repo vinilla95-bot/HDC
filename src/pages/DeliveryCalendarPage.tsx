@@ -70,11 +70,32 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
   }, []);
 
   // ✅ 색상 결정 로직
-  const getItemColor = useCallback((item: DeliveryItem): ColorType => {
-    // 1. 수동 색상이 설정되어 있으면 사용
-    if (item.delivery_color && item.delivery_color !== "auto") {
-      return item.delivery_color as ColorType;
-    }
+ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
+  // 1. 수동 색상이 설정되어 있으면 사용
+  if (item.delivery_color && item.delivery_color !== "auto") {
+    return item.delivery_color as ColorType;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [year, month, day] = item.delivery_date.split('-').map(Number);
+  const deliveryDate = new Date(year, month - 1, day);
+  deliveryDate.setHours(0, 0, 0, 0);
+  const isPast = deliveryDate < today;
+
+  // 2. 미입금 상태면 빨간색
+  if (item.deposit_status !== "완료") {
+    return "red";
+  }
+
+  // 3. 입금 완료 + 출고일 지남 → 회색
+  if (item.deposit_status === "완료" && isPast) {
+    return "gray";
+  }
+
+  // 4. 기본 색상 - 신품/임대/중고/영업소 모두 파란색
+  return "blue";
+}, []);
 
     // ✅ timezone 이슈 수정 - 로컬 날짜로 파싱
     const today = new Date();
@@ -176,36 +197,33 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
 
   // ✅ 출고 라벨 생성
   const getDeliveryLabel = (item: DeliveryItem) => {
-    // 4. 기본 색상 (타입별) - 신품/임대/중고 파란색 통일
-const type = item.contract_type || "order";
-if (type === "branch") return "blue";  // 영업소
-return "blue";  // 신품, 임대, 중고 모두 파란색
-    const spec = item.spec || "";
-    const options = summarizeOptions(item.items, true);
-    const site = getSiteName(item);
-    const customer = item.customer_name || "";
-    const qty = getQty(item);
-    const qtyText = qty > 1 ? `-${qty}동` : "";
-    const transportType = getTransportType(item);
+  const type = item.contract_type || "order";
+  const spec = item.spec || "";
+  const options = summarizeOptions(item.items, true);
+  const site = getSiteName(item);
+  const customer = item.customer_name || "";
+  const qty = getQty(item);
+  const qtyText = qty > 1 ? `-${qty}동` : "";
+  const transportType = getTransportType(item);
 
-    let prefix = "";
-    let label = "";
+  let prefix = "";
 
-    // 운송 타입에 따른 prefix
-    if (transportType === "crane") {
-      prefix = "크";
-    }
+  // 운송 타입에 따른 prefix
+  if (transportType === "crane") {
+    prefix = "크";
+  }
 
-    if (type === "used") {
-      label = `${prefix}[중고](${spec}${qtyText}) ${options} ${site}`.trim();
-    } else if (type === "branch") {
-      label = `${prefix}[신품]${customer}(${spec}${qtyText}) ${options} ${site}`.trim();
-    } else {
-      label = `${prefix}[신품](${spec}${qtyText}) ${options} ${site}`.trim();
-    }
-
-    return label;
-  };
+  // ✅ 임대 추가
+  if (type === "rental") {
+    return `${prefix}[임대](${spec}${qtyText}) ${options} ${site}`.trim();
+  } else if (type === "used") {
+    return `${prefix}[중고](${spec}${qtyText}) ${options} ${site}`.trim();
+  } else if (type === "branch") {
+    return `${prefix}[신품]${customer}(${spec}${qtyText}) ${options} ${site}`.trim();
+  } else {
+    return `${prefix}[신품](${spec}${qtyText}) ${options} ${site}`.trim();
+  }
+};
 
   // ✅ 배차 양식 생성
   const generateDispatchText = (item: DeliveryItem) => {
