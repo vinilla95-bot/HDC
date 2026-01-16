@@ -46,7 +46,7 @@ export default function InventoryPage({
     total_amount: 0,
   });
 
-  const loadInventory = async () => {
+ const loadInventory = async () => {
   setLoading(true);
   const { data, error } = await supabase
     .from("inventory")
@@ -57,26 +57,19 @@ export default function InventoryPage({
   }
   if (data) {
     const sorted = [...data].sort((a, b) => {
-      // 1. 날짜 먼저 정렬 (오래된 순)
       const dateA = a.contract_date || "";
       const dateB = b.contract_date || "";
       if (dateA !== dateB) {
         return dateA.localeCompare(dateB);
       }
-      // 2. 같은 날짜면 도면번호 순 (작은 수부터)
       const numA = parseInt(a.drawing_no) || 0;
       const numB = parseInt(b.drawing_no) || 0;
       return numA - numB;
     });
-    setInventory(sorted as InventoryItem[]);
+    setAllItems(sorted as InventoryItem[]);
   }
   setLoading(false);
 };
-
-useEffect(() => {
-  loadInventory();
-}, []);
-  
   // ✅ 규격 정규화 함수
   const normalizeSpec = (spec: string) => {
     if (!spec) return null;
