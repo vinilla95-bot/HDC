@@ -189,13 +189,13 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
 
   // ✅ 임대 추가
   if (type === "rental") {
-    return `${prefix}[임대](${spec}${qtyText}) ${options} ${site}`.trim();
+    return `${prefix}[임대]${spec}${qtyText} ${options} ${site}`.trim();
   } else if (type === "used") {
-    return `${prefix}[중고](${spec}${qtyText}) ${options} ${site}`.trim();
+    return `${prefix}[중고]${spec}${qtyText} ${options} ${site}`.trim();
   } else if (type === "branch") {
-    return `${prefix}[신품]${customer}(${spec}${qtyText}) ${options} ${site}`.trim();
+    return `${prefix}[신품]${customer}${spec${qtyText} ${options} ${site}`.trim();
   } else {
-    return `${prefix}[신품](${spec}${qtyText}) ${options} ${site}`.trim();
+    return `${prefix}[신품]${spec}${qtyText} ${options} ${site}`.trim();
   }
 };
 
