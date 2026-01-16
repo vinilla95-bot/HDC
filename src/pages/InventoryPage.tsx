@@ -567,7 +567,7 @@ useEffect(() => {
       title="날짜 변경"
     />
   </div>
-</td>/>
+</td>
                     
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <select
