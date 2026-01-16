@@ -35,21 +35,7 @@ const formatDateDisplay = (dateStr: string) => {
   return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
 };
 
-// 화면 표시용 도면번호 계산
-const getDisplayDrawingNo = (item: InventoryItem, index: number) => {
-  // 같은 날짜의 첫 번째 항목 찾기
-  const sameDate = allItems.filter(i => i.contract_date === item.contract_date);
-  const orderInDate = sameDate.findIndex(i => i.quote_id === item.quote_id) + 1;
-  
-  // 해당 월의 시작 번호 계산
-  const [year, month] = (item.contract_date || "").split("-");
-  const prevMonthItems = allItems.filter(i => {
-    const [y, m] = (i.contract_date || "").split("-");
-    return y === year && m === month && i.contract_date < item.contract_date;
-  });
-  
-  return prevMonthItems.length + orderInDate;
-};
+
 
 // 도면번호 자동 채번 (월별 리셋)
 const getNextDrawingNo = (items: InventoryItem[], contractDate: string) => {
@@ -120,6 +106,16 @@ const loadInventory = async () => {
 useEffect(() => {
   loadInventory();
 }, []);
+
+  const getDisplayDrawingNo = (item: InventoryItem) => {
+    const [year, month] = (item.contract_date || "").split("-");
+    const sameMonthItems = allItems.filter(i => {
+      const [y, m] = (i.contract_date || "").split("-");
+      return y === year && m === month;
+    });
+    const idx = sameMonthItems.findIndex(i => i.quote_id === item.quote_id);
+    return idx + 1;
+  };
   // ✅ 규격 정규화 함수
   const normalizeSpec = (spec: string) => {
     if (!spec) return null;
