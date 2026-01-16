@@ -610,8 +610,8 @@ useEffect(() => {
   <input
     value={item.drawing_no || ""}
     onChange={(e) => {
-      const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-      updateField(item.quote_id, "drawing_no", val.padStart(2, "0"));
+      const val = e.target.value.replace(/\D/g, "").slice(0, 3);
+      updateField(item.quote_id, "drawing_no", val);
     }}
     style={{ 
       width: 40, 
@@ -622,7 +622,7 @@ useEffect(() => {
       fontWeight: 700,
       fontSize: 14
     }}
-    placeholder="00"
+    placeholder="-"
   />
 </td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
