@@ -1539,6 +1539,7 @@ function highlightMatch(text: string, query: string) {
 }
 
 // 인라인 품목 셀 (기존 품목 클릭 시 검색/변경)
+// 인라인 품목 셀 (기존 품목 클릭 시 검색/변경)
 function InlineItemCell({
   item,
   options,
@@ -1556,13 +1557,13 @@ function InlineItemCell({
   setSelectedItems: React.Dispatch<React.SetStateAction<any[]>>;
   fmt: (n: number) => string;
 }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [showDropdown, setShowDropdown] = React.useState(false);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredOptions = React.useMemo(() => {
+  const filteredOptions = useMemo(() => {
     const q = searchQuery.trim();
     if (!q) return options.slice(0, 15);
     const matched = options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q));
@@ -1575,7 +1576,7 @@ function InlineItemCell({
     return matched.slice(0, 15);
   }, [searchQuery, options]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -1725,13 +1726,13 @@ function EmptyRowCell({
   setSelectedItems: React.Dispatch<React.SetStateAction<any[]>>;
   fmt: (n: number) => string;
 }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [showDropdown, setShowDropdown] = React.useState(false);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredOptions = React.useMemo(() => {
+  const filteredOptions = useMemo(() => {
     const q = searchQuery.trim();
     if (!q) return options.slice(0, 15);
     const matched = options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q));
@@ -1744,7 +1745,7 @@ function EmptyRowCell({
     return matched.slice(0, 15);
   }, [searchQuery, options]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -1903,11 +1904,11 @@ function EditableNumberCell({
   onChange: (val: number) => void;
   disabled?: boolean;
 }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [tempValue, setTempValue] = React.useState(String(value));
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
