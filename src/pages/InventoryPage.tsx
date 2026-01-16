@@ -45,8 +45,7 @@ export default function InventoryPage({
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
   });
-
- const loadInventory = async () => {
+const loadInventory = async () => {
   setLoading(true);
   const { data, error } = await supabase
     .from("inventory")
@@ -69,12 +68,12 @@ export default function InventoryPage({
     setAllItems(sorted as InventoryItem[]);
   }
   setLoading(false);
+};  // ← 여기서 함수 끝!
 
-   // ✅ 이 부분 추가!
+// ✅ useEffect는 함수 바깥에!
 useEffect(() => {
   loadInventory();
 }, []);
-};
   // ✅ 규격 정규화 함수
   const normalizeSpec = (spec: string) => {
     if (!spec) return null;
