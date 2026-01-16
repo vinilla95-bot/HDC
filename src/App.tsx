@@ -1,5 +1,6 @@
 // InlineEditTest.tsx - Supabase 연동 + 인라인 편집 + 전체 기능
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import * as React from "react";
+const { useState, useRef, useEffect, useMemo } = React;
 import html2canvas from "html2canvas";
 import {
   DndContext,
