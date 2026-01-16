@@ -56,6 +56,13 @@ const loadInventory = async () => {
   }
   if (data) {
     const sorted = [...data].sort((a, b) => {
+      // 1. 날짜 최신순
+      const dateA = a.contract_date || "";
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);  // 최신순
+      }
+      // 2. 같은 날짜면 도면번호 순
       const numA = parseInt(a.drawing_no) || 0;
       const numB = parseInt(b.drawing_no) || 0;
       return numA - numB;
