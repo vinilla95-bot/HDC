@@ -35,6 +35,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
   const [copySuccess, setCopySuccess] = useState(false);
   const [draggedItem, setDraggedItem] = useState<DeliveryItem | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [selectedDateItems, setSelectedDateItems] = useState<{date: string, items: DeliveryItem[]} | null>(null);
   
   // 새 일정 추가 폼
   const [newSchedule, setNewSchedule] = useState({
@@ -642,10 +643,15 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
 
               return (
                 <div
-                  key={idx}
-                  onDragOver={(e) => handleDragOver(e, dateKey)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, dateKey)}
+  key={idx}
+  onDragOver={(e) => handleDragOver(e, dateKey)}
+  onDragLeave={handleDragLeave}
+  onDrop={(e) => handleDrop(e, dateKey)}
+  onClick={() => {
+    setNewSchedule({ ...newSchedule, delivery_date: dateKey });
+    setShowAddModal(true);
+  }}
+ 
                   style={{
                     minHeight: 100,
                     padding: 4,
@@ -705,22 +711,21 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
                       );
                     })}
                     {dayDeliveries.length > 3 && (
-                      <div style={{
-                        fontSize: 10,
-                        color: "#666",
-                        padding: "2px 4px",
-                        cursor: "pointer",
-                      }}>
-                        +{dayDeliveries.length - 3}건 더
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+  <div 
+    onClick={(e) => {
+      e.stopPropagation();
+      setSelectedDateItems({ date: dateKey, items: dayDeliveries });
+    }}
+    style={{
+      fontSize: 10,
+      color: "#2e5b86",
+      padding: "2px 4px",
+      cursor: "pointer",
+      fontWeight: 700,
+    }}>
+    +{dayDeliveries.length - 3}건 더보기
+  </div>
+)}
 
       {/* 범례 */}
      {/* 범례 */}
@@ -832,18 +837,12 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
               </div>
               <div>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
-                <select
-                  value={newSchedule.spec}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, spec: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                >
-                  <option value="3x3">3x3</option>
-                  <option value="3x4">3x4</option>
-                  <option value="3x6">3x6</option>
-                  <option value="3x9">3x9</option>
-                  <option value="2x3">2x3</option>
-                  <option value="4x9">4x9</option>
-                </select>
+                <input
+  value={newSchedule.spec}
+  onChange={(e) => setNewSchedule({ ...newSchedule, spec: e.target.value })}
+  placeholder="예: 3x6x2.6"
+  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+/>
               </div>
               <div>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>하차 주소</label>
@@ -1375,6 +1374,72 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
           </div>
         </div>
       )}
+                    {/* 날짜별 전체 목록 모달 */}
+{selectedDateItems && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10000,
+    }}
+    onClick={() => setSelectedDateItems(null)}
+  >
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 12,
+        padding: 24,
+        width: "90%",
+        maxWidth: 500,
+        maxHeight: "80vh",
+        overflow: "auto",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ margin: 0 }}>📅 {selectedDateItems.date} 일정 ({selectedDateItems.items.length}건)</h3>
+        <button
+          onClick={() => setSelectedDateItems(null)}
+          style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
+        >
+          ✕
+        </button>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {selectedDateItems.items.map((item, idx) => {
+          const color = getItemColor(item);
+          const style = colorStyles[color];
+          return (
+            <div
+              key={item.quote_id + idx}
+              onClick={() => {
+                setSelectedDateItems(null);
+                setSelectedDelivery(item);
+                setEditForm(item);
+              }}
+              style={{
+                padding: "12px",
+                background: style.bg,
+                borderLeft: `4px solid ${style.border}`,
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontWeight: 700, color: style.text }}>{getDeliveryLabel(item)}</div>
+              <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                {item.customer_name} {item.customer_phone && `· ${item.customer_phone}`}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
