@@ -20,86 +20,103 @@ type ContractQuote = {
   delivery_date: string;
   total_amount: number;
   contract_type: string;
+  container_type: string;
 };
 
 type TabType = "order" | "branch" | "used" | "rental";
 
+// 규격 옵션
+const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
+
 export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<TabType>("order");
   const [allContracts, setAllContracts] = useState<ContractQuote[]>([]);
+  const [allInventory, setAllInventory] = useState<{quote_id: string; contract_date: string; drawing_no: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState<ContractQuote | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [allInventory, setAllInventory] = useState<{quote_id: string; contract_date: string; drawing_no: string}[]>([]);
+  
+  // ✅ 모든 컬럼 입력 가능한 새 항목 양식
   const [newItem, setNewItem] = useState({
+    contract_type: "order" as TabType,
+    contract_date: new Date().toISOString().slice(0, 10),
+    drawing_no: "",
+    spec: "3x6",
+    bank_account: "",
+    tax_invoice: "",
+    deposit_status: "",
     customer_name: "",
-    spec: "",
-    total_amount: 0,
+    options: "",
+    special_order: false,
+    interior: "",
+    depositor: "",
+    delivery_date: "",
+    qty: 1,
   });
 
-  // ✅ 현재 월의 다음 도면번호 계산
- // ✅ 현재 월의 다음 도면번호 계산 (quotes + inventory 통합)
-const nextDrawingNo = useMemo(() => {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  // ✅ 현재 월의 다음 도면번호 계산 (quotes + inventory 통합)
+  const nextDrawingNo = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-  // quotes에서 이번 달 도면번호
-  const quotesNumbers = allContracts
-    .filter(c => {
-      if (!c.contract_date) return false;
-      const d = new Date(c.contract_date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    })
-    .map(c => parseInt(c.drawing_no) || 0);
+    // quotes에서 이번 달 도면번호
+    const quotesNumbers = allContracts
+      .filter(c => {
+        if (!c.contract_date) return false;
+        const d = new Date(c.contract_date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .map(c => parseInt(c.drawing_no) || 0);
 
-  // inventory에서 이번 달 도면번호
-  const inventoryNumbers = allInventory
-    .filter(c => {
-      if (!c.contract_date) return false;
-      const d = new Date(c.contract_date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    })
-    .map(c => parseInt(c.drawing_no) || 0);
+    // inventory에서 이번 달 도면번호
+    const inventoryNumbers = allInventory
+      .filter(c => {
+        if (!c.contract_date) return false;
+        const d = new Date(c.contract_date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .map(c => parseInt(c.drawing_no) || 0);
 
-  // ✅ 통합
-  const allNumbers = [...quotesNumbers, ...inventoryNumbers].filter(n => n > 0);
-  const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
-  
-  return maxNo + 1;
-}, [allContracts, allInventory]);
+    // ✅ 통합
+    const allNumbers = [...quotesNumbers, ...inventoryNumbers].filter(n => n > 0);
+    const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
+    
+    return maxNo + 1;
+  }, [allContracts, allInventory]);
 
   const loadContracts = async () => {
-  setLoading(true);
-  
-  // ✅ quotes와 inventory 둘 다 조회
-  const [quotesRes, inventoryRes] = await Promise.all([
-    supabase.from("quotes").select("*").eq("status", "confirmed"),
-    supabase.from("inventory").select("quote_id, contract_date, drawing_no")
-  ]);
+    setLoading(true);
+    
+    // ✅ quotes와 inventory 둘 다 조회
+    const [quotesRes, inventoryRes] = await Promise.all([
+      supabase.from("quotes").select("*").eq("status", "confirmed"),
+      supabase.from("inventory").select("quote_id, contract_date, drawing_no")
+    ]);
 
-  if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
-  if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
+    if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
+    if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
 
-  const quotesData = quotesRes.data || [];
-  const inventoryData = inventoryRes.data || [];
+    const quotesData = quotesRes.data || [];
+    const inventoryData = inventoryRes.data || [];
 
-  // ✅ 정렬 (날짜 내림차순 → 도면번호 내림차순)
-  const sorted = [...quotesData].sort((a, b) => {
-    const dateA = a.contract_date || "";
-    const dateB = b.contract_date || "";
-    if (dateA !== dateB) {
-      return dateB.localeCompare(dateA);
-    }
-    const numA = Number(a.drawing_no) || 0;
-    const numB = Number(b.drawing_no) || 0;
-    return numB - numA;
-  });
+    // ✅ 정렬 (날짜 내림차순 → 도면번호 내림차순)
+    const sorted = [...quotesData].sort((a, b) => {
+      const dateA = a.contract_date || "";
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      const numA = Number(a.drawing_no) || 0;
+      const numB = Number(b.drawing_no) || 0;
+      return numB - numA;
+    });
 
-  setAllContracts(sorted as ContractQuote[]);
-  setAllInventory(inventoryData); // ✅ 재고 데이터 저장
-  setLoading(false);
-};
+    setAllContracts(sorted as ContractQuote[]);
+    setAllInventory(inventoryData);
+    setLoading(false);
+  };
+
   useEffect(() => {
     loadContracts();
   }, []);
@@ -135,27 +152,55 @@ const nextDrawingNo = useMemo(() => {
     updateField(quote_id, "drawing_no", String(nextDrawingNo));
   };
 
-  // ✅ 새 항목 추가 (영업소/중고)
+  // ✅ 새 항목 추가
   const handleAddNew = async () => {
-    if (!newItem.customer_name.trim()) {
-      alert("발주처(고객명)를 입력해주세요.");
-      return;
+    const qty = newItem.qty || 1;
+    
+    // 같은 월의 최대 도면번호 찾기 (quotes + inventory 통합)
+    const [year, month] = newItem.contract_date.split("-");
+    
+    const quotesMonthItems = allContracts.filter(item => {
+      const [y, m] = (item.contract_date || "").split("-");
+      return y === year && m === month;
+    });
+    
+    const inventoryMonthItems = allInventory.filter(item => {
+      const [y, m] = (item.contract_date || "").split("-");
+      return y === year && m === month;
+    });
+    
+    const allMonthNumbers = [
+      ...quotesMonthItems.map(item => Number(item.drawing_no) || 0),
+      ...inventoryMonthItems.map(item => Number(item.drawing_no) || 0)
+    ];
+    
+    const maxNo = allMonthNumbers.length > 0 ? Math.max(...allMonthNumbers) : 0;
+
+    // 여러 개 추가
+    const inserts = [];
+    for (let i = 0; i < qty; i++) {
+      inserts.push({
+        quote_id: `${newItem.contract_type.toUpperCase()}_${Date.now()}_${i}`,
+        status: "confirmed",
+        contract_type: newItem.contract_type,
+        contract_date: newItem.contract_date,
+        drawing_no: newItem.drawing_no || String(maxNo + 1 + i),
+        spec: newItem.spec,
+        bank_account: newItem.bank_account,
+        tax_invoice: newItem.tax_invoice,
+        deposit_status: newItem.deposit_status,
+        customer_name: newItem.customer_name,
+        items: newItem.options ? [{ displayName: newItem.options }] : [],
+        special_order: newItem.special_order,
+        interior: newItem.interior,
+        depositor: newItem.depositor,
+        delivery_date: newItem.delivery_date || null,
+        total_amount: 0,
+        source: "contract",
+      });
     }
 
-    const quote_id = `${activeTab.toUpperCase()}_${Date.now()}`;
-    const today = new Date().toISOString().slice(0, 10);
-
-    const { error } = await supabase.from("quotes").insert({
-      quote_id,
-      status: "confirmed",
-      contract_type: activeTab,
-      contract_date: today,
-      customer_name: newItem.customer_name,
-      spec: newItem.spec,
-      total_amount: newItem.total_amount,
-      items: [],
-      source: "contract",
-    });
+    const { error } = await supabase.from("quotes").insert(inserts);
 
     if (error) {
       alert("추가 실패: " + error.message);
@@ -163,7 +208,22 @@ const nextDrawingNo = useMemo(() => {
     }
 
     setShowAddModal(false);
-    setNewItem({ customer_name: "", spec: "", total_amount: 0 });
+    setNewItem({
+      contract_type: activeTab,
+      contract_date: new Date().toISOString().slice(0, 10),
+      drawing_no: "",
+      spec: "3x6",
+      bank_account: "",
+      tax_invoice: "",
+      deposit_status: "",
+      customer_name: "",
+      options: "",
+      special_order: false,
+      interior: "",
+      depositor: "",
+      delivery_date: "",
+      qty: 1,
+    });
     loadContracts();
   };
 
@@ -184,13 +244,6 @@ const nextDrawingNo = useMemo(() => {
     loadContracts();
   };
 
-  const summarizeOptions = (items: any[]) => {
-    if (!items || items.length === 0) return "-";
-    const names = items.slice(0, 3).map((i: any) => i.optionName || i.displayName || "");
-    const summary = names.join(", ");
-    return items.length > 3 ? `${summary} 외 ${items.length - 3}건` : summary;
-  };
-
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
   // ✅ 행 상태 판단 함수
@@ -198,9 +251,7 @@ const nextDrawingNo = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // 완료 상태: 입금완료 + 출고일이 오늘 또는 이전
     const isCompleted = c.deposit_status === "완료" && c.delivery_date && new Date(c.delivery_date) <= today;
-    // 미완료 상태: 입금이 "완료"가 아닌 모든 경우 (빈값, 계약금, 미입금 등)
     const isNotPaid = c.deposit_status !== "완료";
     
     return { isCompleted, isNotPaid };
@@ -266,7 +317,6 @@ const nextDrawingNo = useMemo(() => {
               {contracts.map((c) => {
                 const { isCompleted, isNotPaid } = getRowStatus(c);
                 
-                // 배경색 결정: 완료 → 회색, 기본 → 흰색
                 let bgColor = "#fff";
                 if (isCompleted) {
                   bgColor = "#d0d0d0";
@@ -295,7 +345,12 @@ const nextDrawingNo = useMemo(() => {
                       </select>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                      {c.contract_date || "-"}
+                      <input
+                        type="date"
+                        value={c.contract_date || ""}
+                        onChange={(e) => updateField(c.quote_id, "contract_date", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      />
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee" }}>
                       <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
@@ -325,7 +380,16 @@ const nextDrawingNo = useMemo(() => {
                       </div>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                      {c.spec || "-"}
+                      <select
+                        value={c.spec || ""}
+                        onChange={(e) => updateField(c.quote_id, "spec", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="">-</option>
+                        {SPEC_OPTIONS.map(spec => (
+                          <option key={spec} value={spec}>{spec}</option>
+                        ))}
+                      </select>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee" }}>
                       <select
@@ -492,6 +556,27 @@ const nextDrawingNo = useMemo(() => {
     return `${now.getMonth() + 1}월`;
   })();
 
+  // 모달 열 때 현재 탭으로 초기화
+  const openAddModal = () => {
+    setNewItem({
+      contract_type: activeTab,
+      contract_date: new Date().toISOString().slice(0, 10),
+      drawing_no: "",
+      spec: "3x6",
+      bank_account: "",
+      tax_invoice: "",
+      deposit_status: "",
+      customer_name: "",
+      options: "",
+      special_order: false,
+      interior: "",
+      depositor: "",
+      delivery_date: "",
+      qty: 1,
+    });
+    setShowAddModal(true);
+  };
+
   return (
     <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
       <style>{`
@@ -511,7 +596,7 @@ const nextDrawingNo = useMemo(() => {
           </span>
         </h2>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
           style={{
             padding: "8px 16px",
             background: "#28a745",
@@ -554,17 +639,17 @@ const nextDrawingNo = useMemo(() => {
           📦 중고 ({usedCount})
         </button>
         <button
-  style={tabStyle(activeTab === "rental")}
-  onClick={() => setActiveTab("rental")}
->
-  🏠 임대 ({rentalCount})
-</button>
+          style={tabStyle(activeTab === "rental")}
+          onClick={() => setActiveTab("rental")}
+        >
+          🏠 임대 ({rentalCount})
+        </button>
       </div>
 
       {/* 테이블 */}
       {renderTable()}
 
-      {/* 새 항목 추가 모달 */}
+      {/* ✅ 새 항목 추가 모달 - 모든 컬럼 입력 가능 */}
       {showAddModal && (
         <div
           style={{
@@ -583,57 +668,209 @@ const nextDrawingNo = useMemo(() => {
               background: "#fff",
               borderRadius: 12,
               padding: 24,
-              width: "90%",
-              maxWidth: 400,
+              width: "95%",
+              maxWidth: 500,
+              maxHeight: "90vh",
+              overflow: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ margin: "0 0 16px 0" }}>새 항목 추가</h3>
 
+            {/* 구분 */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>구분</label>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
               <select
-                value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value as TabType)}
+                value={newItem.contract_type}
+                onChange={(e) => setNewItem({ ...newItem, contract_type: e.target.value as TabType })}
                 style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
               >
                 <option value="order">수주</option>
                 <option value="branch">영업소</option>
                 <option value="used">중고</option>
                 <option value="rental">임대</option>
-                
               </select>
             </div>
 
+            {/* 내린날짜 */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>발주처 (고객명) *</label>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>내린날짜</label>
               <input
-                value={newItem.customer_name}
-                onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+                type="date"
+                value={newItem.contract_date}
+                onChange={(e) => setNewItem({ ...newItem, contract_date: e.target.value })}
                 style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                placeholder="발주처 입력"
               />
             </div>
 
+            {/* 도면번호 + 수량 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
+                  도면번호 
+                  <span style={{ color: "#888", fontWeight: 400 }}>(비우면 자동: {nextDrawingNo})</span>
+                </label>
+                <input
+                  value={newItem.drawing_no}
+                  onChange={(e) => setNewItem({ ...newItem, drawing_no: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder={String(nextDrawingNo)}
+                />
+              </div>
+              <div style={{ width: 80 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>수량</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={newItem.qty}
+                  onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            {/* 규격 */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>규격</label>
-              <input
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
+              <select
                 value={newItem.spec}
                 onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+              >
+                {SPEC_OPTIONS.map(spec => (
+                  <option key={spec} value={spec}>{spec}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 계좌 + 세발 + 입금 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>계좌</label>
+                <select
+                  value={newItem.bank_account}
+                  onChange={(e) => setNewItem({ ...newItem, bank_account: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+                >
+                  <option value="">-</option>
+                  <option value="현대">현대</option>
+                  <option value="국민">국민</option>
+                  <option value="기업">기업</option>
+                  <option value="현금영수증">현금영수증</option>
+                  <option value="현찰">현찰</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>세발</label>
+                <select
+                  value={newItem.tax_invoice}
+                  onChange={(e) => setNewItem({ ...newItem, tax_invoice: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+                >
+                  <option value="">-</option>
+                  <option value="완료">완료</option>
+                  <option value="계약금만">계약금만</option>
+                  <option value="대기">대기</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>입금</label>
+                <select
+                  value={newItem.deposit_status}
+                  onChange={(e) => setNewItem({ ...newItem, deposit_status: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+                >
+                  <option value="">-</option>
+                  <option value="완료">완료</option>
+                  <option value="계약금">계약금</option>
+                  <option value="미입금">미입금</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 발주처 */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
+              {newItem.contract_type === "branch" ? (
+                <select
+                  value={newItem.customer_name}
+                  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+                >
+                  <option value="">-</option>
+                  <option value="라인">라인</option>
+                  <option value="한진">한진</option>
+                  <option value="한진더조은">한진더조은</option>
+                  <option value="동부A">동부A</option>
+                  <option value="동부B">동부B</option>
+                  <option value="태광">태광</option>
+                </select>
+              ) : (
+                <input
+                  value={newItem.customer_name}
+                  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder="발주처 입력"
+                />
+              )}
+            </div>
+
+            {/* 옵션 */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>옵션</label>
+              <input
+                value={newItem.options}
+                onChange={(e) => setNewItem({ ...newItem, options: e.target.value })}
                 style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                placeholder="예: 3x6x2.6"
+                placeholder="옵션 입력"
               />
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>금액</label>
-              <input
-                type="number"
-                value={newItem.total_amount || ""}
-                onChange={(e) => setNewItem({ ...newItem, total_amount: Number(e.target.value) })}
-                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                placeholder="0"
-              />
+            {/* 특수 + 내장 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>특수</label>
+                <div style={{ padding: 10 }}>
+                  <input
+                    type="checkbox"
+                    checked={newItem.special_order}
+                    onChange={(e) => setNewItem({ ...newItem, special_order: e.target.checked })}
+                    style={{ width: 20, height: 20 }}
+                  />
+                </div>
+              </div>
+              <div style={{ flex: 2 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>내장</label>
+                <input
+                  value={newItem.interior}
+                  onChange={(e) => setNewItem({ ...newItem, interior: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder="내장"
+                />
+              </div>
+            </div>
+
+            {/* 입금자 + 출고일 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>입금자</label>
+                <input
+                  value={newItem.depositor}
+                  onChange={(e) => setNewItem({ ...newItem, depositor: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder="입금자"
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일</label>
+                <input
+                  type="date"
+                  value={newItem.delivery_date}
+                  onChange={(e) => setNewItem({ ...newItem, delivery_date: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
