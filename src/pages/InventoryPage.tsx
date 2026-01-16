@@ -418,29 +418,24 @@ export default function InventoryPage({
               {waitingItems.length}대
             </span>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {Object.entries(waitingBySpec).length > 0 ? (
-              Object.entries(waitingBySpec).map(([spec, count]) => (
-                <div 
-                  key={spec}
-                  style={{ 
-                    background: "#fffbeb", 
-                    padding: "6px 12px", 
-                    borderRadius: 6,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#92400e"
-                  }}
-                >
-                  {spec} - {count}동
-                </div>
-              ))
-            ) : (
-              <div style={{ color: "#999", fontSize: 13 }}>출고대기 항목 없음</div>
-            )}
-          </div>
-        </div>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+  {["3x3", "3x4", "3x6", "3x9"].map(spec => (
+    <div 
+      key={spec}
+      style={{ 
+        background: "#fffbeb", 
+        padding: "10px 16px", 
+        borderRadius: 8,
+        textAlign: "center",
+        minWidth: 60
+      }}
+    >
+      <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>
+        {waitingBySpec[spec] || 0}
       </div>
+      <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
+    </div>
+  ))}
 
       {/* ✅ 입금 탭 버튼 */}
       <div style={{
