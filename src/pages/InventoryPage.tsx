@@ -48,10 +48,10 @@ export default function InventoryPage({
 
   const loadInventory = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("inventory")
-      .select("*")
-      .order("contract_date", { ascending: false });
+   const { data, error } = await supabase
+  .from("inventory")
+  .select("*")
+  .order("drawing_no", { ascending: true });  // 도면번호 작은 수부터
 
     if (error) {
       console.error("Load error:", error);
