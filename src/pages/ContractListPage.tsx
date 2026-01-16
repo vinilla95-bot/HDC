@@ -263,6 +263,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                         <option value="order">수주</option>
                         <option value="branch">영업소</option>
                         <option value="used">중고</option>
+                        <option value="rental">임대</option> 
                       </select>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
