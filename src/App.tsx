@@ -1,7 +1,6 @@
 // InlineEditTest.tsx - Supabase 연동 + 인라인 편집 테스트
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { supabase, calculateOptionLine } from "../QuoteService";
-
+import { supabase, calculateOptionLine } from "./QuoteService";
 // 초성 검색 유틸리티
 const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 
