@@ -212,10 +212,28 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
   try {
     toast("계약 확정 중...");
+    
+    // ✅ 옵션에 따라 contract_type 결정
+    const items = pickItems(current);
+    let contractType = "order";  // 기본값: 수주
+    
+    for (const it of items) {
+      const name = (it.optionName || it.displayName || it.item_name || "").toString();
+      if (name.includes("임대")) {
+        contractType = "rental";
+        break;
+      } else if (name.includes("중고")) {
+        contractType = "used";
+        break;
+      }
+      // "신품"은 기본값 "order"로 유지
+    }
+    
     const { error } = await supabase
       .from("quotes")
       .update({ 
         status: "confirmed",
+        contract_type: contractType,
         contract_date: new Date().toISOString().slice(0, 10)
       })
       .eq("quote_id", current!.quote_id);
