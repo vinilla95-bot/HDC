@@ -30,10 +30,22 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryItem | null>(null);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [editForm, setEditForm] = useState<Partial<DeliveryItem>>({});
   const [copySuccess, setCopySuccess] = useState(false);
   const [draggedItem, setDraggedItem] = useState<DeliveryItem | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  
+  // 새 일정 추가 폼
+  const [newSchedule, setNewSchedule] = useState({
+    delivery_date: "",
+    customer_name: "",
+    customer_phone: "",
+    spec: "3x6",
+    contract_type: "order",
+    site_addr: "",
+    memo: "",
+  });
 
   const loadDeliveries = async () => {
     setLoading(true);
@@ -63,9 +75,11 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
       return item.delivery_color as ColorType;
     }
 
+    // ✅ timezone 이슈 수정 - 로컬 날짜로 파싱
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const deliveryDate = new Date(item.delivery_date);
+    const [year, month, day] = item.delivery_date.split('-').map(Number);
+    const deliveryDate = new Date(year, month - 1, day);
     deliveryDate.setHours(0, 0, 0, 0);
     const isPast = deliveryDate < today;
 
@@ -140,6 +154,23 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     return containerItem?.qty || 1;
   };
 
+  // ✅ 운송 타입 가져오기 (크레인/일반트럭)
+  const getTransportType = (item: DeliveryItem): "crane" | "truck" | null => {
+    if (!item.items || item.items.length === 0) return null;
+    
+    const transportItem = item.items.find((i: any) => {
+      const name = (i.optionName || i.displayName || i.itemName || "").toLowerCase();
+      return name.includes("운송") || name.includes("트럭") || name.includes("크레인");
+    });
+    
+    if (transportItem) {
+      const name = (transportItem.optionName || transportItem.displayName || transportItem.itemName || "").toLowerCase();
+      if (name.includes("크레인")) return "crane";
+      if (name.includes("5톤") || name.includes("일반") || name.includes("트럭")) return "truck";
+    }
+    return null;
+  };
+
   // ✅ 출고 라벨 생성
   const getDeliveryLabel = (item: DeliveryItem) => {
     const type = item.contract_type || "order";
@@ -149,19 +180,22 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     const customer = item.customer_name || "";
     const qty = getQty(item);
     const qtyText = qty > 1 ? `-${qty}동` : "";
+    const transportType = getTransportType(item);
 
     let prefix = "";
     let label = "";
 
+    // 운송 타입에 따른 prefix
+    if (transportType === "crane") {
+      prefix = "크";
+    }
+
     if (type === "used") {
-      prefix = "[중고]";
-      label = `${prefix}(${spec}${qtyText}) ${options} ${site}`.trim();
+      label = `${prefix}[중고](${spec}${qtyText}) ${options} ${site}`.trim();
     } else if (type === "branch") {
-      prefix = "[신품]";
-      label = `${prefix}${customer}(${spec}${qtyText}) ${options} ${site}`.trim();
+      label = `${prefix}[신품]${customer}(${spec}${qtyText}) ${options} ${site}`.trim();
     } else {
-      prefix = "[신품]";
-      label = `${prefix}(${spec}${qtyText}) ${options} ${site}`.trim();
+      label = `${prefix}[신품](${spec}${qtyText}) ${options} ${site}`.trim();
     }
 
     return label;
@@ -173,8 +207,9 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     const isUsed = type === "used";
     const saleType = isUsed ? "중고" : "신품";
 
-    const date = new Date(item.delivery_date);
-    const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+    // ✅ timezone 이슈 수정
+    const [year, month, day] = item.delivery_date.split('-').map(Number);
+    const dateStr = `${month}/${day}`;
     const spec = item.spec || "";
     const qty = getQty(item);
     const qtyText = qty > 1 ? `${qty}` : "1";
@@ -310,6 +345,63 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     setSelectedDelivery({ ...selectedDelivery, ...editForm } as DeliveryItem);
   };
 
+  // ✅ 새 일정 추가
+  const handleAddSchedule = async () => {
+    if (!newSchedule.delivery_date) {
+      alert("출고일을 선택해주세요.");
+      return;
+    }
+
+    const quoteId = `SCHEDULE_${Date.now()}`;
+    
+    const { error } = await supabase
+      .from("quotes")
+      .insert({
+        quote_id: quoteId,
+        status: "confirmed",
+        contract_type: newSchedule.contract_type,
+        delivery_date: newSchedule.delivery_date,
+        customer_name: newSchedule.customer_name,
+        customer_phone: newSchedule.customer_phone,
+        spec: newSchedule.spec,
+        site_addr: newSchedule.site_addr,
+        memo: newSchedule.memo,
+        total_amount: 0,
+        items: [],
+      });
+
+    if (error) {
+      alert("일정 추가 실패: " + error.message);
+      return;
+    }
+
+    // 로컬 상태 업데이트
+    const newItem: DeliveryItem = {
+      quote_id: quoteId,
+      contract_type: newSchedule.contract_type,
+      delivery_date: newSchedule.delivery_date,
+      customer_name: newSchedule.customer_name,
+      customer_phone: newSchedule.customer_phone,
+      spec: newSchedule.spec,
+      site_addr: newSchedule.site_addr,
+      memo: newSchedule.memo,
+      total_amount: 0,
+      items: [],
+    };
+    
+    setDeliveries(prev => [...prev, newItem]);
+    setShowAddModal(false);
+    setNewSchedule({
+      delivery_date: "",
+      customer_name: "",
+      customer_phone: "",
+      spec: "3x6",
+      contract_type: "order",
+      site_addr: "",
+      memo: "",
+    });
+  };
+
   // ✅ 색상 변경
   const handleColorChange = async (quote_id: string, color: ColorType) => {
     const { error } = await supabase
@@ -368,8 +460,12 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     return days;
   }, [currentMonth]);
 
+  // ✅ 날짜 포맷 수정 - 로컬 시간 기준
   const formatDateKey = (date: Date) => {
-    return date.toISOString().slice(0, 10);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const prevMonth = () => {
@@ -404,6 +500,21 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
             (총 {deliveries.length}건)
           </span>
         </h2>
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{
+            padding: "8px 16px",
+            background: "#2e5b86",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
+          + 일정추가
+        </button>
       </div>
 
       {/* 월 네비게이션 */}
@@ -473,7 +584,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
         fontSize: 12,
         color: "#f57f17",
       }}>
-        💡 일정을 드래그하여 날짜를 변경할 수 있습니다
+        💡 일정을 드래그하여 날짜를 변경할 수 있습니다 | 크[신품] = 크레인 운송
       </div>
 
       {loading ? (
@@ -635,7 +746,158 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
           <div style={{ width: 14, height: 14, background: colorStyles.gray.bg, borderLeft: `3px solid ${colorStyles.gray.border}`, borderRadius: 2 }}></div>
           <span>완료(출고지남)</span>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
+          <span style={{ fontWeight: 700 }}>크</span>
+          <span>= 크레인 운송</span>
+        </div>
       </div>
+
+      {/* ✅ 일정 추가 모달 */}
+      {showAddModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+          onClick={() => setShowAddModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              width: "90%",
+              maxWidth: 450,
+              maxHeight: "80vh",
+              overflow: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>➕ 일정 추가</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일 *</label>
+                <input
+                  type="date"
+                  value={newSchedule.delivery_date}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, delivery_date: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
+                <select
+                  value={newSchedule.contract_type}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, contract_type: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                >
+                  <option value="order">수주(신품)</option>
+                  <option value="branch">영업소</option>
+                  <option value="used">중고</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
+                <input
+                  value={newSchedule.customer_name}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, customer_name: e.target.value })}
+                  placeholder="발주처 입력"
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>연락처</label>
+                <input
+                  value={newSchedule.customer_phone}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, customer_phone: e.target.value })}
+                  placeholder="010-0000-0000"
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
+                <select
+                  value={newSchedule.spec}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, spec: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                >
+                  <option value="3x3">3x3</option>
+                  <option value="3x4">3x4</option>
+                  <option value="3x6">3x6</option>
+                  <option value="3x9">3x9</option>
+                  <option value="2x3">2x3</option>
+                  <option value="4x9">4x9</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>하차 주소</label>
+                <input
+                  value={newSchedule.site_addr}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, site_addr: e.target.value })}
+                  placeholder="시간/주소 입력"
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
+                <textarea
+                  value={newSchedule.memo}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, memo: e.target.value })}
+                  placeholder="메모 입력"
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
+                />
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: "#f5f5f5",
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleAddSchedule}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: "#2e5b86",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                추가
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ✅ 상세보기 팝업 */}
       {selectedDelivery && !showDispatchModal && !showEditModal && (
@@ -680,18 +942,34 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
                 const color = getItemColor(selectedDelivery);
                 const style = colorStyles[color];
                 const label = type === "used" ? "중고" : type === "branch" ? "영업소" : "수주(신품)";
+                const transportType = getTransportType(selectedDelivery);
                 return (
-                  <span style={{
-                    padding: "4px 12px",
-                    background: style.bg,
-                    color: style.text,
-                    borderRadius: 20,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    border: `1px solid ${style.border}`,
-                  }}>
-                    {label}
-                  </span>
+                  <>
+                    <span style={{
+                      padding: "4px 12px",
+                      background: style.bg,
+                      color: style.text,
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: `1px solid ${style.border}`,
+                    }}>
+                      {label}
+                    </span>
+                    {transportType === "crane" && (
+                      <span style={{
+                        padding: "4px 12px",
+                        background: "#fff3e0",
+                        color: "#e65100",
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "1px solid #ff9800",
+                      }}>
+                        🏗️ 크레인
+                      </span>
+                    )}
+                  </>
                 );
               })()}
 
