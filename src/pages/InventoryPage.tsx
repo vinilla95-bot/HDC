@@ -25,6 +25,7 @@ type InventoryItem = {
 
 // 규격 옵션
 const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
+const [allQuotes, setAllQuotes] = useState<{quote_id: string; contract_date: string; drawing_no: string}[]>([]);
 
 type DepositTabType = "all" | "paid" | "unpaid";
 
@@ -62,31 +63,34 @@ export default function InventoryPage({
   });
 
   const loadInventory = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("inventory")
-      .select("*");
-      
-    if (error) {
-      console.error("Load error:", error);
-    }
-    if (data) {
-      const sorted = [...data].sort((a, b) => {
-        // 1. 날짜 내림차순 (최신 먼저)
-        const dateA = a.contract_date || "";
-        const dateB = b.contract_date || "";
-        if (dateA !== dateB) {
-          return dateB.localeCompare(dateA);
-        }
-        // 2. 같은 날짜면 도면번호 내림차순
-        const numA = Number(a.drawing_no) || 0;
-        const numB = Number(b.drawing_no) || 0;
-        return numB - numA;
-      });
-      setAllItems(sorted as InventoryItem[]);
-    }
-    setLoading(false);
-  };
+  setLoading(true);
+  
+  // ✅ inventory와 quotes 둘 다 조회
+  const [inventoryRes, quotesRes] = await Promise.all([
+    supabase.from("inventory").select("*"),
+    supabase.from("quotes").select("quote_id, contract_date, drawing_no").eq("status", "confirmed")
+  ]);
+    
+  if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
+  if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
+  
+  if (inventoryRes.data) {
+    const sorted = [...inventoryRes.data].sort((a, b) => {
+      const dateA = a.contract_date || "";
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      const numA = Number(a.drawing_no) || 0;
+      const numB = Number(b.drawing_no) || 0;
+      return numB - numA;
+    });
+    setAllItems(sorted as InventoryItem[]);
+  }
+  
+  setAllQuotes(quotesRes.data || []);
+  setLoading(false);
+};
 
   useEffect(() => {
     loadInventory();
@@ -131,6 +135,39 @@ export default function InventoryPage({
     return counts;
   }, [allItems]);
 
+// ✅ 현재 월의 다음 도면번호 계산 (inventory + quotes 통합)
+const nextDrawingNo = useMemo(() => {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // inventory에서 이번 달 도면번호
+  const inventoryNumbers = allItems
+    .filter(item => {
+      if (!item.contract_date) return false;
+      const d = new Date(item.contract_date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .map(item => parseInt(item.drawing_no) || 0);
+
+  // quotes에서 이번 달 도면번호
+  const quotesNumbers = allQuotes
+    .filter(item => {
+      if (!item.contract_date) return false;
+      const d = new Date(item.contract_date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .map(item => parseInt(item.drawing_no) || 0);
+
+  // 통합
+  const allNumbers = [...inventoryNumbers, ...quotesNumbers].filter(n => n > 0);
+  const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
+  
+  return maxNo + 1;
+}, [allItems, allQuotes]);
+
+const currentMonthLabel = `${new Date().getMonth() + 1}월`;
+  
   // ✅ 출고대기 항목
   const waitingItems = useMemo(() => {
    return allItems.filter(item => item.inventory_status === "출고대기");
