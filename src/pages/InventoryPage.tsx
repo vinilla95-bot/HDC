@@ -26,6 +26,8 @@ type InventoryItem = {
 // 규격 옵션
 const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
 
+type DepositTabType = "all" | "paid" | "unpaid";
+
 const formatDateDisplay = (dateStr: string) => {
   if (!dateStr) return "-";
   const [year, month, day] = dateStr.split("-");
@@ -34,29 +36,6 @@ const formatDateDisplay = (dateStr: string) => {
   const yy = year.slice(2);
   return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
 };
-
-
-
-
-// 도면번호 자동 채번 (월별 리셋)
-const getNextDrawingNo = (items: InventoryItem[], contractDate: string) => {
-  if (!contractDate) return "01";
-  
-  const [year, month] = contractDate.split("-");
-  const targetYearMonth = `${year}-${month}`;
-  
-  const sameMonthNos = items
-    .filter(item => item.contract_date?.startsWith(targetYearMonth))
-    .map(item => parseInt(item.drawing_no) || 0)
-    .filter(n => n > 0);
-  
-  if (sameMonthNos.length === 0) return "01";
-  
-  const maxNo = Math.max(...sameMonthNos);
-  return String(maxNo + 1).padStart(2, "0");
-};
-
-
 
 export default function InventoryPage({ 
   onBack,
@@ -69,8 +48,8 @@ export default function InventoryPage({
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [depositTab, setDepositTab] = useState<DepositTabType>("all");
   
-  // ✅ setNewItem 추가
   const [newItem, setNewItem] = useState({
     customer_name: "",
     spec: "3x6",
@@ -78,42 +57,41 @@ export default function InventoryPage({
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
-    qty: 1
+    qty: 1,
+    deposit_status: "",
   });
 
-  
-const loadInventory = async () => {
-  setLoading(true);
-  const { data, error } = await supabase
-    .from("inventory")
-    .select("*");
-    
-  if (error) {
-    console.error("Load error:", error);
-  }
-  if (data) {
-    const sorted = [...data].sort((a, b) => {
-      // 1. 날짜 내림차순 (최신 먼저)
-      const dateA = a.contract_date || "";
-      const dateB = b.contract_date || "";
-      if (dateA !== dateB) {
-        return dateB.localeCompare(dateA);
-      }
-      // 2. 같은 날짜면 도면번호 내림차순
-      const numA = Number(a.drawing_no) || 0;
-      const numB = Number(b.drawing_no) || 0;
-      return numB - numA;  // 내림차순
-    });
-    setAllItems(sorted as InventoryItem[]);
-  }
-  setLoading(false);
-};
-// ✅ useEffect는 함수 바깥에!
-useEffect(() => {
-  loadInventory();
-}, []);
+  const loadInventory = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("inventory")
+      .select("*");
+      
+    if (error) {
+      console.error("Load error:", error);
+    }
+    if (data) {
+      const sorted = [...data].sort((a, b) => {
+        // 1. 날짜 내림차순 (최신 먼저)
+        const dateA = a.contract_date || "";
+        const dateB = b.contract_date || "";
+        if (dateA !== dateB) {
+          return dateB.localeCompare(dateA);
+        }
+        // 2. 같은 날짜면 도면번호 내림차순
+        const numA = Number(a.drawing_no) || 0;
+        const numB = Number(b.drawing_no) || 0;
+        return numB - numA;
+      });
+      setAllItems(sorted as InventoryItem[]);
+    }
+    setLoading(false);
+  };
 
- 
+  useEffect(() => {
+    loadInventory();
+  }, []);
+
   // ✅ 규격 정규화 함수
   const normalizeSpec = (spec: string) => {
     if (!spec) return null;
@@ -126,6 +104,18 @@ useEffect(() => {
     if (s.includes("4x9")) return "4x9";
     return null;
   };
+
+  // ✅ 탭별 필터링
+  const filteredItems = useMemo(() => {
+    if (depositTab === "all") return allItems;
+    if (depositTab === "paid") return allItems.filter(item => item.deposit_status === "완료");
+    if (depositTab === "unpaid") return allItems.filter(item => item.deposit_status !== "완료");
+    return allItems;
+  }, [allItems, depositTab]);
+
+  // ✅ 탭별 카운트
+  const paidCount = useMemo(() => allItems.filter(item => item.deposit_status === "완료").length, [allItems]);
+  const unpaidCount = useMemo(() => allItems.filter(item => item.deposit_status !== "완료").length, [allItems]);
 
   // ✅ 작업지시 완료 카운트 (규격별)
   const completedCounts = useMemo(() => {
@@ -155,31 +145,29 @@ useEffect(() => {
     return grouped;
   }, [waitingItems]);
 
-// ✅ 업데이트
-const updateField = async (quote_id: string, field: string, value: any) => {
-  const { error } = await supabase
-    .from("inventory")
-    .update({ [field]: value })
-    .eq("quote_id", quote_id);
+  // ✅ 업데이트
+  const updateField = async (quote_id: string, field: string, value: any) => {
+    const { error } = await supabase
+      .from("inventory")
+      .update({ [field]: value })
+      .eq("quote_id", quote_id);
 
-  if (error) {
-    console.error("Update error:", error);
-    alert(`업데이트 실패: ${error.message}`);
-    return;
-  }
+    if (error) {
+      console.error("Update error:", error);
+      alert(`업데이트 실패: ${error.message}`);
+      return;
+    }
 
-  // 로컬만 업데이트 (정렬 안 함)
-  setAllItems(prev => prev.map(c =>
-    c.quote_id === quote_id ? { ...c, [field]: value } : c
-  ));
-};
+    setAllItems(prev => prev.map(c =>
+      c.quote_id === quote_id ? { ...c, [field]: value } : c
+    ));
+  };
 
   // ✅ 구분 클릭 시 해당 항목을 quotes 테이블로 이동
   const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
     const typeName = targetType === "order" ? "수주" : "영업소";
     if (!confirm(`이 항목을 계약견적 "${typeName}"으로 이동하시겠습니까?`)) return;
 
-    // 1. quotes 테이블에 추가
     const { error: insertError } = await supabase.from("quotes").insert({
       quote_id: item.quote_id,
       status: "confirmed",
@@ -204,7 +192,6 @@ const updateField = async (quote_id: string, field: string, value: any) => {
       return;
     }
 
-    // 2. inventory 테이블에서 삭제
     const { error: deleteError } = await supabase
       .from("inventory")
       .delete()
@@ -220,59 +207,59 @@ const updateField = async (quote_id: string, field: string, value: any) => {
   };
 
   const handleAddNew = async () => {
-  if (!newItem.spec) {
-    alert("규격을 선택해주세요.");
-    return;
-  }
+    if (!newItem.spec) {
+      alert("규격을 선택해주세요.");
+      return;
+    }
 
-  const qty = (newItem as any).qty || 1;  // 수량
-  
-  // 같은 월의 최대 도면번호 찾기
-  const [year, month] = newItem.contract_date.split("-");
-  const sameMonthItems = allItems.filter(item => {
-    const [y, m] = (item.contract_date || "").split("-");
-    return y === year && m === month;
-  });
-  const maxNo = sameMonthItems.length > 0 
-    ? Math.max(...sameMonthItems.map(item => Number(item.drawing_no) || 0))
-    : 0;
-
-  // 여러 개 추가
-  const inserts = [];
-  for (let i = 0; i < qty; i++) {
-    inserts.push({
-      quote_id: `INV_${Date.now()}_${i}`,
-      contract_date: newItem.contract_date,
-      drawing_no: String(maxNo + 1 + i),
-      customer_name: newItem.customer_name,
-      spec: newItem.spec,
-      inventory_status: newItem.inventory_status,
-      container_type: newItem.container_type,
-      total_amount: newItem.total_amount,
-      items: [],
+    const qty = newItem.qty || 1;
+    
+    const [year, month] = newItem.contract_date.split("-");
+    const sameMonthItems = allItems.filter(item => {
+      const [y, m] = (item.contract_date || "").split("-");
+      return y === year && m === month;
     });
-  }
+    const maxNo = sameMonthItems.length > 0 
+      ? Math.max(...sameMonthItems.map(item => Number(item.drawing_no) || 0))
+      : 0;
 
-  const { error } = await supabase.from("inventory").insert(inserts);
+    const inserts = [];
+    for (let i = 0; i < qty; i++) {
+      inserts.push({
+        quote_id: `INV_${Date.now()}_${i}`,
+        contract_date: newItem.contract_date,
+        drawing_no: String(maxNo + 1 + i),
+        customer_name: newItem.customer_name,
+        spec: newItem.spec,
+        inventory_status: newItem.inventory_status,
+        container_type: newItem.container_type,
+        total_amount: newItem.total_amount,
+        deposit_status: newItem.deposit_status,
+        items: [],
+      });
+    }
 
-  if (error) {
-    alert("추가 실패: " + error.message);
-    return;
-  }
+    const { error } = await supabase.from("inventory").insert(inserts);
 
-  setShowAddModal(false);
-  setNewItem({ 
-    customer_name: "", 
-    spec: "3x6", 
-    inventory_status: "작업완료", 
-    container_type: "신품",
-    contract_date: new Date().toISOString().slice(0, 10),
-    total_amount: 0,
-    qty: 1,
-  });
-  loadInventory();
-};
-  // ✅ 삭제
+    if (error) {
+      alert("추가 실패: " + error.message);
+      return;
+    }
+
+    setShowAddModal(false);
+    setNewItem({ 
+      customer_name: "", 
+      spec: "3x6", 
+      inventory_status: "작업완료", 
+      container_type: "신품",
+      contract_date: new Date().toISOString().slice(0, 10),
+      total_amount: 0,
+      qty: 1,
+      deposit_status: "",
+    });
+    loadInventory();
+  };
+
   const handleDelete = async (quote_id: string, spec: string) => {
     if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
 
@@ -289,8 +276,6 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     loadInventory();
   };
 
-  const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
-
   const thStyle: React.CSSProperties = {
     padding: "10px 8px",
     border: "1px solid #1e4a6e",
@@ -302,7 +287,6 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     textAlign: "center",
   };
 
-  // ✅ 상태별 색상
   const getStatusColor = (status: string) => {
     switch (status) {
       case "작업완료": return "#28a745";
@@ -312,14 +296,17 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     }
   };
 
-  // ✅ 구분 라벨
-  const getContractTypeLabel = (type: string) => {
-    switch (type) {
-      case "order": return "수주";
-      case "branch": return "영업소";
-      default: return "수주";
-    }
-  };
+  const tabStyle = (isActive: boolean): React.CSSProperties => ({
+    padding: "12px 24px",
+    border: "none",
+    borderBottom: isActive ? "3px solid #2e5b86" : "3px solid transparent",
+    background: isActive ? "#fff" : "#f5f5f5",
+    color: isActive ? "#2e5b86" : "#666",
+    fontWeight: isActive ? 800 : 500,
+    fontSize: 14,
+    cursor: "pointer",
+    transition: "all 0.2s",
+  });
 
   return (
     <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
@@ -455,27 +442,54 @@ const updateField = async (quote_id: string, field: string, value: any) => {
         </div>
       </div>
 
+      {/* ✅ 입금 탭 버튼 */}
+      <div style={{
+        display: "flex",
+        background: "#fff",
+        borderRadius: "12px 12px 0 0",
+        border: "1px solid #e5e7eb",
+        borderBottom: "none",
+        overflow: "hidden"
+      }}>
+        <button
+          style={tabStyle(depositTab === "all")}
+          onClick={() => setDepositTab("all")}
+        >
+          📋 전체 ({allItems.length})
+        </button>
+        <button
+          style={tabStyle(depositTab === "paid")}
+          onClick={() => setDepositTab("paid")}
+        >
+          ✅ 입금완료 ({paidCount})
+        </button>
+        <button
+          style={{
+            ...tabStyle(depositTab === "unpaid"),
+            color: depositTab === "unpaid" ? "#dc3545" : "#666",
+            borderBottomColor: depositTab === "unpaid" ? "#dc3545" : "transparent",
+          }}
+          onClick={() => setDepositTab("unpaid")}
+        >
+          ❌ 미입금 ({unpaidCount})
+        </button>
+      </div>
+
       {/* ✅ 재고 리스트 테이블 */}
       <div style={{
         background: "#fff",
-        borderRadius: 12,
+        borderRadius: "0 0 12px 12px",
         border: "1px solid #e5e7eb",
+        borderTop: "none",
         overflow: "hidden"
       }}>
-        <div style={{ 
-          padding: "12px 16px", 
-          borderBottom: "1px solid #e5e7eb",
-          fontWeight: 700,
-          fontSize: 14
-        }}>
-          전체 재고 목록 ({allItems.length}건)
-        </div>
-        
         {loading ? (
           <div style={{ textAlign: "center", padding: 40, color: "#888" }}>로딩 중...</div>
-        ) : allItems.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div style={{ textAlign: "center", padding: 40, color: "#888" }}>
-            재고 데이터가 없습니다.
+            {depositTab === "all" && "재고 데이터가 없습니다."}
+            {depositTab === "paid" && "입금완료 항목이 없습니다."}
+            {depositTab === "unpaid" && "미입금 항목이 없습니다."}
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -489,14 +503,16 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                   <th style={thStyle}>규격</th>
                   <th style={thStyle}>발주처</th>
                   <th style={thStyle}>도면번호</th>
+                  <th style={thStyle}>입금</th>
                   <th style={thStyle}>메모</th>
                   <th style={thStyle}>출고일</th>
                   <th style={thStyle}>삭제</th>
                 </tr>
               </thead>
               <tbody>
-                {allItems.map((item) => {
+                {filteredItems.map((item) => {
                   const isCompleted = item.inventory_status === "출고완료";
+                  const isUnpaid = item.deposit_status !== "완료";
                   
                   return (
                     <tr
@@ -504,7 +520,9 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                       style={{
                         background: isCompleted ? "#f0f0f0" : "#fff",
                         opacity: isCompleted ? 0.6 : 1,
-                        borderBottom: "1px solid #eee"
+                        borderBottom: "1px solid #eee",
+                        outline: isUnpaid && !isCompleted ? "2px solid #dc3545" : "none",
+                        outlineOffset: "-1px",
                       }}
                     >
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
@@ -574,26 +592,26 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                         </select>
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", whiteSpace: "nowrap" }}>
-  <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
-    <span style={{ fontWeight: 600, fontSize: 12 }}>
-      {formatDateDisplay(item.contract_date)}
-    </span>
-    <input
-      type="date"
-      value={item.contract_date || ""}
-      onChange={(e) => updateField(item.quote_id, "contract_date", e.target.value)}
-      style={{ 
-        width: 18, 
-        padding: 0, 
-        border: "none", 
-        background: "transparent",
-        cursor: "pointer",
-        opacity: 0.5
-      }}
-      title="날짜 변경"
-    />
-  </div>
-</td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                          <span style={{ fontWeight: 600, fontSize: 12 }}>
+                            {formatDateDisplay(item.contract_date)}
+                          </span>
+                          <input
+                            type="date"
+                            value={item.contract_date || ""}
+                            onChange={(e) => updateField(item.quote_id, "contract_date", e.target.value)}
+                            style={{ 
+                              width: 18, 
+                              padding: 0, 
+                              border: "none", 
+                              background: "transparent",
+                              cursor: "pointer",
+                              opacity: 0.5
+                            }}
+                            title="날짜 변경"
+                          />
+                        </div>
+                      </td>
                     
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <select
@@ -614,48 +632,69 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee" }}>
                         <input
-  defaultValue={item.customer_name || ""}
-  onBlur={(e) => updateField(item.quote_id, "customer_name", e.target.value)}
+                          key={item.quote_id + "_customer"}
+                          defaultValue={item.customer_name || ""}
+                          onBlur={(e) => updateField(item.quote_id, "customer_name", e.target.value)}
                           style={{ width: 80, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
                           placeholder="발주처"
                         />
                       </td>
-                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-  <input
-    key={item.quote_id}
-    defaultValue={item.drawing_no || ""}
-    onBlur={(e) => {
-      const val = (e.target as HTMLInputElement).value.replace(/\D/g, "").slice(0, 3);
-      if (val && val !== item.drawing_no) {
-        updateField(item.quote_id, "drawing_no", val);
-      }
-    }}
-    onKeyDown={(e) => {
-      if (e.key === "Enter") {
-        (e.target as HTMLInputElement).blur();
-      }
-    }}
-    style={{ 
-      width: 40, 
-      padding: 4, 
-      border: "1px solid #ddd", 
-      borderRadius: 4, 
-      textAlign: "center",
-      fontWeight: 700,
-      fontSize: 14
-    }}
-    placeholder="-"
-  />
-</td>
-
-                     <td style={{ padding: 8, border: "1px solid #eee" }}>
-  <input
-    defaultValue={item.interior || ""}
-    onBlur={(e) => updateField(item.quote_id, "interior", e.target.value)}
-    style={{ width: 120, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
-    placeholder="메모"
-  />
-</td>
+                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                        <input
+                          key={item.quote_id + "_drawing"}
+                          defaultValue={item.drawing_no || ""}
+                          onBlur={(e) => {
+                            const val = e.target.value.replace(/\D/g, "").slice(0, 3);
+                            if (val && val !== item.drawing_no) {
+                              updateField(item.quote_id, "drawing_no", val);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              (e.target as HTMLInputElement).blur();
+                            }
+                          }}
+                          style={{ 
+                            width: 40, 
+                            padding: 4, 
+                            border: "1px solid #ddd", 
+                            borderRadius: 4, 
+                            textAlign: "center",
+                            fontWeight: 700,
+                            fontSize: 14
+                          }}
+                          placeholder="-"
+                        />
+                      </td>
+                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                        <select
+                          value={item.deposit_status || ""}
+                          onChange={(e) => updateField(item.quote_id, "deposit_status", e.target.value)}
+                          style={{ 
+                            padding: 4, 
+                            border: "1px solid #ddd", 
+                            borderRadius: 4, 
+                            fontSize: 11,
+                            background: item.deposit_status === "완료" ? "#28a745" : (item.deposit_status ? "#ffc107" : "#fff"),
+                            color: item.deposit_status === "완료" ? "#fff" : "#000",
+                            fontWeight: 600
+                          }}
+                        >
+                          <option value="">-</option>
+                          <option value="완료">완료</option>
+                          <option value="계약금">계약금</option>
+                          <option value="미입금">미입금</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: 8, border: "1px solid #eee" }}>
+                        <input
+                          key={item.quote_id + "_interior"}
+                          defaultValue={item.interior || ""}
+                          onBlur={(e) => updateField(item.quote_id, "interior", e.target.value)}
+                          style={{ width: 120, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                          placeholder="메모"
+                        />
+                      </td>
                       <td style={{ padding: 8, border: "1px solid #eee" }}>
                         <input
                           type="date"
@@ -763,17 +802,33 @@ const updateField = async (quote_id: string, field: string, value: any) => {
                 ))}
               </select>
             </div>
-<div style={{ marginBottom: 12 }}>
-  <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label>
-  <input
-    type="number"
-    min={1}
-    max={20}
-    value={(newItem as any).qty || 1}
-    onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 } as any)}
-    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-  />
-</div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>입금</label>
+              <select
+                value={newItem.deposit_status}
+                onChange={(e) => setNewItem({ ...newItem, deposit_status: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+              >
+                <option value="">-</option>
+                <option value="완료">완료</option>
+                <option value="계약금">계약금</option>
+                <option value="미입금">미입금</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={newItem.qty}
+                onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+              />
+            </div>
+
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>발주처</label>
               <input
