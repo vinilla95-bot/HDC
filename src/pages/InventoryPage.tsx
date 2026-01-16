@@ -368,75 +368,36 @@ export default function InventoryPage({
           }}>
             ✅ 작업지시 완료
           </div>
-           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {["3x3", "3x4", "3x6", "3x9"].map(spec => (
-            <div 
-              key={spec}
-              style={{ 
-                background: "#fffbeb", 
-                padding: "10px 16px", 
-                borderRadius: 8,
-                textAlign: "center",
-                minWidth: 60
-              }}
-            >
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>
-                {waitingBySpec[spec] || 0}
-              </div>
-              <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
-            </div>
-          ))}
+          {/* ✅ 요약 카드 영역 */}
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
+        gap: 16, 
+        marginBottom: 20 
+      }}>
+        {/* 작업지시 완료 카드 */}
+        <div style={{...}}>
+          ...
         </div>
+
+        {/* 출고 가능 카드 */}
+        <div style={{...}}>
+          <div style={{...}}>
+            🚚 출고 가능 (출고대기)
+            <span>...</span>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {["3x3", "3x4", "3x6", "3x9"].map(spec => (
+              <div key={spec} style={{...}}>
+                <div>...</div>
+                <div>{spec}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-        {/* 출고 가능 카드 */}
-        <div style={{
-          background: "#fff",
-          borderRadius: 12,
-          padding: 20,
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
-        }}>
-          <div style={{ 
-            fontSize: 14, 
-            fontWeight: 800, 
-            color: "#ffc107", 
-            marginBottom: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 8
-          }}>
-            🚚 출고 가능 (출고대기)
-            <span style={{ 
-              background: "#ffc107", 
-              color: "#000", 
-              padding: "2px 8px", 
-              borderRadius: 10, 
-              fontSize: 12,
-              fontWeight: 700
-            }}>
-              {waitingItems.length}대
-            </span>
-          </div>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-  {["3x3", "3x4", "3x6", "3x9"].map(spec => (
-    <div 
-      key={spec}
-      style={{ 
-        background: "#fffbeb", 
-        padding: "10px 16px", 
-        borderRadius: 8,
-        textAlign: "center",
-        minWidth: 60
-      }}
-    >
-      <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>
-        {waitingBySpec[spec] || 0}
-      </div>
-      <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
-    </div>
-  ))}
+      {/* ✅ 입금 탭 버튼 */}
 
       {/* ✅ 입금 탭 버튼 */}
       <div style={{
