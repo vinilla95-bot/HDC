@@ -18,20 +18,31 @@ type InventoryItem = {
   depositor: string;
   delivery_date: string;
   total_amount: number;
-  inventory_status: string; // "작업완료", "출고대기", "출고완료" 등
-  container_type: string; // "신품", "중고" 등
+  inventory_status: string;
+  container_type: string;
+  contract_type: string;
 };
 
-export default function InventoryPage({ onBack }: { onBack: () => void }) {
+// 규격 옵션
+const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
+
+export default function InventoryPage({ 
+  onBack,
+  onNavigate 
+}: { 
+  onBack: () => void;
+  onNavigate?: (view: string) => void;
+}) {
   const [allItems, setAllItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [newItem, setNewItem] = useState({
     customer_name: "",
-    spec: "",
+    spec: "3x6",
     inventory_status: "작업완료",
     container_type: "신품",
+    contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
   });
 
@@ -55,37 +66,34 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
     loadInventory();
   }, []);
 
-  // ✅ 규격별 파싱 함수 (3x6, 3x9, 33, 34 등)
-  const parseSpec = (spec: string) => {
+  // ✅ 규격 정규화 함수
+  const normalizeSpec = (spec: string) => {
     if (!spec) return null;
-    const s = spec.toLowerCase().replace(/\s/g, "");
-    
-    // 3x6, 3*6 형태
-    if (s.includes("3x6") || s.includes("3*6")) return "3x6";
-    if (s.includes("3x9") || s.includes("3*9")) return "3x9";
-    
-    // 33, 34 형태
-    if (s.startsWith("33") || s === "33") return "33";
-    if (s.startsWith("34") || s === "34") return "34";
-    
+    const s = spec.toLowerCase().replace(/\s/g, "").replace("*", "x");
+    if (s.includes("3x6")) return "3x6";
+    if (s.includes("3x9")) return "3x9";
+    if (s.includes("3x3")) return "3x3";
+    if (s.includes("3x4")) return "3x4";
+    if (s.includes("2x3")) return "2x3";
+    if (s.includes("4x9")) return "4x9";
     return null;
   };
 
   // ✅ 작업지시 완료 카운트 (규격별)
   const completedCounts = useMemo(() => {
-    const counts = { "3x6": 0, "3x9": 0, "33": 0, "34": 0 };
+    const counts: { [key: string]: number } = { "3x3": 0, "3x4": 0, "3x6": 0, "3x9": 0 };
     allItems
       .filter(item => item.inventory_status === "작업완료")
       .forEach(item => {
-        const specKey = parseSpec(item.spec);
+        const specKey = normalizeSpec(item.spec);
         if (specKey && specKey in counts) {
-          counts[specKey as keyof typeof counts]++;
+          counts[specKey]++;
         }
       });
     return counts;
   }, [allItems]);
 
-  // ✅ 출고대기 카운트 (규격별 상세)
+  // ✅ 출고대기 항목
   const waitingItems = useMemo(() => {
     return allItems.filter(item => item.inventory_status === "출고대기");
   }, [allItems]);
@@ -93,7 +101,7 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
   const waitingBySpec = useMemo(() => {
     const grouped: { [key: string]: number } = {};
     waitingItems.forEach(item => {
-      const spec = item.spec || "미정";
+      const spec = normalizeSpec(item.spec) || item.spec || "미정";
       grouped[spec] = (grouped[spec] || 0) + 1;
     });
     return grouped;
@@ -117,19 +125,62 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
     ));
   };
 
+  // ✅ 구분 클릭 시 해당 항목을 quotes 테이블로 이동
+  const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
+    const typeName = targetType === "order" ? "수주" : "영업소";
+    if (!confirm(`이 항목을 계약견적 "${typeName}"으로 이동하시겠습니까?`)) return;
+
+    // 1. quotes 테이블에 추가
+    const { error: insertError } = await supabase.from("quotes").insert({
+      quote_id: item.quote_id,
+      status: "confirmed",
+      contract_type: targetType,
+      contract_date: item.contract_date,
+      drawing_no: item.drawing_no,
+      spec: item.spec,
+      customer_name: item.customer_name,
+      interior: item.interior,
+      delivery_date: item.delivery_date,
+      total_amount: item.total_amount,
+      items: item.items || [],
+      deposit_status: item.deposit_status || "",
+      bank_account: item.bank_account || "",
+      tax_invoice: item.tax_invoice || "",
+      depositor: item.depositor || "",
+    });
+
+    if (insertError) {
+      alert("이동 실패: " + insertError.message);
+      return;
+    }
+
+    // 2. inventory 테이블에서 삭제
+    const { error: deleteError } = await supabase
+      .from("inventory")
+      .delete()
+      .eq("quote_id", item.quote_id);
+
+    if (deleteError) {
+      alert("재고에서 삭제 실패: " + deleteError.message);
+      return;
+    }
+
+    alert(`계약견적 "${typeName}"으로 이동 완료!`);
+    loadInventory();
+  };
+
   // ✅ 새 항목 추가
   const handleAddNew = async () => {
-    if (!newItem.spec.trim()) {
-      alert("규격을 입력해주세요.");
+    if (!newItem.spec) {
+      alert("규격을 선택해주세요.");
       return;
     }
 
     const quote_id = `INV_${Date.now()}`;
-    const today = new Date().toISOString().slice(0, 10);
 
     const { error } = await supabase.from("inventory").insert({
       quote_id,
-      contract_date: today,
+      contract_date: newItem.contract_date,
       customer_name: newItem.customer_name,
       spec: newItem.spec,
       inventory_status: newItem.inventory_status,
@@ -144,7 +195,14 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
     }
 
     setShowAddModal(false);
-    setNewItem({ customer_name: "", spec: "", inventory_status: "작업완료", container_type: "신품", total_amount: 0 });
+    setNewItem({ 
+      customer_name: "", 
+      spec: "3x6", 
+      inventory_status: "작업완료", 
+      container_type: "신품",
+      contract_date: new Date().toISOString().slice(0, 10),
+      total_amount: 0 
+    });
     loadInventory();
   };
 
@@ -188,6 +246,15 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
     }
   };
 
+  // ✅ 구분 라벨
+  const getContractTypeLabel = (type: string) => {
+    switch (type) {
+      case "order": return "수주";
+      case "branch": return "영업소";
+      default: return "수주";
+    }
+  };
+
   return (
     <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
       <style>{`
@@ -202,6 +269,9 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
           📦 재고현황
+          <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>
+            (총 {allItems.length}건)
+          </span>
         </h2>
         <button
           onClick={() => setShowAddModal(true)}
@@ -246,46 +316,23 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
             ✅ 작업지시 완료
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ 
-              background: "#f0f9f0", 
-              padding: "10px 16px", 
-              borderRadius: 8,
-              textAlign: "center",
-              minWidth: 60
-            }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>{completedCounts["3x6"]}</div>
-              <div style={{ fontSize: 11, color: "#666" }}>3x6</div>
-            </div>
-            <div style={{ 
-              background: "#f0f9f0", 
-              padding: "10px 16px", 
-              borderRadius: 8,
-              textAlign: "center",
-              minWidth: 60
-            }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>{completedCounts["3x9"]}</div>
-              <div style={{ fontSize: 11, color: "#666" }}>3x9</div>
-            </div>
-            <div style={{ 
-              background: "#f0f9f0", 
-              padding: "10px 16px", 
-              borderRadius: 8,
-              textAlign: "center",
-              minWidth: 60
-            }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>{completedCounts["33"]}</div>
-              <div style={{ fontSize: 11, color: "#666" }}>33</div>
-            </div>
-            <div style={{ 
-              background: "#f0f9f0", 
-              padding: "10px 16px", 
-              borderRadius: 8,
-              textAlign: "center",
-              minWidth: 60
-            }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>{completedCounts["34"]}</div>
-              <div style={{ fontSize: 11, color: "#666" }}>34</div>
-            </div>
+            {["3x3", "3x4", "3x6", "3x9"].map(spec => (
+              <div 
+                key={spec}
+                style={{ 
+                  background: "#f0f9f0", 
+                  padding: "10px 16px", 
+                  borderRadius: 8,
+                  textAlign: "center",
+                  minWidth: 60
+                }}
+              >
+                <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>
+                  {completedCounts[spec] || 0}
+                </div>
+                <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -371,14 +418,13 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
                 <tr>
                   <th style={thStyle}>상태</th>
                   <th style={thStyle}>구분</th>
+                  <th style={thStyle}>타입</th>
                   <th style={thStyle}>등록일</th>
                   <th style={thStyle}>규격</th>
                   <th style={thStyle}>발주처</th>
                   <th style={thStyle}>도면번호</th>
                   <th style={thStyle}>내장</th>
                   <th style={thStyle}>출고일</th>
-                  <th style={thStyle}>금액</th>
-                  <th style={thStyle}>비고</th>
                   <th style={thStyle}>삭제</th>
                 </tr>
               </thead>
@@ -415,6 +461,42 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
                         </select>
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                          <button
+                            onClick={() => handleMoveToContract(item, "order")}
+                            style={{
+                              padding: "4px 6px",
+                              background: "#2e5b86",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 4,
+                              fontSize: 10,
+                              cursor: "pointer",
+                              fontWeight: 600
+                            }}
+                            title="수주로 이동"
+                          >
+                            →수주
+                          </button>
+                          <button
+                            onClick={() => handleMoveToContract(item, "branch")}
+                            style={{
+                              padding: "4px 6px",
+                              background: "#6f42c1",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 4,
+                              fontSize: 10,
+                              cursor: "pointer",
+                              fontWeight: 600
+                            }}
+                            title="영업소로 이동"
+                          >
+                            →영업소
+                          </button>
+                        </div>
+                      </td>
+                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <select
                           value={item.container_type || "신품"}
                           onChange={(e) => updateField(item.quote_id, "container_type", e.target.value)}
@@ -426,15 +508,29 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
                         </select>
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        {item.contract_date || "-"}
-                      </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700 }}>
                         <input
-                          value={item.spec || ""}
-                          onChange={(e) => updateField(item.quote_id, "spec", e.target.value)}
-                          style={{ width: 70, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center", fontWeight: 700 }}
-                          placeholder="3x6"
+                          type="date"
+                          value={item.contract_date || ""}
+                          onChange={(e) => updateField(item.quote_id, "contract_date", e.target.value)}
+                          style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
                         />
+                      </td>
+                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                        <select
+                          value={normalizeSpec(item.spec) || item.spec || "3x6"}
+                          onChange={(e) => updateField(item.quote_id, "spec", e.target.value)}
+                          style={{ 
+                            padding: 4, 
+                            border: "1px solid #ddd", 
+                            borderRadius: 4, 
+                            fontSize: 12,
+                            fontWeight: 700
+                          }}
+                        >
+                          {SPEC_OPTIONS.map(spec => (
+                            <option key={spec} value={spec}>{spec}</option>
+                          ))}
+                        </select>
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee" }}>
                         <input
@@ -467,25 +563,6 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
                           onChange={(e) => updateField(item.quote_id, "delivery_date", e.target.value)}
                           style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
                         />
-                      </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "right" }}>
-                        {fmt(item.total_amount)}
-                      </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        <button
-                          onClick={() => setSelectedItem(item)}
-                          style={{
-                            padding: "4px 8px",
-                            background: "#2e5b86",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 4,
-                            fontSize: 11,
-                            cursor: "pointer",
-                          }}
-                        >
-                          보기
-                        </button>
                       </td>
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <button
@@ -539,6 +616,16 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
             <h3 style={{ margin: "0 0 16px 0" }}>새 재고 추가</h3>
 
             <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>등록일</label>
+              <input
+                type="date"
+                value={newItem.contract_date}
+                onChange={(e) => setNewItem({ ...newItem, contract_date: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>상태</label>
               <select
                 value={newItem.inventory_status}
@@ -552,7 +639,7 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>구분</label>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label>
               <select
                 value={newItem.container_type}
                 onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })}
@@ -566,32 +653,24 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
 
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>규격 *</label>
-              <input
+              <select
                 value={newItem.spec}
                 onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                placeholder="예: 3x6, 3x9, 33, 34"
-              />
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, fontWeight: 700 }}
+              >
+                {SPEC_OPTIONS.map(spec => (
+                  <option key={spec} value={spec}>{spec}</option>
+                ))}
+              </select>
             </div>
 
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>발주처</label>
               <input
                 value={newItem.customer_name}
                 onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
                 style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                 placeholder="발주처 입력"
-              />
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>금액</label>
-              <input
-                type="number"
-                value={newItem.total_amount || ""}
-                onChange={(e) => setNewItem({ ...newItem, total_amount: Number(e.target.value) })}
-                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                placeholder="0"
               />
             </div>
 
@@ -625,67 +704,6 @@ export default function InventoryPage({ onBack }: { onBack: () => void }) {
               >
                 추가
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 상세 보기 팝업 */}
-      {selectedItem && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10000,
-          }}
-          onClick={() => setSelectedItem(null)}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 24,
-              width: "90%",
-              maxWidth: 500,
-              maxHeight: "80vh",
-              overflow: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>재고 상세</h3>
-              <button
-                onClick={() => setSelectedItem(null)}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <strong>규격:</strong> {selectedItem.spec}
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <strong>상태:</strong> {selectedItem.inventory_status}
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <strong>구분:</strong> {selectedItem.container_type}
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <strong>발주처:</strong> {selectedItem.customer_name || "-"}
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <strong>금액:</strong> {fmt(selectedItem.total_amount)}원
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <strong>등록일:</strong> {selectedItem.contract_date || "-"}
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <strong>출고일:</strong> {selectedItem.delivery_date || "-"}
             </div>
           </div>
         </div>
