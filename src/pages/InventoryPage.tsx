@@ -59,7 +59,7 @@ const loadInventory = async () => {
       const dateA = a.contract_date || "";
       const dateB = b.contract_date || "";
       if (dateA !== dateB) {
-        return dateA.localeCompare(dateB);
+        return dateB.localeCompare(dateA);
       }
       const numA = parseInt(a.drawing_no) || 0;
       const numB = parseInt(b.drawing_no) || 0;
