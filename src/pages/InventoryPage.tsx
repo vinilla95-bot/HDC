@@ -220,12 +220,22 @@ const updateField = async (quote_id: string, field: string, value: any) => {
   }
 
   const quote_id = `INV_${Date.now()}`;
-  const drawing_no = getNextDrawingNo(allItems, newItem.contract_date);  // ✅ 자동 채번
+  
+  // 같은 월의 최대 도면번호 + 1
+  const [year, month] = newItem.contract_date.split("-");
+  const sameMonthItems = allItems.filter(item => {
+    const [y, m] = (item.contract_date || "").split("-");
+    return y === year && m === month;
+  });
+  const maxNo = sameMonthItems.length > 0 
+    ? Math.max(...sameMonthItems.map(item => Number(item.drawing_no) || 0))
+    : 0;
+  const drawing_no = String(maxNo + 1);
 
   const { error } = await supabase.from("inventory").insert({
     quote_id,
     contract_date: newItem.contract_date,
-    drawing_no,  // ✅ 추가
+    drawing_no,
     customer_name: newItem.customer_name,
     spec: newItem.spec,
     inventory_status: newItem.inventory_status,
@@ -234,23 +244,22 @@ const updateField = async (quote_id: string, field: string, value: any) => {
     items: [],
   });
 
-    if (error) {
-      alert("추가 실패: " + error.message);
-      return;
-    }
+  if (error) {
+    alert("추가 실패: " + error.message);
+    return;
+  }
 
-    setShowAddModal(false);
-    setNewItem({ 
-      customer_name: "", 
-      spec: "3x6", 
-      inventory_status: "작업완료", 
-      container_type: "신품",
-      contract_date: new Date().toISOString().slice(0, 10),
-      total_amount: 0 
-    });
-    loadInventory();
-  };
-
+  setShowAddModal(false);
+  setNewItem({ 
+    customer_name: "", 
+    spec: "3x6", 
+    inventory_status: "작업완료", 
+    container_type: "신품",
+    contract_date: new Date().toISOString().slice(0, 10),
+    total_amount: 0 
+  });
+  loadInventory();
+};
   // ✅ 삭제
   const handleDelete = async (quote_id: string, spec: string) => {
     if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
