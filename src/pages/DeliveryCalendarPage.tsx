@@ -104,8 +104,8 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   yellow: { bg: "#fffde7", border: "#ffc107", text: "#f57f17" },
   gray: { bg: "#f5f5f5", border: "#9e9e9e", text: "#616161" },
   green: { bg: "#e8f5e9", border: "#4caf50", text: "#2e7d32" },
-  purple: { bg: "#f3e5f5", border: "#9c27b0", text: "#6a1b9a" },  // ✅ 보라색
-  navy: { bg: "#e8eaf6", border: "#3f51b5", text: "#283593" },    // ✅ 남색
+  purple: { bg: "#f3e5f5", border: "#9c27b0", text: "#6a1b9a" },
+  navy: { bg: "#e8eaf6", border: "#3f51b5", text: "#283593" },
   auto: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
 };
 
@@ -203,8 +203,14 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   // ✅ 배차 양식 생성
   const generateDispatchText = (item: DeliveryItem) => {
     const type = item.contract_type || "order";
-    const isUsed = type === "used";
-    const saleType = isUsed ? "중고" : "신품";
+    
+    // 신품/중고/임대 구분
+    let saleType = "신품판매";
+    if (type === "used") {
+      saleType = "중고판매";
+    } else if (type === "rental") {
+      saleType = "임대";
+    }
 
     // ✅ timezone 이슈 수정
     const [year, month, day] = item.delivery_date.split('-').map(Number);
@@ -224,7 +230,7 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
     const customer = item.customer_name || "";
     const phone = item.customer_phone || "";
 
-    let text = `사장님 (${dateStr}) ${saleType}판매 (${spec})(${qtyText})-동 상차 현대`;
+    let text = `사장님 (${dateStr}) ${saleType} (${spec})(${qtyText})-동 상차 현대`;
 
     if (unloadInfo) {
       text += ` 하차 ${unloadInfo}`;
@@ -803,6 +809,7 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
                   <option value="order">수주(신품)</option>
                   <option value="branch">영업소</option>
                   <option value="used">중고</option>
+                  <option value="rental">임대</option>
                 </select>
               </div>
               <div>
@@ -960,7 +967,7 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
                 const type = selectedDelivery.contract_type || "order";
                 const color = getItemColor(selectedDelivery);
                 const style = colorStyles[color];
-                const label = type === "used" ? "중고" : type === "branch" ? "영업소" : "수주(신품)";
+                const label = type === "used" ? "중고" : type === "branch" ? "영업소" : type === "rental" ? "임대" : "수주(신품)";
                 const transportType = getTransportType(selectedDelivery);
                 return (
                   <>
