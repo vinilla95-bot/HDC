@@ -35,6 +35,37 @@ import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
 import InventoryPage from "./pages/InventoryPage";
 
+
+// ✅ 초성 검색 유틸리티
+const CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+const getChosung = (str: string): string => {
+  return str.split('').map(char => {
+    const code = char.charCodeAt(0) - 44032;
+    if (code < 0 || code > 11171) return char;
+    return CHOSUNG_LIST[Math.floor(code / 588)];
+  }).join('');
+};
+
+const isChosung = (str: string): boolean => {
+  return str.split('').every(char => CHOSUNG_LIST.includes(char));
+};
+
+const matchKoreanLocal = (target: string, query: string): boolean => {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
+  
+  // 초성만 입력된 경우: 초성 매칭
+  if (isChosung(q)) {
+    const targetChosung = getChosung(t);
+    return targetChosung.includes(q);
+  }
+  
+  // 일반 단어: 포함 여부 확인
+  return t.includes(q);
+};
+
 // ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
   return "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
@@ -165,31 +196,32 @@ export default function App() {
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
   const filteredOptions = useMemo(() => {
-    const q = String(form.optQ || "").trim();
-    if (!q) return [];
+  const q = String(form.optQ || "").trim();
+  if (!q) return [];
 
-    const matched = options.filter((o: any) => {
-      const name = String(o.option_name || "");
-      return matchKorean(name, q);
-    });
+  const matched = options.filter((o: any) => {
+    const name = String(o.option_name || "");
+    return matchKoreanLocal(name, q);
+  });
 
-    const qLower = q.toLowerCase();
-    matched.sort((a: any, b: any) => {
-      const nameA = String(a.option_name || "").toLowerCase();
-      const nameB = String(b.option_name || "").toLowerCase();
+  const qLower = q.toLowerCase();
+  matched.sort((a: any, b: any) => {
+    const nameA = String(a.option_name || "").toLowerCase();
+    const nameB = String(b.option_name || "").toLowerCase();
 
-      const startsA = nameA.startsWith(qLower) ? 0 : 1;
-      const startsB = nameB.startsWith(qLower) ? 0 : 1;
-      if (startsA !== startsB) return startsA - startsB;
+    const startsA = nameA.startsWith(qLower) ? 0 : 1;
+    const startsB = nameB.startsWith(qLower) ? 0 : 1;
+    if (startsA !== startsB) return startsA - startsB;
 
-      const includesA = nameA.includes(qLower) ? 0 : 1;
-      const includesB = nameB.includes(qLower) ? 0 : 1;
-      return includesA - includesB;
-    });
+    const includesA = nameA.includes(qLower) ? 0 : 1;
+    const includesB = nameB.includes(qLower) ? 0 : 1;
+    return includesA - includesB;
+  });
 
-    return matched.slice(0, 12);
-  }, [form.optQ, options]);
+  return matched.slice(0, 12);
+}, [form.optQ, options]);
 
+  
   const addOption = (opt: any, isSpecial = false, price = 0, label = "") => {
     if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
       const newRows = opt.sub_items.map((sub: any, idx: number) => {
@@ -338,22 +370,41 @@ export default function App() {
       })
     );
   };
+const handleSiteSearch = async (val: string) => {
+  setForm((prev) => ({ ...prev, siteQ: val, sitePickedLabel: "" }));
+  if (!val) {
+    setSites([]);
+    setStatusMsg("");
+    return;
+  }
+  setStatusMsg("검색 중...");
+  const { list } = await searchSiteRates(val, form.w, form.l);
 
-  const handleSiteSearch = async (val: string) => {
-    setForm((prev) => ({ ...prev, siteQ: val, sitePickedLabel: "" }));
-    if (!val) {
-      setSites([]);
-      setStatusMsg("");
-      return;
-    }
-    setStatusMsg("검색 중...");
-    const { list } = await searchSiteRates(val, form.w, form.l);
+  const filtered = list.filter((s: any) => {
+    const alias = String(s.alias || "");
+    return matchKoreanLocal(alias, val);
+  });
 
-    const filtered = list.filter((s: any) => {
-      const alias = String(s.alias || "");
-      return matchKorean(alias, val);
-    });
+  const qLower = val.toLowerCase();
+  filtered.sort((a: any, b: any) => {
+    const aliasA = String(a.alias || "").toLowerCase();
+    const aliasB = String(b.alias || "").toLowerCase();
 
+    const regionsA = aliasA.split(',').map((r: string) => r.trim());
+    const regionsB = aliasB.split(',').map((r: string) => r.trim());
+
+    const startsA = regionsA.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
+    const startsB = regionsB.some((r: string) => r.startsWith(qLower)) ? 0 : 1;
+    if (startsA !== startsB) return startsA - startsB;
+
+    const includesA = regionsA.some((r: string) => r.includes(qLower)) ? 0 : 1;
+    const includesB = regionsB.some((r: string) => r.includes(qLower)) ? 0 : 1;
+    return includesA - includesB;
+  });
+
+  setSites(filtered);
+  setStatusMsg(`검색 결과 ${filtered.length}개`);
+};
     const qLower = val.toLowerCase();
     filtered.sort((a: any, b: any) => {
       const aliasA = String(a.alias || "").toLowerCase();
