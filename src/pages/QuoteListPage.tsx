@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import { supabase } from "../lib/supabase";
 import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine } from "../QuoteService";
+import { A4Quote } from "../App";
 
 type SupabaseOptionRow = {
   option_id: string;
@@ -62,7 +63,6 @@ type QuoteItem = {
   months?: number;
 };
 
-// ✅ 탭 타입 정의
 type DocTab = "quote" | "statement" | "rental";
 
 function money(n: any) {
@@ -90,6 +90,271 @@ function formatKoDate(v: any) {
     return `${y}-${m}-${day} (${wk})`;
   }
   return String(v);
+}
+// ============ 인라인 숫자 편집 셀 ============
+function EditableNumberCell({ value, onChange }: { value: number; onChange: (val: number) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { 
+    if (isEditing && inputRef.current) { 
+      inputRef.current.focus(); 
+      inputRef.current.select(); 
+    } 
+  }, [isEditing]);
+  
+  useEffect(() => { 
+    setTempValue(String(value)); 
+  }, [value]);
+
+  const handleBlur = () => { 
+    setIsEditing(false); 
+    onChange(Number(tempValue) || 0); 
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => { 
+    if (e.key === "Enter") handleBlur(); 
+    else if (e.key === "Escape") { 
+      setTempValue(String(value)); 
+      setIsEditing(false); 
+    } 
+  };
+
+  if (isEditing) {
+    return (
+      <input 
+        ref={inputRef} 
+        type="number" 
+        value={tempValue} 
+        onChange={(e) => setTempValue(e.target.value)} 
+        onBlur={handleBlur} 
+        onKeyDown={handleKeyDown} 
+        style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "1px solid #2e5b86", fontSize: 12, outline: "none" }} 
+      />
+    );
+  }
+  
+  return (
+    <span 
+      onClick={() => setIsEditing(true)} 
+      style={{ cursor: "pointer", display: "block", textAlign: "right", width: "100%" }} 
+      title="클릭하여 수정"
+    >
+      {money(value)}
+    </span>
+  );
+}
+
+// ============ 인라인 품목 검색/변경 셀 ============
+function InlineItemSearchCell({ 
+  item, 
+  options, 
+  onSelectOption, 
+  onUpdateName,
+  onDelete 
+}: { 
+  item: any; 
+  options: any[]; 
+  onSelectOption: (opt: any) => void;
+  onUpdateName: (name: string) => void;
+  onDelete: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(item.displayName || "");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    setSearchQuery(item.displayName || "");
+  }, [item.displayName]);
+
+  const filteredOpts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return options.filter((o: any) => {
+      const name = String(o.option_name || "").toLowerCase();
+      return name.includes(q) || matchKorean(name, q);
+    }).slice(0, 12);
+  }, [searchQuery, options]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current && !inputRef.current.contains(e.target as Node)
+      ) {
+        if (searchQuery !== item.displayName) {
+          onUpdateName(searchQuery);
+        }
+        setIsEditing(false);
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchQuery, item.displayName, onUpdateName]);
+
+  const handleSelect = (opt: any) => {
+    onSelectOption(opt);
+    setIsEditing(false);
+    setShowDropdown(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      onUpdateName(searchQuery);
+      setIsEditing(false);
+      setShowDropdown(false);
+    } else if (e.key === "Escape") {
+      setSearchQuery(item.displayName || "");
+      setIsEditing(false);
+      setShowDropdown(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div style={{ position: 'relative', textAlign: 'left', width: '100%' }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);
+          }}
+          onFocus={() => setShowDropdown(true)}
+          onKeyDown={handleKeyDown}
+          placeholder="품목명 또는 검색..."
+          style={{ 
+            width: '100%', 
+            padding: '4px 6px', 
+            border: '2px solid #2e5b86', 
+            borderRadius: 4,
+            fontSize: 12, 
+            outline: 'none',
+            textAlign: 'left',
+            boxSizing: 'border-box'
+          }}
+        />
+        {showDropdown && searchQuery.trim() && filteredOpts.length > 0 && (
+          <div 
+            ref={dropdownRef}
+            style={{ 
+              position: 'absolute', 
+              top: '100%', 
+              left: 0, 
+              width: '280px',
+              maxHeight: 250, 
+              overflowY: 'auto', 
+              background: '#fff', 
+              border: '1px solid #ccc', 
+              borderRadius: 6,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
+              zIndex: 9999,
+              textAlign: 'left'
+            }}
+          >
+            {filteredOpts.map((opt: any) => (
+              <div
+                key={opt.option_id}
+                onClick={() => handleSelect(opt)}
+                style={{ 
+                  padding: '10px 12px', 
+                  cursor: 'pointer', 
+                  borderBottom: '1px solid #eee', 
+                  fontSize: 12,
+                  textAlign: 'left',
+                  background: '#fff'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+              >
+                <div style={{ fontWeight: 700, textAlign: 'left' }}>{opt.option_name}</div>
+                <div style={{ fontSize: 10, color: '#888', marginTop: 2, textAlign: 'left' }}>
+                  {opt.unit || 'EA'} · {money(opt.unit_price || 0)}원
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <span
+      onClick={() => setIsEditing(true)}
+      style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
+      title="클릭하여 수정 또는 품목 검색"
+    >
+      {item.displayName || "(클릭하여 입력)"}
+    </span>
+  );
+}
+
+// ============ 인라인 텍스트 편집 셀 ============
+function EditableTextCell({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { 
+    if (isEditing && inputRef.current) { 
+      inputRef.current.focus(); 
+      inputRef.current.select(); 
+    } 
+  }, [isEditing]);
+  
+  useEffect(() => { 
+    setTempValue(value); 
+  }, [value]);
+
+  const handleBlur = () => { 
+    setIsEditing(false); 
+    onChange(tempValue); 
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => { 
+    if (e.key === "Enter") handleBlur(); 
+    else if (e.key === "Escape") { 
+      setTempValue(value); 
+      setIsEditing(false); 
+    } 
+  };
+
+  if (isEditing) {
+    return (
+      <input 
+        ref={inputRef} 
+        type="text" 
+        value={tempValue} 
+        onChange={(e) => setTempValue(e.target.value)} 
+        onBlur={handleBlur} 
+        onKeyDown={handleKeyDown} 
+        style={{ width: "100%", padding: "2px 4px", border: "1px solid #2e5b86", fontSize: 12, outline: "none", textAlign: "left" }} 
+      />
+    );
+  }
+  
+  return (
+    <span 
+      onClick={() => setIsEditing(true)} 
+      style={{ cursor: "pointer", display: "block", width: "100%", textAlign: "left" }} 
+      title="클릭하여 수정"
+    >
+      {value || "(클릭하여 입력)"}
+    </span>
+  );
 }
 
 function pickItems(row: QuoteRow | null): QuoteItem[] {
@@ -138,43 +403,33 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   const [list, setList] = useState<QuoteRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState<QuoteRow | null>(null);
-
-  // ✅ 탭 상태 추가
+  const [editMode, setEditMode] = useState(false);
+  const [editItems, setEditItems] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<DocTab>("quote");
-
-  // 모달들
   const [sendOpen, setSendOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-
   const [sendTo, setSendTo] = useState("");
   const [sendStatus, setSendStatus] = useState("");
 
-  // 임대차 폼 데이터
   const [rentalForm, setRentalForm] = useState({
-   contractStart: "",
-  contractEnd: "",
-  months: 3,
-  companyName: "",   // 상호
-  regNo: "",         // 등록번호
-  ceo: "",           // 대표
-  siteAddr: "",      // 현장주소
-  phone: "",         // 연락처
-  officePhone: "",   // 사무실
-  fax: "",           // 팩스
-  email: "",         // 메일 ← 추가!
-});
-  
+    contractStart: "",
+    contractEnd: "",
+    months: 3,
+    companyName: "",
+    regNo: "",
+    ceo: "",
+    siteAddr: "",
+    phone: "",
+    officePhone: "",
+    fax: "",
+    email: "",
+  });
 
-  // 견적 수정
   const [editForm, setEditForm] = useState<any>(null);
   const [options, setOptions] = useState<SupabaseOptionRow[]>([]);
   const [optQ, setOptQ] = useState("");
-
-  // 명함
   const [bizcards, setBizcards] = useState<any[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState("");
-
-  // 모바일 전체화면 미리보기
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -203,104 +458,196 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       throw new Error("no current quote");
     }
   }
-  async function handleConfirmContract() {
-  requireCurrent();
-  const confirmed = window.confirm(
-    `이 견적을 계약 확정하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n금액: ${money(current!.total_amount)}원`
-  );
-  if (!confirmed) return;
 
-  try {
-    toast("계약 확정 중...");
-    
-    // ✅ 옵션에 따라 contract_type 결정
-    const items = pickItems(current);
-    let contractType = "order";  // 기본값: 수주
-    
-    for (const it of items) {
-      const name = (it.optionName || it.displayName || it.item_name || "").toString();
-      if (name.includes("임대")) {
-        contractType = "rental";
-        break;
-      } else if (name.includes("중고")) {
-        contractType = "used";
-        break;
-      }
-      // "신품"은 기본값 "order"로 유지
-    }
-    
-    const { error } = await supabase
-      .from("quotes")
-      .update({ 
-        status: "confirmed",
-        contract_type: contractType,
-        contract_date: new Date().toISOString().slice(0, 10)
-      })
-      .eq("quote_id", current!.quote_id);
+  const updateEditItemQty = (key: string, newQty: number) => {
+    setEditItems(prev => prev.map(item => 
+      item.key === key 
+        ? { ...item, qty: newQty, amount: newQty * item.unitPrice }
+        : item
+    ));
+  };
 
-    if (error) throw error;
-    toast("계약 확정 완료!");
+  const updateEditItemPrice = (key: string, newPrice: number) => {
+    setEditItems(prev => prev.map(item => 
+      item.key === key 
+        ? { ...item, unitPrice: newPrice, amount: item.qty * newPrice }
+        : item
+    ));
+  };
+
+  const updateEditItemName = (key: string, newName: string) => {
+    setEditItems(prev => prev.map(item => 
+      item.key === key ? { ...item, displayName: newName } : item
+    ));
+  };
+
+  const deleteEditItem = (key: string) => {
+    setEditItems(prev => prev.filter(item => item.key !== key));
+  };
+
+  const addEditItemFromOption = (opt: any) => {
+    if (!current) return;
+    const w = current.w || 3;
+    const l = current.l || 6;
+    const res = calculateOptionLine(opt, w, l);
+    const rawName = String(opt.option_name || "(이름없음)");
+    const rent = rawName.includes("임대");
     
-    if (onConfirmContract) {
-      onConfirmContract(current!);
+    setEditItems(prev => [...prev, {
+      key: `item_${Date.now()}`,
+      optionId: opt.option_id,
+      optionName: rawName,
+      displayName: rawName,
+      unit: rent ? "개월" : (res.unit || "EA"),
+      qty: 1,
+      unitPrice: rent ? Number(res.unitPrice || 0) : Number(res.amount || 0),
+      amount: rent ? Number(res.unitPrice || 0) : Number(res.amount || 0),
+      showSpec: opt.show_spec || "n",
+      lineSpec: { w, l, h: 2.6 },
+    }]);
+    setOptQ("");
+  };
+
+  async function saveEditMode() {
+    if (!current) return;
+
+    try {
+      toast("저장 중...");
+
+      const itemsToSave = editItems.map((it: any, idx: number) => ({
+        optionId: it.optionId || `ITEM_${idx + 1}`,
+        optionName: it.optionName || it.displayName || "",
+        displayName: it.displayName || "",
+        itemName: it.displayName || "",
+        unit: it.unit || "EA",
+        qty: Number(it.qty) || 0,
+        unitPrice: Number(it.unitPrice) || 0,
+        amount: Number(it.qty * it.unitPrice) || 0,
+        showSpec: it.showSpec || "n",
+        lineSpec: it.lineSpec,
+      }));
+
+      const supply_amount = itemsToSave.reduce((acc: number, it: any) => acc + Number(it.amount || 0), 0);
+      const vat_amount = Math.round(supply_amount * 0.1);
+      const total_amount = supply_amount + vat_amount;
+
+      const { error, data } = await supabase
+        .from("quotes")
+        .update({
+          items: itemsToSave,
+          supply_amount,
+          vat_amount,
+          total_amount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("quote_id", current.quote_id)
+        .select();
+
+      if (error) throw error;
+
+      toast("저장 완료!");
+      setEditMode(false);
+      await loadList(q);
+      if (data && data[0]) setCurrent(data[0] as QuoteRow);
+    } catch (e: any) {
+      toast("저장 실패: " + (e?.message || String(e)));
     }
-    
-    await loadList(q);
-  } catch (e: any) {
-    toast("계약 확정 실패: " + (e?.message || String(e)));
   }
-}
 
+  async function handleConfirmContract() {
+    requireCurrent();
+    const confirmed = window.confirm(
+      `이 견적을 계약 확정하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n금액: ${money(current!.total_amount)}원`
+    );
+    if (!confirmed) return;
+
+    try {
+      toast("계약 확정 중...");
+      
+      const items = pickItems(current);
+      let contractType = "order";
+      
+      for (const it of items) {
+        const name = (it.optionName || it.displayName || it.item_name || "").toString();
+        if (name.includes("임대")) {
+          contractType = "rental";
+          break;
+        } else if (name.includes("중고")) {
+          contractType = "used";
+          break;
+        }
+      }
+      
+      const { error } = await supabase
+        .from("quotes")
+        .update({ 
+          status: "confirmed",
+          contract_type: contractType,
+          contract_date: new Date().toISOString().slice(0, 10)
+        })
+        .eq("quote_id", current!.quote_id);
+
+      if (error) throw error;
+      toast("계약 확정 완료!");
+      
+      if (onConfirmContract) {
+        onConfirmContract(current!);
+      }
+      
+      await loadList(q);
+    } catch (e: any) {
+      toast("계약 확정 실패: " + (e?.message || String(e)));
+    }
+  }
 
   async function loadList(keyword = ""): Promise<void> {
-  setLoading(true);
-  try {
-    const selectCols = [
-      "quote_id", "version", "quote_title", "customer_name", "customer_phone",
-      "customer_email", "site_name", "site_addr", "spec", "w", "l", "product",
-      "qty", "memo", "contract_start", "supply_amount", "vat_amount", "total_amount",
-      "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id","vat_included",
-    ].join(",");
+    setLoading(true);
+    try {
+      const selectCols = [
+        "quote_id", "version", "quote_title", "customer_name", "customer_phone",
+        "customer_email", "site_name", "site_addr", "spec", "w", "l", "product",
+        "qty", "memo", "contract_start", "supply_amount", "vat_amount", "total_amount",
+        "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id","vat_included",
+      ].join(",");
 
-    let query = supabase
-  .from("quotes")
-  .select(selectCols)
-  .is("source", null)
-  .not("quote_id", "like", "SCHEDULE_%")  // ✅ 캘린더 일정 제외
-  .order("created_at", { ascending: false })
-  .limit(200);
-    const kw = (keyword || "").trim();
-    if (kw) {
-      const like = `%${kw}%`;
-      query = query.or([
-        `quote_id.ilike.${like}`,
-        `customer_name.ilike.${like}`,
-        `spec.ilike.${like}`,
-        `quote_title.ilike.${like}`,
-        `site_name.ilike.${like}`,
-      ].join(","));
+      let query = supabase
+        .from("quotes")
+        .select(selectCols)
+        .is("source", null)
+        .not("quote_id", "like", "SCHEDULE_%")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      const kw = (keyword || "").trim();
+      if (kw) {
+        const like = `%${kw}%`;
+        query = query.or([
+          `quote_id.ilike.${like}`,
+          `customer_name.ilike.${like}`,
+          `spec.ilike.${like}`,
+          `quote_title.ilike.${like}`,
+          `site_name.ilike.${like}`,
+        ].join(","));
+      }
+
+      if (dateFilter) {
+        const startOfDay = `${dateFilter}T00:00:00`;
+        const endOfDay = `${dateFilter}T23:59:59`;
+        query = query.gte("created_at", startOfDay).lte("created_at", endOfDay);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setList(((data ?? []) as unknown) as QuoteRow[]);
+    } catch (e: any) {
+      console.error(e);
+      toast("목록 로드 실패: " + (e?.message || String(e)));
+      setList([]);
+    } finally {
+      setLoading(false);
     }
-
-    // ✅ dateFilter를 state에서 직접 참조
-    if (dateFilter) {
-      const startOfDay = `${dateFilter}T00:00:00`;
-      const endOfDay = `${dateFilter}T23:59:59`;
-      query = query.gte("created_at", startOfDay).lte("created_at", endOfDay);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    setList(((data ?? []) as unknown) as QuoteRow[]);
-  } catch (e: any) {
-    console.error(e);
-    toast("목록 로드 실패: " + (e?.message || String(e)));
-    setList([]);
-  } finally {
-    setLoading(false);
   }
-}
 
-  // ✅ 현재 탭에 따른 문서 제목
   const getDocTitle = () => {
     switch (activeTab) {
       case "quote": return "견적서";
@@ -309,140 +656,135 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     }
   };
 
-  // ✅ 이메일 전송 (캡처 → PDF)
   async function handleSendEmail() {
-  requireCurrent();
-  const quoteId = current!.quote_id;
-  const to = sendTo.trim() || (current!.customer_email || "").trim();
+    requireCurrent();
+    const quoteId = current!.quote_id;
+    const to = sendTo.trim() || (current!.customer_email || "").trim();
 
-  if (!to) {
-    setSendStatus("수신 이메일이 비어있습니다.");
-    return;
+    if (!to) {
+      setSendStatus("수신 이메일이 비어있습니다.");
+      return;
+    }
+
+    try {
+      setSendStatus("PDF 생성 중...");
+
+      const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
+      if (!sheetEl) {
+        throw new Error("문서를 찾을 수 없습니다.");
+      }
+
+      const isStatement = activeTab === 'statement';
+      const captureWidth = isStatement ? 1100 : 794;
+      const captureHeight = isStatement ? 600 : 1123;
+
+      const captureContainer = document.createElement('div');
+      captureContainer.style.cssText = `position: fixed; top: -9999px; left: -9999px; width: ${captureWidth}px; background: #fff; z-index: -1;`;
+      document.body.appendChild(captureContainer);
+
+      const styleTag = document.querySelector('#docPreview style');
+      if (styleTag) {
+        captureContainer.appendChild(styleTag.cloneNode(true));
+      }
+
+      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
+      captureContainer.appendChild(clonedSheet);
+
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        width: captureWidth,
+        windowWidth: captureWidth,
+      });
+
+      document.body.removeChild(captureContainer);
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+      const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+      const bizcardImageUrl = selectedBizcard?.image_url || "";
+      const customerName = current!.customer_name || "고객";
+
+      setSendStatus("메일 전송 중...");
+
+      await gasCall("sendDocEmailWithPdf", [
+        quoteId,
+        to,
+        imgData,
+        bizcardImageUrl,
+        customerName,
+        getDocTitle()
+      ]);
+
+      setSendStatus("전송 완료!");
+      toast(`${getDocTitle()} 메일 전송 완료`);
+      setSendOpen(false);
+      loadList(q);
+    } catch (e: any) {
+      setSendStatus("전송 실패: " + (e?.message || String(e)));
+      toast("메일 전송 실패");
+    }
   }
 
-  try {
-    setSendStatus("PDF 생성 중...");
+  async function downloadJpg() {
+    requireCurrent();
 
     const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
     if (!sheetEl) {
-      throw new Error("문서를 찾을 수 없습니다.");
+      toast("캡처 대상을 찾을 수 없습니다.");
+      return;
     }
 
-    // ✅ 거래명세서는 넓은 크기로 캡처
-    const isStatement = activeTab === 'statement';
-    const captureWidth = isStatement ? 1100 : 794;
-    const captureHeight = isStatement ? 600 : 1123;
+    toast("JPG 생성 중...");
 
-    // 캡처 컨테이너 생성
-    const captureContainer = document.createElement('div');
-    captureContainer.style.cssText = `position: fixed; top: -9999px; left: -9999px; width: ${captureWidth}px; background: #fff; z-index: -1;`;
-    document.body.appendChild(captureContainer);
+    try {
+      const isStatement = activeTab === 'statement';
+      const captureWidth = isStatement ? 1100 : 794;
+      const captureHeight = isStatement ? 600 : 1123;
 
-    const styleTag = document.querySelector('#docPreview style');
-    if (styleTag) {
-      captureContainer.appendChild(styleTag.cloneNode(true));
+      const captureContainer = document.createElement('div');
+      captureContainer.style.cssText = `position: fixed; top: -9999px; left: -9999px; width: ${captureWidth}px; background: #fff; z-index: -1;`;
+      document.body.appendChild(captureContainer);
+
+      const styleTag = document.querySelector('#docPreview style');
+      if (styleTag) {
+        captureContainer.appendChild(styleTag.cloneNode(true));
+      }
+
+      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
+      captureContainer.appendChild(clonedSheet);
+
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: true,
+        width: captureWidth,
+        windowWidth: captureWidth,
+      });
+
+      document.body.removeChild(captureContainer);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${getDocTitle()}_${current!.quote_id}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      toast("다운로드 완료");
+    } catch (e: any) {
+      toast("JPG 생성 실패: " + (e?.message || String(e)));
     }
-
-    const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
-    clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
-    captureContainer.appendChild(clonedSheet);
-
-    await new Promise(r => setTimeout(r, 300));
-
-    const canvas = await html2canvas(clonedSheet, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      width: captureWidth,
-      windowWidth: captureWidth,
-    });
-
-    document.body.removeChild(captureContainer);
-
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
-    const bizcardImageUrl = selectedBizcard?.image_url || "";
-    const customerName = current!.customer_name || "고객";
-
-    setSendStatus("메일 전송 중...");
-
-    // ✅ 문서 타입에 따라 다른 제목 사용
-    await gasCall("sendDocEmailWithPdf", [
-      quoteId,
-      to,
-      imgData,
-      bizcardImageUrl,
-      customerName,
-      getDocTitle()
-    ]);
-
-    setSendStatus("전송 완료!");
-    toast(`${getDocTitle()} 메일 전송 완료`);
-    setSendOpen(false);
-    loadList(q);
-  } catch (e: any) {
-    setSendStatus("전송 실패: " + (e?.message || String(e)));
-    toast("메일 전송 실패");
   }
-}
-  // ✅ JPG 다운로드
-  async function downloadJpg() {
-  requireCurrent();
-
-  const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
-  if (!sheetEl) {
-    toast("캡처 대상을 찾을 수 없습니다.");
-    return;
-  }
-
-  toast("JPG 생성 중...");
-
-  try {
-    // 거래명세서는 넓은 크기로 캡처
-    const isStatement = activeTab === 'statement';
-    const captureWidth = isStatement ? 1100 : 794;
-    const captureHeight = isStatement ? 600 : 1123;
-
-    const captureContainer = document.createElement('div');
-    captureContainer.style.cssText = `position: fixed; top: -9999px; left: -9999px; width: ${captureWidth}px; background: #fff; z-index: -1;`;
-    document.body.appendChild(captureContainer);
-
-    const styleTag = document.querySelector('#docPreview style');
-    if (styleTag) {
-      captureContainer.appendChild(styleTag.cloneNode(true));
-    }
-
-    const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
-    clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
-    captureContainer.appendChild(clonedSheet);
-
-    await new Promise(r => setTimeout(r, 300));
-
-    const canvas = await html2canvas(clonedSheet, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      allowTaint: true,
-      width: captureWidth,
-      windowWidth: captureWidth,
-    });
-
-    document.body.removeChild(captureContainer);
-
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `${getDocTitle()}_${current!.quote_id}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    toast("다운로드 완료");
-  } catch (e: any) {
-    toast("JPG 생성 실패: " + (e?.message || String(e)));
-  }
-}
 
   function handlePrint() {
     requireCurrent();
@@ -475,9 +817,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     setSendOpen(true);
   }
 
-  // 견적 선택 시 임대차 폼 초기화
- // 견적 선택 시 임대차 폼 초기화
-useEffect(() => {
+  useEffect(() => {
   if (current) {
     const items = pickItems(current);
     const rentalItem = items.find(it => {
@@ -502,7 +842,16 @@ useEffect(() => {
       phone: current.customer_phone || "",
       officePhone: "",
       fax: "",
-      email: current.customer_email || "",  // ← 이거 추가!
+      email: current.customer_email || "",
+    });
+
+    // ✅ editForm 초기화 추가
+    setEditForm({
+      customer_name: current.customer_name || "",
+      customer_email: current.customer_email || "",
+      customer_phone: current.customer_phone || "",
+      site_name: current.site_name || "",
+      spec: current.spec || "",
     });
   }
 }, [current]);
@@ -519,220 +868,322 @@ useEffect(() => {
     });
   }, []);
 
- useEffect(() => {
-  const t = window.setTimeout(() => loadList(q), 200);
-  return () => window.clearTimeout(t);
-}, [q, dateFilter]);
+  useEffect(() => {
+    const t = window.setTimeout(() => loadList(q), 200);
+    return () => window.clearTimeout(t);
+  }, [q, dateFilter]);
+
+  useEffect(() => {
+    if (current) {
+      setEditItems(pickItems(current).map((raw, idx) => {
+        const it = normItem(raw);
+        return {
+          key: `item_${idx}_${Date.now()}`,
+          optionId: (raw as any).optionId || "",
+          optionName: it.name,
+          displayName: it.name,
+          unit: it.unit,
+          qty: it.qty,
+          unitPrice: it.unitPrice,
+          amount: it.amount,
+          showSpec: (raw as any).showSpec || "n",
+          lineSpec: (raw as any).lineSpec || { w: current.w || 3, l: current.l || 6, h: 2.6 },
+        };
+      }));
+      setEditMode(false);
+    }
+  }, [current]);
+
+  // ✅ 옵션 검색 결과 필터링 (한 번만 정의)
+  const filteredOptions = useMemo(() => {
+    const query = String(optQ || "").trim();
+    if (!query) return [];
+
+    const matched = options.filter((o: any) => {
+      const name = String(o.option_name || "");
+      return matchKorean(name, query);
+    });
+
+    const qLower = query.toLowerCase();
+    matched.sort((a: any, b: any) => {
+      const nameA = String(a.option_name || "").toLowerCase();
+      const nameB = String(b.option_name || "").toLowerCase();
+      const startsA = nameA.startsWith(qLower) ? 0 : 1;
+      const startsB = nameB.startsWith(qLower) ? 0 : 1;
+      if (startsA !== startsB) return startsA - startsB;
+      const includesA = nameA.includes(qLower) ? 0 : 1;
+      const includesB = nameB.includes(qLower) ? 0 : 1;
+      return includesA - includesB;
+    });
+
+    return matched.slice(0, 12);
+  }, [optQ, options]);
   
-  // ✅ 견적서 미리보기 HTML
-  const quotePreviewHtml = useMemo(() => {
-    if (!current) return null;
+// ✅ 견적서 미리보기 HTML
+// ✅ 견적서 미리보기 HTML
+const quotePreviewHtml = useMemo(() => {
+  if (!current) return null;
 
-    const items = pickItems(current);
-    const customerName = current.customer_name ?? "(고객명)";
-    const customerEmail = current.customer_email ?? "";
-    const customerPhone = current.customer_phone ?? "";
-    const siteName = current.site_name ?? "";
-    const spec = current.spec ?? "";
-    const supplyAmount = current.supply_amount ?? 0;
-    const vatAmount = current.vat_amount ?? 0;
-    const totalAmount = current.total_amount ?? 0;
+  // ✅ 항상 editItems 사용 (실시간 편집)
+  const items = editItems;
 
-    const today = new Date();
-    const ymd = today.toISOString().slice(0, 10);
-    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
-    const bizcardName = selectedBizcard?.name || "";
-    const vatIncluded = current.vat_included !== false;
-const displayTotal = vatIncluded ? totalAmount : supplyAmount;
-const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
-     const cellStyle: React.CSSProperties = { border: '1px solid #333', padding: '6px 8px', fontSize: 13, verticalAlign: 'middle' };
-  const thStyle: React.CSSProperties = { ...cellStyle, background: '#fff', fontWeight: 900, textAlign: 'center' };
-  const headerStyle: React.CSSProperties = { ...cellStyle, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' };
+  const customerName = editForm?.customer_name ?? current.customer_name ?? "";
+  const customerEmail = editForm?.customer_email ?? current.customer_email ?? "";
+  const customerPhone = editForm?.customer_phone ?? current.customer_phone ?? "";
+  const siteName = editForm?.site_name ?? current.site_name ?? "";
+  const spec = editForm?.spec ?? current.spec ?? "";
+  
+  const supplyAmount = editItems.reduce((acc, it) => acc + (it.qty * it.unitPrice), 0);
+  const vatAmount = Math.round(supplyAmount * 0.1);
+  const totalAmount = supplyAmount + vatAmount;
 
+  const ymd = current.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+  const bizcardName = selectedBizcard?.name || "";
+  const vatIncluded = current.vat_included !== false;
+  const displayTotal = vatIncluded ? totalAmount : supplyAmount;
+  const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
+  const MIN_ROWS = 12;
 
-    const MIN_ROWS = 12;
+  return (
+    <div className="a4Sheet quoteSheet" id="a4SheetCapture">
 
-    return (
-      <div className="a4Sheet quoteSheet" id="a4SheetCapture">
-        {/* 헤더 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 2px 10px', borderBottom: '2px solid #2e5b86', marginBottom: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style={{ width: 160, height: 140 }} />
-          </div>
-          <div style={{ flex: 1, textAlign: 'center', fontSize: 34, fontWeight: 900, letterSpacing: 6 }}>견 적 서</div>
-          <div style={{ width: 140 }}></div>
-        </div>
+      {/* 헤더 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 2px 10px', borderBottom: '2px solid #2e5b86', marginBottom: 10 }}>
+        <img src="https://i.postimg.cc/VvsGvxFP/logo1.jpg" alt="logo" style={{ width: 160, height: 140 }} />
+        <div style={{ flex: 1, textAlign: 'center', fontSize: 34, fontWeight: 900, letterSpacing: 6 }}>견 적 서</div>
+        <div style={{ width: 140 }}></div>
+      </div>
 
-        {/* 기본 정보 테이블 */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '1px solid #333', marginTop: 8 }}>
-          <colgroup>
-            <col style={{ width: '15%' }} />
-            <col style={{ width: '18%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '18%' }} />
-            <col style={{ width: '15%' }} />
-            <col style={{ width: '22%' }} />
-          </colgroup>
-          <tbody>
-            <tr>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>담당자</th>
-              <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>{bizcardName}</td>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>견적일자</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>{ymd}</td>
-            </tr>
-            <tr>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>고객명</th>
-              <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{customerName}</span>
-                  <span style={{ fontWeight: 900 }}>귀하</span>
-                </div>
-              </td>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>공급자</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>현대컨테이너</td>
-            </tr>
-            <tr>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>이메일</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>{customerEmail}</td>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>전화</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>{customerPhone}</td>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>등록번호</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>130-41-38154</td>
-            </tr>
-            <tr>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>현장</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>{siteName}</td>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>견적일</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>{today.toLocaleDateString("ko-KR")}</td>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>주소</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>경기도 화성시<br />향남읍 구문천안길16</td>
-            </tr>
-            <tr>
-              <td style={{ border: '1px solid #333', padding: 6, fontWeight: 700, textAlign: 'center' }} colSpan={4}>견적요청에 감사드리며 아래와 같이 견적합니다.</td>
-              <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', background: '#fff' }}>대표전화</th>
-              <td style={{ border: '1px solid #333', padding: 6 }}>1688-1447</td>
-              
-            </tr>
-            <tr>
-              <td style={{ ...cellStyle, fontWeight: 900, fontSize: 14 }} colSpan={6}>
-  합계금액 : ₩{money(displayTotal)} ({vatLabel})
-</td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* 품목 테이블 */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '1px solid #333', marginTop: 8 }}>
-          <colgroup>
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '35%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '9%' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>순번</th>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>품목</th>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>규격</th>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>수량</th>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>단가</th>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>공급가</th>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>세액</th>
-              <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center' }}>비고</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((raw, idx) => {
-              const it = normItem(raw);
-              const supply = it.unitPrice * it.qty;
-              const vat = Math.round(supply * 0.1);
-              const showSpec = String((raw as any).showSpec || "").toLowerCase() === "y";
-              const specText = showSpec ? spec : "";
-
-              return (
-                <tr key={idx}>
-                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{idx + 1}</td>
-                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'left' }}>{it.name}</td>
-                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{specText}</td>
-                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{it.qty}</td>
-                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(it.unitPrice)}</td>
-                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(supply)}</td>
-                  <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(vat)}</td>
-                  <td style={{ border: '1px solid #333', padding: 6 }}></td>
-                </tr>
-              );
-            })}
-            {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
-              <tr key={`blank-${i}`} style={{ height: 28 }}>
-                <td style={{ border: '1px solid #333', padding: 6 }}>&nbsp;</td>
-                <td style={{ border: '1px solid #333', padding: 6 }}></td>
-                <td style={{ border: '1px solid #333', padding: 6 }}></td>
-                <td style={{ border: '1px solid #333', padding: 6 }}></td>
-                <td style={{ border: '1px solid #333', padding: 6 }}></td>
-                <td style={{ border: '1px solid #333', padding: 6 }}></td>
-                <td style={{ border: '1px solid #333', padding: 6 }}></td>
-                <td style={{ border: '1px solid #333', padding: 6 }}></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        
-        {/* 하단 합계/조건 테이블 */}
-<table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', border: '1px solid #333', marginTop: 8 }}>
-  <colgroup>
-    <col style={{ width: '15%' }} />
-    <col style={{ width: '30%' }} />
-    <col style={{ width: '7%' }} />
-    <col style={{ width: '7%' }} />
-    <col style={{ width: '13%' }} />
-    <col style={{ width: '13%' }} />
-    <col style={{ width: '10%' }} />
-    <col style={{ width: '9%' }} />
-  </colgroup>
+      {/* 기본 정보 테이블 - 수정 부분 */}
+<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
   <tbody>
     <tr>
-      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'left' }} colSpan={5}>
-        합계: {money(displayTotal)}원 ({vatLabel})
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', width: '15%' }}>담당자</th>
+      <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>
+        <select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)} style={{ border: 'none', background: 'transparent', fontSize: 13, width: '100%', cursor: 'pointer' }}>
+          {bizcards.map((b: any) => (<option key={b.id} value={b.id}>{b.name}</option>))}
+        </select>
       </td>
-      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(supplyAmount)}</td>
-      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(vatAmount)}</td>
-      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}></td>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', width: '15%' }}>견적일자</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>{ymd}</td>
     </tr>
     <tr>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap' }}>결제조건</th>
-      <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.55 }} colSpan={7}>계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td>
-    </tr>
-    <tr>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap' }}>주의사항</th>
-      <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.55 }} colSpan={7}>
-        *견적서는 견적일로 부터 2주간 유효합니다.<br />
-        1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)<br />
-        2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고<br />
-        *출고 전날 오후 2시 이전 잔금 결제 조건*<br />
-        3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>고객명</th>
+      <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <EditableTextCell 
+            value={customerName} 
+            onChange={(val) => setEditForm((p: any) => ({ ...p, customer_name: val }))} 
+          />
+          <span style={{ fontWeight: 900 }}>귀하</span>
+        </div>
       </td>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>공급자</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>현대컨테이너</td>
     </tr>
     <tr>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap' }}>중요사항</th>
-      <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.55 }} colSpan={7}>
-        *중요사항*<br />
-        1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />
-        2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />
-        한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.<br />
-        해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>이메일</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>
+        <EditableTextCell 
+          value={customerEmail} 
+          onChange={(val) => setEditForm((p: any) => ({ ...p, customer_email: val }))} 
+        />
+      </td>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>전화</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>
+        <EditableTextCell 
+          value={customerPhone} 
+          onChange={(val) => setEditForm((p: any) => ({ ...p, customer_phone: val }))} 
+        />
+      </td>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>등록번호</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>130-41-38154</td>
+    </tr>
+    <tr>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>현장</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>
+        <EditableTextCell 
+          value={siteName} 
+          onChange={(val) => setEditForm((p: any) => ({ ...p, site_name: val }))} 
+        />
+      </td>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>규격</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>
+        <EditableTextCell 
+          value={spec} 
+          onChange={(val) => setEditForm((p: any) => ({ ...p, spec: val }))} 
+        />
+      </td>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>주소</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>경기도 화성시 향남읍 구문천안길16</td>
+    </tr>
+    <tr>
+      <td style={{ border: '1px solid #333', padding: 6, fontWeight: 700, textAlign: 'center' }} colSpan={4}>견적요청에 감사드리며 아래와 같이 견적합니다.</td>
+      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>대표전화</th>
+      <td style={{ border: '1px solid #333', padding: 6 }}>1688-1447</td>
+    </tr>
+    <tr>
+      <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>
+        합계금액 : ₩{money(displayTotal)} ({vatLabel})
       </td>
     </tr>
   </tbody>
 </table>
-      </div>
-    );
-  }, [current, bizcards, selectedBizcardId]);
 
+    {/* 옵션 검색 (편집 모드) */}
+{editMode && (
+  <div style={{ margin: '10px 0', position: 'relative', textAlign: 'left' }}>
+    <input value={optQ} onChange={(e) => setOptQ(e.target.value)} placeholder="품목 검색 (예: 모노륨, 단열...)" style={{ width: '100%', padding: '12px', border: '2px solid #2e5b86', borderRadius: 8, fontSize: 14, textAlign: 'left' }} />
+    {optQ.trim() && filteredOptions.length > 0 && (
+      <div style={{ 
+        position: 'absolute', 
+        top: '100%', 
+        left: 0, 
+        width: '300px',  /* ← right: 0 대신 고정 너비 */
+        background: '#fff', 
+        border: '1px solid #ddd', 
+        borderRadius: 8, 
+        maxHeight: 300, 
+        overflow: 'auto', 
+        zIndex: 9999, 
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
+        textAlign: 'left' 
+      }}>
+        {filteredOptions.map((o: any) => (
+          <div key={o.option_id} onClick={() => addEditItemFromOption(o)} style={{ padding: '12px', cursor: 'pointer', borderBottom: '1px solid #eee', textAlign: 'left' }} onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')} onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}>
+            <div style={{ fontWeight: 700, textAlign: 'left' }}>{o.option_name}</div>
+            <div style={{ fontSize: 12, color: '#666', textAlign: 'left' }}>{o.unit || 'EA'} · {money(o.unit_price || 0)}원</div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
+      {/* 품목 테이블 */}
+<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
+  <thead>
+    <tr>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '5%' }}>순번</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '33%' }}>품목</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '10%' }}>규격</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '8%' }}>수량</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '13%' }}>단가</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '13%' }}>공급가</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '10%' }}>세액</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '8%' }}>비고</th>
+    </tr>
+  </thead>
+  <tbody>
+    {items.map((item: any, idx: number) => {
+      const supply = item.qty * item.unitPrice;
+      const vat = Math.round(supply * 0.1);
+      const showSpec = String(item.showSpec || "").toLowerCase() === "y";
+      const specText = showSpec && item.lineSpec ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` : "";
+
+      return (
+        <tr key={item.key || idx}>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{idx + 1}</td>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'left' }}>
+            <InlineItemSearchCell
+              item={item}
+              options={options}
+              onSelectOption={(opt) => {
+                const w = current?.w || 3;
+                const l = current?.l || 6;
+                const res = calculateOptionLine(opt, w, l);
+                const rawName = String(opt.option_name || "");
+                const rent = rawName.includes("임대");
+                const customerUnitPrice = rent ? Number(res.unitPrice || 0) : Number(res.amount || 0);
+                
+                setEditItems(prev => prev.map(i => i.key !== item.key ? i : {
+                  ...i,
+                  optionId: opt.option_id,
+                  optionName: rawName,
+                  displayName: rent ? `${rawName} 1개월` : rawName,
+                  unit: rent ? "개월" : (res.unit || "EA"),
+                  qty: 1,
+                  unitPrice: customerUnitPrice,
+                  amount: customerUnitPrice,
+                  showSpec: opt.show_spec || "n",
+                  lineSpec: { w, l, h: 2.6 },
+                }));
+              }}
+              onUpdateName={(name) => updateEditItemName(item.key, name)}
+              onDelete={() => deleteEditItem(item.key)}
+            />
+          </td>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{specText}</td>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>
+            <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} />
+          </td>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>
+            <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} />
+          </td>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(supply)}</td>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(vat)}</td>
+          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>
+            <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+          </td>
+        </tr>
+      );
+    })}
+    {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
+      <tr key={`blank-${i}`} style={{ height: 28 }}>
+        <td style={{ border: '1px solid #333', padding: 6 }}>&nbsp;</td>
+        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+
+
+      {/* 하단 합계/조건 테이블 */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
+        <tbody>
+          <tr>
+            <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900 }} colSpan={5}>합계: {money(displayTotal)}원 ({vatLabel})</td>
+            <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(supplyAmount)}</td>
+            <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(vatAmount)}</td>
+            <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6' }}></td>
+          </tr>
+          <tr>
+            <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '15%' }}>결제조건</th>
+            <td style={{ border: '1px solid #333', padding: 6, fontSize: 12 }} colSpan={7}>계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td>
+          </tr>
+          <tr>
+            <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900 }}>주의사항</th>
+            <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.5 }} colSpan={7}>
+              *견적서는 견적일로 부터 2주간 유효합니다.<br />
+              1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)<br />
+              2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고<br />
+              *출고 전날 오후 2시 이전 잔금 결제 조건*<br />
+              3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
+            </td>
+          </tr>
+          <tr>
+            <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900 }}>중요사항</th>
+            <td style={{ border: '1px solid #333', padding: 6, fontSize: 12, lineHeight: 1.5 }} colSpan={7}>
+              *중요사항*<br />
+              1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />
+              2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />
+              한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.<br />
+              해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}, [current, bizcards, selectedBizcardId, editMode, editItems, editForm, optQ, filteredOptions, options]);
 
 // ✅ 거래명세서 미리보기 - HTML 디자인에 맞춤
   const statementPreviewHtml = useMemo(() => {
@@ -794,32 +1245,32 @@ const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
         </div>
 
         {/* 상단 정보 영역 */}
-        <div style={{ display: 'flex', gap: 20, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
           {/* 왼쪽 - 거래처 정보 */}
           <table style={{ borderCollapse: 'collapse', width: '45%' }}>
-            <tbody>
-              <tr>
-                <th style={thStyle}>일자</th>
-                <td style={tdStyle} colSpan={3}>{ymd}</td>
-              </tr>
-              <tr>
-                <th style={thStyle}>거래처</th>
-                <td style={tdStyle} colSpan={3}>{customerName}</td>
-              </tr>
-              <tr>
-                <th style={thStyle}>등록번호</th>
-                <td style={tdStyle} colSpan={3}></td>
-              </tr>
-              <tr>
-                <th style={thStyle}>주소</th>
-                <td style={tdStyle} colSpan={3}></td>
-              </tr>
-              <tr>
-                <th style={thStyle}>전화번호</th>
-                <td style={tdStyle} colSpan={3}>{customerPhone}</td>
-              </tr>
-            </tbody>
-          </table>
+  <tbody>
+    <tr>
+      <th style={{ ...thStyle, width: '80px' }}>일자</th>
+      <td style={tdStyle}>{ymd}</td>
+    </tr>
+    <tr>
+      <th style={{ ...thStyle, width: '80px' }}>거래처</th>
+      <td style={tdStyle}>{customerName}</td>
+    </tr>
+    <tr>
+      <th style={{ ...thStyle, width: '80px' }}>등록번호</th>
+      <td style={tdStyle}></td>
+    </tr>
+    <tr>
+      <th style={{ ...thStyle, width: '80px' }}>주소</th>
+      <td style={tdStyle}></td>
+    </tr>
+    <tr>
+      <th style={{ ...thStyle, width: '80px' }}>전화번호</th>
+      <td style={tdStyle}>{customerPhone}</td>
+    </tr>
+  </tbody>
+</table>
 
           {/* 오른쪽 - 공급자 정보 */}
           <table style={{ borderCollapse: 'collapse', width: '55%' }}>
@@ -1222,29 +1673,8 @@ const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
     }
   }, [activeTab, current, quotePreviewHtml, statementPreviewHtml, rentalPreviewHtml]);
 // 옵션 검색 결과 필터링
-const filteredOptions = useMemo(() => {
-  const query = String(optQ || "").trim();
-  if (!query) return [];
 
-  const matched = options.filter((o: any) => {
-    const name = String(o.option_name || "");
-    return matchKorean(name, query);
-  });
 
-  const qLower = query.toLowerCase();
-  matched.sort((a: any, b: any) => {
-    const nameA = String(a.option_name || "").toLowerCase();
-    const nameB = String(b.option_name || "").toLowerCase();
-    const startsA = nameA.startsWith(qLower) ? 0 : 1;
-    const startsB = nameB.startsWith(qLower) ? 0 : 1;
-    if (startsA !== startsB) return startsA - startsB;
-    const includesA = nameA.includes(qLower) ? 0 : 1;
-    const includesB = nameB.includes(qLower) ? 0 : 1;
-    return includesA - includesB;
-  });
-
-  return matched.slice(0, 12);
-}, [optQ, options]);
 
 function addOptionFromSearch(opt: any) {
   if (!editForm) return;
@@ -1520,7 +1950,15 @@ async function saveEdit() {
   <button className="primary" onClick={openSendModal}>{getDocTitle()} 보내기</button>
   <button onClick={downloadJpg}>JPG저장</button>
   <button onClick={handlePrint}>인쇄</button>
-  <button onClick={openEditModal}>견적수정</button>
+ <button onClick={() => {
+  if (editMode) {
+    saveEditMode();  // 수정 완료 시 저장
+  } else {
+    setEditMode(true);  // 수정 모드 진입
+  }
+}}>
+  {editMode ? "수정완료" : "견적수정"}
+</button>
   <button 
     onClick={handleConfirmContract}
     style={{ background: '#059669', color: '#fff', borderColor: '#059669' }}
@@ -1609,14 +2047,25 @@ async function saveEdit() {
   </div>
 )}
           
-          {/* 미리보기 */}
-          <div className="content">
-            <div className="previewWrap" id="docPreview">
-              {currentPreview}
-            </div>
-          </div>
-        </div>
+          
+       {/* 미리보기 */}
+<div className="content">
+  <div className="previewWrap" id="docPreview">
+    {activeTab === 'quote' ? (
+      quotePreviewHtml
+    ) : activeTab === 'statement' ? (
+      statementPreviewHtml
+    ) : activeTab === 'rental' ? (
+      rentalPreviewHtml
+    ) : (
+      <div className="a4Sheet" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+        왼쪽에서 견적을 선택하세요.
       </div>
+    )}
+  </div>
+</div>
+
+    {/* 전송 모달 */}
 
       {/* 전송 모달 */}
       {sendOpen && (
@@ -1661,6 +2110,8 @@ async function saveEdit() {
           </div>
         </div>
       )}
+
+
 {/* ✅ 견적 수정 모달 */}
 {editOpen && editForm && (
   <div className="modal" style={{ display: "flex" }} onMouseDown={() => { setOptQ(""); setEditOpen(false); }}>
@@ -1668,7 +2119,9 @@ async function saveEdit() {
       <div className="modalHdr">
         <div style={{ fontWeight: 800 }}>견적 수정</div>
         <span className="spacer" />
-        <button onClick={() => { setOptQ(""); setEditOpen(false); }}>닫기</button>
+       <button onClick={() => setEditMode(!editMode)}>
+  {editMode ? "수정완료" : "견적수정"}
+</button>
       </div>
       <div className="modalBody" style={{ maxHeight: "80vh", overflow: "auto" }}>
         {/* 기본 정보 */}
@@ -1836,9 +2289,13 @@ async function saveEdit() {
       </div>
     </div>
   </div>
-)}
-      <div className="toast" ref={toastRef} />
+)} 
+
+
+     <div className="toast" ref={toastRef} />
     </div>
+  </div>
+</div>
   );
 }
 
