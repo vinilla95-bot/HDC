@@ -234,6 +234,7 @@ if (type === "memo") {
 };
 
 
+ // 기존 (saleType 선언 없음)
   // ✅ 배차 양식 생성
   const generateDispatchText = (item: DeliveryItem) => {
     const type = item.contract_type || "order";
@@ -246,6 +247,21 @@ if (type === "memo") {
 } else if (type === "memo") {
   saleType = "메모";
 }
+
+// 수정
+  // ✅ 배차 양식 생성
+  const generateDispatchText = (item: DeliveryItem) => {
+    const type = item.contract_type || "order";
+    
+    // 신품/중고/임대 구분
+    let saleType = "신품판매";
+    if (type === "used") {
+      saleType = "중고판매";
+    } else if (type === "rental") {
+      saleType = "임대";
+    } else if (type === "memo") {
+      saleType = "메모";
+    }
 
     // ✅ timezone 이슈 수정
     const [year, month, day] = item.delivery_date.split('-').map(Number);
