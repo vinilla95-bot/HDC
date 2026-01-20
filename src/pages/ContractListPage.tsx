@@ -485,8 +485,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee" }}>
                       <input
-                        value={c.depositor || ""}
-                        onChange={(e) => updateField(c.quote_id, "depositor", e.target.value)}
+  defaultValue={c.depositor || ""}
+  onBlur={(e) => updateField(c.quote_id, "depositor", e.target.value)}
                         style={{ width: 50, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
                         placeholder="입금자"
                       />
@@ -800,8 +800,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                 </select>
               ) : (
                 <input
-                  value={newItem.customer_name}
-                  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+  defaultValue={c.customer_name || ""}
+  onBlur={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                   placeholder="발주처 입력"
                 />
