@@ -749,10 +749,11 @@ if (type === "memo") {
                           key={d.quote_id + i}
                           draggable
                           onDragStart={(e) => handleDragStart(e, d)}
-                          onClick={() => {
-                            setSelectedDelivery(d);
-                            setEditForm(d);
-                          }}
+                          onClick={(e) => {
+  e.stopPropagation();  // ✅ 추가
+  setSelectedDelivery(d);
+  setEditForm(d);
+}}
                           style={{
                             fontSize: 11,
                             padding: "3px 4px",
@@ -1189,6 +1190,26 @@ if (type === "memo") {
                   cursor: "pointer",
                 }}
               >
+
+🗑️ 삭제
+  </button>
+  <button
+    onClick={() => {
+      setEditForm(selectedDelivery);
+      setShowEditModal(true);
+    }}
+    style={{
+      flex: 1,
+      padding: 14,
+      background: "#fff",
+      border: "1px solid #2e5b86",
+      color: "#2e5b86",
+      borderRadius: 8,
+      fontWeight: 700,
+      cursor: "pointer",
+    }}
+  >
+                
                 ✏️ 수정
               </button>
               <button
