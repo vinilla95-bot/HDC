@@ -305,7 +305,7 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
   drawing_no: "",  // ✅ 추가
 });
     loadInventory();  // ✅ 추가
-  };  /
+  };  
 
   const handleDelete = async (quote_id: string, spec: string) => {
     if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
