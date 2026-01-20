@@ -251,77 +251,61 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
     alert(`계약견적 "${typeName}"으로 이동 완료!`);
     loadInventory();
   };
+const handleAddNew = async () => {
+  if (!newItem.spec) {
+    alert("규격을 선택해주세요.");
+    return;
+  }
 
-  const handleAddNew = async () => {
-    if (!newItem.spec) {
-      alert("규격을 선택해주세요.");
-      return;
-    }
+  const qty = newItem.qty || 1;
+  
+  // 도면번호 시작점 결정
+  let startNo: number;
+  if (newItem.drawing_no) {
+    // 직접 입력한 경우 그 번호부터 시작
+    startNo = parseInt(newItem.drawing_no) || nextDrawingNo;
+  } else {
+    // 비워둔 경우 자동 번호
+    startNo = nextDrawingNo;
+  }
 
-    const qty = newItem.qty || 1;
-    
-    const [year, month] = newItem.contract_date.split("-");
-    const sameMonthItems = allItems.filter(item => {
-      const [y, m] = (item.contract_date || "").split("-");
-      return y === year && m === month;
+  const inserts = [];
+  for (let i = 0; i < qty; i++) {
+    inserts.push({
+      quote_id: `INV_${Date.now()}_${i}`,
+      contract_date: newItem.contract_date,
+      drawing_no: String(startNo + i),  // ✅ 27, 28, 29, 30...
+      customer_name: newItem.customer_name,
+      spec: newItem.spec,
+      inventory_status: newItem.inventory_status,
+      container_type: newItem.container_type,
+      total_amount: newItem.total_amount,
+      deposit_status: newItem.deposit_status,
+      items: [],
     });
-    const maxNo = sameMonthItems.length > 0 
-      ? Math.max(...sameMonthItems.map(item => Number(item.drawing_no) || 0))
-      : 0;
+  }
 
-    const inserts = [];
-    for (let i = 0; i < qty; i++) {
-      inserts.push({
-        quote_id: `INV_${Date.now()}_${i}`,
-        contract_date: newItem.contract_date,
-       drawing_no: newItem.drawing_no || String(maxNo + 1 + i),
-        customer_name: newItem.customer_name,
-        spec: newItem.spec,
-        inventory_status: newItem.inventory_status,
-        container_type: newItem.container_type,
-        total_amount: newItem.total_amount,
-        deposit_status: newItem.deposit_status,
-        items: [],
-      });
-    }
+  const { error } = await supabase.from("inventory").insert(inserts);
 
-    const { error } = await supabase.from("inventory").insert(inserts);
+  if (error) {
+    alert("추가 실패: " + error.message);
+    return;
+  }
 
-    if (error) {
-      alert("추가 실패: " + error.message);
-      return;
-    }
-
-    setShowAddModal(false);
+  setShowAddModal(false);
   setNewItem({ 
-  customer_name: "", 
-  spec: "3x6", 
-  inventory_status: "작업완료", 
-  container_type: "신품",
-  contract_date: new Date().toISOString().slice(0, 10),
-  total_amount: 0,
-  qty: 1,
-  deposit_status: "",
-  drawing_no: "",  // ✅ 추가
-});
-    loadInventory();  // ✅ 추가
-  };  
-
-  const handleDelete = async (quote_id: string, spec: string) => {
-    if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
-
-    const { error } = await supabase
-      .from("inventory")
-      .delete()
-      .eq("quote_id", quote_id);
-
-    if (error) {
-      alert("삭제 실패: " + error.message);
-      return;
-    }
-
-    loadInventory();
-  };
+    customer_name: "", 
+    spec: "3x6", 
+    inventory_status: "작업완료", 
+    container_type: "신품",
+    contract_date: new Date().toISOString().slice(0, 10),
+    total_amount: 0,
+    qty: 1,
+    deposit_status: "",
+    drawing_no: "",
+  });
+  loadInventory();
+};
 
   const thStyle: React.CSSProperties = {
     padding: "10px 8px",
