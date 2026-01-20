@@ -854,20 +854,21 @@ const getStatusColor = (status: string) => {
                 ))}
               </select>
             </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>입금</label>
-              <select
-                value={newItem.deposit_status}
-                onChange={(e) => setNewItem({ ...newItem, deposit_status: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-              >
-                <option value="">-</option>
-                <option value="완료">완료</option>
-                <option value="계약금">계약금</option>
-                <option value="미입금">미입금</option>
-              </select>
-            </div>
+            
+<div style={{ marginBottom: 12 }}>
+  <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>입금</label>
+  <select
+    value={newItem.deposit_status}
+    onChange={(e) => setNewItem({ ...newItem, deposit_status: e.target.value })}
+    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+  >
+    <option value="">-</option>
+    <option value="대기">대기</option>
+    <option value="완료">완료</option>
+    <option value="계약금">계약금</option>
+    <option value="미입금">미입금</option>
+  </select>
+</div>
 
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label>
