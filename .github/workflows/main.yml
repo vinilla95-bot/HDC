@@ -25,7 +25,7 @@ jobs:
           node-version: 20
 
       - name: Install deps (ignore lockfile)
-        run: npm install --no-package-lock
+       run: npm ci
 
       - name: Debug React versions
         run: npm ls react react-dom || true
