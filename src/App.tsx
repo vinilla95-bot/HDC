@@ -182,7 +182,7 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
- React.useEffect(() => {
+
  React.useEffect(() => {
   const handleClickOutside = (e: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
@@ -280,8 +280,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
 
-  React.useEffect(() => {
- React.useEffect(() => {
+ 
   React.useEffect(() => {
   const handleClickOutside = (e: MouseEvent) => {
     const target = e.target as Node;
