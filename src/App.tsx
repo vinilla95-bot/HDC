@@ -183,9 +183,10 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   }, [searchQuery, options]);
 
  React.useEffect(() => {
+ React.useEffect(() => {
   const handleClickOutside = (e: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-      // ✅ 입력값이 있으면 품목명으로 저장
+      // 입력값이 있으면 품목명으로 저장
       if (searchQuery.trim()) {
         onSelectOption(item, { 
           option_id: `custom_${Date.now()}`, 
@@ -195,7 +196,9 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
           show_spec: 'n'
         }, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
       }
-      setShowDropdown(false); setIsEditing(false); setSearchQuery("");
+      setShowDropdown(false); 
+      setIsEditing(false); 
+      setSearchQuery("");
     }
   };
   document.addEventListener("mousedown", handleClickOutside);
@@ -286,7 +289,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     const isOutsideInput = !inputRef.current || !inputRef.current.contains(target);
     
     if (isOutsideDropdown && isOutsideInput) {
-      // ✅ 입력값이 있으면 자유 입력 품목으로 추가
+      // 입력값이 있고 검색 결과가 없으면 자유 입력으로 추가
       if (searchQuery.trim() && sites.length === 0 && filteredOptions.length === 0) {
         const customOpt = { 
           option_id: `custom_${Date.now()}`, 
@@ -309,6 +312,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }
 }, [isEditing, searchQuery, sites.length, filteredOptions.length, onAddItem]);
+   
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
     onAddItem(opt, calculated);
