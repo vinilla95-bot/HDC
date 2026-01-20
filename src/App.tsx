@@ -807,6 +807,14 @@ const handleSiteSearch = async (val: string) => {
 
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+      const selects = clonedSheet.querySelectorAll('select');
+selects.forEach(select => {
+  const selectedText = select.options[select.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = select.getAttribute('style') || '';
+  select.parentNode?.replaceChild(span, select);
+});
       const deleteButtons = clonedSheet.querySelectorAll('button');
 deleteButtons.forEach(btn => {
   if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
@@ -1513,20 +1521,21 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
               </tr>
               <tr>
                 <th className="k center">이메일</th>
-                <td className="v" style={{ textAlign: "left" }}>
+                <td className="v" colSpan={2} style={{ textAlign: "left" }}>
   <input 
     value={form.email || ""} 
     onChange={(e) => setForm((p: any) => ({ ...p, email: e.target.value }))}
     placeholder="이메일 입력"
     style={{ 
-  border: "none", 
-  background: "transparent", 
-  fontSize: 13, 
-  width: "120%",
-  textAlign: "left",
-  marginLeft: 0,
-  paddingLeft: 0
-}}
+      border: "none", 
+      background: "transparent", 
+      fontSize: 13, 
+      width: "100%",
+      textAlign: "left",
+      marginLeft: 0,
+      paddingLeft: 0,
+      boxSizing: "border-box"
+    }}
   />
 </td>
                 <th className="k center">전화</th>
