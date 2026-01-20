@@ -1263,7 +1263,7 @@ function SortableRow({ item, index, rent, fmt, updateRow, deleteRow }: any) {
   } = useSortable({ id: item.key });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.toString(transform),
     transition,
     background: isDragging ? '#f0f0f0' : '#fff',
   };
