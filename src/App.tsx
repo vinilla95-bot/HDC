@@ -4,8 +4,7 @@ import QuoteListPage from "./pages/QuoteListPage";
 import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+
 
 // dnd-kit 주석처리
 // import {
@@ -1252,96 +1251,7 @@ type A4QuoteProps = {
   onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void;
 };
 
-function SortableRow({ item, index, rent, fmt, updateRow, deleteRow }: any) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.key });
 
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    transition,
-    background: isDragging ? '#f0f0f0' : '#fff',
-  };
-
-  return (
-    <tr ref={setNodeRef} style={style}>
-      <td {...attributes} {...listeners} style={{ cursor: 'grab', textAlign: 'center' }}>
-        ☰
-      </td>
-      <td>
-        <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>
-          내부: {item.baseQty}{item.unit} × {fmt(item.baseUnitPrice)} = {fmt(item.baseAmount)}
-        </div>
-        <input
-          value={item.displayName}
-          onChange={(e) => updateRow(item.key, "displayName", e.target.value)}
-          style={{ width: "100%", fontSize: 12, padding: 4, border: "1px solid #ddd" }}
-        />
-      </td>
-      <td style={{ textAlign: "center" }}>{item.unit}</td>
-      <td className="right">
-        {rent ? (
-          <input
-            type="number"
-            min={1}
-            step={1}
-            value={item.months || 1}
-            onChange={(e) => updateRow(item.key, "months", e.target.value)}
-            style={{ width: 50, padding: 2, textAlign: "right" }}
-          />
-        ) : (
-          <span style={{ color: "#ccc" }}>-</span>
-        )}
-      </td>
-      <td className="right">
-        <input
-          type="number"
-          min={0}
-          step={1}
-          value={item.displayQty === 0 ? "" : item.displayQty}
-          onChange={(e) => updateRow(item.key, "displayQty", e.target.value)}
-          style={{ width: 50, padding: 2, textAlign: "right" }}
-        />
-      </td>
-      <td className="right">
-        {rent ? (
-          <span style={{ fontWeight: 700 }}>{fmt(item.customerUnitPrice)}</span>
-        ) : (
-          <input
-            type="number"
-            min={0}
-            step={1}
-            value={item.customerUnitPrice === 0 ? "" : item.customerUnitPrice}
-            onChange={(e) => updateRow(item.key, "customerUnitPrice", e.target.value)}
-            style={{ width: 100, padding: 2, textAlign: "right" }}
-          />
-        )}
-      </td>
-      <td className="right" style={{ fontWeight: 900 }}>
-        {fmt(item.finalAmount)}
-      </td>
-      <td className="right">
-        <button
-          onClick={() => deleteRow(item.key)}
-          style={{
-            color: "red",
-            border: "none",
-            background: "none",
-            cursor: "pointer",
-            fontWeight: "bold",
-          }}
-        >
-          X
-        </button>
-      </td>
-    </tr>
-  );
-}
 
 function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, editable, onSiteSearch, onAddDelivery }: A4QuoteProps) {
 const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
