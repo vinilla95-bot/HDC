@@ -843,8 +843,21 @@ const handleSiteSearch = async (val: string) => {
       }
 
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-      clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
-      const deleteButtons = clonedSheet.querySelectorAll('button');
+clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+
+// ✅ select를 선택된 텍스트로 교체
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelects = originalSheet.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelects[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
+
+const deleteButtons = clonedSheet.querySelectorAll('button');
 deleteButtons.forEach(btn => {
   if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
     btn.style.display = 'none';
@@ -923,8 +936,22 @@ captureContainer.appendChild(clonedSheet);
         captureContainer.appendChild(styleTag.cloneNode(true));
       }
 
-      const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+    const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
 clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+
+// ✅ select를 선택된 텍스트로 교체
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelects = originalSheet.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelects[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
+
+// X 버튼 숨기기
 
 // X 버튼 숨기기
 // X 버튼 숨기기
@@ -1371,8 +1398,22 @@ const inventoryScreen = (
           captureContainer.appendChild(styleTag.cloneNode(true));
         }
 
-        const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-        clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+
+// ✅ select를 선택된 텍스트로 교체
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelects = originalSheet.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelects[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
+
+const deleteButtons = clonedSheet.querySelectorAll('button');
         
         // X 버튼 숨기기
         const deleteButtons = clonedSheet.querySelectorAll('button');
