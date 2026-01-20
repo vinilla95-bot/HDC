@@ -325,6 +325,83 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
 
 type Bizcard = { id: string; name: string; image_url: string };
 
+  // ✅ 네비게이션 바 컴포넌트
+  const NavBar = ({ current }: { current: string }) => (
+  <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
+    <button
+      className="btn"
+      onClick={() => setView("rt")}
+      style={current === 'rt' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      {current !== 'rt' ? '← ' : ''}실시간견적
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("list")}
+      style={current === 'list' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      전체견적
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("contract")}
+      style={current === 'contract' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      계약견적
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("inventory")}
+      style={current === 'inventory' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      재고현황
+    </button>
+    <button
+      className="btn"
+      onClick={() => setView("calendar")}
+      style={current === 'calendar' ? { background: '#2e5b86', color: '#fff' } : {}}
+    >
+      출고일정
+    </button>
+  </div>
+);
+  // ✅ 전체견적 화면
+  const listScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="list" />
+      <QuoteListPage
+        onGoLive={() => setView("rt")}
+        onConfirmContract={() => setView("contract")}
+      />
+    </div>
+  );
+
+  // ✅ 계약견적 화면
+  const contractScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="contract" />
+      <ContractListPage onBack={() => setView("list")} />
+    </div>
+  );
+
+  // ✅ 출고일정 화면
+  const calendarScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="calendar" />
+      <DeliveryCalendarPage onBack={() => setView("contract")} />
+    </div>
+  );
+
+const inventoryScreen = (
+  <div style={{ minHeight: "100vh" }}>
+    <NavBar current="inventory" />
+    <InventoryPage onBack={() => setView("contract")} />
+  </div>
+);
+  
+  const rtScreen = (
+  <>
+    <NavBar current="rt"setView={setView} />
 export default function App() {
   const [options, setOptions] = useState<SupabaseOptionRow[]>([]);
   const [sites, setSites] = useState<any[]>([]);
@@ -941,83 +1018,7 @@ captureContainer.appendChild(clonedSheet);
   const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
   const blankRows = Array.from({ length: blanksCount });
 
-  // ✅ 네비게이션 바 컴포넌트
-  const NavBar = ({ current }: { current: string }) => (
-  <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
-    <button
-      className="btn"
-      onClick={() => setView("rt")}
-      style={current === 'rt' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      {current !== 'rt' ? '← ' : ''}실시간견적
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("list")}
-      style={current === 'list' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      전체견적
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("contract")}
-      style={current === 'contract' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      계약견적
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("inventory")}
-      style={current === 'inventory' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      재고현황
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("calendar")}
-      style={current === 'calendar' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      출고일정
-    </button>
-  </div>
-);
-  // ✅ 전체견적 화면
-  const listScreen = (
-    <div style={{ minHeight: "100vh" }}>
-      <NavBar current="list" />
-      <QuoteListPage
-        onGoLive={() => setView("rt")}
-        onConfirmContract={() => setView("contract")}
-      />
-    </div>
-  );
 
-  // ✅ 계약견적 화면
-  const contractScreen = (
-    <div style={{ minHeight: "100vh" }}>
-      <NavBar current="contract" />
-      <ContractListPage onBack={() => setView("list")} />
-    </div>
-  );
-
-  // ✅ 출고일정 화면
-  const calendarScreen = (
-    <div style={{ minHeight: "100vh" }}>
-      <NavBar current="calendar" />
-      <DeliveryCalendarPage onBack={() => setView("contract")} />
-    </div>
-  );
-
-const inventoryScreen = (
-  <div style={{ minHeight: "100vh" }}>
-    <NavBar current="inventory" />
-    <InventoryPage onBack={() => setView("contract")} />
-  </div>
-);
-  
-  const rtScreen = (
-  <>
-    <NavBar current="rt" />
     
     {isMobileDevice ? (
       // ========== 모바일: 기존 레이아웃 유지 ==========
