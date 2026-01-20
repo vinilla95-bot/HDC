@@ -1413,7 +1413,6 @@ clonedSelects.forEach((select, idx) => {
   select.parentNode?.replaceChild(span, select);
 });
 
-const deleteButtons = clonedSheet.querySelectorAll('button');
         
         // X 버튼 숨기기
         const deleteButtons = clonedSheet.querySelectorAll('button');
