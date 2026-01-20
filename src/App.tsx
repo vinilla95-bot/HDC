@@ -92,9 +92,11 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
  return <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }} style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }} title="클릭하여 수정">{fmtNum(value)}</span>; }
 
 // ============ 인라인 규격 편집 셀 ============
+// ============ 인라인 규격 편집 셀 ============
 function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?: number }; onChange: (spec: { w: number; l: number; h?: number }) => void }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [tempValue, setTempValue] = useState(`${spec.w}×${spec.l}×${spec.h || 2.6}`);
+  const displayText = (spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '';
+  const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => { 
@@ -105,17 +107,24 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
   }, [isEditing]);
   
   React.useEffect(() => { 
-    setTempValue(`${spec.w}×${spec.l}×${spec.h || 2.6}`); 
+    setTempValue((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : ''); 
   }, [spec]);
 
   const handleBlur = () => { 
     setIsEditing(false); 
+    
+    // 빈 값이면 빈 규격으로 저장
+    if (!tempValue.trim()) {
+      onChange({ w: 0, l: 0, h: 0 });
+      return;
+    }
+    
     // "3×6×2.6" 또는 "3x6x2.6" 형식 파싱
     const parts = tempValue.replace(/x/gi, '×').split('×').map(s => parseFloat(s.trim()) || 0);
     const newSpec = {
-      w: parts[0] || spec.w,
-      l: parts[1] || spec.l,
-      h: parts[2] || spec.h || 2.6
+      w: parts[0],
+      l: parts[1],
+      h: parts[2]
     };
     onChange(newSpec);
   };
@@ -123,7 +132,7 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
   const handleKeyDown = (e: React.KeyboardEvent) => { 
     if (e.key === "Enter") handleBlur(); 
     else if (e.key === "Escape") { 
-      setTempValue(`${spec.w}×${spec.l}×${spec.h || 2.6}`); 
+      setTempValue(displayText); 
       setIsEditing(false); 
     } 
   };
@@ -153,96 +162,15 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
   return (
     <span 
       onClick={() => { 
-        setTempValue(`${spec.w}×${spec.l}×${spec.h || 2.6}`); 
+        setTempValue(displayText); 
         setIsEditing(true); 
       }} 
       style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%" }} 
       title="클릭하여 규격 수정"
     >
-      {spec.w}×{spec.l}×{spec.h || 2.6}
+      {displayText || <span style={{ color: '#ccc' }}>-</span>}
     </span>
   );
-}
-
-
-
-
-
-// ============ 인라인 품목 편집 셀 ============
-function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-
-  const filteredOptions = React.useMemo(() => {
-    const q = searchQuery.trim();
-    if (!q) return [];
-    return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
-  }, [searchQuery, options]);
-
-
- React.useEffect(() => {
-  const handleClickOutside = (e: MouseEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-      // 입력값이 있으면 품목명으로 저장
-      if (searchQuery.trim()) {
-        onSelectOption(item, { 
-          option_id: `custom_${Date.now()}`, 
-          option_name: searchQuery.trim(),
-          unit: 'EA',
-          unit_price: 0,
-          show_spec: 'n'
-        }, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
-      }
-      setShowDropdown(false); 
-      setIsEditing(false); 
-      setSearchQuery("");
-    }
-  };
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, [searchQuery, item, onSelectOption]);
-
-  const handleSelect = (opt: any) => {
-    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-    onSelectOption(item, opt, calculated);
-    setShowDropdown(false); setIsEditing(false); setSearchQuery("");
-  };
-
-  const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
-
-  if (isEditing) {
-     
-    return (
-      <td className="c wrap" style={{ position: "relative", padding: 0 }}>
-      <input ref={inputRef} type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} placeholder="품목 또는 현장 검색..." autoFocus style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />
-        {showDropdown && searchQuery.trim() && (
-         <div ref={dropdownRef} style={{ 
-  position: "absolute", 
-  top: "100%", 
-  left: 0, 
-  right: 0, 
-  maxHeight: 300, 
-  overflowY: "auto", 
-  background: "#fff", 
-  border: "1px solid #ccc", 
-  boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
-  zIndex: 9999 
-}}>
-            {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-              <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
-                <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-              </div>
-            )) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>}
-          </div>
-        )}
-      </td>
-    );
-  }
-return <td className="c wrap" onClick={() => setIsEditing(true)} style={{ cursor: "pointer", outline: "none", border: "1px solid #333" }} title="클릭하여 품목 변경"><span>{String(item.displayName || "")}</span></td>;
 }
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
