@@ -12,6 +12,34 @@ export const roundToTenThousand = (val: number) => {
   return Math.round(n / 10000) * 10000;
 };
 
+// ✅ 신품 컨테이너 고정 가격표 (3m 폭 기준)
+const CONTAINER_FIXED_PRICES_W3: Record<number, number> = {
+  3: 1650000,   // 3x3
+  4: 1750000,   // 3x4
+  5: 2200000,   // 3x5
+  6: 2250000,   // 3x6
+  7: 2600000,   // 3x7
+  8: 3150000,   // 3x8
+  9: 3250000,   // 3x9
+  10: 3650000,  // 3x10
+  12: 4400000,  // 3x12
+};
+
+// ✅ 고정가격 가져오기 (1순위: 고정가, 없으면 null → m당 계산)
+const getContainerFixedPrice = (w: number, l: number): number | null => {
+  if (w <= 3) {
+    return CONTAINER_FIXED_PRICES_W3[l] || null;
+  } else if (w >= 4) {
+    // 4m 폭은 3m 가격의 1.7배
+    const basePrice = CONTAINER_FIXED_PRICES_W3[l];
+    if (basePrice) {
+      return Math.round(basePrice * 1.7);
+    }
+    return null;
+  }
+  return null;
+};
+
 const CHO_ = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
 
 export const getChosung = (str: string) => {
@@ -103,17 +131,40 @@ export const calculateOptionLine = (
   // ✅ "신품 컨테이너"에만 적용
   const isContainerOption = rawName.includes('신품') && rawName.includes('컨테이너');
 
-  // ✅ 신품 컨테이너 단가 설정 (DB에서 가져옴)
+  // ✅ 신품 컨테이너 가격 계산 (1순위: 고정가, 2순위: m당 계산)
   if (isContainerOption) {
-    const smallPrice = Number(opt.unit_price_small || 0);
-    const largePrice = Number(opt.unit_price_large || 0);
-    if (smallPrice > 0 || largePrice > 0) {
-      unitPrice = (w <= 3 && l <= 4) ? smallPrice : largePrice;
+    const fixedPrice = getContainerFixedPrice(w, l);
+    
+    if (fixedPrice) {
+      // 1순위: 고정 가격표에서 찾음
+      unitPrice = fixedPrice;
+      memo = `${w}x${l} 고정가`;
+    } else {
+      // 2순위: m당 계산 (DB의 unit_price 사용)
+      const perMeterPrice = Number(opt.unit_price || 0);
+      if (w <= 3) {
+        unitPrice = Math.round(perMeterPrice * l);
+        memo = `${w}x${l} (${l}m × ${perMeterPrice.toLocaleString()}원/m)`;
+      } else {
+        // 4m 폭: m당 가격 × 길이 × 1.7배
+        unitPrice = Math.round(perMeterPrice * l * 1.7);
+        memo = `${w}x${l} (${l}m × ${perMeterPrice.toLocaleString()}원/m × 1.7)`;
+      }
     }
+    
+    // 높이 3m 이상이면 배수 적용
+    if (h >= 3) {
+      const hMult = getHeightMultiplier();
+      unitPrice = Math.round(unitPrice * hMult);
+      memo += ` (높이${h}m, ${hMult}배)`;
+    }
+    
+    const amount = roundToTenThousand(unitPrice * qty);
+    return { qty, unit, unitPrice, amount, memo };
   }
-  
-  // ✅ 높이 배수
-  const heightMultiplier = (isContainerOption && h >= 3) ? getHeightMultiplier() : 1;
+
+  // ✅ 높이 배수 (신품 컨테이너 외 다른 옵션용)
+  const heightMultiplier = (h >= 3) ? getHeightMultiplier() : 1;
 
   if (isRent) {
     const months = Math.max(1, Math.floor(Number(qty || 1)));
@@ -243,25 +294,25 @@ export const searchSiteRates = async (keyword: string, w: number, l: number, h: 
       wideAdd = isLong ? Number(r.wide_39 || 0) : Number(r.wide_add || 0);
     }
     
-   const delivery = Math.round((deliveryBase + wideAdd) * heightMultiplier);
+    const delivery = Math.round((deliveryBase + wideAdd) * heightMultiplier);
 
-// ✅ 크레인 운송비 계산
-const craneBase = isLong ? Number(r.crane_39 || 0) : Number(r.crane_36 || 0);
-const crane = Math.round(craneBase * heightMultiplier);
+    // ✅ 크레인 운송비 계산
+    const craneBase = isLong ? Number(r.crane_39 || 0) : Number(r.crane_36 || 0);
+    const crane = Math.round(craneBase * heightMultiplier);
 
-const priority = Number(r.priority || 9999);
+    const priority = Number(r.priority || 9999);
 
-list.push({
-  id: r.id,
-  keyword: k,
-  alias: a,
-  bucket,
-  wideAdd,
-  priority,
-  delivery,
-  crane,  // ✅ 0 대신 계산된 값
-  heightMultiplier,
-});
+    list.push({
+      id: r.id,
+      keyword: k,
+      alias: a,
+      bucket,
+      wideAdd,
+      priority,
+      delivery,
+      crane,
+      heightMultiplier,
+    });
 
     if (list.length >= 50) break;
   }
