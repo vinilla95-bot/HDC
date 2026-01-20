@@ -193,16 +193,17 @@ const getDeliveryLabel = (item: DeliveryItem) => {
 
   const qtyText = `-${qty}동`;
 
-  if (type === "rental") {
-    return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
-  } else if (type === "used") {
-    return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
-  } else if (type === "branch") {
-    return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
-  } else {
-    return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
-  }
-};
+if (type === "rental") {
+  // 메모 - 태그 없이 내용만 표시
+  return `${customer} ${memo}`.trim() || "메모";
+} else if (type === "used") {
+  return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
+} else if (type === "branch") {
+  return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
+} else {
+  return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
+}urn `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
+}
 
 
   // ✅ 배차 양식 생성
