@@ -4,7 +4,7 @@ import QuoteListPage from "./pages/QuoteListPage";
 import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
-import { useSortable } from '@dnd-kit/sortable';
+
 import { CSS } from '@dnd-kit/utilities';
 
 // dnd-kit 주석처리
