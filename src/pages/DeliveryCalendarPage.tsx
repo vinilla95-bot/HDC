@@ -965,7 +965,7 @@ setSelectedDelivery(null); ;
              <button
   onClick={(e) => {
     e.stopPropagation();  // ✅ 추가
-    setShowEditModal(false);
+   setShowAddModal(false);
     setSelectedDelivery(null);  // ✅ 추가 - 상세보기도 같이 닫기
   }}
                 style={{
@@ -1260,7 +1260,11 @@ setSelectedDelivery(null); ;
       justifyContent: "center",
       zIndex: 10001,
     }}
-    onClick={() => setShowEditModal(false)}
+    onClick={(e) => {
+      e.stopPropagation();
+      setShowEditModal(false);
+      setSelectedDelivery(null);
+    }}
   >
     <div
       style={{
@@ -1277,7 +1281,11 @@ setSelectedDelivery(null); ;
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ margin: 0 }}>✏️ 일정 수정</h3>
         <button
-          onClick={() => setShowEditModal(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowEditModal(false);
+            setSelectedDelivery(null);
+          }}
           style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
         >
           ✕
