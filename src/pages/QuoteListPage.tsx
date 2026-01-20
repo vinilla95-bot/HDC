@@ -702,9 +702,22 @@ const addEditItemFromOption = (opt: any) => {
         captureContainer.appendChild(styleTag.cloneNode(true));
       }
 
-      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
-      clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
-      captureContainer.appendChild(clonedSheet);
+     const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
+
+// ✅ select를 선택된 텍스트로 교체
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelects = sheetEl.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelects[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
+
+captureContainer.appendChild(clonedSheet);
 
       await new Promise(r => setTimeout(r, 300));
 
@@ -771,9 +784,21 @@ const addEditItemFromOption = (opt: any) => {
       }
 
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
-      clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
-      captureContainer.appendChild(clonedSheet);
+clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
 
+// ✅ select를 선택된 텍스트로 교체
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelects = sheetEl.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelects[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
+
+captureContainer.appendChild(clonedSheet);
       await new Promise(r => setTimeout(r, 300));
 
       const canvas = await html2canvas(clonedSheet, {
