@@ -4,6 +4,8 @@ import QuoteListPage from "./pages/QuoteListPage";
 import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // dnd-kit 주석처리
 // import {
@@ -122,7 +124,7 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
   if (isEditing) {
-     console.log('DEBUG:', showDropdown, searchQuery, filteredOptions.length, sites.length);
+     
     return (
       <td className="c wrap" style={{ position: "relative", padding: 0 }}>
       <input ref={inputRef} type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} placeholder="품목 또는 현장 검색..." autoFocus style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />
