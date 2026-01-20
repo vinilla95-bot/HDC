@@ -1,10 +1,9 @@
 console.log("✅ VITE CONFIG LOADED");
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  base: "/my-app/", // 🔥 GitHub repo 이름
+  base: "/HDC/", // 🔥 GitHub repo name
   plugins: [react()],
   server: {
     proxy: {
