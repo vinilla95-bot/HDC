@@ -228,6 +228,8 @@ if (type === "memo") {
   return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
 } else if (type === "used") {
   return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
+} else {
+  return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
 }
 };
 
@@ -713,7 +715,7 @@ if (type === "memo") {
                   </div>
                   
 {(() => {
-  const holidayName = HOLIDAYS[dateKey];
+   const holidayName = HOLIDAYS[dateKey];
   const isHoliday = !!holidayName;
   return (
     <>
