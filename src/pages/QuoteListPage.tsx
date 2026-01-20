@@ -124,6 +124,8 @@ function EditableNumberCell({ value, onChange }: { value: number; onChange: (val
         unit_price: 0,
         show_spec: 'n'
       });
+
+      
     } else {
       onUpdateName(searchQuery);
     }
@@ -1085,6 +1087,7 @@ const quotePreviewHtml = useMemo(() => {
 </table>
 
     {/* 옵션 검색 (편집 모드) */}
+{/* 옵션 검색 (편집 모드) */}
 {editMode && (
   <div style={{ margin: '10px 0', position: 'relative', textAlign: 'left' }}>
     <input value={optQ} onChange={(e) => setOptQ(e.target.value)} placeholder="품목 검색 (예: 모노륨, 단열...)" style={{ width: '100%', padding: '12px', border: '2px solid #2e5b86', borderRadius: 8, fontSize: 14, textAlign: 'left' }} />
@@ -1093,7 +1096,7 @@ const quotePreviewHtml = useMemo(() => {
         position: 'absolute', 
         top: '100%', 
         left: 0, 
-        width: '300px',  /* ← right: 0 대신 고정 너비 */
+        width: '300px',
         background: '#fff', 
         border: '1px solid #ddd', 
         borderRadius: 8, 
@@ -1103,7 +1106,7 @@ const quotePreviewHtml = useMemo(() => {
         boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
         textAlign: 'left' 
       }}>
-      {filteredOptions.map((o: any) => {
+       {filteredOptions.map((o: any) => {
   const isRent = String(o.option_name || "").includes("임대");
   
   if (isRent) {
