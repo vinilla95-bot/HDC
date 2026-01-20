@@ -339,14 +339,14 @@ function EditableTextCell({ value, onChange }: { value: string; onChange: (val: 
     setIsEditing(false); 
     onChange(tempValue); 
   };
-  
-  const handleKeyDown = (e: React.KeyboardEvent) => { 
-    if (e.key === "Enter") handleBlur(); 
-    else if (e.key === "Escape") { 
-      setTempValue(value); 
-      setIsEditing(false); 
-    } 
-  };
+ const handleKeyDown = (e: React.KeyboardEvent) => {
+  if (e.key === "Enter") {
+    handleBlur();
+  } else if (e.key === "Escape") {
+    setTempValue(String(value));
+    setIsEditing(false);
+  }
+};
 
   if (isEditing) {
     return (
