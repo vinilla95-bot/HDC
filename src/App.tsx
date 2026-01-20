@@ -1178,35 +1178,205 @@ const inventoryScreen = (
      
       
   
-
-    {/* 모바일 전체화면 미리보기 */}
-    {mobilePreviewOpen && (
-      <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 10000, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
-          <button onClick={() => setMobilePreviewOpen(false)} style={{ padding: '8px 16px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700 }}>닫기</button>
-        </div>
-        <div style={{ flex: 1, overflow: 'auto', background: '#f5f6f8', padding: '10px' }}>
-          <div style={{ width: Math.floor(800 * Math.min(0.95, (window.innerWidth - 20) / 800)), margin: '0 auto', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${Math.min(0.95, (window.innerWidth - 20) / 800)})` }}>
-              <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding />
-            </div>
-          </div>
-        </div>
-        <div style={{ padding: '10px 16px', borderTop: '1px solid #eee', display: 'flex', gap: 8 }}>
-          <button onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }} style={{ flex: 1, padding: '12px', background: '#fff', border: '1px solid #ddd', borderRadius: 8, fontWeight: 700 }}>JPG 저장</button>
-          <button onClick={() => { setMobilePreviewOpen(false); handleSend(); }} style={{ flex: 1, padding: '12px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700 }}>전송</button>
+{/* 모바일 전체화면 미리보기 */}
+{mobilePreviewOpen && (
+  <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 10000, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
+      <button onClick={() => setMobilePreviewOpen(false)} style={{ padding: '8px 16px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700 }}>닫기</button>
+    </div>
+    <div style={{ flex: 1, overflow: 'auto', background: '#f5f6f8', padding: '10px' }}>
+      <div style={{ width: Math.floor(800 * Math.min(0.95, (window.innerWidth - 20) / 800)), margin: '0 auto', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${Math.min(0.95, (window.innerWidth - 20) / 800)})` }}>
+          <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding />
         </div>
       </div>
-    )}
-  </>
-);
-if (view === "list") return listScreen;
-  if (view === "contract") return contractScreen;
-  if (view === "calendar") return calendarScreen;
-  if (view === "inventory") return inventoryScreen;
-  return rtScreen;
-} 
+    </div>
+    <div style={{
+      padding: '10px 16px',
+      borderTop: '1px solid #eee',
+      display: 'flex',
+      gap: 8,
+      background: '#fff',
+      position: 'relative',
+      flexShrink: 0,
+    }}>
+      <button
+        onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
+        style={{
+          flex: 1,
+          padding: '12px',
+          background: '#fff',
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          fontWeight: 700,
+          fontSize: 13,
+        }}
+      >
+        JPG 저장
+      </button>
+      <div style={{ flex: 1, position: 'relative' }}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const menu = document.getElementById('sendMenuApp');
+            if (menu) menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+          }}
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: '#111',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontWeight: 700,
+            fontSize: 13,
+          }}
+        >
+          전송 ▼
+        </button>
+        <div
+          id="sendMenuApp"
+          style={{
+            display: 'none',
+            position: 'absolute',
+            bottom: '100%',
+            left: 0,
+            right: 0,
+            marginBottom: 8,
+            background: '#fff',
+            borderRadius: 10,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            border: '1px solid #e5e7eb',
+          }}
+        >
+          {form.email && (
+            <button
+              onClick={() => {
+                document.getElementById('sendMenuApp')!.style.display = 'none';
+                setMobilePreviewOpen(false);
+                handleSend();
+              }}
+              style={{
+                padding: '14px 16px',
+                background: '#fff',
+                border: 'none',
+                borderBottom: '1px solid #eee',
+                fontSize: 14,
+                fontWeight: 600,
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              ✉️ 이메일 전송
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.email}</div>
+            </button>
+          )}
+          {form.phone && (
+            <button
+              onClick={async () => {
+                document.getElementById('sendMenuApp')!.style.display = 'none';
+
+                const originalSheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
+                if (!originalSheet) {
+                  alert('견적서를 찾을 수 없습니다.');
+                  return;
+                }
+
+                try {
+                  setStatusMsg('이미지 생성 중...');
+
+                  const captureContainer = document.createElement('div');
+                  captureContainer.id = 'captureContainerSms';
+                  captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
+                  document.body.appendChild(captureContainer);
+
+                  const styleTag = document.querySelector('#quotePreviewApp style');
+                  if (styleTag) {
+                    captureContainer.appendChild(styleTag.cloneNode(true));
+                  }
+
+                  const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+                  clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+                  
+                  const deleteButtons = clonedSheet.querySelectorAll('button');
+                  deleteButtons.forEach(btn => {
+                    if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
+                      btn.style.display = 'none';
+                    }
+                  });
+                  
+                  captureContainer.appendChild(clonedSheet);
+
+                  await new Promise(r => setTimeout(r, 300));
+
+                  const canvas = await html2canvas(clonedSheet, {
+                    scale: 1.5,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    allowTaint: true,
+                    width: 800,
+                    windowWidth: 800,
+                  });
+
+                  document.body.removeChild(captureContainer);
+
+                  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+                  const msg = `안녕하세요 현대컨테이너입니다. 문의 주셔서 감사합니다. ${form.name || '고객'}님 견적서를 보내드립니다. 확인하시고 문의사항 있으시면 언제든 연락 주세요. 감사합니다~`;
+                  const phone = form.phone.replace(/[^0-9]/g, '');
+
+                  const a = document.createElement('a');
+                  a.href = dataUrl;
+                  a.download = `견적서_${form.name || 'quote'}.jpg`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+
+                  setStatusMsg('');
+                  setMobilePreviewOpen(false);
+
+                  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                  const separator = isIOS ? '&' : '?';
+
+                  setTimeout(() => {
+                    window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
+                  }, 1500);
+
+                } catch (e) {
+                  console.error(e);
+                  setStatusMsg('');
+                  const container = document.getElementById('captureContainerSms');
+                  if (container) document.body.removeChild(container);
+                  alert('이미지 생성 실패: ' + (e as any)?.message);
+                }
+              }}
+              style={{
+                padding: '14px 16px',
+                background: '#fff',
+                border: 'none',
+                fontSize: 14,
+                fontWeight: 600,
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              📱 문자 전송
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
+            </button>
+          )}
+          {!form.email && !form.phone && (
+            <div style={{ padding: '14px 16px', color: '#888', fontSize: 13 }}>
+              이메일 또는 전화번호를 입력해주세요
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
 type A4QuoteProps = {
   form: {
