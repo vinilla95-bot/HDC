@@ -171,21 +171,26 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   };
 
   // ✅ 출고 라벨 생성
-  const getDeliveryLabel = (item: DeliveryItem) => {
+const getDeliveryLabel = (item: DeliveryItem) => {
   const type = item.contract_type || "order";
   const spec = item.spec || "";
   const options = summarizeOptions(item.items, true);
-  const site = getSiteName(item);
   const customer = item.customer_name || "";
   const qty = getQty(item);
   const transportType = getTransportType(item);
+  const memo = item.memo || "";
+
+  // ✅ 메모만 있는 경우 (규격 없고, 옵션 없고) → 태그 없이 표시
+  const isMemoOnly = !spec && (!item.items || item.items.length === 0);
+  if (isMemoOnly) {
+    return `${customer ? customer + " " : ""}${memo}`.trim() || "메모";
+  }
 
   let prefix = "";
   if (transportType === "crane") {
     prefix = "크";
   }
 
-  // 수량은 항상 표시
   const qtyText = `-${qty}동`;
 
   if (type === "rental") {
@@ -198,7 +203,6 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
     return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
   }
 };
-
 
 
   // ✅ 배차 양식 생성
@@ -819,10 +823,10 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
                   onChange={(e) => setNewSchedule({ ...newSchedule, contract_type: e.target.value })}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                 >
-                  <option value="order">수주(신품)</option>
-                  <option value="branch">영업소</option>
-                  <option value="used">중고</option>
-                  <option value="rental">임대</option>
+                  <option value="order">신품</option>
+                  <option value="branch">중고</option>
+                  <option value="used">임대</option>
+                  <option value="rental">메모</option>
                 </select>
               </div>
               <div>
@@ -1148,54 +1152,67 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
         </div>
       )}
 
-      {/* ✅ 수정 모달 */}
-      {selectedDelivery && showEditModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10001,
-          }}
+{/* ✅ 수정 모달 */}
+{selectedDelivery && showEditModal && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10001,
+    }}
+    onClick={() => setShowEditModal(false)}
+  >
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 12,
+        padding: 24,
+        width: "90%",
+        maxWidth: 450,
+        maxHeight: "80vh",
+        overflow: "auto",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ margin: 0 }}>✏️ 일정 수정</h3>
+        <button
           onClick={() => setShowEditModal(false)}
+          style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
         >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 24,
-              width: "90%",
-              maxWidth: 450,
-              maxHeight: "80vh",
-              overflow: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>✏️ 일정 수정</h3>
-              <button
-                onClick={() => setShowEditModal(false)}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
-              >
-                ✕
-              </button>
-            </div>
+          ✕
+        </button>
+      </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일</label>
-                <input
-                  type="date"
-                  value={editForm.delivery_date || ""}
-                  onChange={(e) => setEditForm({ ...editForm, delivery_date: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일</label>
+          <input
+            type="date"
+            value={editForm.delivery_date || ""}
+            onChange={(e) => setEditForm({ ...editForm, delivery_date: e.target.value })}
+            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
+          <select
+            value={editForm.contract_type || "order"}
+            onChange={(e) => setEditForm({ ...editForm, contract_type: e.target.value })}
+            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+          >
+            <option value="order">신품</option>
+            <option value="branch">중고</option>
+            <option value="used">임대</option>
+            <option value="rental">메모</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
                 <input
                   value={editForm.customer_name || ""}
                   onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
