@@ -1363,7 +1363,7 @@ const inventoryScreen = (
                 cursor: 'pointer',
               }}
             >
-              📱 문자 전송
+📱 문자 전송
               <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
             </button>
           )}
@@ -1377,9 +1377,16 @@ const inventoryScreen = (
     </div>
   </div>
 )}
- </>
+  </>
 );
-  
+
+if (view === "list") return listScreen;
+if (view === "contract") return contractScreen;
+if (view === "calendar") return calendarScreen;
+if (view === "inventory") return inventoryScreen;
+return rtScreen;
+}
+
 type A4QuoteProps = {
   form: {
     quoteTitle: string;
