@@ -20,6 +20,35 @@ type DeliveryItem = {
 
 type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto" | "purple" | "navy";
 
+// ✅ 대한민국 공휴일 (2024-2026)
+const HOLIDAYS: Record<string, string> = {
+  // 2024년
+  "2024-01-01": "신정",
+  "2024-02-09": "설날연휴", "2024-02-10": "설날", "2024-02-11": "설날연휴", "2024-02-12": "대체공휴일",
+  "2024-03-01": "삼일절", "2024-04-10": "국회의원선거",
+  "2024-05-05": "어린이날", "2024-05-06": "대체공휴일", "2024-05-15": "부처님오신날",
+  "2024-06-06": "현충일", "2024-08-15": "광복절",
+  "2024-09-16": "추석연휴", "2024-09-17": "추석", "2024-09-18": "추석연휴",
+  "2024-10-03": "개천절", "2024-10-09": "한글날", "2024-12-25": "크리스마스",
+  // 2025년
+  "2025-01-01": "신정",
+  "2025-01-28": "설날연휴", "2025-01-29": "설날", "2025-01-30": "설날연휴",
+  "2025-03-01": "삼일절", "2025-03-03": "대체공휴일",
+  "2025-05-05": "어린이날", "2025-05-06": "부처님오신날",
+  "2025-06-06": "현충일", "2025-08-15": "광복절",
+  "2025-10-03": "개천절",
+  "2025-10-05": "추석연휴", "2025-10-06": "추석", "2025-10-07": "추석연휴", "2025-10-08": "대체공휴일",
+  "2025-10-09": "한글날", "2025-12-25": "크리스마스",
+  // 2026년
+  "2026-01-01": "신정",
+  "2026-02-16": "설날연휴", "2026-02-17": "설날", "2026-02-18": "설날연휴",
+  "2026-03-01": "삼일절", "2026-03-02": "대체공휴일",
+  "2026-05-05": "어린이날", "2026-05-24": "부처님오신날",
+  "2026-06-06": "현충일", "2026-08-15": "광복절", "2026-08-17": "대체공휴일",
+  "2026-09-24": "추석연휴", "2026-09-25": "추석", "2026-09-26": "추석연휴",
+  "2026-10-03": "개천절", "2026-10-05": "대체공휴일", "2026-10-09": "한글날",
+  "2026-12-25": "크리스마스",
+};
 export default function DeliveryCalendarPage({ onBack }: { onBack: () => void }) {
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,16 +222,12 @@ const getDeliveryLabel = (item: DeliveryItem) => {
 
   const qtyText = `-${qty}동`;
 
-if (type === "rental") {
-  // 메모 - 태그 없이 내용만 표시
-  return `${customer} ${memo}`.trim() || "메모";
-} else if (type === "used") {
+if (type === "memo") {
+  return customer || "메모";
+} else if (type === "rental") {
   return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
-} else if (type === "branch") {
+} else if (type === "used") {
   return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
-} else {
-  return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
-
 }
 };
 
@@ -212,12 +237,13 @@ if (type === "rental") {
     const type = item.contract_type || "order";
     
     // 신품/중고/임대 구분
-    let saleType = "신품판매";
-    if (type === "used") {
-      saleType = "중고판매";
-    } else if (type === "rental") {
-      saleType = "임대";
-    }
+  if (type === "used") {
+  saleType = "중고판매";
+} else if (type === "rental") {
+  saleType = "임대";
+} else if (type === "memo") {
+  saleType = "메모";
+}
 
     // ✅ timezone 이슈 수정
     const [year, month, day] = item.delivery_date.split('-').map(Number);
@@ -682,7 +708,32 @@ if (type === "rental") {
                   }}>
                     {date.getDate()}
                   </div>
-
+                  
+{(() => {
+  const holidayName = HOLIDAYS[dateKey];
+  const isHoliday = !!holidayName;
+  return (
+    <>
+      <div style={{
+        fontSize: 12,
+        fontWeight: isToday ? 800 : 600,
+        color: isToday ? "#fff" : (isSunday || isHoliday) ? "#e53935" : isSaturday ? "#1976d2" : "#333",
+        marginBottom: 2,
+        padding: "2px 4px",
+        borderRadius: 4,
+        background: isToday ? "#2e5b86" : "transparent",
+        display: "inline-block",
+      }}>
+        {date.getDate()}
+      </div>
+      {holidayName && (
+        <div style={{ fontSize: 9, color: "#e53935", fontWeight: 600, marginBottom: 2 }}>
+          {holidayName}
+        </div>
+      )}
+    </>
+  );
+})()}
                   {/* 출고 항목들 */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {dayDeliveries.slice(0, 3).map((d, i) => {
@@ -825,10 +876,10 @@ if (type === "rental") {
                   onChange={(e) => setNewSchedule({ ...newSchedule, contract_type: e.target.value })}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                 >
-                  <option value="order">신품</option>
-                  <option value="branch">중고</option>
-                  <option value="used">임대</option>
-                  <option value="rental">메모</option>
+                 <option value="order">신품</option>
+<option value="used">중고</option>
+<option value="rental">임대</option>
+<option value="memo">메모</option>
                 </select>
               </div>
               <div>
@@ -1207,10 +1258,10 @@ if (type === "rental") {
             onChange={(e) => setEditForm({ ...editForm, contract_type: e.target.value })}
             style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
           >
-            <option value="order">신품</option>
-            <option value="branch">중고</option>
-            <option value="used">임대</option>
-            <option value="rental">메모</option>
+           <option value="order">신품</option>
+<option value="used">중고</option>
+<option value="rental">임대</option>
+<option value="memo">메모</option>
           </select>
         </div>
         <div>
