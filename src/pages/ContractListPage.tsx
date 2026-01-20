@@ -441,9 +441,9 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                           <option value="태광">태광</option>
                         </select>
                       ) : (
-                        <input
-                          value={c.customer_name || ""}
-                          onChange={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
+                       <input
+  defaultValue={c.customer_name || ""}
+  onBlur={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
                           style={{ width: 70, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontWeight: 700 }}
                           placeholder="발주처"
                         />
@@ -800,8 +800,8 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                 </select>
               ) : (
                 <input
-  defaultValue={c.customer_name || ""}
-  onBlur={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
+  value={newItem.customer_name}
+  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                   placeholder="발주처 입력"
                 />
