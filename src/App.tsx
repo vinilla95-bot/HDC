@@ -1300,7 +1300,16 @@ const inventoryScreen = (
 
         const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
         clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
-        
+        // select 요소를 선택된 텍스트로 교체
+const selects = clonedSheet.querySelectorAll('select');
+selects.forEach(select => {
+  const htmlSelect = select as HTMLSelectElement;
+  const selectedText = htmlSelect.options[htmlSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = select.getAttribute('style') || 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
         // X 버튼 숨기기
         const deleteButtons = clonedSheet.querySelectorAll('button');
         deleteButtons.forEach(btn => {
