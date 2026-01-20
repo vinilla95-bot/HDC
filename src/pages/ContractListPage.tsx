@@ -726,18 +726,15 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* 규격 */}
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
-              <select
-                value={newItem.spec}
-                onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-              >
-                {SPEC_OPTIONS.map(spec => (
-                  <option key={spec} value={spec}>{spec}</option>
-                ))}
-              </select>
-            </div>
+          <div style={{ marginBottom: 12 }}>
+  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
+  <input
+    value={newItem.spec}
+    onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
+    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+    placeholder="예: 3x6, 3x9x2.6"
+  />
+</div>
 
             {/* 계좌 + 세발 + 입금 */}
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
