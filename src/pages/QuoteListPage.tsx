@@ -1132,6 +1132,11 @@ const quotePreviewHtml = useMemo(() => {
   );
 })}
 
+        </div>
+    )}
+  </div>
+)}
+
       {/* 품목 테이블 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
   <thead>
