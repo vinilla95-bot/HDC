@@ -28,11 +28,18 @@ jobs:
       - name: Install deps (lockfile)
         run: npm ci
 
-      - name: Clean dist
-        run: rm -rf dist
+      - name: Show react resolution
+        run: |
+          node -p "require.resolve('react')"
+          node -p "typeof require('react').useState"
+          node -p "require.resolve('react-dom')"
+          node -p "typeof require('react-dom/client').createRoot"
 
       - name: Debug React versions
         run: npm ls react react-dom || true
+
+      - name: Clean dist
+        run: rm -rf dist
 
       - name: Build
         run: npm run build
