@@ -113,28 +113,12 @@ function EditableNumberCell({ value, onChange }: { value: number; onChange: (val
     onChange(Number(tempValue) || 0); 
   };
   
- const handleKeyDown = (e: React.KeyboardEvent) => {
+const handleKeyDown = (e: React.KeyboardEvent) => {
   if (e.key === "Enter") {
-    // 검색 결과 없으면 자유입력으로 추가
-    if (filteredOpts.length === 0 && searchQuery.trim()) {
-      onSelectOption({
-        option_id: `custom_${Date.now()}`,
-        option_name: searchQuery.trim(),
-        unit: 'EA',
-        unit_price: 0,
-        show_spec: 'n'
-      });
-
-      
-    } else {
-      onUpdateName(searchQuery);
-    }
-    setIsEditing(false);
-    setShowDropdown(false);
+    handleBlur();
   } else if (e.key === "Escape") {
-    setSearchQuery(item.displayName || "");
+    setTempValue(String(value));
     setIsEditing(false);
-    setShowDropdown(false);
   }
 };
   if (isEditing) {
