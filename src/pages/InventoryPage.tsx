@@ -68,6 +68,7 @@ export default function InventoryPage({
     total_amount: 0,
     qty: 1,
     deposit_status: "대기",
+     drawing_no: "",
   });
 
   const loadInventory = async () => {
@@ -273,7 +274,7 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
       inserts.push({
         quote_id: `INV_${Date.now()}_${i}`,
         contract_date: newItem.contract_date,
-        drawing_no: String(maxNo + 1 + i),
+       drawing_no: newItem.drawing_no || String(maxNo + 1 + i),
         customer_name: newItem.customer_name,
         spec: newItem.spec,
         inventory_status: newItem.inventory_status,
@@ -292,18 +293,17 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
     }
 
     setShowAddModal(false);
-    setNewItem({ 
-      customer_name: "", 
-      spec: "3x6", 
-      inventory_status: "작업완료", 
-      container_type: "신품",
-      contract_date: new Date().toISOString().slice(0, 10),
-      total_amount: 0,
-      qty: 1,
-      deposit_status: "",
-    });
-    loadInventory();
-  };
+  setNewItem({ 
+  customer_name: "", 
+  spec: "3x6", 
+  inventory_status: "작업완료", 
+  container_type: "신품",
+  contract_date: new Date().toISOString().slice(0, 10),
+  total_amount: 0,
+  qty: 1,
+  deposit_status: "",
+  drawing_no: "",  // ✅ 추가
+});
 
   const handleDelete = async (quote_id: string, spec: string) => {
     if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
@@ -837,7 +837,33 @@ const getStatusColor = (status: string) => {
                 <option value="리스">리스</option>
               </select>
             </div>
-
+<div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+  <div style={{ flex: 1 }}>
+    <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>
+      도면번호
+      <span style={{ color: "#2e5b86", fontWeight: 700, fontSize: 12 }}>
+        {" "}(자동: {nextDrawingNo} ~ {nextDrawingNo + (newItem.qty || 1) - 1}번)
+      </span>
+    </label>
+    <input
+      value={newItem.drawing_no || ""}
+      onChange={(e) => setNewItem({ ...newItem, drawing_no: e.target.value })}
+      style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+      placeholder={String(nextDrawingNo)}
+    />
+  </div>
+  <div style={{ width: 80 }}>
+    <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label>
+    <input
+      type="number"
+      min={1}
+      max={20}
+      value={newItem.qty}
+      onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })}
+      style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+    />
+  </div>
+</div>
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>규격 *</label>
               <select
