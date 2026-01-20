@@ -90,6 +90,84 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   if (disabled) return <span>{fmtNum(value)}</span>;
  if (isEditing) return <input ref={inputRef} type="number" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown} style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />;
  return <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }} style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }} title="클릭하여 수정">{fmtNum(value)}</span>; }
+
+// ============ 인라인 규격 편집 셀 ============
+function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?: number }; onChange: (spec: { w: number; l: number; h?: number }) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(`${spec.w}×${spec.l}×${spec.h || 2.6}`);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => { 
+    if (isEditing && inputRef.current) { 
+      inputRef.current.focus(); 
+      inputRef.current.select(); 
+    } 
+  }, [isEditing]);
+  
+  React.useEffect(() => { 
+    setTempValue(`${spec.w}×${spec.l}×${spec.h || 2.6}`); 
+  }, [spec]);
+
+  const handleBlur = () => { 
+    setIsEditing(false); 
+    // "3×6×2.6" 또는 "3x6x2.6" 형식 파싱
+    const parts = tempValue.replace(/x/gi, '×').split('×').map(s => parseFloat(s.trim()) || 0);
+    const newSpec = {
+      w: parts[0] || spec.w,
+      l: parts[1] || spec.l,
+      h: parts[2] || spec.h || 2.6
+    };
+    onChange(newSpec);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => { 
+    if (e.key === "Enter") handleBlur(); 
+    else if (e.key === "Escape") { 
+      setTempValue(`${spec.w}×${spec.l}×${spec.h || 2.6}`); 
+      setIsEditing(false); 
+    } 
+  };
+
+  if (isEditing) {
+    return (
+      <input 
+        ref={inputRef} 
+        type="text" 
+        value={tempValue} 
+        onChange={(e) => setTempValue(e.target.value)} 
+        onBlur={handleBlur} 
+        onKeyDown={handleKeyDown} 
+        style={{ 
+          width: "100%", 
+          padding: "2px 4px", 
+          textAlign: "center", 
+          border: "1px solid #ccc", 
+          fontSize: 12, 
+          boxSizing: "border-box", 
+          outline: "none" 
+        }} 
+      />
+    );
+  }
+  
+  return (
+    <span 
+      onClick={() => { 
+        setTempValue(`${spec.w}×${spec.l}×${spec.h || 2.6}`); 
+        setIsEditing(true); 
+      }} 
+      style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%" }} 
+      title="클릭하여 규격 수정"
+    >
+      {spec.w}×{spec.l}×{spec.h || 2.6}
+    </span>
+  );
+}
+
+
+
+
+
 // ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -104,15 +182,25 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        setShowDropdown(false); setIsEditing(false); setSearchQuery("");
+ React.useEffect(() => {
+  const handleClickOutside = (e: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
+      // ✅ 입력값이 있으면 품목명으로 저장
+      if (searchQuery.trim()) {
+        onSelectOption(item, { 
+          option_id: `custom_${Date.now()}`, 
+          option_name: searchQuery.trim(),
+          unit: 'EA',
+          unit_price: 0,
+          show_spec: 'n'
+        }, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+      setShowDropdown(false); setIsEditing(false); setSearchQuery("");
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, [searchQuery, item, onSelectOption]);
 
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
@@ -190,12 +278,25 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
   }, [searchQuery, onSiteSearch]);
 
   React.useEffect(() => {
+ React.useEffect(() => {
+  React.useEffect(() => {
   const handleClickOutside = (e: MouseEvent) => {
     const target = e.target as Node;
     const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(target);
     const isOutsideInput = !inputRef.current || !inputRef.current.contains(target);
     
     if (isOutsideDropdown && isOutsideInput) {
+      // ✅ 입력값이 있으면 자유 입력 품목으로 추가
+      if (searchQuery.trim() && sites.length === 0 && filteredOptions.length === 0) {
+        const customOpt = { 
+          option_id: `custom_${Date.now()}`, 
+          option_name: searchQuery.trim(),
+          unit: 'EA',
+          unit_price: 0,
+          show_spec: 'n'
+        };
+        onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
+      }
       setShowDropdown(false); 
       setIsEditing(false); 
       setSearchQuery(""); 
@@ -207,8 +308,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }
-}, [isEditing]);
-
+}, [isEditing, searchQuery, sites.length, filteredOptions.length, onAddItem]);
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
     onAddItem(opt, calculated);
@@ -1750,7 +1850,16 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   ) : (
     <td className="c wrap">{String(item.displayName || "")}</td>
   )}
- <td className="c center">{(item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h)}</td>
+ <td className="c center">
+  {editable && onUpdateSpec ? (
+    <EditableSpecCell 
+      spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }} 
+      onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
+    />
+  ) : (
+    (item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h)
+  )}
+</td>
   <td className="c center">
     {editable && onUpdateQty ? (
       <EditableNumberCell value={qty} onChange={(v) => onUpdateQty(item.key, v)} />
