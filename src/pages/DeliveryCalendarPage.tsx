@@ -685,8 +685,11 @@ if (type === "memo") {
   }}
  
                   style={{
-                    minHeight: 100,
-                    padding: 4,
+  height: 110,  // 고정 높이
+  minHeight: 110,
+  maxHeight: 110,
+  padding: 4,
+  overflow: "hidden",
                     borderRight: idx % 7 !== 6 ? "1px solid #eee" : "none",
                     borderBottom: "1px solid #eee",
                     background: isDragOver ? "#e3f2fd" : isToday ? "#fffde7" : isCurrentMonth ? "#fff" : "#f9f9f9",
@@ -735,7 +738,13 @@ if (type === "memo") {
   );
 })()}
                   {/* 출고 항목들 */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                 <div style={{ 
+  display: "flex", 
+  flexDirection: "column", 
+  gap: 2,
+  maxHeight: 70,  // 항목 영역 높이 제한
+  overflow: "hidden"
+}}>
                     {dayDeliveries.slice(0, 3).map((d, i) => {
                       const color = getItemColor(d);
                       const style = colorStyles[color];
@@ -760,6 +769,8 @@ if (type === "memo") {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             cursor: "grab",
+                            maxWidth: "100%",  // 추가
+  display: "block",
                           }}
                           title={`${getDeliveryLabel(d)} (드래그하여 날짜 변경)`}
                         >
