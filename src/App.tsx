@@ -1820,13 +1820,15 @@ td input, td input:focus, td input:focus-visible {
 }
 
   .a4Info th, .a4Info td,
-  .a4Items th, .a4Items td,
-  .a4Bottom th, .a4Bottom td{
-    border: 1px solid #333;
-    padding: 6px 8px;
-    font-size: 13px;
-    vertical-align: middle;
-  }
+.a4Items th, .a4Items td,
+.a4Bottom th, .a4Bottom td{
+  border: 1px solid #333;
+  padding: 6px 8px;
+  font-size: 13px;
+  vertical-align: middle;
+  line-height: 1.4;  /* 추가 */
+  min-height: 28px;  /* 추가 */
+}
 
  .k{ background:#fff; font-weight: 900; }
 .v{ background:#fff; text-align: left !important; }
@@ -1883,6 +1885,18 @@ td input, td input:focus, td input:focus-visible {
   .a4Items tbody td.wrap{
   vertical-align: middle;  /* top → middle */
   line-height: 1.3;
+}
+
+.a4Info input, .a4Info select {
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  line-height: 1.4;
+  height: auto;
+  vertical-align: middle;
 }
 
   .a4Bottom .sumRow td{
