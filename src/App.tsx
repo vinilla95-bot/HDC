@@ -1275,98 +1275,105 @@ const inventoryScreen = (
             </button>
           )}
           {form.phone && (
-            <button
-              onClick={async () => {
-                document.getElementById('sendMenuApp')!.style.display = 'none';
+  <button
+    onClick={async () => {
+      document.getElementById('sendMenuApp')!.style.display = 'none';
 
-                const originalSheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
-                if (!originalSheet) {
-                  alert('견적서를 찾을 수 없습니다.');
-                  return;
-                }
+      const originalSheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
+      if (!originalSheet) {
+        alert('견적서를 찾을 수 없습니다.');
+        return;
+      }
 
-                try {
-                  setStatusMsg('이미지 생성 중...');
+      try {
+        setStatusMsg('이미지 생성 중...');
 
-                  const captureContainer = document.createElement('div');
-                  captureContainer.id = 'captureContainerSms';
-                  captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
-                  document.body.appendChild(captureContainer);
+        const captureContainer = document.createElement('div');
+        captureContainer.id = 'captureContainerSms';
+        captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
+        document.body.appendChild(captureContainer);
 
-                  const styleTag = document.querySelector('#quotePreviewApp style');
-                  if (styleTag) {
-                    captureContainer.appendChild(styleTag.cloneNode(true));
-                  }
+        const styleTag = document.querySelector('#quotePreviewApp style');
+        if (styleTag) {
+          captureContainer.appendChild(styleTag.cloneNode(true));
+        }
 
-                  const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-                  clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
-                  
-                  const deleteButtons = clonedSheet.querySelectorAll('button');
-                  deleteButtons.forEach(btn => {
-                    if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
-                      btn.style.display = 'none';
-                    }
-                  });
-                  
-                  captureContainer.appendChild(clonedSheet);
+        const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+        clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+        
+        // X 버튼 숨기기
+        const deleteButtons = clonedSheet.querySelectorAll('button');
+        deleteButtons.forEach(btn => {
+          if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
+            btn.style.display = 'none';
+          }
+        });
+        
+        // 검색 input 숨기기
+        const inputs = clonedSheet.querySelectorAll('.a4Items input');
+        inputs.forEach(input => {
+          (input as HTMLElement).style.display = 'none';
+        });
 
-                  await new Promise(r => setTimeout(r, 300));
+        captureContainer.appendChild(clonedSheet);
 
-                  const canvas = await html2canvas(clonedSheet, {
-                    scale: 1.5,
-                    backgroundColor: '#ffffff',
-                    useCORS: true,
-                    allowTaint: true,
-                    width: 800,
-                    windowWidth: 800,
-                  });
+        await new Promise(r => setTimeout(r, 300));
 
-                  document.body.removeChild(captureContainer);
+        const canvas = await html2canvas(clonedSheet, {
+          scale: 1.5,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          width: 800,
+          windowWidth: 800,
+        });
 
-                  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        document.body.removeChild(captureContainer);
 
-                  const msg = `안녕하세요 현대컨테이너입니다. 문의 주셔서 감사합니다. ${form.name || '고객'}님 견적서를 보내드립니다. 확인하시고 문의사항 있으시면 언제든 연락 주세요. 감사합니다~`;
-                  const phone = form.phone.replace(/[^0-9]/g, '');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
-                  const a = document.createElement('a');
-                  a.href = dataUrl;
-                  a.download = `견적서_${form.name || 'quote'}.jpg`;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
+        const msg = `안녕하세요 현대컨테이너입니다. 문의 주셔서 감사합니다. ${form.name || '고객'}님 견적서를 보내드립니다. 확인하시고 문의사항 있으시면 언제든 연락 주세요. 감사합니다~`;
+        const phone = form.phone.replace(/[^0-9]/g, '');
 
-                  setStatusMsg('');
-                  setMobilePreviewOpen(false);
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `견적서_${form.name || 'quote'}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-                  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                  const separator = isIOS ? '&' : '?';
+        setStatusMsg('');
+        setMobilePreviewOpen(false);
 
-                  setTimeout(() => {
-                    window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-                  }, 1500);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const separator = isIOS ? '&' : '?';
 
-                } catch (e) {
-                  console.error(e);
-                  setStatusMsg('');
-                  const container = document.getElementById('captureContainerSms');
-                  if (container) document.body.removeChild(container);
-                  alert('이미지 생성 실패: ' + (e as any)?.message);
-                }
-              }}
-              style={{
-                padding: '14px 16px',
-                background: '#fff',
-                border: 'none',
-                fontSize: 14,
-                fontWeight: 600,
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-            >
-📱 문자 전송
-              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
-            </button>
-          )}
+        setTimeout(() => {
+          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
+        }, 1500);
+
+      } catch (e) {
+        console.error(e);
+        setStatusMsg('');
+        const container = document.getElementById('captureContainerSms');
+        if (container) document.body.removeChild(container);
+        alert('이미지 생성 실패: ' + (e as any)?.message);
+      }
+    }}
+    style={{
+      padding: '14px 16px',
+      background: '#fff',
+      border: 'none',
+      fontSize: 14,
+      fontWeight: 600,
+      textAlign: 'left',
+      cursor: 'pointer',
+    }}
+  >
+    📱 문자 전송
+    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
+  </button>
+)}
           {!form.email && !form.phone && (
             <div style={{ padding: '14px 16px', color: '#888', fontSize: 13 }}>
               이메일 또는 전화번호를 입력해주세요
