@@ -202,8 +202,9 @@ if (type === "rental") {
   return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
 } else {
   return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
-}urn `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
+
 }
+};
 
 
   // ✅ 배차 양식 생성
