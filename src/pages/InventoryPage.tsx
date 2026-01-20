@@ -307,6 +307,24 @@ const handleAddNew = async () => {
   loadInventory();
 };
 
+  const handleDelete = async (quote_id: string, spec: string) => {
+  if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
+
+  const { error } = await supabase
+    .from("inventory")
+    .delete()
+    .eq("quote_id", quote_id);
+
+  if (error) {
+    alert("삭제 실패: " + error.message);
+    return;
+  }
+
+  loadInventory();
+};
+
+
+
   const thStyle: React.CSSProperties = {
     padding: "10px 8px",
     border: "1px solid #1e4a6e",
