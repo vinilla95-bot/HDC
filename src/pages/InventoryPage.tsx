@@ -25,7 +25,7 @@ type InventoryItem = {
 
 // 규격 옵션
 const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
-const [allQuotes, setAllQuotes] = useState<{quote_id: string; contract_date: string; drawing_no: string}[]>([]);
+
 
 type DepositTabType = "all" | "paid" | "unpaid";
 
@@ -45,6 +45,14 @@ export default function InventoryPage({
   onBack: () => void;
   onNavigate?: (view: string) => void;
 }) {
+
+   // ✅ 여기로 이동
+  const [allQuotes, setAllQuotes] = useState<{
+    quote_id: string;
+    contract_date: string;
+    drawing_no: string;
+  }[]>([]);
+  
   const [allItems, setAllItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
