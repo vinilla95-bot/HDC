@@ -813,3 +813,4 @@ td input, td input:focus, td input:focus-visible {
   
   }
 `;window.getWebAppUrl=()=>`https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec`,(0,_.createRoot)(document.getElementById(`root`)).render((0,v.jsx)(y.StrictMode,{children:(0,v.jsx)(Zi,{})}));
+//# sourceMappingURL=index-CfulZu8q.js.map
