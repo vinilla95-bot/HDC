@@ -1008,14 +1008,14 @@ const quotePreviewHtml = useMemo(() => {
       <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>공급자</th>
       <td style={{ border: '1px solid #333', padding: 6 }}>현대컨테이너</td>
     </tr>
-    <tr>
-      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>이메일</th>
-      <td style={{ border: '1px solid #333', padding: 6 }}>
-        <EditableTextCell 
-          value={customerEmail} 
-          onChange={(val) => setEditForm((p: any) => ({ ...p, customer_email: val }))} 
-        />
-      </td>
+   <tr>
+  <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>이메일</th>
+  <td style={{ border: '1px solid #333', padding: 6, wordBreak: 'break-all' }}>
+    <EditableTextCell 
+      value={customerEmail} 
+      onChange={(val) => setEditForm((p: any) => ({ ...p, customer_email: val }))} 
+    />
+  </td>
       <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>전화</th>
       <td style={{ border: '1px solid #333', padding: 6 }}>
         <EditableTextCell 
@@ -1049,22 +1049,25 @@ const quotePreviewHtml = useMemo(() => {
       <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>대표전화</th>
       <td style={{ border: '1px solid #333', padding: 6 }}>1688-1447</td>
     </tr>
-    <tr>
+   <tr>
   <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>
-    합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)} (
-    <select 
-      value={current.vat_included !== false ? "included" : "excluded"} 
-      onChange={async (e) => {
-        const newValue = e.target.value === "included";
-        await supabase.from("quotes").update({ vat_included: newValue }).eq("quote_id", current.quote_id);
-        setCurrent({ ...current, vat_included: newValue });
-      }}
-      style={{ border: 'none', background: 'transparent', fontSize: 14, fontWeight: 900, cursor: 'pointer' }}
-    >
-      <option value="included">부가세 포함</option>
-      <option value="excluded">부가세 별도</option>
-    </select>
-    )
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap' }}>
+      <span>합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)}</span>
+      <span style={{ marginLeft: 4 }}>(</span>
+      <select 
+        value={current.vat_included !== false ? "included" : "excluded"} 
+        onChange={async (e) => {
+          const newValue = e.target.value === "included";
+          await supabase.from("quotes").update({ vat_included: newValue }).eq("quote_id", current.quote_id);
+          setCurrent({ ...current, vat_included: newValue });
+        }}
+        style={{ border: 'none', background: 'transparent', fontSize: 14, fontWeight: 900, cursor: 'pointer', padding: 0 }}
+      >
+        <option value="included">부가세 포함</option>
+        <option value="excluded">부가세 별도</option>
+      </select>
+      <span>)</span>
+    </div>
   </td>
 </tr>
   </tbody>
