@@ -1053,7 +1053,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
    <tr>
   <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>
-    합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)} (
+    합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)} 
     <select 
       value={current.vat_included !== false ? "included" : "excluded"} 
       onChange={async (e) => {
@@ -1061,12 +1061,20 @@ const quotePreviewHtml = useMemo(() => {
         await supabase.from("quotes").update({ vat_included: newValue }).eq("quote_id", current.quote_id);
         setCurrent({ ...current, vat_included: newValue });
       }}
-      style={{ border: 'none', background: 'transparent', fontSize: 14, fontWeight: 900, cursor: 'pointer' }}
+      style={{ 
+        border: '1px solid #999', 
+        background: '#fff', 
+        fontSize: 13, 
+        fontWeight: 700, 
+        cursor: 'pointer',
+        padding: '2px 6px',
+        borderRadius: 4,
+        marginLeft: 8
+      }}
     >
-      <option value="included">부가세 포함</option>
-      <option value="excluded">부가세 별도</option>
+      <option value="included">(부가세 포함)</option>
+      <option value="excluded">(부가세 별도)</option>
     </select>
-    )
   </td>
 </tr>
   </tbody>
