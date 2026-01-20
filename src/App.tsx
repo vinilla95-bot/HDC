@@ -807,6 +807,17 @@ const handleSiteSearch = async (val: string) => {
 
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+      // select를 선택된 텍스트로 교체 (원본에서 값 가져오기)2
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelectsArr = originalSheet.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelectsArr[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
       const deleteButtons = clonedSheet.querySelectorAll('button');
 deleteButtons.forEach(btn => {
   if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
@@ -888,7 +899,17 @@ captureContainer.appendChild(clonedSheet);
 
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
 clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
-
+// select를 선택된 텍스트로 교체 (원본에서 값 가져오기)1
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelectsArr = originalSheet.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelectsArr[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+  const span = document.createElement('span');
+  span.textContent = selectedText;
+  span.style.cssText = 'font-size: 13px;';
+  select.parentNode?.replaceChild(span, select);
+});
 // X 버튼 숨기기
 // X 버튼 숨기기
 const deleteButtons = clonedSheet.querySelectorAll('button');
@@ -1300,14 +1321,15 @@ const inventoryScreen = (
 
         const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
         clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
-        // select 요소를 선택된 텍스트로 교체
-const selects = clonedSheet.querySelectorAll('select');
-selects.forEach(select => {
-  const htmlSelect = select as HTMLSelectElement;
-  const selectedText = htmlSelect.options[htmlSelect.selectedIndex]?.text || '';
+        // select를 선택된 텍스트로 교체 (원본에서 값 가져오기)3
+const clonedSelects = clonedSheet.querySelectorAll('select');
+const originalSelectsArr = originalSheet.querySelectorAll('select');
+clonedSelects.forEach((select, idx) => {
+  const origSelect = originalSelectsArr[idx] as HTMLSelectElement;
+  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
   const span = document.createElement('span');
   span.textContent = selectedText;
-  span.style.cssText = select.getAttribute('style') || 'font-size: 13px;';
+  span.style.cssText = 'font-size: 13px;';
   select.parentNode?.replaceChild(span, select);
 });
         // X 버튼 숨기기
