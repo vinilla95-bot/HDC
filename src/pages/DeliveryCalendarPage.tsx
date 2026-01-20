@@ -385,8 +385,8 @@ if (type === "memo") {
       d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
     ));
 
-    setShowEditModal(false);
-    setSelectedDelivery({ ...selectedDelivery, ...editForm } as DeliveryItem);
+   setShowEditModal(false);
+setSelectedDelivery(null); ;
   };
 
   // ✅ 새 일정 추가
@@ -962,8 +962,12 @@ if (type === "memo") {
 
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-              <button
-                onClick={() => setShowAddModal(false)}
+             <button
+  onClick={(e) => {
+    e.stopPropagation();  // ✅ 추가
+    setShowEditModal(false);
+    setSelectedDelivery(null);  // ✅ 추가 - 상세보기도 같이 닫기
+  }}
                 style={{
                   flex: 1,
                   padding: 14,
@@ -1173,28 +1177,38 @@ if (type === "memo") {
                 }}
               >
                 닫기
-              </button>
-              <button
-                onClick={() => {
-                  setEditForm(selectedDelivery);
-                  setShowEditModal(true);
-                }}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#fff",
-                  border: "1px solid #2e5b86",
-                  color: "#2e5b86",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-
-🗑️ 삭제
   </button>
   <button
-    onClick={() => {
+    onClick={async (e) => {
+      e.stopPropagation();
+      if (!confirm("정말 삭제하시겠습니까?")) return;
+      const { error } = await supabase
+        .from("quotes")
+        .delete()
+        .eq("quote_id", selectedDelivery.quote_id);
+      if (error) {
+        alert("삭제 실패: " + error.message);
+        return;
+      }
+      setDeliveries(prev => prev.filter(d => d.quote_id !== selectedDelivery.quote_id));
+      setSelectedDelivery(null);
+    }}
+    style={{
+      flex: 1,
+      padding: 14,
+      background: "#ffebee",
+      border: "1px solid #f44336",
+      color: "#c62828",
+      borderRadius: 8,
+      fontWeight: 700,
+      cursor: "pointer",
+    }}
+  >
+    🗑️ 삭제
+  </button>
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
       setEditForm(selectedDelivery);
       setShowEditModal(true);
     }}
@@ -1209,25 +1223,27 @@ if (type === "memo") {
       cursor: "pointer",
     }}
   >
-                
-                ✏️ 수정
-              </button>
-              <button
-                onClick={() => setShowDispatchModal(true)}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#2e5b86",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                🚚 배차
-              </button>
-            </div>
+    ✏️ 수정
+  </button>
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      setShowDispatchModal(true);
+    }}
+    style={{
+      flex: 1,
+      padding: 14,
+      background: "#2e5b86",
+      color: "#fff",
+      border: "none",
+      borderRadius: 8,
+      fontWeight: 700,
+      cursor: "pointer",
+    }}
+  >
+    🚚 배차
+  </button>
+</div>
           </div>
         </div>
       )}
