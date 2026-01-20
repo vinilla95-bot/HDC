@@ -1544,7 +1544,7 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
               </tr>
               <tr>
                 <th className="k center">이메일</th>
-               <td className="v" style={{ textAlign: "left", wordBreak: "break-all", whiteSpace: "normal" }}>
+               <td className="v" style={{ textAlign: "left", overflow: "hidden", maxWidth: 0 }}>
 <input 
   value={form.email || ""} 
   onChange={(e) => setForm((p: any) => ({ ...p, email: e.target.value }))}
