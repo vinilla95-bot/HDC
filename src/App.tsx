@@ -1530,7 +1530,7 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
       border: "none", 
       background: "transparent", 
       fontSize: 13, 
-      width: "120%",
+      width: "100%",
       textAlign: "left",
       marginLeft: 0,
       paddingLeft: 0,
