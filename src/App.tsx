@@ -183,6 +183,13 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
     </div>
   );
 }) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>}
+          </div>
+        )}
+      </td>
+    );
+  }
+  return <td className="c wrap" onClick={() => setIsEditing(true)} style={{ cursor: "pointer", outline: "none", border: "1px solid #333" }} title="클릭하여 품목 변경"><span>{String(item.displayName || "")}</span></td>;
+}
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
 function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void }) {
@@ -220,24 +227,24 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
   }, [searchQuery, onSiteSearch]);
 
   React.useEffect(() => {
-  const handleClickOutside = (e: MouseEvent) => {
-    const target = e.target as Node;
-    const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(target);
-    const isOutsideInput = !inputRef.current || !inputRef.current.contains(target);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(target);
+      const isOutsideInput = !inputRef.current || !inputRef.current.contains(target);
+      
+      if (isOutsideDropdown && isOutsideInput) {
+        setShowDropdown(false); 
+        setIsEditing(false); 
+        setSearchQuery(""); 
+        setSites([]);
+      }
+    };
     
-    if (isOutsideDropdown && isOutsideInput) {
-      setShowDropdown(false); 
-      setIsEditing(false); 
-      setSearchQuery(""); 
-      setSites([]);
+    if (isEditing) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  };
-  
-  if (isEditing) {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }
-}, [isEditing]);
+  }, [isEditing]);
 
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
@@ -264,16 +271,16 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     return (
       <>
         <td className="c center">&nbsp;</td>
-       <td className="c wrap" style={{ position: "relative", overflow: "visible" }}>
+        <td className="c wrap" style={{ position: "relative", overflow: "visible" }}>
           <input 
             ref={inputRef} 
             type="text" 
             value={searchQuery} 
-           onChange={(e) => { 
-  console.log('입력값:', e.target.value);
-  setSearchQuery(e.target.value); 
-  setShowDropdown(true); 
-}}
+            onChange={(e) => { 
+              console.log('입력값:', e.target.value);
+              setSearchQuery(e.target.value); 
+              setShowDropdown(true); 
+            }}
             onFocus={() => setShowDropdown(true)} 
             placeholder="검색..." 
             autoFocus 
@@ -308,49 +315,57 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
               {filteredOptions.length > 0 && (
                 <>
                   <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>품목</div>
-                 {filteredOptions.map((opt: any) => {
-  const isRent = String(opt.option_name || "").includes("임대");
-  
-  if (isRent) {
-    return (
-      <div key={opt.option_id} style={{ padding: "8px 10px", borderBottom: "1px solid #eee", fontSize: 12 }}>
-        <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-        <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-          <input
-            type="number"
-            defaultValue={1}
-            min={1}
-            id={`rent-empty-${opt.option_id}`}
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center" }}
-          />
-          <span>개월</span>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
-              const months = Number(input?.value) || 1;
-              const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-              onAddItem({ ...opt, _months: months }, calculated);
-              setShowDropdown(false); setIsEditing(false); setSearchQuery(""); setSites([]);
-            }}
-            style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
-          >
-            추가
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
-      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-      <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-    </div>
-  );
-})}
+                  {filteredOptions.map((opt: any) => {
+                    const isRent = String(opt.option_name || "").includes("임대");
+                    
+                    if (isRent) {
+                      return (
+                        <div key={opt.option_id} style={{ padding: "8px 10px", borderBottom: "1px solid #eee", fontSize: 12 }}>
+                          <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                          <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                          <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                            <input
+                              type="number"
+                              defaultValue={1}
+                              min={1}
+                              id={`rent-empty-${opt.option_id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center" }}
+                            />
+                            <span>개월</span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
+                                const months = Number(input?.value) || 1;
+                                const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+                                onAddItem({ ...opt, _months: months }, calculated);
+                                setShowDropdown(false); setIsEditing(false); setSearchQuery(""); setSites([]);
+                              }}
+                              style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
+                            >
+                              추가
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
+                        <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                        <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+              {filteredOptions.length === 0 && sites.length === 0 && !isSearchingSite && (
+                <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>
+              )}
+              {isSearchingSite && <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 중...</div>}
+            </div>
+          )}
         </td>
         <td className="c"></td>
         <td className="c"></td>
