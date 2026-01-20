@@ -234,19 +234,7 @@ if (type === "memo") {
 };
 
 
- // 기존 (saleType 선언 없음)
-  // ✅ 배차 양식 생성
-  const generateDispatchText = (item: DeliveryItem) => {
-    const type = item.contract_type || "order";
-    
-    // 신품/중고/임대 구분
-  if (type === "used") {
-  saleType = "중고판매";
-} else if (type === "rental") {
-  saleType = "임대";
-} else if (type === "memo") {
-  saleType = "메모";
-}
+ 
 
 // 수정
   // ✅ 배차 양식 생성
@@ -715,22 +703,11 @@ if (type === "memo") {
                     transition: "background 0.2s",
                   }}
                 >
-                  {/* 날짜 */}
-                  <div style={{
-                    fontSize: 12,
-                    fontWeight: isToday ? 800 : 600,
-                    color: isSunday ? "#e53935" : isSaturday ? "#1976d2" : "#333",
-                    marginBottom: 4,
-                    padding: "2px 4px",
-                    borderRadius: 4,
-                    background: isToday ? "#2e5b86" : "transparent",
-                    ...(isToday && { color: "#fff" }),
-                    display: "inline-block",
-                  }}>
-                    {date.getDate()}
-                  </div>
+                 
                   
 {(() => {
+
+  
    const holidayName = HOLIDAYS[dateKey];
   const isHoliday = !!holidayName;
   return (
