@@ -2,27 +2,43 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  // 🔥 GitHub Pages 프로젝트 경로
+  // GitHub Pages project path
   base: "/HDC/",
 
   plugins: [react()],
 
-  // 🔥 React 중복 로딩 / external 꼬임 방지
+  // Force a single React instance (prevents hooks from breaking)
   resolve: {
-    dedupe: ["react", "react-dom"],
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+    ],
+    // Helps avoid weird module resolution in some setups
+    preserveSymlinks: false,
+    conditions: ["browser", "module", "default"],
+  },
+
+  // Make sure Vite pre-bundles the same React deps consistently
+  optimizeDeps: {
+    include: ["react", "react-dom", "react/jsx-runtime"],
   },
 
   build: {
-    // GitHub Pages에서 경로 꼬임 방지
     assetsDir: "assets",
 
     rollupOptions: {
-      // react가 external로 빠지는 사고 방지
+      // Do NOT externalize react/react-dom
       external: [],
+      output: {
+        // Ensure no accidental global name expectations
+        globals: {},
+      },
     },
   },
 
-  // dev 서버용 (Pages에는 영향 없음)
+  // Dev server proxy only
   server: {
     proxy: {
       "/gas": {
