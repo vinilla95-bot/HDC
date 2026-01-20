@@ -1,9 +1,10 @@
 console.log("✅ VITE CONFIG LOADED");
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  base: "/HDC/", // 🔥 GitHub repo name
+  base: "/HDC/",
   plugins: [react()],
   server: {
     proxy: {
@@ -11,8 +12,8 @@ export default defineConfig({
         target: "https://script.google.com",
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/gas/, ""),
-      },
-    },
-  },
+        rewrite: (path) => path.replace(/^\/gas/, "")
+      }
+    }
+  }
 });
