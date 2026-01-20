@@ -4,6 +4,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
+import * as React from "react";
+console.log("REACT CHECK:", React);
+console.log("useState:", React?.useState);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
