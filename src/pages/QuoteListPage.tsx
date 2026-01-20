@@ -113,14 +113,28 @@ function EditableNumberCell({ value, onChange }: { value: number; onChange: (val
     onChange(Number(tempValue) || 0); 
   };
   
-  const handleKeyDown = (e: React.KeyboardEvent) => { 
-    if (e.key === "Enter") handleBlur(); 
-    else if (e.key === "Escape") { 
-      setTempValue(String(value)); 
-      setIsEditing(false); 
-    } 
-  };
-
+ const handleKeyDown = (e: React.KeyboardEvent) => {
+  if (e.key === "Enter") {
+    // 검색 결과 없으면 자유입력으로 추가
+    if (filteredOpts.length === 0 && searchQuery.trim()) {
+      onSelectOption({
+        option_id: `custom_${Date.now()}`,
+        option_name: searchQuery.trim(),
+        unit: 'EA',
+        unit_price: 0,
+        show_spec: 'n'
+      });
+    } else {
+      onUpdateName(searchQuery);
+    }
+    setIsEditing(false);
+    setShowDropdown(false);
+  } else if (e.key === "Escape") {
+    setSearchQuery(item.displayName || "");
+    setIsEditing(false);
+    setShowDropdown(false);
+  }
+};
   if (isEditing) {
     return (
       <input 
@@ -485,29 +499,30 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     setEditItems(prev => prev.filter(item => item.key !== key));
   };
 
-  const addEditItemFromOption = (opt: any) => {
-    if (!current) return;
-    const w = current.w || 3;
-    const l = current.l || 6;
-    const res = calculateOptionLine(opt, w, l);
-    const rawName = String(opt.option_name || "(이름없음)");
-    const rent = rawName.includes("임대");
-    
-    setEditItems(prev => [...prev, {
-      key: `item_${Date.now()}`,
-      optionId: opt.option_id,
-      optionName: rawName,
-      displayName: rawName,
-      unit: rent ? "개월" : (res.unit || "EA"),
-      qty: 1,
-      unitPrice: rent ? Number(res.unitPrice || 0) : Number(res.amount || 0),
-      amount: rent ? Number(res.unitPrice || 0) : Number(res.amount || 0),
-      showSpec: opt.show_spec || "n",
-      lineSpec: { w, l, h: 2.6 },
-    }]);
-    setOptQ("");
-  };
-
+const addEditItemFromOption = (opt: any) => {
+  if (!current) return;
+  const w = current.w || 3;
+  const l = current.l || 6;
+  const res = calculateOptionLine(opt, w, l);
+  const rawName = String(opt.option_name || "(이름없음)");
+  const rent = rawName.includes("임대");
+  const months = opt._months || 1;
+  
+  setEditItems(prev => [...prev, {
+    key: `item_${Date.now()}`,
+    optionId: opt.option_id,
+    optionName: rawName,
+    displayName: rent ? `${rawName} ${months}개월` : rawName,
+    unit: rent ? "개월" : (res.unit || "EA"),
+    qty: 1,
+    unitPrice: rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0),
+    amount: rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0),
+    showSpec: opt.show_spec || "n",
+    lineSpec: { w, l, h: 2.6 },
+    months: months,
+  }]);
+  setOptQ("");
+};
   async function saveEditMode() {
     if (!current) return;
 
@@ -1024,10 +1039,23 @@ const quotePreviewHtml = useMemo(() => {
       <td style={{ border: '1px solid #333', padding: 6 }}>1688-1447</td>
     </tr>
     <tr>
-      <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>
-        합계금액 : ₩{money(displayTotal)} ({vatLabel})
-      </td>
-    </tr>
+  <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>
+    합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)} (
+    <select 
+      value={current.vat_included !== false ? "included" : "excluded"} 
+      onChange={async (e) => {
+        const newValue = e.target.value === "included";
+        await supabase.from("quotes").update({ vat_included: newValue }).eq("quote_id", current.quote_id);
+        setCurrent({ ...current, vat_included: newValue });
+      }}
+      style={{ border: 'none', background: 'transparent', fontSize: 14, fontWeight: 900, cursor: 'pointer' }}
+    >
+      <option value="included">부가세 포함</option>
+      <option value="excluded">부가세 별도</option>
+    </select>
+    )
+  </td>
+</tr>
   </tbody>
 </table>
 
@@ -1050,16 +1078,47 @@ const quotePreviewHtml = useMemo(() => {
         boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
         textAlign: 'left' 
       }}>
-        {filteredOptions.map((o: any) => (
-          <div key={o.option_id} onClick={() => addEditItemFromOption(o)} style={{ padding: '12px', cursor: 'pointer', borderBottom: '1px solid #eee', textAlign: 'left' }} onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')} onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}>
-            <div style={{ fontWeight: 700, textAlign: 'left' }}>{o.option_name}</div>
-            <div style={{ fontSize: 12, color: '#666', textAlign: 'left' }}>{o.unit || 'EA'} · {money(o.unit_price || 0)}원</div>
-          </div>
-        ))}
+      {filteredOptions.map((o: any) => {
+  const isRent = String(o.option_name || "").includes("임대");
+  
+  if (isRent) {
+    return (
+      <div key={o.option_id} style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'left' }}>
+        <div style={{ fontWeight: 700 }}>{o.option_name}</div>
+        <div style={{ fontSize: 12, color: '#666' }}>{o.unit || 'EA'} · {money(o.unit_price || 0)}원</div>
+        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            type="number"
+            defaultValue={1}
+            min={1}
+            id={`rent-edit-${o.option_id}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 50, padding: '6px', border: '1px solid #ccc', borderRadius: 4, textAlign: 'center' }}
+          />
+          <span>개월</span>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              const input = document.getElementById(`rent-edit-${o.option_id}`) as HTMLInputElement;
+              const months = Number(input?.value) || 1;
+              addEditItemFromOption({ ...o, _months: months });
+            }}
+            style={{ padding: '6px 12px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}
+          >
+            추가
+          </button>
+        </div>
       </div>
-    )}
-  </div>
-)}
+    );
+  }
+  
+  return (
+    <div key={o.option_id} onClick={() => addEditItemFromOption(o)} style={{ padding: '12px', cursor: 'pointer', borderBottom: '1px solid #eee', textAlign: 'left' }} onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')} onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}>
+      <div style={{ fontWeight: 700, textAlign: 'left' }}>{o.option_name}</div>
+      <div style={{ fontSize: 12, color: '#666', textAlign: 'left' }}>{o.unit || 'EA'} · {money(o.unit_price || 0)}원</div>
+    </div>
+  );
+})}
 
       {/* 품목 테이블 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
@@ -1150,7 +1209,10 @@ const quotePreviewHtml = useMemo(() => {
       <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
         <tbody>
           <tr>
-            <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900 }} colSpan={5}>합계: {money(displayTotal)}원 ({vatLabel})</td>
+  <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900 }} colSpan={5}>
+    합계: {money(current.vat_included !== false ? totalAmount : supplyAmount)}원 ({current.vat_included !== false ? "부가세 포함" : "부가세 별도"})
+  </td>
+
             <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(supplyAmount)}</td>
             <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(vatAmount)}</td>
             <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6' }}></td>
