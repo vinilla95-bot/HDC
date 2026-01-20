@@ -304,6 +304,8 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
   deposit_status: "",
   drawing_no: "",  // ✅ 추가
 });
+    loadInventory();  // ✅ 추가
+  };  /
 
   const handleDelete = async (quote_id: string, spec: string) => {
     if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
@@ -801,15 +803,7 @@ const getStatusColor = (status: string) => {
           >
             <h3 style={{ margin: "0 0 16px 0" }}>새 재고 추가</h3>
 
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>등록일</label>
-              <input
-                type="date"
-                value={newItem.contract_date}
-                onChange={(e) => setNewItem({ ...newItem, contract_date: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-              />
-            </div>
+           
 
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>상태</label>
