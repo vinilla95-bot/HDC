@@ -821,7 +821,7 @@ inputs.forEach(input => {
 });
 
 captureContainer.appendChild(clonedSheet);
-      captureContainer.appendChild(clonedSheet);
+     
 
       await new Promise(r => setTimeout(r, 300));
 
