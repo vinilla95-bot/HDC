@@ -994,20 +994,22 @@ const quotePreviewHtml = useMemo(() => {
       <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center', width: '15%' }}>견적일자</th>
       <td style={{ border: '1px solid #333', padding: 6 }}>{ymd}</td>
     </tr>
-    <tr>
-      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>고객명</th>
-      <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <EditableTextCell 
-            value={customerName} 
-            onChange={(val) => setEditForm((p: any) => ({ ...p, customer_name: val }))} 
-          />
-          <span style={{ fontWeight: 900 }}>귀하</span>
-        </div>
-      </td>
-      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>공급자</th>
-      <td style={{ border: '1px solid #333', padding: 6 }}>현대컨테이너</td>
-    </tr>
+   <tr>
+  <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>고객명</th>
+  <td style={{ border: '1px solid #333', padding: 6 }} colSpan={3}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ flex: 1 }}>
+        <EditableTextCell 
+          value={customerName} 
+          onChange={(val) => setEditForm((p: any) => ({ ...p, customer_name: val }))} 
+        />
+      </span>
+      <span style={{ fontWeight: 900, marginLeft: 8, flexShrink: 0 }}>귀하</span>
+    </div>
+  </td>
+  <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>공급자</th>
+  <td style={{ border: '1px solid #333', padding: 6 }}>현대컨테이너</td>
+</tr>
    <tr>
   <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>이메일</th>
   <td style={{ border: '1px solid #333', padding: 6, wordBreak: 'break-all' }}>
