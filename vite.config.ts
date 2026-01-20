@@ -2,21 +2,27 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  // 🔥 GitHub Pages 프로젝트 경로
   base: "/HDC/",
+
   plugins: [react()],
 
-  // ✅ GitHub Pages + 번들러 꼬임 방지용 “React 중복/외부화” 방어
+  // 🔥 React 중복 로딩 / external 꼬임 방지
   resolve: {
     dedupe: ["react", "react-dom"],
   },
 
   build: {
+    // GitHub Pages에서 경로 꼬임 방지
+    assetsDir: "assets",
+
     rollupOptions: {
-      // ✅ 혹시 어디선가 react를 external로 빼는 걸 막기
+      // react가 external로 빠지는 사고 방지
       external: [],
     },
   },
 
+  // dev 서버용 (Pages에는 영향 없음)
   server: {
     proxy: {
       "/gas": {
