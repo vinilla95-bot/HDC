@@ -1377,7 +1377,9 @@ const inventoryScreen = (
     </div>
   </div>
 )}
-
+ </>
+);
+  
 type A4QuoteProps = {
   form: {
     quoteTitle: string;
