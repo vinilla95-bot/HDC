@@ -1047,11 +1047,6 @@ const quotePreviewHtml = useMemo(() => {
       <td style={{ border: '1px solid #333', padding: 6 }}>경기도 화성시 향남읍 구문천안길16</td>
     </tr>
     <tr>
-      <td style={{ border: '1px solid #333', padding: 6, fontWeight: 700, textAlign: 'center' }} colSpan={4}>견적요청에 감사드리며 아래와 같이 견적합니다.</td>
-      <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>대표전화</th>
-      <td style={{ border: '1px solid #333', padding: 6 }}>1688-1447</td>
-    </tr>
-   <tr>
   <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>
     합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)} 
     <select 
@@ -1062,14 +1057,12 @@ const quotePreviewHtml = useMemo(() => {
         setCurrent({ ...current, vat_included: newValue });
       }}
       style={{ 
-        border: '1px solid #999', 
-        background: '#fff', 
-        fontSize: 13, 
-        fontWeight: 700, 
+        border: 'none', 
+        background: 'transparent', 
+        fontSize: 14, 
+        fontWeight: 900, 
         cursor: 'pointer',
-        padding: '2px 6px',
-        borderRadius: 4,
-        marginLeft: 8
+        appearance: 'auto'
       }}
     >
       <option value="included">(부가세 포함)</option>
