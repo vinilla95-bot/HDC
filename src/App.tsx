@@ -4,6 +4,10 @@ import QuoteListPage from "./pages/QuoteListPage";
 import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
+import TodayTasksPage from "./pages/TodayTasksPage";
+
+// views에 추가
+{ id: "tasks", label: "📋 오늘할일", component: <TodayTasksPage /> }
 
 
 // dnd-kit 주석처리
