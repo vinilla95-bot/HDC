@@ -668,6 +668,15 @@ const addEditItemFromOption = (opt: any) => {
 
   async function handleSendEmail() {
     requireCurrent();
+    // ✅ 디버깅 추가
+    
+    console.log('=== 명함 디버깅 ===');
+    console.log('selectedBizcardId:', selectedBizcardId);
+    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+    console.log('selectedBizcard:', selectedBizcard);
+    console.log('bizcardImageUrl:', selectedBizcard?.image_url);
+    
+    
     const quoteId = current!.quote_id;
     const to = sendTo.trim() || (current!.customer_email || "").trim();
 
