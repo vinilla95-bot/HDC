@@ -490,14 +490,7 @@ export default function App() {
   if (v === 'tasks') return 'tasks';  // ✅ 추가
   return 'rt';
 });
-  const params = new URLSearchParams(window.location.search);
-  const v = params.get('view');
-  if (v === 'list') return 'list';
-  if (v === 'contract') return 'contract';
-  if (v === 'calendar') return 'calendar';
-  if (v === 'inventory') return 'inventory';
-  return 'rt';
-});
+
 
 // ✅ 이 useEffect 추가
 useEffect(() => {
