@@ -1892,8 +1892,8 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
       <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} disabled={rent} />
     ) : fmt(unitSupply)}
   </td>
-  <td className="c right">{fmt(supply)}</td>
-  <td className="c right">{fmt(vat)}</td>
+  <td className="c right" style={{ whiteSpace: 'nowrap' }}>{fmt(supply)}</td>
+  <td className="c right" style={{ whiteSpace: 'nowrap' }}>{fmt(vat)}</td>
   <td className="c center">
     {editable && onDeleteItem ? (
       <button onClick={() => onDeleteItem(item.key)} style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 14 }}>✕</button>
