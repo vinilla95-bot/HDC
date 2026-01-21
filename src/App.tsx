@@ -1836,8 +1836,8 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
               <col style={{ width: "6%" }} />
               <col style={{ width: "13%" }} />
               <col style={{ width: "13%" }} />
-              <col style={{ width: "9%" }} />
-              <col style={{ width: "9%" }} />
+              <col style={{ width: "11%" }} />
+              <col style={{ width: "7%" }} />
             </colgroup>
             <thead>
               <tr>
