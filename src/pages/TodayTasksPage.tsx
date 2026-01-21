@@ -1,4 +1,3 @@
-
 // src/pages/TodayTasksPage.tsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../QuoteService";
@@ -114,16 +113,18 @@ export default function TodayTasksPage() {
 
   const loadTasks = async () => {
     setLoading(true);
-    const today = new Date().toISOString().split("T")[0];
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
 
     // 먼저 자동 생성
     await generatePendingOrders();
 
+    // ✅ 변경: 모든 대기중인 주문 표시 (완료되지 않은 것들)
+    // 견적 확정 즉시 목록에 표시됨
     const { data: orders } = await supabase
       .from("pending_orders")
       .select("*")
-      .eq("order_date", today)
+      .in("status", ["pending", "ready", "failed"])
+      .order("order_date", { ascending: true })
       .order("created_at", { ascending: true });
 
     if (orders) setPendingOrders(orders);
@@ -137,7 +138,6 @@ export default function TodayTasksPage() {
 
     if (deliveries) {
       setDeliveryTasks(deliveries);
-      // 배차 메시지 초기화
       const msgs: Record<string, string> = {};
       deliveries.forEach((task: DeliveryTask) => {
         msgs[task.quote_id] = generateDispatchMessage(task);
@@ -147,7 +147,6 @@ export default function TodayTasksPage() {
     setLoading(false);
   };
 
-  // 계약 확정된 것들 중 주문 필요한 것 자동 생성
   const generatePendingOrders = async () => {
     const { data: rules } = await supabase.from("order_rules").select("*");
     if (!rules || rules.length === 0) return;
@@ -240,16 +239,13 @@ export default function TodayTasksPage() {
   const generateDispatchMessage = (task: DeliveryTask) => {
     const [, month, day] = task.delivery_date.split("-").map(Number);
     
-    // 요일 계산
     const date = new Date(task.delivery_date);
     const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
     const dayOfWeek = dayNames[date.getDay()];
     
-    // site_addr에서 시간 추출 (예: "오후 2시 경기도 양주시..." → "오후 2시")
     const timeMatch = task.site_addr?.match(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})/);
     const timeStr = timeMatch ? timeMatch[0].trim() : "";
     
-    // site_addr에서 시간 제거한 주소
     const addrWithoutTime = task.site_addr?.replace(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})\s*/, "").trim() || "";
     
     const dateStr = `${month}/${day}(${dayOfWeek})${timeStr ? " " + timeStr : ""}`;
@@ -258,7 +254,6 @@ export default function TodayTasksPage() {
       (i.optionName || i.displayName || "").toLowerCase().includes("컨테이너")
     )?.qty || 1;
 
-    // 옵션 추출
     const optionNames = task.items?.map((i: any) => i.optionName || i.displayName || "").filter(Boolean).join("/") || "기본형";
 
     let saleType = "신품판매";
@@ -317,6 +312,27 @@ export default function TodayTasksPage() {
     setPendingOrders(prev => prev.map(o => (o.id === id ? { ...o, status: "ready" } : o)));
   };
 
+  // ✅ 주문일 기준 긴급도 표시
+  const getUrgencyBadge = (orderDate: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const order = new Date(orderDate);
+    order.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((order.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return { bg: "#ffebee", color: "#c62828", text: "⚠️ 지남" };
+    } else if (diffDays === 0) {
+      return { bg: "#fff3e0", color: "#e65100", text: "🔥 오늘" };
+    } else if (diffDays === 1) {
+      return { bg: "#fff8e1", color: "#f57f17", text: "내일" };
+    } else if (diffDays <= 3) {
+      return { bg: "#e3f2fd", color: "#1565c0", text: `D-${diffDays}` };
+    } else {
+      return { bg: "#f5f5f5", color: "#757575", text: `D-${diffDays}` };
+    }
+  };
+
   const renderStatusBadge = (status: string) => {
     const styles: Record<string, any> = {
       pending: { bg: "#fff3e0", color: "#e65100", text: "대기" },
@@ -359,7 +375,7 @@ export default function TodayTasksPage() {
 
       {/* 안내 */}
       <div style={{ background: "#e3f2fd", borderRadius: 8, padding: "12px 16px", marginBottom: 20, fontSize: 14, color: "#1565c0" }}>
-        🤖 Python 대기 중 → "전송" 누르면 카카오톡 자동 전송
+        🤖 Python 대기 중 → "전송" 누르면 카카오톡 자동 전송 | 🔥오늘/내일 = 주문 마감일
       </div>
 
       {/* 자재 주문 */}
@@ -372,74 +388,82 @@ export default function TodayTasksPage() {
         </div>
 
         {pendingOrders.length === 0 ? (
-          <div style={{ padding: 30, textAlign: "center", color: "#888", fontSize: 15 }}>오늘 주문할 자재가 없습니다</div>
+          <div style={{ padding: 30, textAlign: "center", color: "#888", fontSize: 15 }}>주문할 자재가 없습니다</div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f5f5f5" }}>
-                <th style={{ padding: "14px 16px", textAlign: "left", borderBottom: "2px solid #ddd", fontSize: 15, fontWeight: 800, width: 100 }}>채팅방</th>
-                <th style={{ padding: "14px 16px", textAlign: "left", borderBottom: "2px solid #ddd", fontSize: 15, fontWeight: 800 }}>메시지 (클릭하여 수정)</th>
-                <th style={{ padding: "14px 16px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 15, fontWeight: 800, width: 80 }}>출고일</th>
-                <th style={{ padding: "14px 16px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 15, fontWeight: 800, width: 80 }}>상태</th>
-                <th style={{ padding: "14px 16px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 15, fontWeight: 800, width: 120 }}>액션</th>
+                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 70 }}>주문일</th>
+                <th style={{ padding: "14px 12px", textAlign: "left", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 90 }}>채팅방</th>
+                <th style={{ padding: "14px 12px", textAlign: "left", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800 }}>메시지 (클릭하여 수정)</th>
+                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 70 }}>출고일</th>
+                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 70 }}>상태</th>
+                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 100 }}>액션</th>
               </tr>
             </thead>
             <tbody>
-              {pendingOrders.map(order => (
-                <tr key={order.id} style={{ background: order.status === "sent" || order.status === "완료" ? "#fafafa" : order.status === "failed" ? "#fff5f5" : "#fff" }}>
-                  <td style={{ padding: "16px", borderBottom: "1px solid #eee", fontWeight: 700, fontSize: 15 }}>{order.chat_room}</td>
-                  <td style={{ padding: "16px", borderBottom: "1px solid #eee", fontSize: 15 }}>
-                    {String(editingId) === String(order.id) ? (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input 
-                          value={editMessage} 
-                          onChange={(e) => setEditMessage(e.target.value)} 
-                          style={{ flex: 1, padding: "12px", border: "2px solid #2e5b86", borderRadius: 8, fontSize: 15 }} 
-                          autoFocus
-                        />
-                        <button onClick={() => saveEditMessage(order.id)} style={{ padding: "12px 20px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700 }}>저장</button>
-                        <button onClick={() => setEditingId(null)} style={{ padding: "12px 20px", background: "#eee", border: "none", borderRadius: 8, fontSize: 14 }}>취소</button>
-                      </div>
-                    ) : (
-                      <div 
-                        onClick={() => { 
-                          console.log('클릭됨', order.id, order.status);
-                          if (order.status === "pending") { 
-                            setEditingId(order.id); 
-                            setEditMessage(order.message); 
-                          }
-                        }} 
-                        style={{ 
-                          cursor: order.status === "pending" ? "pointer" : "default",
-                          padding: "8px 12px",
-                          borderRadius: 6,
-                          background: order.status === "pending" ? "#f9f9f9" : "transparent",
-                          border: order.status === "pending" ? "1px dashed #ccc" : "none"
-                        }} 
-                        title={order.status === "pending" ? "클릭하여 수정" : ""}
-                      >
-                        {order.message}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: "16px", borderBottom: "1px solid #eee", textAlign: "center", fontSize: 14 }}>{order.delivery_date?.slice(5)}</td>
-                  <td style={{ padding: "16px", borderBottom: "1px solid #eee", textAlign: "center" }}>{renderStatusBadge(order.status)}</td>
-                  <td style={{ padding: "16px", borderBottom: "1px solid #eee", textAlign: "center" }}>
-                    {order.status === "pending" && String(editingId) !== String(order.id) && (
-                      <button onClick={() => sendOrder(order.id)} style={{ padding: "10px 24px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-                        📤 전송
-                      </button>
-                    )}
-                    {order.status === "ready" && <span style={{ color: "#1565c0", fontSize: 14, fontWeight: 600 }}>⏳ 전송중...</span>}
-                    {order.status === "failed" && (
-                      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                        <button onClick={() => updateOrderStatus(order.id, "pending")} style={{ padding: "8px 14px", background: "#fff3e0", border: "1px solid #ff9800", color: "#e65100", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>재시도</button>
-                        <button onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} style={{ padding: "8px 14px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>복사</button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {pendingOrders.map(order => {
+                const urgency = getUrgencyBadge(order.order_date);
+                return (
+                  <tr key={order.id} style={{ background: order.status === "sent" || order.status === "완료" ? "#fafafa" : order.status === "failed" ? "#fff5f5" : urgency.text === "⚠️ 지남" || urgency.text === "🔥 오늘" ? "#fffde7" : "#fff" }}>
+                    <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>
+                      <span style={{ padding: "4px 8px", background: urgency.bg, color: urgency.color, borderRadius: 6, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+                        {urgency.text}
+                      </span>
+                    </td>
+                    <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", fontWeight: 700, fontSize: 14 }}>{order.chat_room}</td>
+                    <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", fontSize: 14 }}>
+                      {String(editingId) === String(order.id) ? (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input 
+                            value={editMessage} 
+                            onChange={(e) => setEditMessage(e.target.value)} 
+                            style={{ flex: 1, padding: "10px", border: "2px solid #2e5b86", borderRadius: 8, fontSize: 14 }} 
+                            autoFocus
+                          />
+                          <button onClick={() => saveEditMessage(order.id)} style={{ padding: "10px 16px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>저장</button>
+                          <button onClick={() => setEditingId(null)} style={{ padding: "10px 16px", background: "#eee", border: "none", borderRadius: 8, fontSize: 13 }}>취소</button>
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={() => { 
+                            if (order.status === "pending") { 
+                              setEditingId(order.id); 
+                              setEditMessage(order.message); 
+                            }
+                          }} 
+                          style={{ 
+                            cursor: order.status === "pending" ? "pointer" : "default",
+                            padding: "8px 10px",
+                            borderRadius: 6,
+                            background: order.status === "pending" ? "#f9f9f9" : "transparent",
+                            border: order.status === "pending" ? "1px dashed #ccc" : "none"
+                          }} 
+                          title={order.status === "pending" ? "클릭하여 수정" : ""}
+                        >
+                          {order.message}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center", fontSize: 13 }}>{order.delivery_date?.slice(5)}</td>
+                    <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>{renderStatusBadge(order.status)}</td>
+                    <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>
+                      {order.status === "pending" && String(editingId) !== String(order.id) && (
+                        <button onClick={() => sendOrder(order.id)} style={{ padding: "8px 18px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                          📤 전송
+                        </button>
+                      )}
+                      {order.status === "ready" && <span style={{ color: "#1565c0", fontSize: 13, fontWeight: 600 }}>⏳ 전송중...</span>}
+                      {order.status === "failed" && (
+                        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                          <button onClick={() => updateOrderStatus(order.id, "pending")} style={{ padding: "6px 12px", background: "#fff3e0", border: "1px solid #ff9800", color: "#e65100", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>재시도</button>
+                          <button onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} style={{ padding: "6px 12px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>복사</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
