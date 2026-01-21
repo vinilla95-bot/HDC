@@ -1299,7 +1299,6 @@ const quotePreviewHtml = useMemo(() => {
 <tr>
   <th style={{ border: '1px solid #333', padding: '8px 10px', background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>중요사항</th>
   <td style={{ border: '1px solid #333', padding: '8px 10px', fontSize: 12, lineHeight: 1.6, verticalAlign: 'top' }}>
-    *중요사항*<br />
     1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />
     2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />
     한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.<br />
