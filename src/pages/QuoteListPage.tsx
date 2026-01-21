@@ -291,15 +291,18 @@ function InlineItemSearchCell({
     );
   }
 
-  return (
-    <span
-      onClick={() => setIsEditing(true)}
-      style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
-      title="클릭하여 수정 또는 품목 검색"
-    >
-      {item.displayName || "(-)"}
-    </span>
-  );
+ return (
+  <span
+    onClick={() => { 
+      setSearchQuery(item.displayName || ""); 
+      setIsEditing(true); 
+    }}
+    style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
+    title="클릭하여 수정 또는 품목 검색"
+  >
+    {item.displayName || "(-)"}
+  </span>
+);
 }
 
 // ============ 인라인 텍스트 편집 셀 ============
