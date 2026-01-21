@@ -1227,7 +1227,7 @@ const quotePreviewHtml = useMemo(() => {
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
   <colgroup>
     <col style={{ width: '5%' }} />
-    <col style={{ width: '33%' }} />
+    <col style={{ width: '31%' }} />
     <col style={{ width: '10%' }} />
     <col style={{ width: '8%' }} />
     <col style={{ width: '13%' }} />
