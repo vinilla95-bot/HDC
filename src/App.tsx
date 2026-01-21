@@ -1732,20 +1732,20 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
               </tr>
               <tr>
                 <th className="k center">이메일</th>
-                <td className="v" style={{ textAlign: "left" }}>
+                <td className="v" style={{ textAlign: "left", wordBreak: "break-all" }}>
   <input 
     value={form.email || ""} 
     onChange={(e) => setForm((p: any) => ({ ...p, email: e.target.value }))}
     placeholder="이메일 입력"
     style={{ 
-  border: "none", 
-  background: "transparent", 
-  fontSize: 13, 
-  width: "120%",
-  textAlign: "left",
-  marginLeft: 0,
-  paddingLeft: 0
-}}
+      border: "none", 
+      background: "transparent", 
+      fontSize: 13, 
+      width: "100%",
+      textAlign: "left",
+      marginLeft: 0,
+      paddingLeft: 0
+    }}
   />
 </td>
                 <th className="k center">전화</th>
