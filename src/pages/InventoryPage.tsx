@@ -134,7 +134,7 @@ export default function InventoryPage({
   const completedCounts = useMemo(() => {
     const counts: { [key: string]: number } = { "3x3": 0, "3x4": 0, "3x6": 0, "3x9": 0 };
     allItems
-    .filter(item => item.inventory_status === "작업지시완료완료")
+    .filter(item => item.inventory_status === "작업지시 완료")
       .forEach(item => {
         const specKey = normalizeSpec(item.spec);
         if (specKey && specKey in counts) {
