@@ -62,7 +62,7 @@ export default function InventoryPage({
   const [newItem, setNewItem] = useState({
     customer_name: "",
     spec: "3x6",
-    inventory_status: "작업지시",
+    inventory_status: "작업지시완료",
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
@@ -130,11 +130,11 @@ export default function InventoryPage({
   const paidCount = useMemo(() => allItems.filter(item => item.deposit_status === "완료").length, [allItems]);
   const unpaidCount = useMemo(() => allItems.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기").length, [allItems]);
 
-  // ✅ 작업지시 완료 카운트 (규격별)
+  // ✅ 작업지시완료 완료 카운트 (규격별)
   const completedCounts = useMemo(() => {
     const counts: { [key: string]: number } = { "3x3": 0, "3x4": 0, "3x6": 0, "3x9": 0 };
     allItems
-    .filter(item => item.inventory_status === "작업지시")
+    .filter(item => item.inventory_status === "작업지시완료완료")
       .forEach(item => {
         const specKey = normalizeSpec(item.spec);
         if (specKey && specKey in counts) {
@@ -326,7 +326,7 @@ const handleAddNew = async () => {
   setNewItem({ 
     customer_name: "", 
     spec: "3x6", 
-    inventory_status: "작업지시", 
+    inventory_status: "작업지시완료완료", 
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
@@ -368,7 +368,7 @@ const handleAddNew = async () => {
   
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "작업지시": return "#28a745";
+    case "작업지시완료완료": return "#28a745";
     case "출고대기": return "#ffc107";
     case "찜": return "#e91e63";  // 핑크색
     case "출고완료": return "#6c757d";
@@ -429,7 +429,7 @@ const getStatusColor = (status: string) => {
         gap: 16, 
         marginBottom: 20 
       }}>
-        {/* 작업지시 완료 카드 */}
+        {/* 작업지시완료 완료 카드 */}
         <div style={{
           background: "#fff",
           borderRadius: 12,
@@ -446,7 +446,7 @@ const getStatusColor = (status: string) => {
             alignItems: "center",
             gap: 8
           }}>
-            ✅ 작업지시 완료
+            ✅ 작업지시완료 완료
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {["3x3", "3x4", "3x6", "3x9"].map(spec => (
@@ -606,19 +606,19 @@ const getStatusColor = (status: string) => {
                     >
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <select
-                          value={item.inventory_status || "작업지시"}
+                          value={item.inventory_status || "작업지시완료"}
                           onChange={(e) => updateField(item.quote_id, "inventory_status", e.target.value)}
                           style={{ 
                             padding: 4, 
                             border: "1px solid #ddd", 
                             borderRadius: 4, 
                             fontSize: 11,
-                            background: getStatusColor(item.inventory_status || "작업지시"),
+                            background: getStatusColor(item.inventory_status || "작업지시완료"),
                             color: item.inventory_status === "출고대기" ? "#000" : "#fff",
                             fontWeight: 700
                           }}
                         >
-                          <option value="작업지시">작업지시</option>
+                          <option value="작업지시완료">작업지시완료</option>
                           <option value="출고대기">출고대기</option>
                           <option value="찜">찜</option>
                           <option value="출고완료">출고완료</option>
@@ -844,7 +844,7 @@ const getStatusColor = (status: string) => {
                 onChange={(e) => setNewItem({ ...newItem, inventory_status: e.target.value })}
                 style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
               >
-                <option value="작업지시">작업지시</option>
+                <option value="작업지시완료">작업지시완료</option>
                 <option value="출고대기">출고대기</option>
                 <option value="찜">찜</option>
                 <option value="출고완료">출고완료</option>
