@@ -238,13 +238,12 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
       return;
     }
 
-   const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
+ const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
   const typeName = targetType === "order" ? "수주" : "영업소";
-  if (!confirm(`이 항목을 계약견적 "${typeName}"으로 복사하시겠습니까?\n(재고 기록은 유지됩니다)`)) return;
-
-  // ✅ 새로운 quote_id 생성 (중복 방지)
+  if (!confirm(`이 항목을 계약견적 "${typeName}"으로 이동하시겠습니까?`)) return;
+  
   const newQuoteId = `${item.quote_id}_${targetType}_${Date.now()}`;
-
+  
   const { error: insertError } = await supabase.from("quotes").insert({
     quote_id: newQuoteId,
     status: "confirmed",
@@ -263,24 +262,24 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
     depositor: item.depositor || "",
     source: "inventory",
   });
-
+  
   if (insertError) {
-    alert("복사 실패: " + insertError.message);
+    alert("이동 실패: " + insertError.message);
     return;
   }
-
-  // ✅ 재고에 누가 가져갔는지 기록
+  
   await supabase
     .from("inventory")
     .update({ 
       inventory_status: "출고완료",
-      interior: `${item.interior || ""} [${typeName}복사]`.trim()
+      interior: `${item.interior || ""} [${typeName}이동]`.trim()
     })
     .eq("quote_id", item.quote_id);
-
+    
   alert(`계약견적 "${typeName}"으로 이동 완료!`);
   loadInventory();
 };
+    
 const handleAddNew = async () => {
   if (!newItem.spec) {
     alert("규격을 선택해주세요.");
