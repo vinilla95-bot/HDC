@@ -1223,12 +1223,26 @@ const quotePreviewHtml = useMemo(() => {
 
 
       {/* 하단 합계/조건 테이블 */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
-        <tbody>
-          <tr>
-  <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900 }} colSpan={5}>
-    합계: {money(current.vat_included !== false ? totalAmount : supplyAmount)}원 ({current.vat_included !== false ? "부가세 포함" : "부가세 별도"})
-  </td>
+     <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
+  <colgroup>
+    <col style={{ width: '5%' }} />
+    <col style={{ width: '33%' }} />
+    <col style={{ width: '10%' }} />
+    <col style={{ width: '8%' }} />
+    <col style={{ width: '13%' }} />
+    <col style={{ width: '13%' }} />
+    <col style={{ width: '10%' }} />
+    <col style={{ width: '8%' }} />
+  </colgroup>
+  <tbody>
+    <tr>
+      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900 }} colSpan={5}>
+        합계: {money(current.vat_included !== false ? totalAmount : supplyAmount)}원 ({current.vat_included !== false ? "부가세 포함" : "부가세 별도"})
+      </td>
+      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(supplyAmount)}</td>
+      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(vatAmount)}</td>
+      <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6' }}></td>
+    </tr>
 
             <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(supplyAmount)}</td>
             <td style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, textAlign: 'right' }}>{money(vatAmount)}</td>
