@@ -285,6 +285,9 @@ if (phone) {
 text += ` 입니다~`;
 return text;
 
+}; 
+    
+
   // ✅ 클립보드 복사
   const handleCopyDispatch = async () => {
     if (!selectedDelivery) return;
