@@ -650,26 +650,66 @@ export default function TodayTasksPage() {
                   {/* 버튼 영역 */}
                   {editingId !== order.id && (
                     <div style={{ display: "flex", gap: 8 }}>
-                      {/* pending 상태: 수정만 가능 */}
+                      {/* pending 상태: 수정 + 전송 버튼 */}
                       {order.status === "pending" && (
-                        <button
-                          onClick={() => {
-                            setEditingId(order.id);
-                            setEditMessage(order.message);
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: 10,
-                            background: "#fff",
-                            border: "1px solid #2e5b86",
-                            color: "#2e5b86",
-                            borderRadius: 6,
-                            cursor: "pointer",
-                            fontWeight: 600
-                          }}
-                        >
-                          ✏️ 메시지 수정
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingId(order.id);
+                              setEditMessage(order.message);
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: 10,
+                              background: "#fff",
+                              border: "1px solid #2e5b86",
+                              color: "#2e5b86",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              fontWeight: 600
+                            }}
+                          >
+                            ✏️ 수정
+                          </button>
+                          <button
+                            onClick={async () => {
+                              await supabase
+                                .from("pending_orders")
+                                .update({ status: "ready" })
+                                .eq("id", order.id);
+                              setPendingOrders(prev =>
+                                prev.map(o => (o.id === order.id ? { ...o, status: "ready" } : o))
+                              );
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: 10,
+                              background: "#4caf50",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              fontWeight: 700
+                            }}
+                          >
+                            📤 전송
+                          </button>
+                        </>
+                      )}
+
+                      {/* ready 상태: 전송 중 표시 */}
+                      {order.status === "ready" && (
+                        <div style={{
+                          flex: 1,
+                          padding: 10,
+                          background: "#fff3e0",
+                          color: "#e65100",
+                          borderRadius: 6,
+                          textAlign: "center",
+                          fontWeight: 600
+                        }}>
+                          ⏳ 전송 중...
+                        </div>
                       )}
 
                       {/* failed 상태: 재시도 + 수동 복사 */}
