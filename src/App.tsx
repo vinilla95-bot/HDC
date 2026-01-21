@@ -191,15 +191,20 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
         // 입력값이 있으면 품목명으로 저장
-        if (searchQuery.trim()) {
-          onSelectOption(item, { 
-            option_id: `custom_${Date.now()}`, 
-            option_name: searchQuery.trim(),
-            unit: 'EA',
-            unit_price: 0,
-            show_spec: 'n'
-          }, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
-        }
+      if (searchQuery.trim()) {
+  onSelectOption(item, { 
+    option_id: item.optionId || `custom_${Date.now()}`,
+    option_name: searchQuery.trim(),
+    unit: item.unit || 'EA',
+    unit_price: item.customerUnitPrice || 0,
+    show_spec: item.showSpec || 'n'
+  }, { 
+    qty: item.displayQty || 1, 
+    unitPrice: item.customerUnitPrice || 0,
+    amount: item.finalAmount || 0, 
+    unit: item.unit || 'EA' 
+  });
+}
         setShowDropdown(false); 
         setIsEditing(false); 
         setSearchQuery("");
