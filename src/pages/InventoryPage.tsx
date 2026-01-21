@@ -62,7 +62,7 @@ export default function InventoryPage({
   const [newItem, setNewItem] = useState({
     customer_name: "",
     spec: "3x6",
-    inventory_status: "작업완료",
+    inventory_status: "작업지시",
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
@@ -134,7 +134,7 @@ export default function InventoryPage({
   const completedCounts = useMemo(() => {
     const counts: { [key: string]: number } = { "3x3": 0, "3x4": 0, "3x6": 0, "3x9": 0 };
     allItems
-    .filter(item => item.inventory_status === "작업완료")
+    .filter(item => item.inventory_status === "작업지시")
       .forEach(item => {
         const specKey = normalizeSpec(item.spec);
         if (specKey && specKey in counts) {
@@ -238,19 +238,49 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
       return;
     }
 
-    const { error: deleteError } = await supabase
-      .from("inventory")
-      .delete()
-      .eq("quote_id", item.quote_id);
+   const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
+  const typeName = targetType === "order" ? "수주" : "영업소";
+  if (!confirm(`이 항목을 계약견적 "${typeName}"으로 복사하시겠습니까?\n(재고 기록은 유지됩니다)`)) return;
 
-    if (deleteError) {
-      alert("재고에서 삭제 실패: " + deleteError.message);
-      return;
-    }
+  // ✅ 새로운 quote_id 생성 (중복 방지)
+  const newQuoteId = `${item.quote_id}_${targetType}_${Date.now()}`;
 
-    alert(`계약견적 "${typeName}"으로 이동 완료!`);
-    loadInventory();
-  };
+  const { error: insertError } = await supabase.from("quotes").insert({
+    quote_id: newQuoteId,
+    status: "confirmed",
+    contract_type: targetType,
+    contract_date: item.contract_date,
+    drawing_no: item.drawing_no,
+    spec: item.spec,
+    customer_name: item.customer_name,
+    interior: item.interior,
+    delivery_date: item.delivery_date,
+    total_amount: item.total_amount,
+    items: item.items || [],
+    deposit_status: item.deposit_status || "",
+    bank_account: item.bank_account || "",
+    tax_invoice: item.tax_invoice || "",
+    depositor: item.depositor || "",
+    source: "inventory",
+  });
+
+  if (insertError) {
+    alert("복사 실패: " + insertError.message);
+    return;
+  }
+
+  // ✅ 재고에 누가 가져갔는지 기록
+  await supabase
+    .from("inventory")
+    .update({ 
+      inventory_status: "출고완료",
+      interior: `${item.interior || ""} [${typeName}복사]`.trim()
+    })
+    .eq("quote_id", item.quote_id);
+
+  alert(`계약견적 "${typeName}"으로 이동 완료!`);
+  loadInventory();
+};
 const handleAddNew = async () => {
   if (!newItem.spec) {
     alert("규격을 선택해주세요.");
@@ -296,7 +326,7 @@ const handleAddNew = async () => {
   setNewItem({ 
     customer_name: "", 
     spec: "3x6", 
-    inventory_status: "작업완료", 
+    inventory_status: "작업지시", 
     container_type: "신품",
     contract_date: new Date().toISOString().slice(0, 10),
     total_amount: 0,
@@ -338,7 +368,7 @@ const handleAddNew = async () => {
   
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "작업완료": return "#28a745";
+    case "작업지시": return "#28a745";
     case "출고대기": return "#ffc107";
     case "찜": return "#e91e63";  // 핑크색
     case "출고완료": return "#6c757d";
@@ -576,19 +606,19 @@ const getStatusColor = (status: string) => {
                     >
                       <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                         <select
-                          value={item.inventory_status || "작업완료"}
+                          value={item.inventory_status || "작업지시"}
                           onChange={(e) => updateField(item.quote_id, "inventory_status", e.target.value)}
                           style={{ 
                             padding: 4, 
                             border: "1px solid #ddd", 
                             borderRadius: 4, 
                             fontSize: 11,
-                            background: getStatusColor(item.inventory_status || "작업완료"),
+                            background: getStatusColor(item.inventory_status || "작업지시"),
                             color: item.inventory_status === "출고대기" ? "#000" : "#fff",
                             fontWeight: 700
                           }}
                         >
-                          <option value="작업완료">작업완료</option>
+                          <option value="작업지시">작업지시</option>
                           <option value="출고대기">출고대기</option>
                           <option value="찜">찜</option>
                           <option value="출고완료">출고완료</option>
@@ -814,7 +844,7 @@ const getStatusColor = (status: string) => {
                 onChange={(e) => setNewItem({ ...newItem, inventory_status: e.target.value })}
                 style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
               >
-                <option value="작업완료">작업완료</option>
+                <option value="작업지시">작업지시</option>
                 <option value="출고대기">출고대기</option>
                 <option value="찜">찜</option>
                 <option value="출고완료">출고완료</option>
