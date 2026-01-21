@@ -10,6 +10,8 @@ type PendingOrder = {
   order_date: string;
   delivery_date: string;
   status: string;
+  sent_at?: string;
+  error_message?: string;
   customer_name?: string;
   option_name?: string;
   qty?: number;
@@ -45,16 +47,26 @@ export default function TodayTasksPage() {
   // 데이터 로드
   useEffect(() => {
     loadTasks();
+    
+    // 30초마다 자동 새로고침 (Python 전송 상태 확인)
+    const interval = setInterval(loadTasks, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // 브라우저 알림 표시
   useEffect(() => {
-    const totalTasks = pendingOrders.filter(o => o.status === "pending").length +
-                       deliveryTasks.filter(d => d.dispatch_status !== "완료").length;
+    const pendingCount = pendingOrders.filter(o => o.status === "pending").length;
+    const failedCount = pendingOrders.filter(o => o.status === "failed").length;
+    const dispatchCount = deliveryTasks.filter(d => d.dispatch_status !== "완료").length;
     
-    if (totalTasks > 0 && "Notification" in window && Notification.permission === "granted") {
+    if (failedCount > 0 && "Notification" in window && Notification.permission === "granted") {
+      new Notification("⚠️ 전송 실패 건 있음", {
+        body: `${failedCount}건의 주문 전송이 실패했습니다. 수동 처리가 필요합니다.`,
+        icon: "/favicon.ico"
+      });
+    } else if ((pendingCount + dispatchCount) > 0 && "Notification" in window && Notification.permission === "granted") {
       new Notification("📋 오늘 할 일", {
-        body: `처리할 작업이 ${totalTasks}건 있습니다`,
+        body: `처리할 작업이 ${pendingCount + dispatchCount}건 있습니다`,
         icon: "/favicon.ico"
       });
     }
@@ -92,11 +104,9 @@ export default function TodayTasksPage() {
 
   // 계약 확정된 것들 중 주문 필요한 것 자동 생성
   const generatePendingOrders = async () => {
-    // 주문 규칙 가져오기
     const { data: rules } = await supabase.from("order_rules").select("*");
     if (!rules) return;
 
-    // 앞으로 7일간의 출고 예정 건 가져오기
     const today = new Date();
     const weekLater = new Date(today);
     weekLater.setDate(weekLater.getDate() + 7);
@@ -110,7 +120,6 @@ export default function TodayTasksPage() {
 
     if (!quotes) return;
 
-    // 이미 생성된 주문 가져오기
     const { data: existingOrders } = await supabase
       .from("pending_orders")
       .select("quote_id, rule_id");
@@ -119,14 +128,12 @@ export default function TodayTasksPage() {
       (existingOrders || []).map(o => `${o.quote_id}_${o.rule_id}`)
     );
 
-    // 각 견적의 옵션 확인
     for (const quote of quotes) {
       if (!quote.items || quote.items.length === 0) continue;
 
       for (const item of quote.items) {
         const optionName = (item.optionName || item.displayName || item.itemName || "").toLowerCase();
 
-        // 각 규칙과 매칭
         for (const rule of rules) {
           const keywords = rule.keywords as string[];
           const matched = keywords.some(kw => optionName.includes(kw.toLowerCase()));
@@ -135,12 +142,10 @@ export default function TodayTasksPage() {
             const key = `${quote.quote_id}_${rule.id}`;
             if (existingSet.has(key)) continue;
 
-            // 주문 날짜 계산
             const deliveryDate = new Date(quote.delivery_date);
             const orderDate = new Date(deliveryDate);
             orderDate.setDate(orderDate.getDate() - rule.lead_days);
 
-            // 메시지 생성
             const message = buildMessage(rule.message_template, {
               month: deliveryDate.getMonth() + 1,
               day: deliveryDate.getDate(),
@@ -148,10 +153,9 @@ export default function TodayTasksPage() {
               customer: quote.customer_name || "",
               option_name: item.optionName || item.displayName || "",
               spec: quote.spec || "",
-              color: extractColor(optionName) || "미정"
+              color: extractColor(optionName) || "색상미정"
             });
 
-            // pending_orders에 추가
             await supabase.from("pending_orders").insert({
               quote_id: quote.quote_id,
               rule_id: rule.id,
@@ -191,7 +195,7 @@ export default function TodayTasksPage() {
   };
 
   const extractColor = (text: string) => {
-    const colors = ["화이트", "흰색", "백색", "그레이", "회색", "베이지", "아이보리", "블랙", "검정", "우드", "나무"];
+    const colors = ["화이트", "흰색", "백색", "그레이", "회색", "베이지", "아이보리", "블랙", "검정", "우드", "나무", "브라운", "갈색"];
     for (const color of colors) {
       if (text.includes(color)) return color;
     }
@@ -271,8 +275,8 @@ export default function TodayTasksPage() {
     setEditMessage("");
   };
 
-  // 클립보드 복사 + 완료 처리
-  const handleSend = async (message: string, id: number | string, type: "order" | "dispatch", chatRoom: string) => {
+  // 수동 복사 (실패 시 사용)
+  const handleManualCopy = async (message: string, id: number | string, type: "order" | "dispatch", chatRoom: string) => {
     try {
       await navigator.clipboard.writeText(message);
       alert(`📋 메시지가 복사되었습니다!\n\n카카오톡 "${chatRoom}" 채팅방에 붙여넣기 하세요.`);
@@ -283,20 +287,88 @@ export default function TodayTasksPage() {
         await updateDispatchStatus(id as string, "완료");
       }
     } catch (err) {
-      // fallback
       const textarea = document.createElement("textarea");
       textarea.value = message;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
-      alert(`📋 메시지가 복사되었습니다!\n\n카카오톡 "${chatRoom}" 채팅방에 붙여넣기 하세요.`);
+      alert(`📋 메시지가 복사되었습니다!`);
     }
   };
 
+  // 상태별 뱃지 렌더링
+  const renderStatusBadge = (status: string, sentAt?: string) => {
+    switch (status) {
+      case "pending":
+        return (
+          <span style={{
+            padding: "3px 8px",
+            background: "#fff3e0",
+            color: "#e65100",
+            borderRadius: 6,
+            fontSize: 11,
+            fontWeight: 700
+          }}>
+            ⏳ 전송 대기
+          </span>
+        );
+      case "sent":
+        return (
+          <span style={{
+            padding: "3px 8px",
+            background: "#e8f5e9",
+            color: "#2e7d32",
+            borderRadius: 6,
+            fontSize: 11,
+            fontWeight: 700
+          }}>
+            ✅ 자동 전송 완료
+            {sentAt && <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.8 }}>
+              ({new Date(sentAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})
+            </span>}
+          </span>
+        );
+      case "failed":
+        return (
+          <span style={{
+            padding: "3px 8px",
+            background: "#ffebee",
+            color: "#c62828",
+            borderRadius: 6,
+            fontSize: 11,
+            fontWeight: 700
+          }}>
+            ❌ 전송 실패
+          </span>
+        );
+      case "완료":
+        return (
+          <span style={{
+            padding: "3px 8px",
+            background: "#4caf50",
+            color: "#fff",
+            borderRadius: 6,
+            fontSize: 11,
+            fontWeight: 700
+          }}>
+            ✅ 완료
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // pending 재시도 (status를 pending으로 다시)
+  const retryOrder = async (id: number) => {
+    await updateOrderStatus(id, "pending");
+  };
+
   const pendingCount = pendingOrders.filter(o => o.status === "pending").length;
+  const failedCount = pendingOrders.filter(o => o.status === "failed").length;
   const dispatchCount = deliveryTasks.filter(d => d.dispatch_status !== "완료").length;
-  const totalPending = pendingCount + dispatchCount;
+  const totalPending = pendingCount + failedCount + dispatchCount;
 
   if (loading) {
     return (
@@ -321,30 +393,50 @@ export default function TodayTasksPage() {
             <span style={{
               marginLeft: 8,
               padding: "4px 10px",
-              background: "#e53935",
+              background: failedCount > 0 ? "#c62828" : "#e53935",
               color: "#fff",
               borderRadius: 12,
               fontSize: 13,
               fontWeight: 700
             }}>
               {totalPending}건
+              {failedCount > 0 && ` (실패 ${failedCount})`}
             </span>
           )}
         </h2>
-        <button
-          onClick={loadTasks}
-          style={{
-            padding: "8px 16px",
-            background: "#2e5b86",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: 700,
-            cursor: "pointer"
-          }}
-        >
-          🔄 새로고침
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={loadTasks}
+            style={{
+              padding: "8px 16px",
+              background: "#2e5b86",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            🔄 새로고침
+          </button>
+        </div>
+      </div>
+
+      {/* 자동 전송 안내 */}
+      <div style={{
+        background: "#e3f2fd",
+        border: "1px solid #90caf9",
+        borderRadius: 10,
+        padding: "12px 16px",
+        marginBottom: 16,
+        fontSize: 13
+      }}>
+        <strong>🤖 자동 전송 시스템</strong>
+        <div style={{ marginTop: 4, color: "#1565c0" }}>
+          Python 스크립트가 매일 오전 9시에 자동으로 카카오톡 전송합니다.
+          <br />
+          전송 실패 시 아래에서 수동으로 복사하여 전송할 수 있습니다.
+        </div>
       </div>
 
       {/* 자재 주문 섹션 */}
@@ -364,16 +456,30 @@ export default function TodayTasksPage() {
           alignItems: "center"
         }}>
           <span style={{ fontSize: 16, fontWeight: 800 }}>📦 자재 주문</span>
-          <span style={{
-            padding: "4px 10px",
-            background: pendingCount > 0 ? "#fff3e0" : "#e8f5e9",
-            color: pendingCount > 0 ? "#e65100" : "#2e7d32",
-            borderRadius: 12,
-            fontSize: 12,
-            fontWeight: 700
-          }}>
-            {pendingCount > 0 ? `${pendingCount}건 대기` : "✅ 완료"}
-          </span>
+          <div style={{ display: "flex", gap: 6 }}>
+            {failedCount > 0 && (
+              <span style={{
+                padding: "4px 10px",
+                background: "#ffebee",
+                color: "#c62828",
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 700
+              }}>
+                ❌ {failedCount}건 실패
+              </span>
+            )}
+            <span style={{
+              padding: "4px 10px",
+              background: pendingCount > 0 ? "#fff3e0" : "#e8f5e9",
+              color: pendingCount > 0 ? "#e65100" : "#2e7d32",
+              borderRadius: 12,
+              fontSize: 12,
+              fontWeight: 700
+            }}>
+              {pendingCount > 0 ? `⏳ ${pendingCount}건 대기` : "✅ 완료"}
+            </span>
+          </div>
         </div>
 
         <div style={{ padding: 12 }}>
@@ -382,146 +488,170 @@ export default function TodayTasksPage() {
               오늘 주문할 자재가 없습니다
             </div>
           ) : (
-            pendingOrders.map(order => (
-              <div
-                key={order.id}
-                style={{
-                  background: order.status === "완료" ? "#f5f5f5" : "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 10,
-                  padding: 14,
-                  marginBottom: 10,
-                  opacity: order.status === "완료" ? 0.7 : 1
-                }}
-              >
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 8
-                }}>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>
-                    → {order.chat_room}
-                  </span>
-                  {order.status === "완료" && (
-                    <span style={{
-                      padding: "3px 8px",
-                      background: "#4caf50",
-                      color: "#fff",
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 700
-                    }}>
-                      ✅ 완료
+            pendingOrders.map(order => {
+              const isComplete = order.status === "sent" || order.status === "완료";
+              const isFailed = order.status === "failed";
+
+              return (
+                <div
+                  key={order.id}
+                  style={{
+                    background: isComplete ? "#f5f5f5" : isFailed ? "#fff5f5" : "#fff",
+                    border: `1px solid ${isFailed ? "#ffcdd2" : "#e5e7eb"}`,
+                    borderRadius: 10,
+                    padding: 14,
+                    marginBottom: 10,
+                    opacity: isComplete ? 0.7 : 1
+                  }}
+                >
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 8
+                  }}>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>
+                      → {order.chat_room}
                     </span>
-                  )}
-                </div>
+                    {renderStatusBadge(order.status, order.sent_at)}
+                  </div>
 
-                <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
-                  출고일: {order.delivery_date}
-                </div>
+                  <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
+                    출고일: {order.delivery_date}
+                    {order.error_message && (
+                      <span style={{ color: "#c62828", marginLeft: 8 }}>
+                        | 오류: {order.error_message}
+                      </span>
+                    )}
+                  </div>
 
-                {editingId === order.id ? (
-                  <div>
-                    <textarea
-                      value={editMessage}
-                      onChange={(e) => setEditMessage(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: 10,
-                        border: "1px solid #ddd",
-                        borderRadius: 6,
-                        fontSize: 13,
-                        minHeight: 60,
-                        resize: "vertical",
-                        boxSizing: "border-box"
-                      }}
-                    />
-                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                      <button
-                        onClick={() => setEditingId(null)}
+                  {editingId === order.id ? (
+                    <div>
+                      <textarea
+                        value={editMessage}
+                        onChange={(e) => setEditMessage(e.target.value)}
                         style={{
-                          flex: 1,
-                          padding: 8,
-                          background: "#f5f5f5",
+                          width: "100%",
+                          padding: 10,
                           border: "1px solid #ddd",
                           borderRadius: 6,
-                          cursor: "pointer"
+                          fontSize: 13,
+                          minHeight: 60,
+                          resize: "vertical",
+                          boxSizing: "border-box"
                         }}
-                      >
-                        취소
-                      </button>
-                      <button
-                        onClick={() => saveEditMessage(order.id, "order")}
-                        style={{
-                          flex: 1,
-                          padding: 8,
-                          background: "#2e5b86",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: "pointer",
-                          fontWeight: 700
-                        }}
-                      >
-                        저장
-                      </button>
+                      />
+                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          style={{
+                            flex: 1,
+                            padding: 8,
+                            background: "#f5f5f5",
+                            border: "1px solid #ddd",
+                            borderRadius: 6,
+                            cursor: "pointer"
+                          }}
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={() => saveEditMessage(order.id, "order")}
+                          style={{
+                            flex: 1,
+                            padding: 8,
+                            background: "#2e5b86",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                            fontWeight: 700
+                          }}
+                        >
+                          저장
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      background: "#f9f9f9",
-                      padding: 10,
-                      borderRadius: 6,
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      marginBottom: 10
-                    }}
-                  >
-                    {order.message}
-                  </div>
-                )}
+                  ) : (
+                    <div
+                      style={{
+                        background: "#f9f9f9",
+                        padding: 10,
+                        borderRadius: 6,
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                        marginBottom: 10
+                      }}
+                    >
+                      {order.message}
+                    </div>
+                  )}
 
-                {editingId !== order.id && order.status !== "완료" && (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => {
-                        setEditingId(order.id);
-                        setEditMessage(order.message);
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: 10,
-                        background: "#fff",
-                        border: "1px solid #2e5b86",
-                        color: "#2e5b86",
-                        borderRadius: 6,
-                        cursor: "pointer",
-                        fontWeight: 600
-                      }}
-                    >
-                      ✏️ 수정
-                    </button>
-                    <button
-                      onClick={() => handleSend(order.message, order.id, "order", order.chat_room)}
-                      style={{
-                        flex: 1,
-                        padding: 10,
-                        background: "#2e5b86",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 6,
-                        cursor: "pointer",
-                        fontWeight: 700
-                      }}
-                    >
-                      📋 복사 & 완료
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
+                  {/* 버튼 영역 */}
+                  {editingId !== order.id && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {/* pending 상태: 수정만 가능 */}
+                      {order.status === "pending" && (
+                        <button
+                          onClick={() => {
+                            setEditingId(order.id);
+                            setEditMessage(order.message);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: 10,
+                            background: "#fff",
+                            border: "1px solid #2e5b86",
+                            color: "#2e5b86",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                            fontWeight: 600
+                          }}
+                        >
+                          ✏️ 메시지 수정
+                        </button>
+                      )}
+
+                      {/* failed 상태: 재시도 + 수동 복사 */}
+                      {isFailed && (
+                        <>
+                          <button
+                            onClick={() => retryOrder(order.id)}
+                            style={{
+                              flex: 1,
+                              padding: 10,
+                              background: "#fff3e0",
+                              border: "1px solid #ff9800",
+                              color: "#e65100",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              fontWeight: 600
+                            }}
+                          >
+                            🔄 재시도
+                          </button>
+                          <button
+                            onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)}
+                            style={{
+                              flex: 1,
+                              padding: 10,
+                              background: "#2e5b86",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              fontWeight: 700
+                            }}
+                          >
+                            📋 수동 복사 & 완료
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -620,7 +750,7 @@ export default function TodayTasksPage() {
                   {!isComplete && (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
-                        onClick={() => handleSend(message, task.quote_id, "dispatch", "배차기사")}
+                        onClick={() => handleManualCopy(message, task.quote_id, "dispatch", "배차기사")}
                         style={{
                           flex: 1,
                           padding: 10,
