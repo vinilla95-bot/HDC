@@ -1804,10 +1804,11 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
                 <th className="k center">대표전화</th>
                 <td className="v">1688-1447</td>
               </tr>
-              <tr>
+          <tr>
   <td className="sum" colSpan={6}>
     <span style={{ display: "inline-flex", alignItems: "center", gap: 0 }}>
-      합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)} (
+      합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)}
+      <span style={{ marginLeft: 4 }}>(</span>
       {editable && setForm ? (
         <select 
           value={form.vatIncluded !== false ? "included" : "excluded"} 
@@ -1820,7 +1821,7 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
       ) : (
         form.vatIncluded !== false ? "부가세 포함" : "부가세 별도"
       )}
-      )
+      <span>)</span>
     </span>
   </td>
 </tr>
