@@ -209,34 +209,7 @@ const currentMonthLabel = `${new Date().getMonth() + 1}월`;
     ));
   };
 
-  // ✅ 구분 클릭 시 해당 항목을 quotes 테이블로 이동
-  const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
-    const typeName = targetType === "order" ? "수주" : "영업소";
-    if (!confirm(`이 항목을 계약견적 "${typeName}"으로 이동하시겠습니까?`)) return;
-
-    const { error: insertError } = await supabase.from("quotes").insert({
-      quote_id: item.quote_id,
-      status: "confirmed",
-      contract_type: targetType,
-      contract_date: item.contract_date,
-      drawing_no: item.drawing_no,
-      spec: item.spec,
-      customer_name: item.customer_name,
-      interior: item.interior,
-      delivery_date: item.delivery_date,
-      total_amount: item.total_amount,
-      items: item.items || [],
-      deposit_status: item.deposit_status || "",
-      bank_account: item.bank_account || "",
-      tax_invoice: item.tax_invoice || "",
-      depositor: item.depositor || "",
-      source: "contract",
-    });
-
-    if (insertError) {
-      alert("이동 실패: " + insertError.message);
-      return;
-    }
+  
 
  const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
   const typeName = targetType === "order" ? "수주" : "영업소";
