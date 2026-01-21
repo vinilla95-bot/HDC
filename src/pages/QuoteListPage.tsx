@@ -1282,30 +1282,30 @@ const quotePreviewHtml = useMemo(() => {
     <col style={{ width: '88%' }} />
   </colgroup>
   <tbody>
-    <tr>
-      <th style={{ border: '1px solid #333', padding: '8px 10px', background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap' }}>결제조건</th>
-      <td style={{ border: '1px solid #333', padding: '8px 10px', fontSize: 12, lineHeight: 1.6 }}>계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td>
-    </tr>
-    <tr>
-      <th style={{ border: '1px solid #333', padding: '8px 10px', background: '#e6e6e6', fontWeight: 900, textAlign: 'center', verticalAlign: 'top', whiteSpace: 'nowrap' }}>주의사항</th>
-      <td style={{ border: '1px solid #333', padding: '8px 10px', fontSize: 12, lineHeight: 1.6 }}>
-        *견적서는 견적일로 부터 2주간 유효합니다.<br />
-        1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)<br />
-        2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고<br />
-        *출고 전날 오후 2시 이전 잔금 결제 조건*<br />
-        3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
-      </td>
-    </tr>
-    <tr>
-      <th style={{ border: '1px solid #333', padding: '8px 10px', background: '#e6e6e6', fontWeight: 900, textAlign: 'center', verticalAlign: 'top', whiteSpace: 'nowrap' }}>중요사항</th>
-      <td style={{ border: '1px solid #333', padding: '8px 10px', fontSize: 12, lineHeight: 1.6 }}>
-        *중요사항*<br />
-        1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />
-        2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />
-        한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.<br />
-        해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
-      </td>
-    </tr>
+  <tr>
+  <th style={{ border: '1px solid #333', padding: '8px 10px', background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>결제조건</th>
+  <td style={{ border: '1px solid #333', padding: '8px 10px', fontSize: 12, lineHeight: 1.6, verticalAlign: 'middle' }}>계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고</td>
+</tr>
+<tr>
+  <th style={{ border: '1px solid #333', padding: '8px 10px', background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>주의사항</th>
+  <td style={{ border: '1px solid #333', padding: '8px 10px', fontSize: 12, lineHeight: 1.6, verticalAlign: 'top' }}>
+    *견적서는 견적일로 부터 2주간 유효합니다.<br />
+    1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)<br />
+    2. 주문 제작시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고<br />
+    *출고 전날 오후 2시 이전 잔금 결제 조건*<br />
+    3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
+  </td>
+</tr>
+<tr>
+  <th style={{ border: '1px solid #333', padding: '8px 10px', background: '#e6e6e6', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>중요사항</th>
+  <td style={{ border: '1px solid #333', padding: '8px 10px', fontSize: 12, lineHeight: 1.6, verticalAlign: 'top' }}>
+    *중요사항*<br />
+    1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.<br />
+    2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.<br />
+    한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.<br />
+    해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
+  </td>
+</tr>
   </tbody>
 </table>
     </div>
