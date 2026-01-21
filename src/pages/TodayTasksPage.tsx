@@ -372,7 +372,7 @@ export default function TodayTasksPage() {
 
       {/* 안내 */}
       <div style={{ background: "#e3f2fd", borderRadius: 8, padding: "12px 16px", marginBottom: 20, fontSize: 14, color: "#1565c0" }}>
-        🤖 Python 봇 실행 중 → "전송" 누르면 카카오톡 자동 전송 | 🔥오늘/내일 = 주문 마감일
+        Python 봇 실행 중 → "전송" 누르면 카카오톡 자동 전송 | 🔥오늘/내일 = 주문 마감일
       </div>
 
       {/* 자재 주문 */}
@@ -448,10 +448,10 @@ export default function TodayTasksPage() {
                       {order.status === "pending" && String(editingId) !== String(order.id) && (
                         <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
                           <button onClick={() => sendOrder(order.id)} style={{ padding: "8px 14px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                            📤 전송
+                             전송
                           </button>
                           <button onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} style={{ padding: "8px 14px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                            📋
+                            복사사
                           </button>
                         </div>
                       )}
