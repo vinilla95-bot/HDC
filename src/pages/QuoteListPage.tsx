@@ -1169,7 +1169,7 @@ const quotePreviewHtml = useMemo(() => {
 
       return (
         <tr key={item.key || idx}>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{idx + 1}</td>
+          <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>{idx + 1}</td>
           <td style={{ border: '1px solid #333', padding: 6, textAlign: 'left' }}>
             <InlineItemSearchCell
               item={item}
@@ -1215,15 +1215,15 @@ const quotePreviewHtml = useMemo(() => {
       );
     })}
     {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
-      <tr key={`blank-${i}`} style={{ height: 28 }}>
-        <td style={{ border: '1px solid #333', padding: 6 }}>&nbsp;</td>
-        <td style={{ border: '1px solid #333', padding: 6 }}></td>
-        <td style={{ border: '1px solid #333', padding: 6 }}></td>
-        <td style={{ border: '1px solid #333', padding: 6 }}></td>
-        <td style={{ border: '1px solid #333', padding: 6 }}></td>
-        <td style={{ border: '1px solid #333', padding: 6 }}></td>
-        <td style={{ border: '1px solid #333', padding: 6 }}></td>
-        <td style={{ border: '1px solid #333', padding: 6 }}></td>
+      <tr key={`blank-${i}`}>
+        <td style={{ border: '1px solid #333', padding: '4px 8px' }}>&nbsp;</td>
+        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+        <td style={{ border: '1px solid #333', padding: '4px 8px'6 }}></td>
+        <td style={{ border: '1px solid #333', padding: '4px 8px'6 }}></td>
+        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
       </tr>
     ))}
   </tbody>
