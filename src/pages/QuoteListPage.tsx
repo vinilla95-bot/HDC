@@ -512,51 +512,57 @@ const addEditItemFromOption = (opt: any) => {
   }]);
   setOptQ("");
 };
-  async function saveEditMode() {
-    if (!current) return;
+ async function saveEditMode() {
+  if (!current) return;
 
-    try {
-      toast("저장 중...");
+  try {
+    toast("저장 중...");
 
-      const itemsToSave = editItems.map((it: any, idx: number) => ({
-        optionId: it.optionId || `ITEM_${idx + 1}`,
-        optionName: it.optionName || it.displayName || "",
-        displayName: it.displayName || "",
-        itemName: it.displayName || "",
-        unit: it.unit || "EA",
-        qty: Number(it.qty) || 0,
-        unitPrice: Number(it.unitPrice) || 0,
-        amount: Number(it.qty * it.unitPrice) || 0,
-        showSpec: it.showSpec || "n",
-        lineSpec: it.lineSpec,
-      }));
+    const itemsToSave = editItems.map((it: any, idx: number) => ({
+      optionId: it.optionId || `ITEM_${idx + 1}`,
+      optionName: it.optionName || it.displayName || "",
+      displayName: it.displayName || "",
+      itemName: it.displayName || "",
+      unit: it.unit || "EA",
+      qty: Number(it.qty) || 0,
+      unitPrice: Number(it.unitPrice) || 0,
+      amount: Number(it.qty * it.unitPrice) || 0,
+      showSpec: it.showSpec || "n",
+      lineSpec: it.lineSpec,
+    }));
 
-      const supply_amount = itemsToSave.reduce((acc: number, it: any) => acc + Number(it.amount || 0), 0);
-      const vat_amount = Math.round(supply_amount * 0.1);
-      const total_amount = supply_amount + vat_amount;
+    const supply_amount = itemsToSave.reduce((acc: number, it: any) => acc + Number(it.amount || 0), 0);
+    const vat_amount = Math.round(supply_amount * 0.1);
+    const total_amount = supply_amount + vat_amount;
 
-      const { error, data } = await supabase
-        .from("quotes")
-        .update({
-          items: itemsToSave,
-          supply_amount,
-          vat_amount,
-          total_amount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("quote_id", current.quote_id)
-        .select();
+    const { error, data } = await supabase
+      .from("quotes")
+      .update({
+        items: itemsToSave,
+        supply_amount,
+        vat_amount,
+        total_amount,
+        updated_at: new Date().toISOString(),
+        // ✅ editForm 정보도 함께 저장
+        customer_name: editForm?.customer_name ?? current.customer_name,
+        customer_email: editForm?.customer_email ?? current.customer_email,
+        customer_phone: editForm?.customer_phone ?? current.customer_phone,
+        site_name: editForm?.site_name ?? current.site_name,
+        spec: editForm?.spec ?? current.spec,
+      })
+      .eq("quote_id", current.quote_id)
+      .select();
 
-      if (error) throw error;
+    if (error) throw error;
 
-      toast("저장 완료!");
-      setEditMode(false);
-      await loadList(q);
-      if (data && data[0]) setCurrent(data[0] as QuoteRow);
-    } catch (e: any) {
-      toast("저장 실패: " + (e?.message || String(e)));
-    }
+    toast("저장 완료!");
+    setEditMode(false);
+    await loadList(q);
+    if (data && data[0]) setCurrent(data[0] as QuoteRow);
+  } catch (e: any) {
+    toast("저장 실패: " + (e?.message || String(e)));
   }
+}
 
   async function handleConfirmContract() {
     requireCurrent();
