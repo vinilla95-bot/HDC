@@ -295,7 +295,7 @@ export default function TodayTasksPage() {
                 <tr key={order.id} style={{ background: order.status === "sent" || order.status === "완료" ? "#fafafa" : order.status === "failed" ? "#fff5f5" : "#fff" }}>
                   <td style={{ padding: "16px", borderBottom: "1px solid #eee", fontWeight: 700, fontSize: 15 }}>{order.chat_room}</td>
                   <td style={{ padding: "16px", borderBottom: "1px solid #eee", fontSize: 15 }}>
-                    {editingId === order.id ? (
+                    {String(editingId) === String(order.id) ? (
                       <div style={{ display: "flex", gap: 8 }}>
                         <input 
                           value={editMessage} 
@@ -307,8 +307,9 @@ export default function TodayTasksPage() {
                         <button onClick={() => setEditingId(null)} style={{ padding: "12px 20px", background: "#eee", border: "none", borderRadius: 8, fontSize: 14 }}>취소</button>
                       </div>
                     ) : (
-                      <span 
+                      <div 
                         onClick={() => { 
+                          console.log('클릭됨', order.id, order.status);
                           if (order.status === "pending") { 
                             setEditingId(order.id); 
                             setEditMessage(order.message); 
@@ -317,7 +318,6 @@ export default function TodayTasksPage() {
                         style={{ 
                           cursor: order.status === "pending" ? "pointer" : "default",
                           padding: "8px 12px",
-                          display: "block",
                           borderRadius: 6,
                           background: order.status === "pending" ? "#f9f9f9" : "transparent",
                           border: order.status === "pending" ? "1px dashed #ccc" : "none"
@@ -325,13 +325,13 @@ export default function TodayTasksPage() {
                         title={order.status === "pending" ? "클릭하여 수정" : ""}
                       >
                         {order.message}
-                      </span>
+                      </div>
                     )}
                   </td>
                   <td style={{ padding: "16px", borderBottom: "1px solid #eee", textAlign: "center", fontSize: 14 }}>{order.delivery_date?.slice(5)}</td>
                   <td style={{ padding: "16px", borderBottom: "1px solid #eee", textAlign: "center" }}>{renderStatusBadge(order.status)}</td>
                   <td style={{ padding: "16px", borderBottom: "1px solid #eee", textAlign: "center" }}>
-                    {order.status === "pending" && editingId !== order.id && (
+                    {order.status === "pending" && String(editingId) !== String(order.id) && (
                       <button onClick={() => sendOrder(order.id)} style={{ padding: "10px 24px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                         📤 전송
                       </button>
