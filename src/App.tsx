@@ -6,8 +6,6 @@ import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
 import TodayTasksPage from "./pages/TodayTasksPage";
 
-// views에 추가
-{ id: "tasks", label: "📋 오늘할일", component: <TodayTasksPage /> }
 
 
 // dnd-kit 주석처리
@@ -482,7 +480,16 @@ export default function App() {
   const [sites, setSites] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedRow[]>([]);
 
-  const [view, setView] = useState<"rt" | "list" | "contract" | "calendar" | "inventory">(() => {
+ const [view, setView] = useState<"rt" | "list" | "contract" | "calendar" | "inventory" | "tasks">(() => {
+  const params = new URLSearchParams(window.location.search);
+  const v = params.get('view');
+  if (v === 'list') return 'list';
+  if (v === 'contract') return 'contract';
+  if (v === 'calendar') return 'calendar';
+  if (v === 'inventory') return 'inventory';
+  if (v === 'tasks') return 'tasks';  // ✅ 추가
+  return 'rt';
+});
   const params = new URLSearchParams(window.location.search);
   const v = params.get('view');
   if (v === 'list') return 'list';
@@ -1121,7 +1128,7 @@ captureContainer.appendChild(clonedSheet);
   const blankRows = Array.from({ length: blanksCount });
 
   // ✅ 네비게이션 바 컴포넌트
-  const NavBar = ({ current }: { current: string }) => (
+const NavBar = ({ current }: { current: string }) => (
   <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
     <button
       className="btn"
@@ -1158,8 +1165,17 @@ captureContainer.appendChild(clonedSheet);
     >
       출고일정
     </button>
+    {/* ✅ 오늘할일 버튼 추가 */}
+    <button
+      className="btn"
+      onClick={() => setView("tasks")}
+      style={current === 'tasks' ? { background: '#e53935', color: '#fff' } : { background: '#ffebee', color: '#c62828' }}
+    >
+      📋 오늘할일
+    </button>
   </div>
 );
+
   // ✅ 전체견적 화면
   const listScreen = (
     <div style={{ minHeight: "100vh" }}>
@@ -1187,12 +1203,21 @@ captureContainer.appendChild(clonedSheet);
     </div>
   );
 
+const tasksScreen = (
+  <div style={{ minHeight: "100vh" }}>
+    <NavBar current="tasks" />
+    <TodayTasksPage />
+  </div>
+);
+
+
 const inventoryScreen = (
   <div style={{ minHeight: "100vh" }}>
     <NavBar current="inventory" />
     <InventoryPage onBack={() => setView("contract")} />
   </div>
 );
+
   
   const rtScreen = (
   <>
@@ -1619,6 +1644,7 @@ if (view === "list") return listScreen;
 if (view === "contract") return contractScreen;
 if (view === "calendar") return calendarScreen;
 if (view === "inventory") return inventoryScreen;
+if (view === "tasks") return tasksScreen;  // ✅ 추가
 return rtScreen;
 }
 
