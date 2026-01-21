@@ -1161,7 +1161,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
-  {items.map((item: any, idx: number) => {
+ {items.map((item: any, idx: number) => {
   const supply = item.qty * item.unitPrice;
   const vat = Math.round(supply * 0.1);
   const showSpec = String(item.showSpec || "").toLowerCase() === "y";
@@ -1169,8 +1169,8 @@ const quotePreviewHtml = useMemo(() => {
 
   return (
     <tr key={item.key || idx}>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>{idx + 1}</td>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'left' }}>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'hidden' }}>
         <InlineItemSearchCell
           item={item}
           options={options}
@@ -1199,21 +1199,33 @@ const quotePreviewHtml = useMemo(() => {
           onDelete={() => deleteEditItem(item.key)}
         />
       </td>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>{specText}</td>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{specText}</td>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
         <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} />
       </td>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'right' }}>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
         <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} />
       </td>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>{money(supply)}</td>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>{money(vat)}</td>
-      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>
-        <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(supply)}</td>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(vat)}</td>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+        <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: 0, margin: 0, lineHeight: 1, fontSize: 12 }}>✕</button>
       </td>
     </tr>
   );
 })}
+{Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
+  <tr key={`blank-${i}`}>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}>&nbsp;</td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, maxHeight: 24 }}></td>
+  </tr>
+))}
     {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
      <tr key={`blank-${i}`}>
   <td style={{ border: '1px solid #333', padding: '4px 8px' }}>&nbsp;</td>
