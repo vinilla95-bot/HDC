@@ -2,6 +2,57 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../QuoteService";
 
+// 알림 허용 시간 체크 (컴퓨터 켠 후 1시간, 오후 3시)
+const shouldShowNotification = (): boolean => {
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  
+  // 오후 3시 (15:00 ~ 15:05 사이만)
+  if (hour === 15 && minute < 5) {
+    const notified = localStorage.getItem('afternoon_notified_' + now.toDateString());
+    if (!notified) {
+      localStorage.setItem('afternoon_notified_' + now.toDateString(), 'true');
+      return true;
+    }
+    return false;
+  }
+  
+  // 컴퓨터 켠 후 1시간 체크
+  const bootTime = localStorage.getItem('app_boot_time');
+  const now_ts = Date.now();
+  
+  if (!bootTime) {
+    localStorage.setItem('app_boot_time', String(now_ts));
+    return false;
+  }
+  
+  const bootTimestamp = Number(bootTime);
+  const oneHourLater = bootTimestamp + (60 * 60 * 1000);
+  
+  if (now_ts >= oneHourLater && now_ts < oneHourLater + (5 * 60 * 1000)) {
+    const notified = localStorage.getItem('boot_notified');
+    if (!notified) {
+      localStorage.setItem('boot_notified', 'true');
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// 매일 자정에 리셋
+const resetDailyFlags = () => {
+  const today = new Date().toDateString();
+  const lastReset = localStorage.getItem('last_reset_date');
+  
+  if (lastReset !== today) {
+    localStorage.removeItem('app_boot_time');
+    localStorage.removeItem('boot_notified');
+    localStorage.setItem('last_reset_date', today);
+  }
+};
+
 type PendingOrder = {
   id: number;
   quote_id: string;
@@ -42,6 +93,7 @@ export default function TodayTasksPage() {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
+    resetDailyFlags();
   }, []);
 
   // 데이터 로드
@@ -53,22 +105,30 @@ export default function TodayTasksPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 브라우저 알림 표시
+  // 브라우저 알림 표시 (컴퓨터 켠 후 1시간, 오후 3시에만)
   useEffect(() => {
     const pendingCount = pendingOrders.filter(o => o.status === "pending").length;
     const failedCount = pendingOrders.filter(o => o.status === "failed").length;
     const dispatchCount = deliveryTasks.filter(d => d.dispatch_status !== "완료").length;
+    const totalTasks = pendingCount + failedCount + dispatchCount;
     
-    if (failedCount > 0 && "Notification" in window && Notification.permission === "granted") {
-      new Notification("⚠️ 전송 실패 건 있음", {
-        body: `${failedCount}건의 주문 전송이 실패했습니다. 수동 처리가 필요합니다.`,
-        icon: "/favicon.ico"
-      });
-    } else if ((pendingCount + dispatchCount) > 0 && "Notification" in window && Notification.permission === "granted") {
-      new Notification("📋 오늘 할 일", {
-        body: `처리할 작업이 ${pendingCount + dispatchCount}건 있습니다`,
-        icon: "/favicon.ico"
-      });
+    // 알림 허용 시간인지 체크
+    if (!shouldShowNotification() || totalTasks === 0) {
+      return;
+    }
+    
+    if ("Notification" in window && Notification.permission === "granted") {
+      if (failedCount > 0) {
+        new Notification("⚠️ 전송 실패 건 있음", {
+          body: `${failedCount}건의 주문 전송이 실패했습니다. 수동 처리가 필요합니다.`,
+          icon: "/favicon.ico"
+        });
+      } else {
+        new Notification("📋 오늘 할 일", {
+          body: `처리할 작업이 ${totalTasks}건 있습니다`,
+          icon: "/favicon.ico"
+        });
+      }
     }
   }, [pendingOrders, deliveryTasks]);
 
