@@ -297,7 +297,7 @@ function InlineItemSearchCell({
       style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
       title="클릭하여 수정 또는 품목 검색"
     >
-      {item.displayName || "(클릭하여 입력)"}
+      {item.displayName || "(-)"}
     </span>
   );
 }
@@ -352,7 +352,7 @@ function EditableTextCell({ value, onChange }: { value: string; onChange: (val: 
       style={{ cursor: "pointer", display: "block", width: "100%", textAlign: "left" }} 
       title="클릭하여 수정"
     >
-      {value || "(클릭하여 입력)"}
+      {value || "(-)"}
     </span>
   );
 }
@@ -1046,10 +1046,9 @@ const quotePreviewHtml = useMemo(() => {
       <th style={{ border: '1px solid #333', padding: 6, fontWeight: 900, textAlign: 'center' }}>주소</th>
       <td style={{ border: '1px solid #333', padding: 6 }}>경기도 화성시 향남읍 구문천안길16</td>
     </tr>
-    <tr>
+  <tr>
   <td style={{ border: '1px solid #333', padding: 6, fontWeight: 900, fontSize: 14 }} colSpan={6}>
-    합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)} 
-    <select 
+    합계금액 : ₩{money(current.vat_included !== false ? totalAmount : supplyAmount)} (<select 
       value={current.vat_included !== false ? "included" : "excluded"} 
       onChange={async (e) => {
         const newValue = e.target.value === "included";
@@ -1062,12 +1061,10 @@ const quotePreviewHtml = useMemo(() => {
         fontSize: 14, 
         fontWeight: 900, 
         cursor: 'pointer',
-        appearance: 'auto'
+        width: 'auto',
+        display: 'inline'
       }}
-    >
-      <option value="included">(부가세 포함)</option>
-      <option value="excluded">(부가세 별도)</option>
-    </select>
+    ><option value="included">부가세 포함</option><option value="excluded">부가세 미포함</option></select>)
   </td>
 </tr>
   </tbody>
