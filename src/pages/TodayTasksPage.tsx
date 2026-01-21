@@ -115,11 +115,9 @@ export default function TodayTasksPage() {
     setLoading(true);
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
 
-    // 먼저 자동 생성
     await generatePendingOrders();
 
-    // ✅ 변경: 모든 대기중인 주문 표시 (완료되지 않은 것들)
-    // 견적 확정 즉시 목록에 표시됨
+    // ✅ 모든 대기중인 주문 표시 (견적 확정 즉시)
     const { data: orders } = await supabase
       .from("pending_orders")
       .select("*")
@@ -294,7 +292,7 @@ export default function TodayTasksPage() {
     try {
       await navigator.clipboard.writeText(message);
       alert(`📋 복사됨!\n\n"${chatRoom}" 채팅방에 붙여넣기 하세요.`);
-      if (type === "order") await updateOrderStatus(id as number, "완료");
+      if (type === "order") await updateOrderStatus(id as number, "sent");
       else await updateDispatchStatus(id as string, "완료");
     } catch {
       const textarea = document.createElement("textarea");
@@ -336,10 +334,9 @@ export default function TodayTasksPage() {
   const renderStatusBadge = (status: string) => {
     const styles: Record<string, any> = {
       pending: { bg: "#fff3e0", color: "#e65100", text: "대기" },
-      ready: { bg: "#e3f2fd", color: "#1565c0", text: "전송중..." },
+      ready: { bg: "#e3f2fd", color: "#1565c0", text: "전송중" },
       sent: { bg: "#e8f5e9", color: "#2e7d32", text: "완료" },
       failed: { bg: "#ffebee", color: "#c62828", text: "실패" },
-      "완료": { bg: "#e8f5e9", color: "#2e7d32", text: "완료" },
     };
     const s = styles[status] || styles.pending;
     return (
@@ -375,7 +372,7 @@ export default function TodayTasksPage() {
 
       {/* 안내 */}
       <div style={{ background: "#e3f2fd", borderRadius: 8, padding: "12px 16px", marginBottom: 20, fontSize: 14, color: "#1565c0" }}>
-        🤖 Python 대기 중 → "전송" 누르면 카카오톡 자동 전송 | 🔥오늘/내일 = 주문 마감일
+        🤖 Python 봇 실행 중 → "전송" 누르면 카카오톡 자동 전송 | 🔥오늘/내일 = 주문 마감일
       </div>
 
       {/* 자재 주문 */}
@@ -398,14 +395,14 @@ export default function TodayTasksPage() {
                 <th style={{ padding: "14px 12px", textAlign: "left", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800 }}>메시지 (클릭하여 수정)</th>
                 <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 70 }}>출고일</th>
                 <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 70 }}>상태</th>
-                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 100 }}>액션</th>
+                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 120 }}>액션</th>
               </tr>
             </thead>
             <tbody>
               {pendingOrders.map(order => {
                 const urgency = getUrgencyBadge(order.order_date);
                 return (
-                  <tr key={order.id} style={{ background: order.status === "sent" || order.status === "완료" ? "#fafafa" : order.status === "failed" ? "#fff5f5" : urgency.text === "⚠️ 지남" || urgency.text === "🔥 오늘" ? "#fffde7" : "#fff" }}>
+                  <tr key={order.id} style={{ background: order.status === "sent" ? "#fafafa" : order.status === "failed" ? "#fff5f5" : urgency.text === "⚠️ 지남" || urgency.text === "🔥 오늘" ? "#fffde7" : "#fff" }}>
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>
                       <span style={{ padding: "4px 8px", background: urgency.bg, color: urgency.color, borderRadius: 6, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
                         {urgency.text}
@@ -449,11 +446,20 @@ export default function TodayTasksPage() {
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>{renderStatusBadge(order.status)}</td>
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>
                       {order.status === "pending" && String(editingId) !== String(order.id) && (
-                        <button onClick={() => sendOrder(order.id)} style={{ padding: "8px 18px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                          📤 전송
+                        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                          <button onClick={() => sendOrder(order.id)} style={{ padding: "8px 14px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                            📤 전송
+                          </button>
+                          <button onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} style={{ padding: "8px 14px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                            📋
+                          </button>
+                        </div>
+                      )}
+                      {order.status === "ready" && (
+                        <button onClick={() => updateOrderStatus(order.id, "pending")} style={{ padding: "8px 14px", background: "#fff3e0", border: "1px solid #ff9800", color: "#e65100", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                          ❌ 취소
                         </button>
                       )}
-                      {order.status === "ready" && <span style={{ color: "#1565c0", fontSize: 13, fontWeight: 600 }}>⏳ 전송중...</span>}
                       {order.status === "failed" && (
                         <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
                           <button onClick={() => updateOrderStatus(order.id, "pending")} style={{ padding: "6px 12px", background: "#fff3e0", border: "1px solid #ff9800", color: "#e65100", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>재시도</button>
