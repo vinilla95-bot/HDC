@@ -1161,59 +1161,59 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
-    {items.map((item: any, idx: number) => {
-      const supply = item.qty * item.unitPrice;
-      const vat = Math.round(supply * 0.1);
-      const showSpec = String(item.showSpec || "").toLowerCase() === "y";
-      const specText = showSpec && item.lineSpec ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` : "";
+  {items.map((item: any, idx: number) => {
+  const supply = item.qty * item.unitPrice;
+  const vat = Math.round(supply * 0.1);
+  const showSpec = String(item.showSpec || "").toLowerCase() === "y";
+  const specText = showSpec && item.lineSpec ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` : "";
 
-      return (
-        <tr key={item.key || idx}>
-          <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>{idx + 1}</td>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'left' }}>
-            <InlineItemSearchCell
-              item={item}
-              options={options}
-              onSelectOption={(opt) => {
-                const w = current?.w || 3;
-                const l = current?.l || 6;
-                const res = calculateOptionLine(opt, w, l);
-                const rawName = String(opt.option_name || "");
-                const rent = rawName.includes("임대");
-                const customerUnitPrice = rent ? Number(res.unitPrice || 0) : Number(res.amount || 0);
-                
-                setEditItems(prev => prev.map(i => i.key !== item.key ? i : {
-                  ...i,
-                  optionId: opt.option_id,
-                  optionName: rawName,
-                  displayName: rent ? `${rawName} 1개월` : rawName,
-                  unit: rent ? "개월" : (res.unit || "EA"),
-                  qty: 1,
-                  unitPrice: customerUnitPrice,
-                  amount: customerUnitPrice,
-                  showSpec: opt.show_spec || "n",
-                  lineSpec: { w, l, h: 2.6 },
-                }));
-              }}
-              onUpdateName={(name) => updateEditItemName(item.key, name)}
-              onDelete={() => deleteEditItem(item.key)}
-            />
-          </td>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>{specText}</td>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>
-            <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} />
-          </td>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>
-            <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} />
-          </td>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(supply)}</td>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'right' }}>{money(vat)}</td>
-          <td style={{ border: '1px solid #333', padding: 6, textAlign: 'center' }}>
-            <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-          </td>
-        </tr>
-      );
-    })}
+  return (
+    <tr key={item.key || idx}>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>{idx + 1}</td>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'left' }}>
+        <InlineItemSearchCell
+          item={item}
+          options={options}
+          onSelectOption={(opt) => {
+            const w = current?.w || 3;
+            const l = current?.l || 6;
+            const res = calculateOptionLine(opt, w, l);
+            const rawName = String(opt.option_name || "");
+            const rent = rawName.includes("임대");
+            const customerUnitPrice = rent ? Number(res.unitPrice || 0) : Number(res.amount || 0);
+            
+            setEditItems(prev => prev.map(i => i.key !== item.key ? i : {
+              ...i,
+              optionId: opt.option_id,
+              optionName: rawName,
+              displayName: rent ? `${rawName} 1개월` : rawName,
+              unit: rent ? "개월" : (res.unit || "EA"),
+              qty: 1,
+              unitPrice: customerUnitPrice,
+              amount: customerUnitPrice,
+              showSpec: opt.show_spec || "n",
+              lineSpec: { w, l, h: 2.6 },
+            }));
+          }}
+          onUpdateName={(name) => updateEditItemName(item.key, name)}
+          onDelete={() => deleteEditItem(item.key)}
+        />
+      </td>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>{specText}</td>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>
+        <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} />
+      </td>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'right' }}>
+        <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} />
+      </td>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>{money(supply)}</td>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>{money(vat)}</td>
+      <td style={{ border: '1px solid #333', padding: '4px 8px', textAlign: 'center' }}>
+        <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+      </td>
+    </tr>
+  );
+})}
     {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
      <tr key={`blank-${i}`}>
   <td style={{ border: '1px solid #333', padding: '4px 8px' }}>&nbsp;</td>
