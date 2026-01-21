@@ -241,54 +241,49 @@ if (type === "memo") {
   const generateDispatchText = (item: DeliveryItem) => {
     const type = item.contract_type || "order";
     
-    // 신품/중고/임대 구분
-    let saleType = "신품판매";
-    if (type === "used") {
-      saleType = "중고판매";
-    } else if (type === "rental") {
-      saleType = "임대";
-    } else if (type === "memo") {
-      saleType = "메모";
-    }
+ // 신품/중고/임대 구분
+let saleType = "신품판매";
+if (type === "used") {
+  saleType = "중고판매";
+} else if (type === "rental") {
+  saleType = "임대";
+} else if (type === "memo") {
+  saleType = "메모";
+}
 
-    // ✅ timezone 이슈 수정
-    const [year, month, day] = item.delivery_date.split('-').map(Number);
-    const dateStr = `${month}/${day}`;
-    const spec = item.spec || "";
-    const qty = getQty(item);
-    const qtyText = qty > 1 ? `${qty}` : "1";
+// ✅ timezone 이슈 수정 + 요일 추가
+const [year, month, day] = item.delivery_date.split('-').map(Number);
+const d = new Date(year, month - 1, day);
+const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+const dateStr = `${month}/${day}(${weekDays[d.getDay()]})`;
 
-    let unloadInfo = "";
-    if (item.site_addr) {
-      unloadInfo = item.site_addr;
-    }
-    if (item.memo) {
-      unloadInfo = unloadInfo ? `${unloadInfo} ${item.memo}` : item.memo;
-    }
+const spec = item.spec || "";
+const qty = getQty(item);
+const qtyText = qty > 1 ? `${qty}` : "1";
+let unloadInfo = "";
+if (item.site_addr) {
+  unloadInfo = item.site_addr;
+}
+if (item.memo) {
+  unloadInfo = unloadInfo ? `${unloadInfo} ${item.memo}` : item.memo;
+}
+const customer = item.customer_name || "";
+const phone = item.customer_phone || "";
 
-    const customer = item.customer_name || "";
-    const phone = item.customer_phone || "";
-
-    let text = `사장님 (${dateStr}) ${saleType} (${spec})(${qtyText})-동 상차 현대`;
-
-    if (unloadInfo) {
-      text += ` 하차 ${unloadInfo}`;
-    } else {
-      text += ` 하차 `;
-    }
-
-    text += ` ${customer}`;
-
-    if (phone) {
-      text += ` 인수자${phone}`;
-    } else {
-      text += ` 인수자`;
-    }
-
-    text += ` 입니다~`;
-
-    return text;
-  };
+let text = `사장님 ${dateStr} ${saleType} (${spec})${qtyText}동(옵션OR기본형) 상차 현대`;
+if (unloadInfo) {
+  text += ` 하차 ${unloadInfo}`;
+} else {
+  text += ` 하차 `;
+}
+text += ` ${customer}`;
+if (phone) {
+  text += ` 인수자${phone}`;
+} else {
+  text += ` 인수자`;
+}
+text += ` 입니다~`;
+return text;
 
   // ✅ 클립보드 복사
   const handleCopyDispatch = async () => {
