@@ -1215,16 +1215,16 @@ const quotePreviewHtml = useMemo(() => {
       );
     })}
     {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
-      <tr key={`blank-${i}`}>
-        <td style={{ border: '1px solid #333', padding: '4px 8px' }}>&nbsp;</td>
-        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
-        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
-        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
-        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
-        <td style={{ border: '1px solid #333', padding: '4px 8px'6 }}></td>
-        <td style={{ border: '1px solid #333', padding: '4px 8px'6 }}></td>
-        <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
-      </tr>
+     <tr key={`blank-${i}`}>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}>&nbsp;</td>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+  <td style={{ border: '1px solid #333', padding: '4px 8px' }}></td>
+</tr>
     ))}
   </tbody>
 </table>
