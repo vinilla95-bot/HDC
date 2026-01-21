@@ -1,3 +1,4 @@
+
 // src/pages/TodayTasksPage.tsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../QuoteService";
@@ -116,6 +117,9 @@ export default function TodayTasksPage() {
     const today = new Date().toISOString().split("T")[0];
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
 
+    // 먼저 자동 생성
+    await generatePendingOrders();
+
     const { data: orders } = await supabase
       .from("pending_orders")
       .select("*")
@@ -141,6 +145,96 @@ export default function TodayTasksPage() {
       setDispatchMessages(msgs);
     }
     setLoading(false);
+  };
+
+  // 계약 확정된 것들 중 주문 필요한 것 자동 생성
+  const generatePendingOrders = async () => {
+    const { data: rules } = await supabase.from("order_rules").select("*");
+    if (!rules || rules.length === 0) return;
+
+    const today = new Date();
+    const twoWeeksLater = new Date(today);
+    twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
+
+    const { data: quotes } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("status", "confirmed")
+      .gte("delivery_date", today.toISOString().split("T")[0])
+      .lte("delivery_date", twoWeeksLater.toISOString().split("T")[0]);
+
+    if (!quotes || quotes.length === 0) return;
+
+    const { data: existingOrders } = await supabase
+      .from("pending_orders")
+      .select("quote_id, rule_id");
+
+    const existingSet = new Set(
+      (existingOrders || []).map((o: any) => `${o.quote_id}_${o.rule_id}`)
+    );
+
+    for (const quote of quotes) {
+      if (!quote.items || quote.items.length === 0) continue;
+
+      for (const item of quote.items) {
+        const optionName = (item.optionName || item.displayName || item.itemName || "").toLowerCase();
+
+        for (const rule of rules) {
+          const keywords = rule.keywords as string[];
+          const matched = keywords.some((kw: string) => optionName.includes(kw.toLowerCase()));
+
+          if (matched) {
+            const key = `${quote.quote_id}_${rule.id}`;
+            if (existingSet.has(key)) continue;
+
+            const deliveryDate = new Date(quote.delivery_date);
+            const orderDate = new Date(deliveryDate);
+            orderDate.setDate(orderDate.getDate() - rule.lead_days);
+
+            const message = buildMessage(rule.message_template, {
+              month: deliveryDate.getMonth() + 1,
+              day: deliveryDate.getDate(),
+              qty: item.qty || 1,
+              customer: quote.customer_name || "",
+              option_name: item.optionName || item.displayName || "",
+              spec: quote.spec || "",
+              color: extractColor(optionName) || "색상미정"
+            });
+
+            await supabase.from("pending_orders").insert({
+              quote_id: quote.quote_id,
+              rule_id: rule.id,
+              chat_room: rule.chat_room,
+              message: message,
+              order_date: orderDate.toISOString().split("T")[0],
+              delivery_date: quote.delivery_date,
+              status: "pending"
+            });
+
+            existingSet.add(key);
+          }
+        }
+      }
+    }
+  };
+
+  const buildMessage = (template: string, data: any) => {
+    return template
+      .replace("{month}", data.month)
+      .replace("{day}", data.day)
+      .replace("{qty}", data.qty)
+      .replace("{customer}", data.customer)
+      .replace("{option_name}", data.option_name)
+      .replace("{spec}", data.spec)
+      .replace("{color}", data.color);
+  };
+
+  const extractColor = (text: string) => {
+    const colors = ["화이트", "흰색", "백색", "그레이", "회색", "베이지", "아이보리", "블랙", "검정", "우드", "나무", "브라운", "갈색"];
+    for (const color of colors) {
+      if (text.includes(color)) return color;
+    }
+    return null;
   };
 
   const generateDispatchMessage = (task: DeliveryTask) => {
