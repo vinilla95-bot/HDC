@@ -240,17 +240,17 @@ const handleSelect = (opt: any) => {
 
   // ✅ 편집 모드 아닐 때 - 먼저 체크!
   if (!isEditing) {
-    return (
-      <td 
-        className="c wrap" 
-        onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
-        style={{ cursor: "pointer" }} 
-        title="클릭하여 품목 변경"
-      >
-        {String(item.displayName || "")}
-      </td>
-    );
-  }
+  return (
+    <td 
+      className="c wrap" 
+      onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
+      style={{ cursor: "pointer" }} 
+      title="클릭하여 품목 변경"
+    >
+      {String(item.displayName || "")}
+    </td>
+  );
+}
 
   // 편집 모드일 때
   return (
