@@ -175,18 +175,14 @@ function InlineItemSearchCell({
   const dropdownRef = useRef<HTMLDivElement>(null);
   
 const filteredOpts = useMemo(() => {
-  const q = searchQuery.trim();
-  console.log('검색어:', q, '| showDropdown:', showDropdown);
-  
+  const q = searchQuery.trim().toLowerCase();
   if (!q) return [];
   
-  const result = options.filter((o: any) => {
-    const name = String(o.option_name || "");
-    return matchKorean(name, q);
+  return options.filter((o: any) => {
+    const name = String(o.option_name || "").toLowerCase();
+    // 포함 검색 또는 초성 검색
+    return name.includes(q) || matchKorean(name, q);
   }).slice(0, 15);
-  
-  console.log('검색 결과:', result.length);
-  return result;
 }, [searchQuery, options]);
 
   
