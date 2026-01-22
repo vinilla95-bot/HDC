@@ -295,8 +295,9 @@ const handleSelect = (opt: any) => {
 
   // 편집 모드일 때
   // 편집 모드일 때
+ // 편집 모드일 때
   return (
-    <td className="c wrap" style={{ position: "relative", padding: 0, overflow: "visible" }}>
+    <td className="c wrap" style={{ position: "relative", padding: "4px 8px", overflow: "visible" }}>
        <input 
         ref={inputRef} 
         type="text" 
@@ -316,21 +317,22 @@ const handleSelect = (opt: any) => {
             setSearchQuery("");
           }
         }}
-        placeholder="품목 검색..."  
+        placeholder="품목 검색"  
         autoFocus 
         style={{ 
           width: "100%", 
-          padding: "4px 6px", 
-          border: "none",           // ✅ 테두리 제거
-          borderBottom: "2px solid #2e5b86",  // ✅ 밑줄만
-          borderRadius: 0,          // ✅ 둥근 모서리 제거
+          padding: "2px 4px", 
+          textAlign: "center",
+          border: "1px solid #ccc", 
+          borderRadius: 4,
           fontSize: 12, 
           boxSizing: "border-box", 
           outline: "none", 
-          background: "transparent" // ✅ 배경 투명
+          background: "#fff"
         }} 
       />
       {showDropdown && searchQuery.trim() && (
+        // ... 드롭다운 코드 그대로 ...
         <div ref={dropdownRef} style={{ 
           position: "absolute", 
           top: "100%", 
