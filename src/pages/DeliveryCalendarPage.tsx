@@ -79,26 +79,50 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
   });
 
   const loadDeliveries = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
+  setLoading(true);
+  
+  // quotes와 inventory 둘 다 조회
+  const [quotesRes, inventoryRes] = await Promise.all([
+    supabase
       .from("quotes")
       .select("*")
       .eq("status", "confirmed")
-      .not("delivery_date", "is", null);
+      .not("delivery_date", "is", null),
+    supabase
+      .from("inventory")
+      .select("*")
+      .not("delivery_date", "is", null)
+  ]);
 
-    if (error) {
-      console.error("Load error:", error);
-    }
-    if (data) {
-      setDeliveries(data.filter((d: any) => d.delivery_date) as DeliveryItem[]);
-    }
-    setLoading(false);
-  };
+  if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
+  if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
 
-  useEffect(() => {
-    loadDeliveries();
-  }, []);
+  const quotesData = (quotesRes.data || []).filter((d: any) => d.delivery_date);
+  
+  // inventory 데이터를 DeliveryItem 형식으로 변환
+  const inventoryData = (inventoryRes.data || [])
+    .filter((d: any) => d.delivery_date)
+    .map((inv: any) => ({
+      quote_id: inv.quote_id,
+      contract_type: "inventory",  // 재고 표시용
+      customer_name: inv.customer_name || "",
+      customer_phone: "",
+      spec: inv.spec || "",
+      items: inv.items || [],
+      delivery_date: inv.delivery_date,
+      site_name: "",
+      site_addr: "",
+      memo: inv.interior || "",
+      total_amount: inv.total_amount || 0,
+      deposit_status: inv.deposit_status,
+      delivery_color: inv.delivery_color,
+      container_type: inv.container_type,  // 신품/중고/리스
+      drawing_no: inv.drawing_no,  // 도면번호
+    }));
 
+  setDeliveries([...quotesData, ...inventoryData] as DeliveryItem[]);
+  setLoading(false);
+};
   /// ✅ 색상 결정 로직
 const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   // 1. 수동 색상이 설정되어 있으면 사용
@@ -230,6 +254,11 @@ if (type === "memo") {
   return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
 } else {
   return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
+}
+  } else if (type === "inventory") {
+  const containerType = (item as any).container_type || "신품";
+  const drawingNo = (item as any).drawing_no ? `#${(item as any).drawing_no}` : "";
+  return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}`.trim();
 }
 };
 
@@ -822,6 +851,10 @@ setSelectedDelivery(null); ;
     <div style={{ width: 14, height: 14, background: colorStyles.gray.bg, borderLeft: `3px solid ${colorStyles.gray.border}`, borderRadius: 2 }}></div>
     <span>완료(출고지남)</span>
   </div>
+  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+  <div style={{ width: 14, height: 14, background: colorStyles.purple.bg, borderLeft: `3px solid ${colorStyles.purple.border}`, borderRadius: 2 }}></div>
+  <span>재고</span>
+</div>
   <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
     <span style={{ fontWeight: 700 }}>크</span>
     <span>= 크레인 운송</span>
