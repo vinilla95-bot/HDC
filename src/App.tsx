@@ -487,7 +487,7 @@ const commitFreeText = useCallback(() => {
   return (
     <>
       <td className="c center">&nbsp;</td>
-      <td className="c" onClick={() => setIsEditing(true)} style={{ cursor: "pointer", color: "#ccc", fontSize: 11, textAlign: "center" }}>+ 품목 추가</td>
+      <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
@@ -2394,11 +2394,13 @@ td input, td input:focus, td input:focus-visible {
     word-break: break-word;
     overflow-wrap:anywhere;
   }
-  .a4Items td input[type="text"] {
-  border: 1px solid #ccc !important;
-  border-radius: 4px !important;
-  padding: 2px 4px !important;
-  background: #fff !important;
+.a4Items td input[type="text"] {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  width: 100%;
+  padding: 0;
+  font-size: inherit;
 }
 
   @media print{
