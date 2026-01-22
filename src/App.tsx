@@ -95,10 +95,9 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
 
 // ============ 인라인 규격 편집 셀 ============
 // ============ 인라인 규격 편집 셀 ============
-function EditableSpecCell({ spec, specText, onChange }: { spec: { w: number; l: number; h?: number }; specText?: string; onChange: (specText: string) => void }) {
+function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?: number }; onChange: (spec: { w: number; l: number; h?: number }) => void }) {
   const [isEditing, setIsEditing] = useState(false);
-  // ✅ specText 우선, 없으면 spec에서 계산
-  const displayText = specText ?? ((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '');
+  const displayText = (spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '';
   const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -110,13 +109,26 @@ function EditableSpecCell({ spec, specText, onChange }: { spec: { w: number; l: 
   }, [isEditing]);
   
   React.useEffect(() => { 
-    setTempValue(specText ?? ((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '')); 
-  }, [spec, specText]);
+    setTempValue((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : ''); 
+  }, [spec]);
 
   const handleBlur = () => { 
     setIsEditing(false); 
-    // ✅ 자유입력 텍스트 그대로 저장
-    onChange(tempValue.trim());
+    
+    // 빈 값이면 빈 규격으로 저장
+    if (!tempValue.trim()) {
+      onChange({ w: 0, l: 0, h: 0 });
+      return;
+    }
+    
+    // "3×6×2.6" 또는 "3x6x2.6" 형식 파싱
+    const parts = tempValue.replace(/x/gi, '×').split('×').map(s => parseFloat(s.trim()) || 0);
+    const newSpec = {
+      w: parts[0],
+      l: parts[1],
+      h: parts[2]
+    };
+    onChange(newSpec);
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => { 
@@ -179,27 +191,23 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   }, [searchQuery]);
 
   // ✅ 자유입력 저장 함수
-  const commitFreeText = React.useCallback(() => {
-    const trimmed = (searchQueryRef.current || "").trim();
-    if (trimmed) {
-      onSelectOption(item, { 
-        option_id: item.optionId || `custom_${Date.now()}`,
-        option_name: trimmed,
-        unit: item.unit || 'EA',
-        unit_price: item.baseUnitPrice || 0,
-        show_spec: item.showSpec || 'n',
-        _isDisplayNameOnly: true
-      }, {
-        qty: item.displayQty || 1, 
-        unitPrice: item.customerUnitPrice || 0,
-        amount: item.finalAmount || 0, 
-        unit: item.unit || 'EA' 
-      });
-    }
-    setShowDropdown(false);
-    setIsEditing(false);
-    setSearchQuery("");
-  }, [item, onSelectOption]);
+  const commitFreeText = useCallback(() => {
+  const trimmed = (searchQueryRef.current || "").trim();
+  if (trimmed) {
+    const customOpt = { 
+      option_id: `custom_${Date.now()}`, 
+      option_name: trimmed,
+      unit: 'EA',
+      unit_price: 0,
+      show_spec: 'n'  // ✅ 자유입력은 규격 표시 안함
+    };
+    onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA', lineSpec: { w: 0, l: 0, h: 0 } });
+  }
+  setShowDropdown(false);
+  setIsEditing(false);
+  setSearchQuery("");
+  setSites([]);
+}, [onAddItem]);
 
   // ✅ item이 변경되면 편집 모드 종료
   React.useEffect(() => {
@@ -808,8 +816,7 @@ useEffect(() => {
       : rawName;
 
     const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
-
-   const row: any = {
+const row: any = {
   key: `${String(opt.option_id || rawName)}_${Date.now()}`,
   optionId: String(opt.option_id || rawName),
   optionName: rawName,
@@ -824,10 +831,8 @@ useEffect(() => {
   finalAmount: Math.round(displayQty * customerUnitPrice),
   months: defaultMonths,
   memo: res.memo || "",
-  lineSpec: { w: form.w, l: form.l, h: form.h },
-  specText: "",  // ✅ 자유입력 규격 초기화
+  lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },  // ✅ 자유입력은 빈 규격
 };
-
     setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
     setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
     setSites([]);
@@ -855,28 +860,7 @@ useEffect(() => {
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
- const updateRow = (
-  key: string,
-  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
-  value: any
-) => {
-  setSelectedItems((prev: any) =>
-    prev.map((item: any) => {
-      if (item.key !== key) return item;
-
-      const rent = isRentRow(item);
-
-      if (field === "displayName") return { ...item, displayName: String(value ?? "") };
-
-      // ✅ specText 자유입력 저장
-      if (field === "specText") {
-        return { ...item, specText: String(value ?? ""), showSpec: value ? 'y' : 'n' };
-      }
-
-      if (field === "lineSpec") {
-        return { ...item, lineSpec: value };
-      }
-
+ 
       if (field === "months" && rent) {
         const months = Math.max(1, Math.floor(Number(value || 1)));
         const newUnitPrice = item.baseUnitPrice * months;
@@ -1815,7 +1799,7 @@ type A4QuoteProps = {
   onUpdateQty?: (key: string, qty: number) => void;
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
- onUpdateSpec?: (key: string, specText: string) => void;
+ onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void;
@@ -2038,15 +2022,14 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   <td className="c wrap">{String(item.displayName || "")}</td>
 )}
  
-  <td className="c center">
+<td className="c center">
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
       spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }} 
-      specText={item.specText}
-      onChange={(newSpecText) => onUpdateSpec(item.key, newSpecText)} 
+      onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
     />
   ) : (
-    item.specText || ((item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h))
+    (item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h)
   )}
 </td>
   <td className="c center">
