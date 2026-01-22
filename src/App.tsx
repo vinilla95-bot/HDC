@@ -484,19 +484,19 @@ const commitFreeText = useCallback(() => {
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
   if (!isEditing) {
-    return (
-      <>
-        <td className="c center">&nbsp;</td>
-        <td className="c" onClick={() => setIsEditing(true)} style={{ cursor: "pointer" }}>&nbsp;</td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-      </>
-    );
-  }
+  return (
+    <>
+      <td className="c center">&nbsp;</td>
+      <td className="c" onClick={() => setIsEditing(true)} style={{ cursor: "pointer", color: "#ccc", fontSize: 11, textAlign: "center" }}>+ 품목 추가</td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+    </>
+  );
+}
 
   return (
     <>
