@@ -180,13 +180,14 @@ function EditableSpecCell({
         onKeyDown={handleKeyDown} 
         placeholder="규격 입력"
         style={{ 
-          width: "100%", 
-          padding: "2px 4px", 
-          textAlign: "center", 
-          border: "1px solid #ccc", 
-          fontSize: 12, 
-          boxSizing: "border-box", 
-          outline: "none" 
+    width: "100%", 
+    padding: "2px 4px", 
+    textAlign: "center",
+    border: "none",  // ✅ 테두리 제거
+    fontSize: 12, 
+    boxSizing: "border-box", 
+    outline: "none",
+    background: "transparent"
         }} 
       />
     );
@@ -334,13 +335,14 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
         }}
         placeholder="품목 검색"  
         style={{ 
-          width: "100%", 
-          padding: "2px 4px", 
-          textAlign: "center",
-          border: "1px solid #ccc", 
-          fontSize: 12, 
-          boxSizing: "border-box", 
-          outline: "none" 
+    width: "100%", 
+    padding: "2px 4px", 
+    textAlign: "center",
+    border: "none",  // ✅ 테두리 제거
+    fontSize: 12, 
+    boxSizing: "border-box", 
+    outline: "none",
+    background: "transparent" 
         }} 
       />
       {showDropdown && searchQuery.trim() && (
@@ -2406,6 +2408,7 @@ td input, td input:focus, td input:focus-visible {
   padding: 0;
   font-size: inherit;
 }
+
 
   @media print{
     @page {
