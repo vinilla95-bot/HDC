@@ -208,15 +208,18 @@ function InlineItemSearchCell({
   }, []);
 
   // ✅ Enter/Tab 저장, ESC 취소
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === "Tab") {
-      e.preventDefault();
-      commitCustomText();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      cancelEdit();
-    }
-  };
+ const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  if (e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    e.stopPropagation();   // ✅ 이거 추가
+    commitCustomText();
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    e.stopPropagation();   // ✅ 이것도
+    cancelEdit();
+  }
+};
+
 
   // ✅ blur(다른 곳 클릭)도 저장되게
   const handleBlur = () => {
