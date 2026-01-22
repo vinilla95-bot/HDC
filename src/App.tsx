@@ -217,7 +217,11 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const displayText = item.displayName || "";
-
+React.useEffect(() => {
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+}, [item.key]);
   const searchQueryRef = React.useRef(searchQuery);
   React.useEffect(() => {
     searchQueryRef.current = searchQuery;
