@@ -1985,10 +1985,8 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   return (
     <tr key={item.key ?? idx}>
   <td className="c center">{idx + 1}</td>
-  {editable && options && onSelectOption ? (
-  <td className="c wrap" style={{ position: 'relative', overflow: 'visible' }}>
-    <InlineItemCell item={item} options={options} form={form} onSelectOption={onSelectOption} />
-  </td>
+ {editable && options && onSelectOption ? (
+  <InlineItemCell item={item} options={options} form={form} onSelectOption={onSelectOption} />
 ) : (
   <td className="c wrap">{String(item.displayName || "")}</td>
 )}
