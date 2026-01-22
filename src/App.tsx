@@ -95,9 +95,27 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
 
 // ============ 인라인 규격 편집 셀 ============
 // ============ 인라인 규격 편집 셀 ============
-function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?: number }; onChange: (spec: { w: number; l: number; h?: number }) => void }) {
+// ============ 인라인 규격 편집 셀 ============
+function EditableSpecCell({ 
+  spec, 
+  onChange,
+  freeText,
+  onFreeTextChange
+}: { 
+  spec: { w: number; l: number; h?: number }; 
+  onChange: (spec: { w: number; l: number; h?: number }) => void;
+  freeText?: string;
+  onFreeTextChange?: (text: string) => void;
+}) {
   const [isEditing, setIsEditing] = useState(false);
-  const displayText = (spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '';
+  
+  // 자유입력이면 freeText 사용, 아니면 spec 객체로 표시
+  const displayText = freeText !== undefined && freeText !== '' 
+    ? freeText 
+    : (spec.w || spec.l || spec.h) 
+      ? `${spec.w}×${spec.l}×${spec.h || 0}` 
+      : '';
+  
   const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -109,24 +127,34 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
   }, [isEditing]);
   
   React.useEffect(() => { 
-    setTempValue((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : ''); 
-  }, [spec]);
+    setTempValue(displayText); 
+  }, [displayText]);
 
   const handleBlur = () => { 
     setIsEditing(false); 
     
     // 빈 값이면 빈 규격으로 저장
     if (!tempValue.trim()) {
-      onChange({ w: 0, l: 0, h: 0 });
+      if (onFreeTextChange) {
+        onFreeTextChange('');
+      } else {
+        onChange({ w: 0, l: 0, h: 0 });
+      }
       return;
     }
     
-    // "3×6×2.6" 또는 "3x6x2.6" 형식 파싱
+    // 자유입력 모드면 그대로 저장
+    if (onFreeTextChange) {
+      onFreeTextChange(tempValue.trim());
+      return;
+    }
+    
+    // 일반 모드: "3×6×2.6" 또는 "3x6x2.6" 형식 파싱
     const parts = tempValue.replace(/x/gi, '×').split('×').map(s => parseFloat(s.trim()) || 0);
     const newSpec = {
-      w: parts[0],
-      l: parts[1],
-      h: parts[2]
+      w: parts[0] || 0,
+      l: parts[1] || 0,
+      h: parts[2] || 0
     };
     onChange(newSpec);
   };
@@ -148,6 +176,7 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
         onChange={(e) => setTempValue(e.target.value)} 
         onBlur={handleBlur} 
         onKeyDown={handleKeyDown} 
+        placeholder="규격 입력"
         style={{ 
           width: "100%", 
           padding: "2px 4px", 
@@ -861,10 +890,9 @@ const row: any = {
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
- 
-      const updateRow = (
+ const updateRow = (
   key: string,
-  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec",
+  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
   value: any
 ) => {
   setSelectedItems((prev: any) =>
@@ -878,7 +906,11 @@ const row: any = {
       }
 
       if (field === "lineSpec") {
-        return { ...item, lineSpec: value };
+        return { ...item, lineSpec: value, specText: '' };
+      }
+
+      if (field === "specText") {
+        return { ...item, specText: String(value ?? "") };
       }
 
       if (field === "months" && rent) {
@@ -1494,7 +1526,8 @@ const inventoryScreen = (
             computedItems={computedItems}
             blankRows={blankRows}
             fmt={fmt}
-           onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
+          onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
+onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
   editable={true}
             supply_amount={supply_amount}
             vat_amount={vat_amount}
@@ -1796,12 +1829,11 @@ type A4QuoteProps = {
     optQ: string;
     quoteDate?: string;
     vatIncluded?: boolean;
-    
   };
-  setForm?: React.Dispatch<React.SetStateAction<any>>;  // ✅ 추가
-  bizcards?: Bizcard[];  // ✅ 추가
-  selectedBizcardId?: string;  // ✅ 추가
-  setSelectedBizcardId?: (id: string) => void;  // ✅ 추가
+  setForm?: React.Dispatch<React.SetStateAction<any>>;
+  bizcards?: Bizcard[];
+  selectedBizcardId?: string;
+  setSelectedBizcardId?: (id: string) => void;
   computedItems: any[];
   blankRows: any[];
   fmt: (n: number) => string;
@@ -1819,12 +1851,12 @@ type A4QuoteProps = {
   onUpdateQty?: (key: string, qty: number) => void;
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
-onUpdateSpec?: (key: string, spec: { w: number; l: number; h?: number }) => void;
+  onUpdateSpec?: (key: string, spec: { w: number; l: number; h?: number }) => void;
+  onUpdateSpecText?: (key: string, text: string) => void;
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void;
 };
-
 
 
 function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, editable, onSiteSearch, onAddDelivery }: A4QuoteProps) {
@@ -2046,10 +2078,12 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
       spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }} 
+      specText={item.specText}
       onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
+      onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
     />
   ) : (
-    (item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h)
+    item.specText || ((item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h))
   )}
 </td>
   <td className="c center">
