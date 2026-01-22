@@ -114,6 +114,7 @@ function EditableNumberCell({ value, onChange, editable = true }: { value: numbe
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    console.log("🟢 키 입력:", e.key);  // ← 이거 찍혀요?
     if (e.key === "Enter") {
       handleBlur();
     } else if (e.key === "Escape") {
