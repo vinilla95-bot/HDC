@@ -92,7 +92,7 @@ function formatKoDate(v: any) {
   return String(v);
 }
 // ============ 인라인 숫자 편집 셀 ============
-function EditableNumberCell({ value, onChange }: { value: number; onChange: (val: number) => void }) {
+function EditableNumberCell({ value, onChange, editable = true }: { value: number; onChange: (val: number) => void; editable?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(String(value));
   const inputRef = useRef<HTMLInputElement>(null);
@@ -113,14 +113,19 @@ function EditableNumberCell({ value, onChange }: { value: number; onChange: (val
     onChange(Number(tempValue) || 0); 
   };
   
-const handleKeyDown = (e: React.KeyboardEvent) => {
-  if (e.key === "Enter") {
-    handleBlur();
-  } else if (e.key === "Escape") {
-    setTempValue(String(value));
-    setIsEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleBlur();
+    } else if (e.key === "Escape") {
+      setTempValue(String(value));
+      setIsEditing(false);
+    }
+  };
+
+  if (!editable) {
+    return <span style={{ display: "block", textAlign: "right", width: "100%" }}>{money(value)}</span>;
   }
-};
+
   if (isEditing) {
     return (
       <input 
@@ -152,13 +157,15 @@ function InlineItemSearchCell({
   options, 
   onSelectOption, 
   onUpdateName,
-  onDelete 
+  onDelete,
+  editable = true
 }: { 
   item: any; 
   options: any[]; 
   onSelectOption: (opt: any) => void;
   onUpdateName: (name: string) => void;
   onDelete: () => void;
+  editable?: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState(item.displayName || "");
@@ -176,15 +183,15 @@ function InlineItemSearchCell({
   useEffect(() => {
     setSearchQuery(item.displayName || "");
   }, [item.displayName]);
-  
-const filteredOpts = useMemo(() => {
-  const q = searchQuery.trim().toLowerCase();
-  if (!q || !options || options.length === 0) return [];
-  return options.filter((o: any) => {
-    const name = String(o.option_name || "").toLowerCase();
-    return name.includes(q) || matchKorean(name, q);
-  }).slice(0, 12);
-}, [searchQuery, options]);
+
+  const filteredOpts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q || !options || options.length === 0) return [];
+    return options.filter((o: any) => {
+      const name = String(o.option_name || "").toLowerCase();
+      return name.includes(q) || matchKorean(name, q);
+    }).slice(0, 12);
+  }, [searchQuery, options]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -221,6 +228,10 @@ const filteredOpts = useMemo(() => {
     }
   };
 
+  if (!editable) {
+    return <span style={{ display: 'block', width: '100%', textAlign: 'left' }}>{item.displayName || "(-)"}</span>;
+  }
+
   if (isEditing) {
     return (
       <div style={{ position: 'relative', textAlign: 'left', width: '100%' }}>
@@ -246,7 +257,7 @@ const filteredOpts = useMemo(() => {
             boxSizing: 'border-box'
           }}
         />
-       {showDropdown && filteredOpts.length > 0 && (
+        {showDropdown && filteredOpts.length > 0 && (
           <div 
             ref={dropdownRef}
             style={{ 
@@ -291,22 +302,21 @@ const filteredOpts = useMemo(() => {
     );
   }
 
- return (
-  <span
-    onClick={() => { 
-      setSearchQuery(item.displayName || ""); 
-      setIsEditing(true); 
-    }}
-    style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
-    title="클릭하여 수정 또는 품목 검색"
-  >
-    {item.displayName || "(-)"}
-  </span>
-);
+  return (
+    <span
+      onClick={() => { 
+        setSearchQuery(item.displayName || ""); 
+        setIsEditing(true); 
+      }}
+      style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
+      title="클릭하여 수정 또는 품목 검색"
+    >
+      {item.displayName || "(-)"}
+    </span>
+  );
 }
-
 // ============ 인라인 텍스트 편집 셀 ============
-function EditableTextCell({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+function EditableTextCell({ value, onChange, editable = true }: { value: string; onChange: (val: string) => void; editable?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -326,14 +336,19 @@ function EditableTextCell({ value, onChange }: { value: string; onChange: (val: 
     setIsEditing(false); 
     onChange(tempValue); 
   };
- const handleKeyDown = (e: React.KeyboardEvent) => {
-  if (e.key === "Enter") {
-    handleBlur();
-  } else if (e.key === "Escape") {
-    setTempValue(String(value));
-    setIsEditing(false);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleBlur();
+    } else if (e.key === "Escape") {
+      setTempValue(String(value));
+      setIsEditing(false);
+    }
+  };
+
+  if (!editable) {
+    return <span style={{ display: "block", width: "100%", textAlign: "left" }}>{value || "(-)""}</span>;
   }
-};
 
   if (isEditing) {
     return (
@@ -1171,7 +1186,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
- {items.map((item: any, idx: number) => {
+{items.map((item: any, idx: number) => {
   const supply = item.qty * item.unitPrice;
   const vat = Math.round(supply * 0.1);
   const showSpec = String(item.showSpec || "").toLowerCase() === "y";
@@ -1207,42 +1222,46 @@ const quotePreviewHtml = useMemo(() => {
           }}
           onUpdateName={(name) => updateEditItemName(item.key, name)}
           onDelete={() => deleteEditItem(item.key)}
+          editable={editMode}
         />
       </td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-  <EditableTextCell 
-    value={specText} 
-    onChange={(val) => {
-      const parts = val.split('x').map(s => parseFloat(s.trim()));
-      if (parts.length >= 2) {
-        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-          ...it,
-          lineSpec: { 
-            w: parts[0] || it.lineSpec?.w || 3, 
-            l: parts[1] || it.lineSpec?.l || 6, 
-            h: parts[2] || it.lineSpec?.h || 2.6 
-          },
-          showSpec: 'y'
-        }));
-      } else if (val.trim() === '') {
-        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-          ...it,
-          showSpec: 'n'
-        }));
-      }
-    }} 
-  />
-</td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-        <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} />
+        <EditableTextCell 
+          value={specText} 
+          onChange={(val) => {
+            const parts = val.split('x').map(s => parseFloat(s.trim()));
+            if (parts.length >= 2) {
+              setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+                ...it,
+                lineSpec: { 
+                  w: parts[0] || it.lineSpec?.w || 3, 
+                  l: parts[1] || it.lineSpec?.l || 6, 
+                  h: parts[2] || it.lineSpec?.h || 2.6 
+                },
+                showSpec: 'y'
+              }));
+            } else if (val.trim() === '') {
+              setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+                ...it,
+                showSpec: 'n'
+              }));
+            }
+          }}
+          editable={editMode}
+        />
+      </td>
+      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+        <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
       </td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-        <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} />
+        <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} editable={editMode} />
       </td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(supply)}</td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(vat)}</td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-        <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: 0, margin: 0, lineHeight: 1, fontSize: 12 }}>✕</button>
+        {editMode && (
+          <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: 0, margin: 0, lineHeight: 1, fontSize: 12 }}>✕</button>
+        )}
       </td>
     </tr>
   );
