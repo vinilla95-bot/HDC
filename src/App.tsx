@@ -184,6 +184,35 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
+  // ✅ 최신 값 참조용 ref 추가
+  const searchQueryRef = React.useRef(searchQuery);
+  React.useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  // ✅ 자유입력 저장 함수
+  const commitFreeText = React.useCallback(() => {
+    const trimmed = (searchQueryRef.current || "").trim();
+    if (trimmed) {
+      onSelectOption(item, { 
+        option_id: item.optionId || `custom_${Date.now()}`,
+        option_name: trimmed,
+        unit: item.unit || 'EA',
+        unit_price: item.baseUnitPrice || 0,
+        show_spec: item.showSpec || 'n',
+        _isDisplayNameOnly: true
+      }, {
+        qty: item.displayQty || 1, 
+        unitPrice: item.customerUnitPrice || 0,
+        amount: item.finalAmount || 0, 
+        unit: item.unit || 'EA' 
+      });
+    }
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+  }, [item, onSelectOption]);
+
   // ✅ item이 변경되면 편집 모드 종료
   React.useEffect(() => {
     setIsEditing(false);
@@ -197,34 +226,18 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
-  React.useEffect(() => {
+ React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        if (searchQuery.trim()) {
-          onSelectOption(item, { 
-            option_id: item.optionId || `custom_${Date.now()}`,
-            option_name: searchQuery.trim(),
-            unit: item.unit || 'EA',
-            unit_price: item.baseUnitPrice || 0,
-            show_spec: item.showSpec || 'n',
-            _isDisplayNameOnly: true
-          }, {
-            qty: item.displayQty || 1, 
-            unitPrice: item.customerUnitPrice || 0,
-            amount: item.finalAmount || 0, 
-            unit: item.unit || 'EA' 
-          });
-        }
-        setShowDropdown(false); 
-        setIsEditing(false); 
-        setSearchQuery("");
+        // ✅ 바깥 클릭 시 자유입력 저장
+        commitFreeText();
       }
     };
     if (isEditing) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isEditing, searchQuery, item, onSelectOption]);
+  }, [isEditing, commitFreeText]);
 
  // ✅ 수정: 해당 행의 lineSpec 사용
 const handleSelect = (opt: any) => {
@@ -255,13 +268,26 @@ const handleSelect = (opt: any) => {
   // 편집 모드일 때
   return (
     <td className="c wrap" style={{ position: "relative", padding: 0, overflow: "visible" }}>
-      <input 
+       <input 
         ref={inputRef} 
         type="text" 
         value={searchQuery} 
         onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} 
         onFocus={() => setShowDropdown(true)} 
-        placeholder="품목 검색..." 
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            commitFreeText();  // ✅ Enter로 자유입력 저장
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowDropdown(false);
+            setIsEditing(false);
+            setSearchQuery("");
+          }
+        }}
+        placeholder="품목 검색..."  
         autoFocus 
         style={{ 
           width: "100%", 
@@ -310,6 +336,31 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ✅ 최신 값 참조용 ref 추가
+  const searchQueryRef = useRef(searchQuery);
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  // ✅ 자유 입력 저장 함수
+  const commitFreeText = useCallback(() => {
+    const trimmed = (searchQueryRef.current || "").trim();
+    if (trimmed) {
+      const customOpt = { 
+        option_id: `custom_${Date.now()}`, 
+        option_name: trimmed,
+        unit: 'EA',
+        unit_price: 0,
+        show_spec: 'n'
+      };
+      onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
+    }
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+    setSites([]);
+  }, [onAddItem]);
+
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -350,27 +401,15 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
         dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
         inputRef.current && !inputRef.current.contains(e.target as Node)
       ) {
-        if (searchQuery.trim() && sites.length === 0 && filteredOptions.length === 0) {
-          const customOpt = { 
-            option_id: `custom_${Date.now()}`, 
-            option_name: searchQuery.trim(),
-            unit: 'EA',
-            unit_price: 0,
-            show_spec: 'n'
-          };
-          onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
-        }
-        setShowDropdown(false);
-        setIsEditing(false);
-        setSearchQuery("");
-        setSites([]);
+        // ✅ 바깥 클릭 시 자유입력 저장
+        commitFreeText();
       }
     };
     if (isEditing) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isEditing, searchQuery, sites.length, filteredOptions.length, onAddItem]);
+  }, [isEditing, commitFreeText]);
 
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
@@ -424,6 +463,19 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
             setShowDropdown(true);
           }}
           onFocus={() => setShowDropdown(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              commitFreeText();  // ✅ Enter로 자유입력 저장
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              setShowDropdown(false);
+              setIsEditing(false);
+              setSearchQuery("");
+              setSites([]);
+            }
+          }}
           placeholder="검색..."
           style={{ 
             width: "100%", 
