@@ -483,11 +483,15 @@ const commitFreeText = useCallback(() => {
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  if (!isEditing) {
+ if (!isEditing) {
   return (
     <>
       <td className="c center">&nbsp;</td>
-      <td className="c"></td>
+      <td 
+        className="c" 
+        onClick={() => setIsEditing(true)}
+        style={{ cursor: 'pointer' }}
+      ></td>
       <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
