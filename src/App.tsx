@@ -191,23 +191,24 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   }, [searchQuery]);
 
   // ✅ 자유입력 저장 함수
+// ✅ 자유입력 저장 함수
   const commitFreeText = useCallback(() => {
-  const trimmed = (searchQueryRef.current || "").trim();
-  if (trimmed) {
-    const customOpt = { 
-      option_id: `custom_${Date.now()}`, 
-      option_name: trimmed,
-      unit: 'EA',
-      unit_price: 0,
-      show_spec: 'n'  // ✅ 자유입력은 규격 표시 안함
-    };
-    onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA', lineSpec: { w: 0, l: 0, h: 0 } });
-  }
-  setShowDropdown(false);
-  setIsEditing(false);
-  setSearchQuery("");
-  setSites([]);
-}, [onAddItem]);
+    const trimmed = (searchQueryRef.current || "").trim();
+    if (trimmed) {
+      const customOpt = { 
+        option_id: `custom_${Date.now()}`, 
+        option_name: trimmed,
+        unit: 'EA',
+        unit_price: 0,
+        show_spec: 'n'
+      };
+      const calculated = { qty: 1, unitPrice: 0, amount: 0, unit: 'EA', lineSpec: { w: 0, l: 0, h: 0 } };
+      onSelectOption(item, customOpt, calculated);
+    }
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+  }, [item, onSelectOption]);
 
   // ✅ item이 변경되면 편집 모드 종료
   React.useEffect(() => {
@@ -1493,7 +1494,7 @@ const inventoryScreen = (
             computedItems={computedItems}
             blankRows={blankRows}
             fmt={fmt}
-           onUpdateSpec={(key, specText) => updateRow(key, "specText", specText)}
+           onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
   editable={true}
             supply_amount={supply_amount}
             vat_amount={vat_amount}
