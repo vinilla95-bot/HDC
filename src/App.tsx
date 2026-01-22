@@ -230,7 +230,8 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   // 편집 모드
   if (isEditing) {
     return (
-      <td className="c wrap" style={{ position: "relative", padding: 0, overflow: "visible" }}>
+     // 편집 모드일 때
+<td className="c wrap" style={{ position: "relative", overflow: "visible" }}>
         <input 
           ref={inputRef} 
           type="text" 
