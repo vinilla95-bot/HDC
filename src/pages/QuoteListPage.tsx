@@ -1138,7 +1138,8 @@ const quotePreviewHtml = useMemo(() => {
 
 
       {/* 품목 테이블 */}
-<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
+{/* 품목 테이블 */}
+<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8, overflow: 'visible' }}>
   <thead>
     <tr>
       <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '5%' }}>순번</th>
@@ -1161,7 +1162,8 @@ const quotePreviewHtml = useMemo(() => {
   return (
     <tr key={item.key || idx}>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+     <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'visible', position: 'relative' }}>
+
         <InlineItemSearchCell
           item={item}
           options={options}
