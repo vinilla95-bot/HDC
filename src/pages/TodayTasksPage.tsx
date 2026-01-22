@@ -187,16 +187,10 @@ export default function TodayTasksPage() {
             const deliveryDate = new Date(quote.delivery_date);
             const orderDate = new Date(deliveryDate);
             orderDate.setDate(orderDate.getDate() - rule.lead_days);
-
-            const message = buildMessage(rule.message_template, {
-              month: deliveryDate.getMonth() + 1,
-              day: deliveryDate.getDate(),
-              qty: item.qty || 1,
-              customer: quote.customer_name || "",
-              option_name: item.optionName || item.displayName || "",
-              spec: quote.spec || "",
-              color: extractColor(optionName) || "색상미정"
-            });
+// 수정
+const itemName = item.optionName || item.displayName || item.itemName || "";
+const itemQty = item.qty || 1;
+const message = `사장님 ${itemName}-${itemQty}개 주문합니다! ${quote.customer_name || ""}`;
 
             await supabase.from("pending_orders").insert({
               quote_id: quote.quote_id,
