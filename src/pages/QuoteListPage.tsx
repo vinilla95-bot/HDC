@@ -152,16 +152,16 @@ function EditableNumberCell({ value, onChange, editable = true }: { value: numbe
   );
 }
 
-function InlineItemSearchCell({ 
-  item, 
-  options, 
-  onSelectOption, 
+function InlineItemSearchCell({
+  item,
+  options,
+  onSelectOption,
   onUpdateName,
   onDelete,
-  editable = true
-}: { 
-  item: any; 
-  options: any[]; 
+  editable = true,
+}: {
+  item: any;
+  options: any[];
   onSelectOption: (opt: any) => void;
   onUpdateName: (name: string) => void;
   onDelete: () => void;
@@ -170,59 +170,92 @@ function InlineItemSearchCell({
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const searchQueryRef = useRef(searchQuery);  // ✅ ref 추가
 
-  // ✅ searchQuery 변경 시 ref도 업데이트
+  // ✅ 최신 값 참조용
+  const searchQueryRef = useRef(searchQuery);
   useEffect(() => {
     searchQueryRef.current = searchQuery;
   }, [searchQuery]);
-  
+
   const filteredOpts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
-    
-    return options.filter((o: any) => {
-      const name = String(o.option_name || "").toLowerCase();
-      return name.includes(q) || matchKorean(name, q);
-    }).slice(0, 15);
+    return options
+      .filter((o: any) => {
+        const name = String(o.option_name || "").toLowerCase();
+        return name.includes(q) || matchKorean(name, q);
+      })
+      .slice(0, 15);
   }, [searchQuery, options]);
 
- // saveAsCustomText 함수 수정
-const saveAsCustomText = useCallback(() => {
-  console.log("🔴 saveAsCustomText 호출됨!");
-  console.log("🔴 searchQueryRef.current:", searchQueryRef.current);
-  const trimmed = searchQueryRef.current.trim();
-  if (trimmed) {
-    console.log("🔴 onUpdateName 호출:", trimmed);
-    onUpdateName(trimmed);
-  }
-  setShowDropdown(false);
-  setIsEditing(false);
-  setSearchQuery("");
-}, [onUpdateName]);
-
-// handleKeyDown도 확인
-const handleKeyDown = (e: React.KeyboardEvent) => {
-  console.log("🟢 키 입력:", e.key);
-  if (e.key === "Enter" || e.key === "Tab") {
-    e.preventDefault();
-    saveAsCustomText();
-  } else if (e.key === "Escape") {
+  const commitCustomText = useCallback(() => {
+    const trimmed = (searchQueryRef.current || "").trim();
+    if (trimmed) {
+      onUpdateName(trimmed); // ✅ 자유 입력 저장
+    }
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
-  }
-};
+  }, [onUpdateName]);
+
+  const cancelEdit = useCallback(() => {
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+  }, []);
+
+  // ✅ Enter/Tab 저장, ESC 취소
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      commitCustomText();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEdit();
+    }
+  };
+
+  // ✅ blur(다른 곳 클릭)도 저장되게
+  const handleBlur = () => {
+    // blur가 dropdown 클릭 때문에 먼저 발생하는 케이스 방어:
+    // dropdown 안을 클릭하면 mousedown에서 onSelectOption이 실행되고,
+    // 그 뒤 blur가 오더라도 이미 isEditing=false로 바뀌거나 query reset 되어서 문제 없음.
+    commitCustomText();
+  };
+
+  // ✅ editing 중 바깥 클릭하면 저장(=blur 유도) + dropdown도 닫힘
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const onDocMouseDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      const inInput = inputRef.current?.contains(t);
+      const inDrop = dropdownRef.current?.contains(t);
+
+      // input/dropdown 밖 클릭이면 → 저장 + 닫기
+      if (!inInput && !inDrop) {
+        commitCustomText();
+      }
+    };
+
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [isEditing, commitCustomText]);
 
   if (!editable) {
-    return <span style={{ display: 'block', width: '100%', textAlign: 'left' }}>{item.displayName || "(-)"}</span>;
+    return (
+      <span style={{ display: "block", width: "100%", textAlign: "left" }}>
+        {item.displayName || "(-)"}
+      </span>
+    );
   }
 
   if (isEditing) {
     return (
-      <div style={{ position: 'relative', textAlign: 'left', width: '100%' }}>
+      <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
         <input
           ref={inputRef}
           type="text"
@@ -232,67 +265,103 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
             setShowDropdown(true);
           }}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           onFocus={() => setShowDropdown(true)}
           placeholder="품목명 입력..."
           autoFocus
-          style={{ 
-            width: '100%', 
-            padding: '4px 6px', 
-            border: '1px solid #2e5b86', 
+          style={{
+            width: "100%",
+            padding: "4px 6px",
+            border: "1px solid #2e5b86",
             borderRadius: 4,
-            fontSize: 12, 
-            outline: 'none',
-            textAlign: 'left',
-            boxSizing: 'border-box'
+            fontSize: 12,
+            outline: "none",
+            textAlign: "left",
+            boxSizing: "border-box",
           }}
         />
+
         {showDropdown && searchQuery.trim() && filteredOpts.length > 0 && (
-          <div 
+          <div
             ref={dropdownRef}
-            style={{ 
-              position: 'absolute', 
-              top: '100%', 
-              left: 0, 
-              width: '300px',
-              maxHeight: 300, 
-              overflowY: 'auto', 
-              background: '#fff', 
-              border: '1px solid #ccc',
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              width: "300px",
+              maxHeight: 300,
+              overflowY: "auto",
+              background: "#fff",
+              border: "1px solid #ccc",
               borderRadius: 6,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               zIndex: 99999,
-              textAlign: 'left'
+              textAlign: "left",
             }}
           >
             {filteredOpts.map((opt: any) => {
-              const isRent = String(opt.option_name || "").includes("임대");
-              
+              const rawName = String(opt.option_name || "");
+              const isRent = rawName.includes("임대");
+
               if (isRent) {
                 return (
-                  <div key={opt.option_id} style={{ padding: '10px 12px', borderBottom: '1px solid #eee', textAlign: 'left', background: '#fff' }}>
-                    <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                    <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{opt.unit || 'EA'} · {money(opt.unit_price || 0)}원</div>
-                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div
+                    key={opt.option_id}
+                    style={{
+                      padding: "10px 12px",
+                      borderBottom: "1px solid #eee",
+                      textAlign: "left",
+                      background: "#fff",
+                    }}
+                    // ✅ dropdown 클릭 시 blur 먼저 와도 옵션 선택이 우선되게 mousedown 사용
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    <div style={{ fontWeight: 700 }}>{rawName}</div>
+                    <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>
+                      {opt.unit || "EA"} · {money(opt.unit_price || 0)}원
+                    </div>
+
+                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
                       <input
                         type="number"
                         defaultValue={1}
                         min={1}
                         id={`rent-inline-${opt.option_id}`}
                         onClick={(e) => e.stopPropagation()}
-                        style={{ width: 40, padding: '4px', border: '1px solid #ccc', borderRadius: 4, textAlign: 'center', fontSize: 11 }}
+                        style={{
+                          width: 40,
+                          padding: "4px",
+                          border: "1px solid #ccc",
+                          borderRadius: 4,
+                          textAlign: "center",
+                          fontSize: 11,
+                        }}
                       />
                       <span style={{ fontSize: 11 }}>개월</span>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
+                          const input = document.getElementById(
+                            `rent-inline-${opt.option_id}`
+                          ) as HTMLInputElement;
                           const months = Number(input?.value) || 1;
-                         onSelectOption({ ...opt, _months: months });
-setShowDropdown(false);
-setIsEditing(false);
-setSearchQuery("");
+
+                          onSelectOption({ ...opt, _months: months });
+
+                          // ✅ 선택했으면 편집 종료
+                          setShowDropdown(false);
+                          setIsEditing(false);
+                          setSearchQuery("");
                         }}
-                        style={{ padding: '4px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+                        style={{
+                          padding: "4px 8px",
+                          background: "#e3f2fd",
+                          border: "none",
+                          borderRadius: 4,
+                          cursor: "pointer",
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
                       >
                         선택
                       </button>
@@ -300,30 +369,33 @@ setSearchQuery("");
                   </div>
                 );
               }
-              
+
               return (
                 <div
                   key={opt.option_id}
+                  // ✅ blur 전에 먼저 실행되게 mousedown
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
-  onSelectOption(opt);
-  setShowDropdown(false);
-  setIsEditing(false);
-  setSearchQuery("");
-}}
-                  style={{ 
-                    padding: '10px 12px', 
-                    cursor: 'pointer', 
-                    borderBottom: '1px solid #eee', 
-                    fontSize: 12,
-                    textAlign: 'left',
-                    background: '#fff'
+                    onSelectOption(opt);
+
+                    setShowDropdown(false);
+                    setIsEditing(false);
+                    setSearchQuery("");
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                  style={{
+                    padding: "10px 12px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee",
+                    fontSize: 12,
+                    textAlign: "left",
+                    background: "#fff",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                 >
-                  <div style={{ fontWeight: 700, textAlign: 'left' }}>{opt.option_name}</div>
-                  <div style={{ fontSize: 10, color: '#888', marginTop: 2, textAlign: 'left' }}>
-                    {opt.unit || 'EA'} · {money(opt.unit_price || 0)}원
+                  <div style={{ fontWeight: 700, textAlign: "left" }}>{rawName}</div>
+                  <div style={{ fontSize: 10, color: "#888", marginTop: 2, textAlign: "left" }}>
+                    {opt.unit || "EA"} · {money(opt.unit_price || 0)}원
                   </div>
                 </div>
               );
@@ -339,14 +411,16 @@ setSearchQuery("");
       onClick={() => {
         setSearchQuery(item.displayName || "");
         setIsEditing(true);
+        // focus는 input에서 autoFocus로 처리
       }}
-      style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
+      style={{ cursor: "pointer", display: "block", width: "100%", textAlign: "left" }}
       title="클릭하여 수정"
     >
       {item.displayName || " "}
     </span>
   );
 }
+
 function EmptyRowSearchCell({ 
   options, 
   current,
