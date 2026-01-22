@@ -1821,7 +1821,6 @@ type A4QuoteProps = {
   onDeleteItem?: (key: string) => void;
 onUpdateSpec?: (key: string, spec: { w: number; l: number; h?: number }) => void;
   editable?: boolean;
-  editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void;
 };
