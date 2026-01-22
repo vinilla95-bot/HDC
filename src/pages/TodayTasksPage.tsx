@@ -280,7 +280,12 @@ const generateDispatchMessage = (task: DeliveryTask) => {
     await supabase.from("pending_orders").update({ status }).eq("id", id);
     setPendingOrders(prev => prev.map(o => (o.id === id ? { ...o, status } : o)));
   };
-
+const deleteOrder = async (id: number) => {
+  if (!confirm("정말 삭제하시겠습니까?")) return;
+  
+  await supabase.from("pending_orders").delete().eq("id", id);
+  setPendingOrders(prev => prev.filter(o => o.id !== id));
+};
   const updateDispatchStatus = async (quoteId: string, status: string) => {
     await supabase.from("quotes").update({ dispatch_status: status }).eq("quote_id", quoteId);
     setDeliveryTasks(prev => prev.map(d => (d.quote_id === quoteId ? { ...d, dispatch_status: status } : d)));
