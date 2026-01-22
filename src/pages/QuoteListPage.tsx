@@ -347,7 +347,7 @@ function EditableTextCell({ value, onChange, editable = true }: { value: string;
   };
 
   if (!editable) {
-    return <span style={{ display: "block", width: "100%", textAlign: "left" }}>{value || "(-)""}</span>;
+    return <span style={{ display: "block", width: "100%", textAlign: "left" }}>{value || "(-)"}</span>;
   }
 
   if (isEditing) {
