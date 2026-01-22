@@ -191,6 +191,7 @@ function InlineItemSearchCell({
   // ✅ 자유입력 저장 함수 (ref 사용)
   const saveAsCustomText = useCallback(() => {
     const trimmed = searchQueryRef.current.trim();
+    console.log("saveAsCustomText 호출됨, trimmed:", trimmed);
     if (trimmed) {
       onUpdateName(trimmed);
     }
@@ -802,6 +803,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   };
 
   const updateEditItemName = (key: string, newName: string) => {
+    console.log("updateEditItemName 호출됨:", key, newName);
     setEditItems(prev => prev.map(item => 
       item.key === key ? { ...item, displayName: newName } : item
     ));
