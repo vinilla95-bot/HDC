@@ -166,6 +166,8 @@ function InlineItemSearchCell({
   onDelete: () => void;
   editable?: boolean;
 }) {
+    console.log('InlineItemSearchCell - options 받음:', options?.length);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
