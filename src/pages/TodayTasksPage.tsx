@@ -165,6 +165,11 @@ export default function TodayTasksPage() {
    const { data: existingOrders } = await supabase
   .from("pending_orders")
   .select("quote_id, rule_id, status");
+     // ✅ 이 줄 추가!
+  const existingSet = new Set(
+    (existingOrders || []).map((o: any) => `${o.quote_id}_${o.rule_id}`)
+  );
+
 
     for (const quote of quotes) {
       if (!quote.items || quote.items.length === 0) continue;
