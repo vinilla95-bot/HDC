@@ -38,6 +38,22 @@ const formatDateDisplay = (dateStr: string) => {
   return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
 };
 
+
+type UsedInventoryItem = {
+  id: string;
+  item_number: number;
+  spec: string;
+  quantity: number;
+  condition: string;
+  price: number;
+  note: string;
+  photo_url: string;
+  status: string;
+  created_at: string;
+};
+
+type MainTabType = "new" | "used";
+
 export default function InventoryPage({ 
   onBack,
   onNavigate 
@@ -58,6 +74,8 @@ export default function InventoryPage({
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [depositTab, setDepositTab] = useState<DepositTabType>("all");
+  const [mainTab, setMainTab] = useState<MainTabType>("new");
+const [usedItems, setUsedItems] = useState<UsedInventoryItem[]>([]);
   
   const [newItem, setNewItem] = useState({
     customer_name: "",
@@ -71,17 +89,18 @@ export default function InventoryPage({
      drawing_no: "",
   });
 
-  const loadInventory = async () => {
+ const loadInventory = async () => {
   setLoading(true);
   
-  // ✅ inventory와 quotes 둘 다 조회
-  const [inventoryRes, quotesRes] = await Promise.all([
+  const [inventoryRes, quotesRes, usedRes] = await Promise.all([
     supabase.from("inventory").select("*"),
-    supabase.from("quotes").select("quote_id, contract_date, drawing_no").eq("status", "confirmed")
+    supabase.from("quotes").select("quote_id, contract_date, drawing_no").eq("status", "confirmed"),
+    supabase.from("used_inventory").select("*").order("created_at", { ascending: false })
   ]);
     
   if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
   if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
+  if (usedRes.error) console.error("Used inventory load error:", usedRes.error);
   
   if (inventoryRes.data) {
     const sorted = [...inventoryRes.data].sort((a, b) => {
@@ -98,6 +117,7 @@ export default function InventoryPage({
   }
   
   setAllQuotes(quotesRes.data || []);
+  setUsedItems(usedRes.data || []);
   setLoading(false);
 };
 
@@ -377,161 +397,76 @@ const getStatusColor = (status: string) => {
         }
       `}</style>
 
-      {/* 헤더 */}
+    {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
           📦 재고현황
           <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>
-            (총 {allItems.length}건)
+            (총 {allItems.length + usedItems.length}건)
           </span>
         </h2>
+        {mainTab === "new" && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              padding: "8px 16px",
+              background: "#28a745",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            + 새 항목 추가
+          </button>
+        )}
+      </div>
+
+      {/* 메인 탭: 신품/중고 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => setMainTab("new")}
           style={{
-            padding: "8px 16px",
-            background: "#28a745",
-            color: "#fff",
+            padding: "12px 24px",
+            background: mainTab === "new" ? "#2e5b86" : "#e5e7eb",
+            color: mainTab === "new" ? "#fff" : "#666",
             border: "none",
             borderRadius: 8,
             fontWeight: 700,
+            fontSize: 15,
             cursor: "pointer",
           }}
         >
-          + 새 항목 추가
+          📦 신품 재고 ({allItems.length})
+        </button>
+        <button
+          onClick={() => setMainTab("used")}
+          style={{
+            padding: "12px 24px",
+            background: mainTab === "used" ? "#f59e0b" : "#e5e7eb",
+            color: mainTab === "used" ? "#fff" : "#666",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: "pointer",
+          }}
+        >
+          🏷️ 중고 재고 ({usedItems.length})
         </button>
       </div>
 
-    {/* ✅ 요약 카드 영역 */}
+    {/* ✅ 신품 재고 영역 */}
+    {mainTab === "new" && (
+      <>
+      {/* ✅ 요약 카드 영역 */}
       <div style={{ 
         display: "grid", 
         gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
         gap: 16, 
         marginBottom: 20 
       }}>
-        {/* 작업지시완료 완료 카드 */}
-        <div style={{
-          background: "#fff",
-          borderRadius: 12,
-          padding: 20,
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
-        }}>
-          <div style={{ 
-            fontSize: 14, 
-            fontWeight: 800, 
-            color: "#28a745", 
-            marginBottom: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 8
-          }}>
-            ✅ 작업지시완료 완료
-          </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {["3x3", "3x4", "3x6", "3x9"].map(spec => (
-              <div 
-                key={spec}
-                style={{ 
-                  background: "#f0f9f0", 
-                  padding: "10px 16px", 
-                  borderRadius: 8,
-                  textAlign: "center",
-                  minWidth: 60
-                }}
-              >
-                <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>
-                  {completedCounts[spec] || 0}
-                </div>
-                <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 출고 가능 카드 */}
-        <div style={{
-          background: "#fff",
-          borderRadius: 12,
-          padding: 20,
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
-        }}>
-          <div style={{ 
-            fontSize: 14, 
-            fontWeight: 800, 
-            color: "#ffc107", 
-            marginBottom: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 8
-          }}>
-            🚚 출고 가능 (출고대기)
-            <span style={{ 
-              background: "#ffc107", 
-              color: "#000", 
-              padding: "2px 8px", 
-              borderRadius: 10, 
-              fontSize: 12,
-              fontWeight: 700
-            }}>
-              {waitingItems.length}대
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {["3x3", "3x4", "3x6", "3x9"].map(spec => (
-              <div 
-                key={spec}
-                style={{ 
-                  background: "#fffbeb", 
-                  padding: "10px 16px", 
-                  borderRadius: 8,
-                  textAlign: "center",
-                  minWidth: 60
-                }}
-              >
-                <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>
-                  {waitingBySpec[spec] || 0}
-                </div>
-                <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ✅ 입금 탭 버튼 */}
-      {/* ✅ 입금 탭 버튼 */}
-      <div style={{
-        display: "flex",
-        background: "#fff",
-        borderRadius: "12px 12px 0 0",
-        border: "1px solid #e5e7eb",
-        borderBottom: "none",
-        overflow: "hidden"
-      }}>
-        <button
-          style={tabStyle(depositTab === "all")}
-          onClick={() => setDepositTab("all")}
-        >
-          📋 전체 ({allItems.length})
-        </button>
-        <button
-          style={tabStyle(depositTab === "paid")}
-          onClick={() => setDepositTab("paid")}
-        >
-          ✅ 입금완료 ({paidCount})
-        </button>
-        <button
-          style={{
-            ...tabStyle(depositTab === "unpaid"),
-            color: depositTab === "unpaid" ? "#dc3545" : "#666",
-            borderBottomColor: depositTab === "unpaid" ? "#dc3545" : "transparent",
-          }}
-          onClick={() => setDepositTab("unpaid")}
-        >
-          ❌ 미입금 ({unpaidCount})
-        </button>
-      </div>
 
       {/* ✅ 재고 리스트 테이블 */}
       <div style={{
