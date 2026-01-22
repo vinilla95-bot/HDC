@@ -2369,6 +2369,12 @@ td input, td input:focus, td input:focus-visible {
     word-break: break-word;
     overflow-wrap:anywhere;
   }
+  .a4Items td input[type="text"] {
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  padding: 2px 4px !important;
+  background: #fff !important;
+}
 
   @media print{
     @page {
@@ -2455,12 +2461,7 @@ td input, td input:focus, td input:focus-visible {
   height: 100% !important;
   min-height: 28px !important;
 }
-.a4Items td input[type="text"] {
-  border: 1px solid #ccc !important;
-  border-radius: 4px !important;
-  padding: 2px 4px !important;
-  background: #fff !important;
-}
+
 * {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
