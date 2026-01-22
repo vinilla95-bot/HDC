@@ -253,7 +253,16 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
       </td>
     );
   }
-  return <td className="c wrap" onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} style={{ cursor: "pointer", outline: "none", border: "1px solid #333" }} title="클릭하여 품목 변경"><span>{String(item.displayName || "")}</span></td>;
+return (
+  <td 
+    className="c wrap" 
+    onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
+    style={{ cursor: "pointer" }} 
+    title="클릭하여 품목 변경"
+  >
+    <span>{String(item.displayName || "")}</span>
+  </td>
+);
 }
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
