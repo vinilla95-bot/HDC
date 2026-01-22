@@ -854,9 +854,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     }
   }
 
-  const [editItems, setEditItems] = useState<any[]>([]);
 
-function updateEditItemName(itemKey: string, name: string) {
+
+// ✅ 자유입력/옵션선택 모두에서 "이름 변경"은 이것 하나만 사용
+const updateEditItemName = useCallback((itemKey: string, name: string) => {
   const rawName = (name || "").trim();
   if (!rawName) return;
 
@@ -865,23 +866,21 @@ function updateEditItemName(itemKey: string, name: string) {
       if (i.key !== itemKey) return i;
 
       const isRent = i.unit === "개월";
-      const unit = isRent ? "개월" : (i.unit || "EA");
       const qty = Number(i.qty || 1);
       const unitPrice = Number(i.unitPrice || 0);
+      const months = Number(i.months || 1);
 
       return {
         ...i,
-        optionId: null,          // 🔴 자유입력은 옵션ID 제거
-        optionName: rawName,     // 🔴 실제 저장 이름
-        displayName: isRent ? `${rawName} 1개월` : rawName,
-        unit,
-        qty,
-        unitPrice,
+        optionId: null, // ✅ 자유입력은 옵션ID 제거
+        optionName: rawName,
+        displayName: isRent ? `${rawName} ${months}개월` : rawName,
         amount: qty * unitPrice,
       };
     })
   );
-}
+}, []);
+
 
 
   const updateEditItemQty = (key: string, newQty: number) => {
@@ -900,12 +899,7 @@ function updateEditItemName(itemKey: string, name: string) {
     ));
   };
 
-  const updateEditItemName = (key: string, newName: string) => {
-    console.log("updateEditItemName 호출됨:", key, newName);
-    setEditItems(prev => prev.map(item => 
-      item.key === key ? { ...item, displayName: newName } : item
-    ));
-  };
+ 
 
   const deleteEditItem = (key: string) => {
     setEditItems(prev => prev.filter(item => item.key !== key));
