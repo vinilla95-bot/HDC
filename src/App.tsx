@@ -176,6 +176,7 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
 }
 
 // ============ 인라인 품목 편집 셀 ============
+// ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -192,22 +193,21 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        // 입력값이 있으면 품목명으로 저장
-      if (searchQuery.trim()) {
-  onSelectOption(item, { 
-  option_id: item.optionId || `custom_${Date.now()}`,
-  option_name: searchQuery.trim(),
-  unit: item.unit || 'EA',
-  unit_price: item.baseUnitPrice || 0,
-  show_spec: item.showSpec || 'n',
-  _isDisplayNameOnly: true
-}, {
-    qty: item.displayQty || 1, 
-    unitPrice: item.customerUnitPrice || 0,
-    amount: item.finalAmount || 0, 
-    unit: item.unit || 'EA' 
-  });
-}
+        if (searchQuery.trim()) {
+          onSelectOption(item, { 
+            option_id: item.optionId || `custom_${Date.now()}`,
+            option_name: searchQuery.trim(),
+            unit: item.unit || 'EA',
+            unit_price: item.baseUnitPrice || 0,
+            show_spec: item.showSpec || 'n',
+            _isDisplayNameOnly: true
+          }, {
+            qty: item.displayQty || 1, 
+            unitPrice: item.customerUnitPrice || 0,
+            amount: item.finalAmount || 0, 
+            unit: item.unit || 'EA' 
+          });
+        }
         setShowDropdown(false); 
         setIsEditing(false); 
         setSearchQuery("");
@@ -220,25 +220,48 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
     onSelectOption(item, opt, calculated);
-    setShowDropdown(false); setIsEditing(false); setSearchQuery("");
+    setShowDropdown(false); 
+    setIsEditing(false); 
+    setSearchQuery("");
   };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
+  // 편집 모드
   if (isEditing) {
     return (
-      <td className="c wrap" style={{ position: "relative", padding: 0 }}>
-    <input ref={inputRef} type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} placeholder="품목 또는 현장 검색..." autoFocus style={{ width: "100%", padding: "6px 8px", border: "none", fontSize: 12, boxSizing: "border-box", outline: "none", background: "transparent" }} />
+      <td className="c wrap" style={{ position: "relative", padding: 0, overflow: "visible" }}>
+        <input 
+          ref={inputRef} 
+          type="text" 
+          value={searchQuery} 
+          onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} 
+          onFocus={() => setShowDropdown(true)} 
+          placeholder="품목 검색..." 
+          autoFocus 
+          style={{ 
+            width: "100%", 
+            padding: "4px 6px", 
+            border: "1px solid #2e5b86", 
+            borderRadius: 4,
+            fontSize: 12, 
+            boxSizing: "border-box", 
+            outline: "none", 
+            background: "#fff" 
+          }} 
+        />
         {showDropdown && searchQuery.trim() && (
           <div ref={dropdownRef} style={{ 
             position: "absolute", 
             top: "100%", 
             left: 0, 
             right: 0, 
+            width: "300px",
             maxHeight: 300, 
             overflowY: "auto", 
             background: "#fff", 
             border: "1px solid #ccc", 
+            borderRadius: 6,
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
             zIndex: 9999 
           }}>
@@ -253,17 +276,18 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
       </td>
     );
   }
-// 변경 후
-return (
-  <td 
-    className="c wrap" 
-    onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
-    style={{ cursor: "pointer" }} 
-    title="클릭하여 품목 변경"
-  >
-    {String(item.displayName || "")}
-  </td>
-);
+
+  // 편집 모드 아닐 때 - 깔끔하게 텍스트만 표시
+   return (
+    <td 
+      className="c wrap" 
+      onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
+      style={{ cursor: "pointer" }} 
+      title="클릭하여 품목 변경"
+    >
+      {String(item.displayName || "")}
+    </td>
+  );
 }
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
