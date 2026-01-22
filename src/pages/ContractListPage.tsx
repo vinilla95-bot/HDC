@@ -35,6 +35,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState<ContractQuote | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [depositFilter, setDepositFilter] = useState<"all" | "completed" | "pending">("all");
   
   // ✅ 모든 컬럼 입력 가능한 새 항목 양식
   const [newItem, setNewItem] = useState({
@@ -121,13 +122,30 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     loadContracts();
   }, []);
 
-  // ✅ 탭별 데이터 필터링
   const contracts = useMemo(() => {
-    return allContracts.filter(c => {
-      const type = c.contract_type || "order";
-      return type === activeTab;
-    });
-  }, [allContracts, activeTab]);
+  let filtered = allContracts.filter(c => {
+    const type = c.contract_type || "order";
+    return type === activeTab;
+  });
+  
+  if (depositFilter === "completed") {
+    filtered = filtered.filter(c => c.deposit_status === "완료");
+  } else if (depositFilter === "pending") {
+    filtered = filtered.filter(c => c.deposit_status !== "완료");
+  }
+  
+  return filtered;
+}, [allContracts, activeTab, depositFilter]);
+  const getTabCounts = (tab: TabType) => {
+  const tabData = allContracts.filter(c => (c.contract_type || "order") === tab);
+  return {
+    all: tabData.length,
+    completed: tabData.filter(c => c.deposit_status === "완료").length,
+    pending: tabData.filter(c => c.deposit_status !== "완료").length,
+  };
+};
+
+const currentCounts = getTabCounts(activeTab);
 
   // ✅ 업데이트
   const updateField = async (quote_id: string, field: string, value: any) => {
@@ -640,7 +658,57 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
           🏠 임대 ({rentalCount})
         </button>
       </div>
-
+{/* 입금 필터 */}
+<div style={{
+  display: "flex",
+  gap: 8,
+  padding: "12px 16px",
+  background: "#fff",
+  border: "1px solid #e5e7eb",
+  borderTop: "none",
+}}>
+  <button
+    onClick={() => setDepositFilter("all")}
+    style={{
+      padding: "8px 16px",
+      border: depositFilter === "all" ? "2px solid #2e5b86" : "1px solid #ddd",
+      borderRadius: 8,
+      background: depositFilter === "all" ? "#e3f2fd" : "#fff",
+      fontWeight: depositFilter === "all" ? 700 : 500,
+      cursor: "pointer",
+    }}
+  >
+    📋 전체 ({currentCounts.all})
+  </button>
+  <button
+    onClick={() => setDepositFilter("completed")}
+    style={{
+      padding: "8px 16px",
+      border: depositFilter === "completed" ? "2px solid #4caf50" : "1px solid #ddd",
+      borderRadius: 8,
+      background: depositFilter === "completed" ? "#e8f5e9" : "#fff",
+      color: depositFilter === "completed" ? "#2e7d32" : "#333",
+      fontWeight: depositFilter === "completed" ? 700 : 500,
+      cursor: "pointer",
+    }}
+  >
+    ✅ 입금완료 ({currentCounts.completed})
+  </button>
+  <button
+    onClick={() => setDepositFilter("pending")}
+    style={{
+      padding: "8px 16px",
+      border: depositFilter === "pending" ? "2px solid #f44336" : "1px solid #ddd",
+      borderRadius: 8,
+      background: depositFilter === "pending" ? "#ffebee" : "#fff",
+      color: depositFilter === "pending" ? "#c62828" : "#333",
+      fontWeight: depositFilter === "pending" ? 700 : 500,
+      cursor: "pointer",
+    }}
+  >
+    ❌ 미입금 ({currentCounts.pending})
+  </button>
+</div>
       {/* 테이블 */}
       {renderTable()}
 
