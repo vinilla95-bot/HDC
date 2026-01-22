@@ -93,19 +93,19 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
  if (isEditing) return <input ref={inputRef} type="number" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown} style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />;
  return <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }} style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }} title="클릭하여 수정">{fmtNum(value)}</span>; }
 
-// ============ 인라인 규격 편집 셀 ============
+
 // ============ 인라인 규격 편집 셀 ============
 // ============ 인라인 규격 편집 셀 ============
 function EditableSpecCell({ 
   spec, 
+  specText,
   onChange,
-  freeText,
-  onFreeTextChange
+  onTextChange
 }: { 
   spec: { w: number; l: number; h?: number }; 
+  specText?: string;
   onChange: (spec: { w: number; l: number; h?: number }) => void;
-  freeText?: string;
-  onFreeTextChange?: (text: string) => void;
+  onTextChange?: (text: string) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   
@@ -1859,7 +1859,7 @@ type A4QuoteProps = {
 };
 
 
-function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, editable, onSiteSearch, onAddDelivery }: A4QuoteProps) {
+function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery }: A4QuoteProps) {
 const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   const spec = `${form.w}x${form.l}x${form.h}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
