@@ -246,7 +246,7 @@ const filteredOpts = useMemo(() => {
             boxSizing: 'border-box'
           }}
         />
-        {showDropdown && searchQuery.trim() && filteredOpts.length > 0 && (
+       {showDropdown && filteredOpts.length > 0 && (
           <div 
             ref={dropdownRef}
             style={{ 
