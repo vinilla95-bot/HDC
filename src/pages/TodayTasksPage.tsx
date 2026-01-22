@@ -457,15 +457,18 @@ const generateDispatchMessage = (task: DeliveryTask) => {
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>{renderStatusBadge(order.status)}</td>
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>
                       {order.status === "pending" && String(editingId) !== String(order.id) && (
-                        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                          <button onClick={() => sendOrder(order.id)} style={{ padding: "8px 14px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                             전송
-                          </button>
-                          <button onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} style={{ padding: "8px 14px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                            복사사
-                          </button>
-                        </div>
-                      )}
+  <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+    <button onClick={() => sendOrder(order.id)} style={{ padding: "8px 14px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+       전송
+    </button>
+    <button onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} style={{ padding: "8px 14px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+      복사
+    </button>
+    <button onClick={() => deleteOrder(order.id)} style={{ padding: "8px 14px", background: "#ffebee", color: "#c62828", border: "1px solid #f44336", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+      삭제
+    </button>
+  </div>
+)}
                       {order.status === "ready" && (
                         <button onClick={() => updateOrderStatus(order.id, "pending")} style={{ padding: "8px 14px", background: "#fff3e0", border: "1px solid #ff9800", color: "#e65100", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                           ❌ 취소
