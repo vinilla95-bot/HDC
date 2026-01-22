@@ -195,12 +195,13 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
         // 입력값이 있으면 품목명으로 저장
       if (searchQuery.trim()) {
   onSelectOption(item, { 
-    option_id: item.optionId || `custom_${Date.now()}`,
-    option_name: searchQuery.trim(),
-    unit: item.unit || 'EA',
-    unit_price: item.customerUnitPrice || 0,
-    show_spec: item.showSpec || 'n'
-  }, { 
+  option_id: item.optionId || `custom_${Date.now()}`,
+  option_name: searchQuery.trim(),
+  unit: item.unit || 'EA',
+  unit_price: item.baseUnitPrice || 0,
+  show_spec: item.showSpec || 'n',
+  _isDisplayNameOnly: true
+}, {
     qty: item.displayQty || 1, 
     unitPrice: item.customerUnitPrice || 0,
     amount: item.finalAmount || 0, 
@@ -1374,18 +1375,25 @@ const inventoryScreen = (
             selectedBizcardId={selectedBizcardId}
             setSelectedBizcardId={setSelectedBizcardId}
             options={options}
-            onSelectOption={(item, opt, calc) => {
-              const rawName = String(opt.option_name || "");
-              const rent = rawName.includes("임대");
-              const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
-              setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-                ...i, optionId: opt.option_id, optionName: rawName, displayName: rent ? `${rawName} 1개월` : rawName,
-                unit: rent ? "개월" : calc.unit || "EA", showSpec: opt.show_spec || "n",
-                baseQty: calc.qty || 1, baseUnitPrice: calc.unitPrice || 0, baseAmount: calc.amount || 0,
-                displayQty: 1, customerUnitPrice, finalAmount: customerUnitPrice, months: 1,
-                lineSpec: { w: form.w, l: form.l, h: form.h }
-              }));
-            }}
+           onSelectOption={(item, opt, calc) => {
+  const rawName = String(opt.option_name || "");
+  const rent = rawName.includes("임대");
+  
+  // 품목명만 변경하는 경우 - displayName만 수정
+  if (opt._isDisplayNameOnly) {
+    setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
+      ...i, 
+      displayName: rawName
+    }));
+    return;
+  }
+  
+  const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
+  setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
+    ...i, optionId: opt.option_id, optionName: rawName, displayName: rent ? `${rawName} 1개월` : rawName,
+    ...
+  }));
+}}
             onAddItem={(opt, calc) => addOption(opt)}
             onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
             onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
