@@ -166,7 +166,7 @@ function InlineItemSearchCell({
   onDelete: () => void;
   editable?: boolean;
 }) {
-    console.log('InlineItemSearchCell - options 받음:', options?.length);
+  console.log('InlineItemSearchCell - options 받음:', options?.length);
   
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -174,18 +174,25 @@ function InlineItemSearchCell({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-const filteredOpts = useMemo(() => {
-  const q = searchQuery.trim().toLowerCase();
-  if (!q) return [];
-  
-  return options.filter((o: any) => {
-    const name = String(o.option_name || "").toLowerCase();
-    // 포함 검색 또는 초성 검색
-    return name.includes(q) || matchKorean(name, q);
-  }).slice(0, 15);
-}, [searchQuery, options]);
+  const filteredOpts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    
+    return options.filter((o: any) => {
+      const name = String(o.option_name || "").toLowerCase();
+      return name.includes(q) || matchKorean(name, q);
+    }).slice(0, 15);
+  }, [searchQuery, options]);
 
-  
+  // ✅ 자유입력 저장 함수
+  const saveAsCustomText = useCallback(() => {
+    if (searchQuery.trim() && searchQuery.trim() !== item.displayName) {
+      onUpdateName(searchQuery.trim());
+    }
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+  }, [searchQuery, item.displayName, onUpdateName]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -193,23 +200,37 @@ const filteredOpts = useMemo(() => {
         dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
         inputRef.current && !inputRef.current.contains(e.target as Node)
       ) {
-        if (searchQuery.trim() && searchQuery !== item.displayName) {
-          onUpdateName(searchQuery);
-        }
-        setShowDropdown(false);
-        setIsEditing(false);
-        setSearchQuery("");
+        saveAsCustomText();
+      } else if (
+        !dropdownRef.current &&
+        inputRef.current && !inputRef.current.contains(e.target as Node)
+      ) {
+        saveAsCustomText();
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [searchQuery, item.displayName, onUpdateName]);
+    if (isEditing) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isEditing, saveAsCustomText]);
 
   const handleSelect = (opt: any) => {
     onSelectOption(opt);
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
+  };
+
+  // ✅ Enter/Tab 키로 자유입력 저장
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      saveAsCustomText();
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+      setIsEditing(false);
+      setSearchQuery("");
+    }
   };
 
   if (!editable) {
@@ -224,12 +245,13 @@ const filteredOpts = useMemo(() => {
           type="text"
           value={searchQuery}
           onChange={(e) => {
-  console.log('입력값:', e.target.value);
-  setSearchQuery(e.target.value);
-  setShowDropdown(true);
-}}
+            console.log('입력값:', e.target.value);
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);
+          }}
+          onKeyDown={handleKeyDown}
           onFocus={() => setShowDropdown(true)}
-          placeholder="품목 검색..."
+          placeholder="품목명 입력..."
           autoFocus
           style={{ 
             width: '100%', 
@@ -242,7 +264,7 @@ const filteredOpts = useMemo(() => {
             boxSizing: 'border-box'
           }}
         />
-      {showDropdown && searchQuery.trim() && (
+        {showDropdown && searchQuery.trim() && filteredOpts.length > 0 && (
           <div 
             ref={dropdownRef}
             style={{ 
@@ -260,68 +282,62 @@ const filteredOpts = useMemo(() => {
               textAlign: 'left'
             }}
           >
-            {filteredOpts.length > 0 ? (
-              filteredOpts.map((opt: any) => {
-                const isRent = String(opt.option_name || "").includes("임대");
-                
-                if (isRent) {
-                  return (
-                    <div key={opt.option_id} style={{ padding: '10px 12px', borderBottom: '1px solid #eee', textAlign: 'left', background: '#fff' }}>
-                      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                      <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{opt.unit || 'EA'} · {money(opt.unit_price || 0)}원</div>
-                      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <input
-                          type="number"
-                          defaultValue={1}
-                          min={1}
-                          id={`rent-inline-${opt.option_id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{ width: 40, padding: '4px', border: '1px solid #ccc', borderRadius: 4, textAlign: 'center', fontSize: 11 }}
-                        />
-                        <span style={{ fontSize: 11 }}>개월</span>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
-                            const months = Number(input?.value) || 1;
-                            handleSelect({ ...opt, _months: months });
-                          }}
-                          style={{ padding: '4px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
-                        >
-                          선택
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }
-                
+            {filteredOpts.map((opt: any) => {
+              const isRent = String(opt.option_name || "").includes("임대");
+              
+              if (isRent) {
                 return (
-                  <div
-                    key={opt.option_id}
-                    onClick={() => handleSelect(opt)}
-                    style={{ 
-                      padding: '10px 12px', 
-                      cursor: 'pointer', 
-                      borderBottom: '1px solid #eee', 
-                      fontSize: 12,
-                      textAlign: 'left',
-                      background: '#fff'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-                  >
-                    <div style={{ fontWeight: 700, textAlign: 'left' }}>{opt.option_name}</div>
-                    <div style={{ fontSize: 10, color: '#888', marginTop: 2, textAlign: 'left' }}>
-                      {opt.unit || 'EA'} · {money(opt.unit_price || 0)}원
+                  <div key={opt.option_id} style={{ padding: '10px 12px', borderBottom: '1px solid #eee', textAlign: 'left', background: '#fff' }}>
+                    <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                    <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{opt.unit || 'EA'} · {money(opt.unit_price || 0)}원</div>
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <input
+                        type="number"
+                        defaultValue={1}
+                        min={1}
+                        id={`rent-inline-${opt.option_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: 40, padding: '4px', border: '1px solid #ccc', borderRadius: 4, textAlign: 'center', fontSize: 11 }}
+                      />
+                      <span style={{ fontSize: 11 }}>개월</span>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
+                          const months = Number(input?.value) || 1;
+                          handleSelect({ ...opt, _months: months });
+                        }}
+                        style={{ padding: '4px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+                      >
+                        선택
+                      </button>
                     </div>
                   </div>
                 );
-              })
-            ) : (
-              <div style={{ padding: '10px 12px', color: '#999', fontSize: 12 }}>
-                검색 결과 없음 (Enter로 자유입력)
-              </div>
-            )}
+              }
+              
+              return (
+                <div
+                  key={opt.option_id}
+                  onClick={() => handleSelect(opt)}
+                  style={{ 
+                    padding: '10px 12px', 
+                    cursor: 'pointer', 
+                    borderBottom: '1px solid #eee', 
+                    fontSize: 12,
+                    textAlign: 'left',
+                    background: '#fff'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                >
+                  <div style={{ fontWeight: 700, textAlign: 'left' }}>{opt.option_name}</div>
+                  <div style={{ fontSize: 10, color: '#888', marginTop: 2, textAlign: 'left' }}>
+                    {opt.unit || 'EA'} · {money(opt.unit_price || 0)}원
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -337,11 +353,10 @@ const filteredOpts = useMemo(() => {
       style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
       title="클릭하여 수정 또는 품목 검색"
     >
-      {item.displayName || "(-)"}
+      {item.displayName || " "}
     </span>
   );
 }
-
 function EmptyRowSearchCell({ 
   options, 
   current,
