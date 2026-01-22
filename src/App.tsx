@@ -243,7 +243,7 @@ React.useEffect(() => {
   const commitFreeText = useCallback(() => {
   const trimmed = (searchQueryRef.current || "").trim();
   
-  // ✅ 먼저 상태 초기화 (이게 핵심!)
+  // ✅ 먼저 상태 초기화
   setIsEditing(false);
   setShowDropdown(false);
   setSearchQuery("");
@@ -251,19 +251,14 @@ React.useEffect(() => {
   
   // ✅ 그 다음 아이템 추가
   if (trimmed) {
-    onAddItem({
-      key: `item_${Date.now()}`,
-      optionId: null,
-      optionName: trimmed,
-      displayName: trimmed,
-      unit: "EA",
-      qty: 1,
-      unitPrice: 0,
-      amount: 0,
-      showSpec: "n",
-      lineSpec: null,
-      specText: "",
-    });
+    const customOpt = { 
+      option_id: `custom_${Date.now()}`, 
+      option_name: trimmed,
+      unit: 'EA',
+      unit_price: 0,
+      show_spec: 'n'
+    };
+    onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
   }
 }, [onAddItem]);
 
@@ -279,15 +274,33 @@ React.useEffect(() => {
     }
   }, [isEditing, commitFreeText]);
 
-  const handleSelect = (opt: any) => {
-    const spec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
-    const calculated = calculateOptionLine(opt, spec.w, spec.l, spec.h || form.h);
-    onSelectOption(item, opt, calculated);
-    setShowDropdown(false); 
-    setIsEditing(false); 
-    setSearchQuery("");
-  };
+ const handleSelect = (opt: any) => {
+  // ✅ 먼저 상태 초기화
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  setSites([]);
+  
+  // ✅ 그 다음 아이템 추가
+  const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+  onAddItem(opt, calculated);
+};
 
+const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
+  // ✅ 먼저 상태 초기화
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  setSites([]);
+  
+  // ✅ 그 다음 배송 추가
+  if (onAddDelivery) {
+    const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
+    const query = searchQuery.toLowerCase();
+    const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
+    onAddDelivery({ ...site, alias: matchedRegion }, type);
+  }
+};
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
   // 편집 모드일 때
