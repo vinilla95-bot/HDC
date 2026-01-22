@@ -386,15 +386,20 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ✅ 최신 값 참조용 ref 추가
   const searchQueryRef = useRef(searchQuery);
   useEffect(() => {
     searchQueryRef.current = searchQuery;
   }, [searchQuery]);
 
-  // ✅ 자유 입력 저장 함수
+  // ✅ 수정됨: 상태 초기화 먼저
   const commitFreeText = useCallback(() => {
     const trimmed = (searchQueryRef.current || "").trim();
+    
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setSites([]);
+    
     if (trimmed) {
       const customOpt = { 
         option_id: `custom_${Date.now()}`, 
@@ -405,10 +410,6 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
       };
       onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
     }
-    setShowDropdown(false);
-    setIsEditing(false);
-    setSearchQuery("");
-    setSites([]);
   }, [onAddItem]);
 
   useEffect(() => {
@@ -451,7 +452,6 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
         dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
         inputRef.current && !inputRef.current.contains(e.target as Node)
       ) {
-        // ✅ 바깥 클릭 시 자유입력 저장
         commitFreeText();
       }
     };
@@ -461,26 +461,31 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     }
   }, [isEditing, commitFreeText]);
 
+  // ✅ 수정됨: 상태 초기화 먼저
   const handleSelect = (opt: any) => {
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setSites([]);
+    
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
     onAddItem(opt, calculated);
-    setShowDropdown(false);
-    setIsEditing(false);
-    setSearchQuery("");
-    setSites([]);
   };
 
+  // ✅ 수정됨: 상태 초기화 먼저
   const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
-    if (onAddDelivery) {
-      const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
-      const query = searchQuery.toLowerCase();
-      const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
-      onAddDelivery({ ...site, alias: matchedRegion }, type);
-    }
-    setShowDropdown(false);
+    const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
+    const query = searchQuery.toLowerCase();
+    const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
+    
     setIsEditing(false);
+    setShowDropdown(false);
     setSearchQuery("");
     setSites([]);
+    
+    if (onAddDelivery) {
+      onAddDelivery({ ...site, alias: matchedRegion }, type);
+    }
   };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
@@ -499,6 +504,154 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
       </>
     );
   }
+
+  return (
+    <>
+      <td className="c center">&nbsp;</td>
+      <td className="c" style={{ position: "relative", overflow: "visible", padding: 0 }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);
+          }}
+          onFocus={() => setShowDropdown(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              commitFreeText();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              setIsEditing(false);
+              setShowDropdown(false);
+              setSearchQuery("");
+              setSites([]);
+            }
+          }}
+          placeholder="검색..."
+          style={{ 
+            width: "100%", 
+            height: "100%",
+            padding: "6px 8px",
+            margin: 0,
+            border: "none", 
+            fontSize: 11, 
+            outline: "none", 
+            background: "transparent",
+            boxSizing: "border-box",
+          }}
+        />
+        {showDropdown && searchQuery.trim() && (
+          <div 
+            ref={dropdownRef} 
+            style={{ 
+              position: "absolute", 
+              top: "100%", 
+              left: 0, 
+              width: "320px",
+              maxHeight: 350, 
+              overflowY: "auto", 
+              background: "#fff", 
+              border: "1px solid #ccc", 
+              borderRadius: 6,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
+              zIndex: 9999 
+            }}
+          >
+            {sites.length > 0 && (
+              <>
+                <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>운송비</div>
+                {sites.map((site: any, idx: number) => (
+                  <div key={`site-${idx}`} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6 }}>{site.alias}</div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => handleDeliverySelect(site, 'delivery')} style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>일반 {fmtNum(site.delivery)}원</button>
+                      <button onClick={() => handleDeliverySelect(site, 'crane')} style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>크레인 {fmtNum(site.crane)}원</button>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            
+            {filteredOptions.length > 0 && (
+              <>
+                <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>품목</div>
+                {filteredOptions.map((opt: any) => {
+                  const isRent = String(opt.option_name || "").includes("임대");
+                  
+                  if (isRent) {
+                    return (
+                      <div key={opt.option_id} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                        <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                        <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="number"
+                            defaultValue={1}
+                            min={1}
+                            id={`rent-empty-${opt.option_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
+                          />
+                          <span style={{ fontSize: 11 }}>개월</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
+                              const months = Number(input?.value) || 1;
+                              
+                              setIsEditing(false);
+                              setShowDropdown(false);
+                              setSearchQuery("");
+                              setSites([]);
+                              
+                              const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+                              onAddItem({ ...opt, _months: months }, calculated);
+                            }}
+                            style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                          >
+                            추가
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div
+                      key={opt.option_id}
+                      onClick={() => handleSelect(opt)}
+                      style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                    >
+                      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                      <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            
+            {filteredOptions.length === 0 && sites.length === 0 && !isSearchingSite && (
+              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
+            )}
+            {isSearchingSite && <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 중...</div>}
+          </div>
+        )}
+      </td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+    </>
+  );
+}
 
   return (
     <>
