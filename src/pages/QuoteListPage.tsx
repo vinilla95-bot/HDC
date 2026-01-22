@@ -246,24 +246,26 @@ const filteredOpts = useMemo(() => {
             boxSizing: 'border-box'
           }}
         />
-        {showDropdown && searchQuery.trim() && (
-          <div 
-            ref={dropdownRef}
-            style={{ 
-              position: 'absolute', 
-              top: '100%', 
-              left: 0, 
-              width: '300px',
-              maxHeight: 300, 
-              overflowY: 'auto', 
-              background: '#fff', 
-              border: '1px solid #ccc', 
-              borderRadius: 6,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
-              zIndex: 9999,
-              textAlign: 'left'
-            }}
-          >
+       {showDropdown && searchQuery.trim() && (
+  <>
+    {console.log('드롭다운 렌더링! filteredOpts:', filteredOpts.length)}
+    <div 
+      ref={dropdownRef}
+      style={{ 
+        position: 'absolute', 
+        top: '100%', 
+        left: 0, 
+        width: '300px',
+        maxHeight: 300, 
+        overflowY: 'auto', 
+        background: '#fff', 
+        border: '2px solid red',  // ← 빨간 테두리로 확인
+        borderRadius: 6,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
+        zIndex: 99999,  // ← 더 높게
+        textAlign: 'left'
+      }}
+    >
             {filteredOpts.length > 0 ? (
               filteredOpts.map((opt: any) => {
                 const isRent = String(opt.option_name || "").includes("임대");
