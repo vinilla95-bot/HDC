@@ -987,7 +987,7 @@ const quotePreviewHtml = useMemo(() => {
   const vatIncluded = current.vat_included !== false;
   const displayTotal = vatIncluded ? totalAmount : supplyAmount;
   const vatLabel = vatIncluded ? "부가세 포함" : "부가세 별도";
-  const MIN_ROWS = 12;
+  const MIN_ROWS = 10;
 
   return (
     <div className="a4Sheet quoteSheet" id="a4SheetCapture">
