@@ -1647,23 +1647,29 @@ const quotePreviewHtml = useMemo(() => {
 })}
 {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
   <tr key={`blank-${i}`}>
-    {i === 0 && editMode ? (
-      <>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
-          <EmptyRowSearchCell
-            options={options}
-            current={current}
-            onAddItem={(newItem) => setEditItems(prev => [...prev, newItem])}
-          />
-        </td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-      </>
+   {i === 0 && editMode ? (
+  <>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
+      <EmptyRowSearchCell
+        options={options}
+        current={current}
+        onAddItem={(newItem) => setEditItems(prev => [...prev, newItem])}
+      />
+    </td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, textAlign: 'center' }}>
+      <EditableTextCell 
+        value="" 
+        onChange={() => {}} 
+        editable={false}
+      />
+    </td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+  </>
     ) : (
       <>
         <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}>&nbsp;</td>
