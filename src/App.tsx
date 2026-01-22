@@ -96,6 +96,7 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
 
 // ============ 인라인 규격 편집 셀 ============
 // ============ 인라인 규격 편집 셀 ============
+// ============ 인라인 규격 편집 셀 ============
 function EditableSpecCell({ 
   spec, 
   specText,
@@ -109,9 +110,9 @@ function EditableSpecCell({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   
-  // 자유입력이면 freeText 사용, 아니면 spec 객체로 표시
-  const displayText = freeText !== undefined && freeText !== '' 
-    ? freeText 
+  // specText가 있으면 그대로 표시, 아니면 spec 객체로 표시
+  const displayText = specText !== undefined && specText !== '' 
+    ? specText 
     : (spec.w || spec.l || spec.h) 
       ? `${spec.w}×${spec.l}×${spec.h || 0}` 
       : '';
@@ -133,30 +134,31 @@ function EditableSpecCell({
   const handleBlur = () => { 
     setIsEditing(false); 
     
-    // 빈 값이면 빈 규격으로 저장
-    if (!tempValue.trim()) {
-      if (onFreeTextChange) {
-        onFreeTextChange('');
-      } else {
-        onChange({ w: 0, l: 0, h: 0 });
-      }
+    const trimmed = tempValue.trim();
+    
+    // 빈 값
+    if (!trimmed) {
+      if (onTextChange) onTextChange('');
+      onChange({ w: 0, l: 0, h: 0 });
       return;
     }
     
-    // 자유입력 모드면 그대로 저장
-    if (onFreeTextChange) {
-      onFreeTextChange(tempValue.trim());
-      return;
-    }
+    // "3×6×2.6" 또는 "3x6x2.6" 형식인지 확인
+    const normalized = trimmed.replace(/x/gi, '×');
+    const parts = normalized.split('×').map(s => parseFloat(s.trim()));
     
-    // 일반 모드: "3×6×2.6" 또는 "3x6x2.6" 형식 파싱
-    const parts = tempValue.replace(/x/gi, '×').split('×').map(s => parseFloat(s.trim()) || 0);
-    const newSpec = {
-      w: parts[0] || 0,
-      l: parts[1] || 0,
-      h: parts[2] || 0
-    };
-    onChange(newSpec);
+    // 유효한 숫자 형식이면 spec 객체로 저장
+    if (parts.length >= 2 && parts.every(p => !isNaN(p))) {
+      onChange({
+        w: parts[0] || 0,
+        l: parts[1] || 0,
+        h: parts[2] || 0
+      });
+      if (onTextChange) onTextChange('');
+    } else {
+      // 자유 텍스트로 저장
+      if (onTextChange) onTextChange(trimmed);
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => { 
