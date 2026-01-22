@@ -585,7 +585,7 @@ useEffect(() => {
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      <input
+     <input
         ref={inputRef}
         type="text"
         value={searchQuery}
@@ -594,6 +594,19 @@ useEffect(() => {
           setShowDropdown(true);
         }}
         onFocus={() => setShowDropdown(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            commitFreeText();  // ✅ Enter로 자유입력 저장
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            setShowDropdown(false);
+            setIsEditing(false);
+            setSearchQuery("");
+            setSites([]);
+          }
+        }}
         placeholder="품목 또는 지역 검색..."
         autoFocus
         style={{ 
