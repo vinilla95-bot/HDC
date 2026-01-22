@@ -176,7 +176,6 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
 }
 
 // ============ 인라인 품목 편집 셀 ============
-// ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -230,8 +229,7 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   // 편집 모드
   if (isEditing) {
     return (
-     // 편집 모드일 때
-<td className="c wrap" style={{ position: "relative", overflow: "visible" }}>
+      <div style={{ position: 'relative', textAlign: 'left', width: '100%' }}>
         <input 
           ref={inputRef} 
           type="text" 
@@ -241,53 +239,51 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
           placeholder="품목 검색..." 
           autoFocus 
           style={{ 
-            width: "100%", 
-            padding: "4px 6px", 
-            border: "1px solid #2e5b86", 
+            width: '100%', 
+            padding: '4px 6px', 
+            border: '1px solid #2e5b86', 
             borderRadius: 4,
             fontSize: 12, 
-            boxSizing: "border-box", 
-            outline: "none", 
-            background: "#fff" 
+            boxSizing: 'border-box', 
+            outline: 'none', 
+            background: '#fff' 
           }} 
         />
         {showDropdown && searchQuery.trim() && (
           <div ref={dropdownRef} style={{ 
-            position: "absolute", 
-            top: "100%", 
+            position: 'absolute', 
+            top: '100%', 
             left: 0, 
-            right: 0, 
-            width: "300px",
+            width: '300px',
             maxHeight: 300, 
-            overflowY: "auto", 
-            background: "#fff", 
-            border: "1px solid #ccc", 
+            overflowY: 'auto', 
+            background: '#fff', 
+            border: '1px solid #ccc', 
             borderRadius: 6,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
             zIndex: 9999 
           }}>
             {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-              <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
+              <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: '8px 10px', cursor: 'pointer', borderBottom: '1px solid #eee', fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')} onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}>
                 <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{opt.unit || 'EA'} · {fmtNum(Number(opt.unit_price || 0))}원</div>
               </div>
-            )) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>}
+            )) : <div style={{ padding: '10px', color: '#999', fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>}
           </div>
         )}
-      </td>
+      </div>
     );
   }
 
-  // 편집 모드 아닐 때 - 깔끔하게 텍스트만 표시
-   return (
-    <td 
-      className="c wrap" 
-      onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
-      style={{ cursor: "pointer" }} 
+  // 편집 모드 아닐 때 - span만 반환
+  return (
+    <span
+      onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }}
+      style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
       title="클릭하여 품목 변경"
     >
       {String(item.displayName || "")}
-    </td>
+    </span>
   );
 }
 // ============ 빈 행 클릭 시 품목 추가 ============
@@ -1975,10 +1971,12 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
     <tr key={item.key ?? idx}>
   <td className="c center">{idx + 1}</td>
   {editable && options && onSelectOption ? (
+  <td className="c wrap" style={{ position: 'relative', overflow: 'visible' }}>
     <InlineItemCell item={item} options={options} form={form} onSelectOption={onSelectOption} />
-  ) : (
-    <td className="c wrap">{String(item.displayName || "")}</td>
-  )}
+  </td>
+) : (
+  <td className="c wrap">{String(item.displayName || "")}</td>
+)}
  <td className="c center">
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
