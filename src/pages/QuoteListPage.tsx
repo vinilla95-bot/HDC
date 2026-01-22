@@ -447,7 +447,7 @@ function EmptyRowSearchCell({
   }, [searchQuery]);
 
   // ✅ 자유 입력 저장 함수
-  const commitFreeText = useCallback(() => {
+const commitFreeText = useCallback(() => {
   const trimmed = (searchQueryRef.current || "").trim();
   if (trimmed) {
     onAddItem({
@@ -459,8 +459,9 @@ function EmptyRowSearchCell({
       qty: 1,
       unitPrice: 0,
       amount: 0,
-      showSpec: "n",  // ✅ 규격 표시 안함 (자유입력 후 직접 수정)
-      lineSpec: null, // ✅ 빈 값으로 시작
+      showSpec: "n",
+      lineSpec: null,
+      specText: "",  // ✅ 빈 값으로 시작
     });
   }
   setShowDropdown(false);
@@ -974,18 +975,19 @@ const addEditItemFromOption = (opt: any) => {
   try {
     toast("저장 중...");
 
-    const itemsToSave = editItems.map((it: any, idx: number) => ({
-      optionId: it.optionId || `ITEM_${idx + 1}`,
-      optionName: it.optionName || it.displayName || "",
-      displayName: it.displayName || "",
-      itemName: it.displayName || "",
-      unit: it.unit || "EA",
-      qty: Number(it.qty) || 0,
-      unitPrice: Number(it.unitPrice) || 0,
-      amount: Number(it.qty * it.unitPrice) || 0,
-      showSpec: it.showSpec || "n",
-      lineSpec: it.lineSpec,
-    }));
+  const itemsToSave = editItems.map((it: any, idx: number) => ({
+  optionId: it.optionId || `ITEM_${idx + 1}`,
+  optionName: it.optionName || it.displayName || "",
+  displayName: it.displayName || "",
+  itemName: it.displayName || "",
+  unit: it.unit || "EA",
+  qty: Number(it.qty) || 0,
+  unitPrice: Number(it.unitPrice) || 0,
+  amount: Number(it.qty * it.unitPrice) || 0,
+  showSpec: it.showSpec || "n",
+  lineSpec: it.lineSpec,
+  specText: it.specText ?? "",  // ✅ 자유입력 규격 저장
+}));
 
     const supply_amount = itemsToSave.reduce((acc: number, it: any) => acc + Number(it.amount || 0), 0);
     const vat_amount = Math.round(supply_amount * 0.1);
