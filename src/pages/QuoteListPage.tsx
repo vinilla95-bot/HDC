@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine } from "../QuoteService";
 import { A4Quote } from "../App";
+import { matchKorean, calculateOptionLine, searchSiteRates } from "../QuoteService";
 
 type SupabaseOptionRow = {
   option_id: string;
@@ -1236,50 +1237,10 @@ const quotePreviewHtml = useMemo(() => {
       <>
         <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
         <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
-          <InlineItemSearchCell
-            item={{ key: `new_${Date.now()}`, displayName: "" }}
+          <EmptyRowSearchCell
             options={options}
-            onSelectOption={(opt) => {
-              const w = current?.w || 3;
-              const l = current?.l || 6;
-              const res = calculateOptionLine(opt, w, l);
-              const rawName = String(opt.option_name || "");
-              const rent = rawName.includes("임대");
-              const months = opt._months || 1;
-              const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
-              
-              setEditItems(prev => [...prev, {
-                key: `item_${Date.now()}`,
-                optionId: opt.option_id,
-                optionName: rawName,
-                displayName: rent ? `${rawName} ${months}개월` : rawName,
-                unit: rent ? "개월" : (res.unit || "EA"),
-                qty: 1,
-                unitPrice: customerUnitPrice,
-                amount: customerUnitPrice,
-                showSpec: opt.show_spec || "n",
-                lineSpec: { w, l, h: 2.6 },
-                months: months,
-              }]);
-            }}
-            onUpdateName={(name) => {
-              if (name.trim()) {
-                setEditItems(prev => [...prev, {
-                  key: `item_${Date.now()}`,
-                  optionId: `custom_${Date.now()}`,
-                  optionName: name,
-                  displayName: name,
-                  unit: "EA",
-                  qty: 1,
-                  unitPrice: 0,
-                  amount: 0,
-                  showSpec: "n",
-                  lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
-                }]);
-              }
-            }}
-            onDelete={() => {}}
-            editable={true}
+            current={current}
+            onAddItem={(newItem) => setEditItems(prev => [...prev, newItem])}
           />
         </td>
         <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
