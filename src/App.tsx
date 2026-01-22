@@ -487,7 +487,7 @@ const commitFreeText = useCallback(() => {
   return (
     <>
       <td className="c center">&nbsp;</td>
-      <td className="c" onClick={() => setIsEditing(true)} style={{ cursor: "pointer", color: "#ccc", fontSize: 11, textAlign: "center" }}>+ 품목 추가</td>
+      <td className="c"></td> 
       <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
@@ -2132,7 +2132,14 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   // ✅ computedItems.length를 더해주어, 아이템이 추가될 때마다 완전히 새로운 컴포넌트로 리셋시킴
   <tr key={`blank-${computedItems.length + i}`}> 
     {i === 0 && editable && options && onAddItem ? (
-      <EmptyRowCell options={options} form={form} onAddItem={onAddItem} onSiteSearch={onSiteSearch} onAddDelivery={onAddDelivery} /> 
+     <EmptyRowCell 
+  key={`empty-cell-${computedItems.length}`}  {/* ✅ 핵심: 아이템 개수가 바뀔 때마다 이 컴포넌트를 강제로 '새로고침' 합니다 */}
+  options={options} 
+  form={form} 
+  onAddItem={onAddItem} 
+  onSiteSearch={onSiteSearch} 
+  onAddDelivery={onAddDelivery} 
+/>
     ) : (
       <><td className="c">&nbsp;</td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td></>
     )}
