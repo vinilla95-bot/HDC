@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
+import { supabase } from "../lib/supabase";
 import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
-import { matchKorean, calculateOptionLine } from "../QuoteService";
-import { A4Quote } from "../App";
 import { matchKorean, calculateOptionLine, searchSiteRates } from "../QuoteService";
+import { A4Quote } from "../App";
 
 type SupabaseOptionRow = {
   option_id: string;
