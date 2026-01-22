@@ -294,6 +294,7 @@ const handleSelect = (opt: any) => {
 }
 
   // 편집 모드일 때
+  // 편집 모드일 때
   return (
     <td className="c wrap" style={{ position: "relative", padding: 0, overflow: "visible" }}>
        <input 
@@ -306,7 +307,7 @@ const handleSelect = (opt: any) => {
           if (e.key === "Enter") {
             e.preventDefault();
             e.stopPropagation();
-            commitFreeText();  // ✅ Enter로 자유입력 저장
+            commitFreeText();
           } else if (e.key === "Escape") {
             e.preventDefault();
             e.stopPropagation();
@@ -320,12 +321,13 @@ const handleSelect = (opt: any) => {
         style={{ 
           width: "100%", 
           padding: "4px 6px", 
-          border: "1px solid #2e5b86", 
-          borderRadius: 4,
+          border: "none",           // ✅ 테두리 제거
+          borderBottom: "2px solid #2e5b86",  // ✅ 밑줄만
+          borderRadius: 0,          // ✅ 둥근 모서리 제거
           fontSize: 12, 
           boxSizing: "border-box", 
           outline: "none", 
-          background: "#fff" 
+          background: "transparent" // ✅ 배경 투명
         }} 
       />
       {showDropdown && searchQuery.trim() && (
