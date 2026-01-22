@@ -372,25 +372,28 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     searchQueryRef.current = searchQuery;
   }, [searchQuery]);
 
-  const commitFreeText = useCallback(() => {
-    const trimmed = (searchQueryRef.current || "").trim();
-    
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    setSites([]);
-    
-    if (trimmed) {
-      const customOpt = { 
-        option_id: `custom_${Date.now()}`, 
-        option_name: trimmed,
-        unit: 'EA',
-        unit_price: 0,
-        show_spec: 'n'
-      };
-      onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
-    }
-  }, [onAddItem]);
+const commitFreeText = useCallback(() => {
+  console.log("🔴 commitFreeText 호출됨");
+  const trimmed = (searchQueryRef.current || "").trim();
+  
+  console.log("🔴 setIsEditing(false) 실행");
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  setSites([]);
+  
+  if (trimmed) {
+    console.log("🔴 onAddItem 호출:", trimmed);
+    const customOpt = { 
+      option_id: `custom_${Date.now()}`, 
+      option_name: trimmed,
+      unit: 'EA',
+      unit_price: 0,
+      show_spec: 'n'
+    };
+    onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
+  }
+}, [onAddItem]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
