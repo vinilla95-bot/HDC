@@ -228,7 +228,7 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   if (isEditing) {
     return (
       <td className="c wrap" style={{ position: "relative", padding: 0 }}>
-        <input ref={inputRef} type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} placeholder="품목 또는 현장 검색..." autoFocus style={{ width: "100%", padding: "6px 8px", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />
+    <input ref={inputRef} type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} placeholder="품목 또는 현장 검색..." autoFocus style={{ width: "100%", padding: "6px 8px", border: "none", fontSize: 12, boxSizing: "border-box", outline: "none", background: "transparent" }} />
         {showDropdown && searchQuery.trim() && (
           <div ref={dropdownRef} style={{ 
             position: "absolute", 
