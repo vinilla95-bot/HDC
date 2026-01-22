@@ -188,50 +188,32 @@ function InlineItemSearchCell({
     }).slice(0, 15);
   }, [searchQuery, options]);
 
-  // ✅ 자유입력 저장 함수 (ref 사용)
-  const saveAsCustomText = useCallback(() => {
-    const trimmed = searchQueryRef.current.trim();
-    console.log("saveAsCustomText 호출됨, trimmed:", trimmed);
-    if (trimmed) {
-      onUpdateName(trimmed);
-    }
+ // saveAsCustomText 함수 수정
+const saveAsCustomText = useCallback(() => {
+  console.log("🔴 saveAsCustomText 호출됨!");
+  console.log("🔴 searchQueryRef.current:", searchQueryRef.current);
+  const trimmed = searchQueryRef.current.trim();
+  if (trimmed) {
+    console.log("🔴 onUpdateName 호출:", trimmed);
+    onUpdateName(trimmed);
+  }
+  setShowDropdown(false);
+  setIsEditing(false);
+  setSearchQuery("");
+}, [onUpdateName]);
+
+// handleKeyDown도 확인
+const handleKeyDown = (e: React.KeyboardEvent) => {
+  console.log("🟢 키 입력:", e.key);
+  if (e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    saveAsCustomText();
+  } else if (e.key === "Escape") {
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
-  }, [onUpdateName]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        if (!dropdownRef.current || !dropdownRef.current.contains(e.target as Node)) {
-          saveAsCustomText();
-        }
-      }
-    };
-    if (isEditing) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isEditing, saveAsCustomText]);
-
-  const handleSelect = (opt: any) => {
-    onSelectOption(opt);
-    setShowDropdown(false);
-    setIsEditing(false);
-    setSearchQuery("");
-  };
-
-  // ✅ Enter/Tab 키로 자유입력 저장
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === "Tab") {
-      e.preventDefault();
-      saveAsCustomText();
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setIsEditing(false);
-      setSearchQuery("");
-    }
-  };
+  }
+};
 
   if (!editable) {
     return <span style={{ display: 'block', width: '100%', textAlign: 'left' }}>{item.displayName || "(-)"}</span>;
