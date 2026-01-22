@@ -286,7 +286,10 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
                           e.stopPropagation();
                           const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
                           const months = Number(input?.value) || 1;
-                          handleSelect({ ...opt, _months: months });
+                         onSelectOption({ ...opt, _months: months });
+setShowDropdown(false);
+setIsEditing(false);
+setSearchQuery("");
                         }}
                         style={{ padding: '4px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
                       >
@@ -300,7 +303,12 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
               return (
                 <div
                   key={opt.option_id}
-                  onClick={() => handleSelect(opt)}
+                  onClick={() => {
+  onSelectOption(opt);
+  setShowDropdown(false);
+  setIsEditing(false);
+  setSearchQuery("");
+}}
                   style={{ 
                     padding: '10px 12px', 
                     cursor: 'pointer', 
