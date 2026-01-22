@@ -1604,31 +1604,35 @@ const quotePreviewHtml = useMemo(() => {
           editable={editMode}
         />
       </td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-        <EditableTextCell 
-          value={specText} 
-          onChange={(val) => {
-            const parts = val.split('x').map(s => parseFloat(s.trim()));
-            if (parts.length >= 2) {
-              setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-                ...it,
-                lineSpec: { 
-                  w: parts[0] || it.lineSpec?.w || 3, 
-                  l: parts[1] || it.lineSpec?.l || 6, 
-                  h: parts[2] || it.lineSpec?.h || 2.6 
-                },
-                showSpec: 'y'
-              }));
-            } else if (val.trim() === '') {
-              setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-                ...it,
-                showSpec: 'n'
-              }));
-            }
-          }}
-          editable={editMode}
-        />
-      </td>
+     <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+  <EditableTextCell 
+    value={specText} 
+    onChange={(val) => {
+      const trimmed = val.trim();
+      if (trimmed === '') {
+        // 빈 값이면 규격 숨김
+        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+          ...it,
+          showSpec: 'n',
+          lineSpec: null
+        }));
+      } else {
+        // 값이 있으면 파싱 시도
+        const parts = trimmed.split('x').map(s => parseFloat(s.trim()));
+        const w = parts[0] || 3;
+        const l = parts[1] || 6;
+        const h = parts[2] || 2.6;
+        
+        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+          ...it,
+          lineSpec: { w, l, h },
+          showSpec: 'y'
+        }));
+      }
+    }}
+    editable={editMode}
+  />
+</td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
         <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
       </td>
