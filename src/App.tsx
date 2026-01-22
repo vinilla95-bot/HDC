@@ -2400,6 +2400,7 @@ td input, td input:focus, td input:focus-visible {
      .a4Items td:last-child button {
       display: none !important;
     }
+
     
     /* 검색 input 숨기기 */
     .a4Items input {
@@ -2453,6 +2454,12 @@ td input, td input:focus, td input:focus-visible {
   justify-content: flex-start !important;
   height: 100% !important;
   min-height: 28px !important;
+}
+.a4Items td input[type="text"] {
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  padding: 2px 4px !important;
+  background: #fff !important;
 }
 * {
   -webkit-print-color-adjust: exact;
