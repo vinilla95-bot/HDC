@@ -625,6 +625,7 @@ const addEditItemFromOption = (opt: any) => {
         .select(selectCols)
         .is("source", null)
         .not("quote_id", "like", "SCHEDULE_%")
+         .not("quote_id", "like", "KAKAO_%")
         .order("created_at", { ascending: false })
         .limit(200);
 
