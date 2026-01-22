@@ -809,23 +809,24 @@ useEffect(() => {
 
     const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
 
-    const row: any = {
-      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-      optionId: String(opt.option_id || rawName),
-      optionName: rawName,
-      displayName,
-      unit: rent ? "개월" : res.unit || "EA",
-      showSpec,
-      baseQty,
-      baseUnitPrice,
-      baseAmount,
-      displayQty,
-      customerUnitPrice,
-      finalAmount: Math.round(displayQty * customerUnitPrice),
-      months: defaultMonths,
-      memo: res.memo || "",
-      lineSpec: { w: form.w, l: form.l, h: form.h },
-    };
+   const row: any = {
+  key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+  optionId: String(opt.option_id || rawName),
+  optionName: rawName,
+  displayName,
+  unit: rent ? "개월" : res.unit || "EA",
+  showSpec,
+  baseQty,
+  baseUnitPrice,
+  baseAmount,
+  displayQty,
+  customerUnitPrice,
+  finalAmount: Math.round(displayQty * customerUnitPrice),
+  months: defaultMonths,
+  memo: res.memo || "",
+  lineSpec: { w: form.w, l: form.l, h: form.h },
+  specText: "",  // ✅ 자유입력 규격 초기화
+};
 
     setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
     setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
@@ -854,9 +855,9 @@ useEffect(() => {
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
-  const updateRow = (
+ const updateRow = (
   key: string,
-  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec",
+  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
   value: any
 ) => {
   setSelectedItems((prev: any) =>
@@ -866,6 +867,11 @@ useEffect(() => {
       const rent = isRentRow(item);
 
       if (field === "displayName") return { ...item, displayName: String(value ?? "") };
+
+      // ✅ specText 자유입력 저장
+      if (field === "specText") {
+        return { ...item, specText: String(value ?? ""), showSpec: value ? 'y' : 'n' };
+      }
 
       if (field === "lineSpec") {
         return { ...item, lineSpec: value };
@@ -970,22 +976,23 @@ const handleSiteSearch = async (val: string) => {
       pdf_url: "",
       statement_url: "",
       bizcard_id: selectedBizcardId || null,
-      items: computedItems.map((r: any) => ({
-        optionId: r.optionId,
-        optionName: r.optionName,
-        itemName: r.displayName || r.optionName,
-        unit: r.unit || "EA",
-        qty: Number(r.displayQty || 0),
-        unitPrice: Number(r.customerUnitPrice || 0),
-        amount: Number(r.finalAmount || 0),
-        memo: r.memo || "",
-        baseQty: r.baseQty,
-        baseUnitPrice: r.baseUnitPrice,
-        baseAmount: r.baseAmount,
-        lineSpec: r.lineSpec,
-        showSpec: r.showSpec,
-        months: r.months,
-      })),
+    items: computedItems.map((r: any) => ({
+  optionId: r.optionId,
+  optionName: r.optionName,
+  itemName: r.displayName || r.optionName,
+  unit: r.unit || "EA",
+  qty: Number(r.displayQty || 0),
+  unitPrice: Number(r.customerUnitPrice || 0),
+  amount: Number(r.finalAmount || 0),
+  memo: r.memo || "",
+  baseQty: r.baseQty,
+  baseUnitPrice: r.baseUnitPrice,
+  baseAmount: r.baseAmount,
+  lineSpec: r.lineSpec,
+  showSpec: r.showSpec,
+  months: r.months,
+  specText: r.specText ?? "",  // ✅ 자유입력 규격 저장
+})),
       updated_at: new Date().toISOString(),
     };
   };
@@ -1483,7 +1490,7 @@ const inventoryScreen = (
             computedItems={computedItems}
             blankRows={blankRows}
             fmt={fmt}
-            onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
+           onUpdateSpec={(key, specText) => updateRow(key, "specText", specText)}
   editable={true}
             supply_amount={supply_amount}
             vat_amount={vat_amount}
@@ -1808,7 +1815,7 @@ type A4QuoteProps = {
   onUpdateQty?: (key: string, qty: number) => void;
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
- onUpdateSpec?: (key: string, spec: { w: number; l: number; h?: number }) => void;
+ onUpdateSpec?: (key: string, specText: string) => void;
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void;
@@ -2030,7 +2037,8 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
 ) : (
   <td className="c wrap">{String(item.displayName || "")}</td>
 )}
- <td className="c center">
+ 
+  <td className="c center">
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
       spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }} 
