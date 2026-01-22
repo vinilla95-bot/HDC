@@ -1376,7 +1376,7 @@ captureContainer.appendChild(clonedSheet);
     return () => window.clearTimeout(t);
   }, [q, dateFilter]);
 
-  useEffect(() => {
+ useEffect(() => {
   if (current) {
     setEditItems(pickItems(current).map((raw, idx) => {
       const it = normItem(raw);
@@ -1391,6 +1391,7 @@ captureContainer.appendChild(clonedSheet);
         amount: it.amount,
         showSpec: (raw as any).showSpec || "n",
         lineSpec: (raw as any).lineSpec || { w: current.w || 3, l: current.l || 6, h: 2.6 },
+        specText: (raw as any).specText ?? "",  // ✅ specText 추가
       };
     }));
     setEditMode(false);
