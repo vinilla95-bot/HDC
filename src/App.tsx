@@ -277,18 +277,20 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
 
   // 편집 모드 아닐 때 - span만 반환
   // 편집 모드 아닐 때
-return (
-  <td 
-    className="c wrap" 
-    onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
-    style={{ cursor: "pointer" }} 
-    title="클릭하여 품목 변경"
-  >
-    <span style={{ display: 'block', width: '100%' }}>
-      {String(item.displayName || "")}
-    </span>
-  </td>
-);
+// 편집 모드 아닐 때 - 깔끔하게 텍스트만 표시
+  return (
+    <td 
+      className="c wrap" 
+      onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
+      style={{ cursor: "pointer" }} 
+      title="클릭하여 품목 변경"
+    >
+      <span style={{ display: 'block', width: '100%' }}>
+        {String(item.displayName || "")}
+      </span>
+    </td>
+  );
+}
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
 function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void }) {
