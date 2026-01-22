@@ -248,10 +248,21 @@ export default function TodayTasksPage() {
     
     const dateStr = `${month}/${day}(${dayOfWeek})${timeStr ? " " + timeStr : ""}`;
     
-    const qty = task.items?.find((i: any) => 
-      (i.optionName || i.displayName || "").toLowerCase().includes("컨테이너")
-    )?.qty || 1;
+   const windowKeywords = ["미닫이", "여닫이", "이중창", "중창", "샷시", "샤시", "창문", "창짝"];
+const windowOptions = task.items?.filter((i: any) => {
+  const name = (i.optionName || i.displayName || i.itemName || "").toLowerCase();
+  return windowKeywords.some(kw => name.includes(kw));
+}) || [];
 
+// ✅ 창문 옵션 텍스트 (이름-수량 형식)
+let optionText = "기본형";
+if (windowOptions.length > 0) {
+  optionText = windowOptions.map((i: any) => {
+    const name = i.optionName || i.displayName || i.itemName || "";
+    const itemQty = i.qty || 1;
+    return `${name}-${itemQty}개`;
+  }).join(", ");
+}
     const optionNames = task.items?.map((i: any) => i.optionName || i.displayName || "").filter(Boolean).join("/") || "기본형";
 
     let saleType = "신품판매";
