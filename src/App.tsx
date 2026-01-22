@@ -297,7 +297,7 @@ const handleSelect = (opt: any) => {
   // 편집 모드일 때
  // 편집 모드일 때
   return (
-    <td className="c wrap" style={{ position: "relative", padding: "4px 8px", overflow: "visible" }}>
+   <td className="c wrap" style={{ position: "relative", padding: "4px 8px", overflow: "visible" }}>
        <input 
         ref={inputRef} 
         type="text" 
@@ -321,14 +321,13 @@ const handleSelect = (opt: any) => {
         autoFocus 
         style={{ 
           width: "100%", 
-          padding: "2px 4px", 
+          padding: "4px 6px", 
           textAlign: "center",
           border: "1px solid #ccc", 
-          borderRadius: 4,
           fontSize: 12, 
           boxSizing: "border-box", 
-          outline: "none", 
-          background: "#fff"
+          outline: "none" 
+      
         }} 
       />
       {showDropdown && searchQuery.trim() && (
