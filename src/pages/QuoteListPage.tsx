@@ -854,6 +854,36 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     }
   }
 
+  const [editItems, setEditItems] = useState<any[]>([]);
+
+function updateEditItemName(itemKey: string, name: string) {
+  const rawName = (name || "").trim();
+  if (!rawName) return;
+
+  setEditItems(prev =>
+    prev.map(i => {
+      if (i.key !== itemKey) return i;
+
+      const isRent = i.unit === "개월";
+      const unit = isRent ? "개월" : (i.unit || "EA");
+      const qty = Number(i.qty || 1);
+      const unitPrice = Number(i.unitPrice || 0);
+
+      return {
+        ...i,
+        optionId: null,          // 🔴 자유입력은 옵션ID 제거
+        optionName: rawName,     // 🔴 실제 저장 이름
+        displayName: isRent ? `${rawName} 1개월` : rawName,
+        unit,
+        qty,
+        unitPrice,
+        amount: qty * unitPrice,
+      };
+    })
+  );
+}
+
+
   const updateEditItemQty = (key: string, newQty: number) => {
     setEditItems(prev => prev.map(item => 
       item.key === key 
