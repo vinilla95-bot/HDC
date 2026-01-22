@@ -248,17 +248,16 @@ const getDeliveryLabel = (item: DeliveryItem) => {
 
 if (type === "memo") {
   return customer || "메모";
+} else if (type === "inventory") {
+  const containerType = (item as any).container_type || "신품";
+  const drawingNo = (item as any).drawing_no ? `#${(item as any).drawing_no}` : "";
+  return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}`.trim();
 } else if (type === "rental") {
   return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
 } else if (type === "used") {
   return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
 } else {
   return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
-}
-  } else if (type === "inventory") {
-  const containerType = (item as any).container_type || "신품";
-  const drawingNo = (item as any).drawing_no ? `#${(item as any).drawing_no}` : "";
-  return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}`.trim();
 }
 };
 
