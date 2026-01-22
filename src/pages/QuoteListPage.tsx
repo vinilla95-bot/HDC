@@ -448,26 +448,26 @@ function EmptyRowSearchCell({
 
   // ✅ 자유 입력 저장 함수
   const commitFreeText = useCallback(() => {
-    const trimmed = (searchQueryRef.current || "").trim();
-    if (trimmed) {
-      onAddItem({
-        key: `item_${Date.now()}`,
-        optionId: null,
-        optionName: trimmed,
-        displayName: trimmed,
-        unit: "EA",
-        qty: 1,
-        unitPrice: 0,
-        amount: 0,
-        showSpec: "n",
-        lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
-      });
-    }
-    setShowDropdown(false);
-    setIsEditing(false);
-    setSearchQuery("");
-    setSites([]);
-  }, [onAddItem, current]);
+  const trimmed = (searchQueryRef.current || "").trim();
+  if (trimmed) {
+    onAddItem({
+      key: `item_${Date.now()}`,
+      optionId: null,
+      optionName: trimmed,
+      displayName: trimmed,
+      unit: "EA",
+      qty: 1,
+      unitPrice: 0,
+      amount: 0,
+      showSpec: "n",  // ✅ 규격 표시 안함 (자유입력 후 직접 수정)
+      lineSpec: null, // ✅ 빈 값으로 시작
+    });
+  }
+  setShowDropdown(false);
+  setIsEditing(false);
+  setSearchQuery("");
+  setSites([]);
+}, [onAddItem, current]);
 
   const filteredOpts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
