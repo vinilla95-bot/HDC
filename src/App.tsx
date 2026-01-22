@@ -258,21 +258,30 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
 function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [showDropdown, setShowDropdown] = React.useState(false);
-  const [sites, setSites] = React.useState<any[]>([]);
-  const [isSearchingSite, setIsSearchingSite] = React.useState(false);
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [sites, setSites] = useState<any[]>([]);
+  const [isSearchingSite, setIsSearchingSite] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredOptions = React.useMemo(() => {
-    const q = searchQuery.trim();
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const filteredOptions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
-    return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 10);
+    return options.filter((o: any) => {
+      const name = String(o.option_name || "").toLowerCase();
+      return name.includes(q) || matchKoreanLocal(name, q);
+    }).slice(0, 10);
   }, [searchQuery, options]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const searchSites = async () => {
       if (!searchQuery.trim() || !onSiteSearch) {
         setSites([]);
@@ -291,42 +300,41 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
 
- 
-  React.useEffect(() => {
-  const handleClickOutside = (e: MouseEvent) => {
-    const target = e.target as Node;
-    const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(target);
-    const isOutsideInput = !inputRef.current || !inputRef.current.contains(target);
-    
-    if (isOutsideDropdown && isOutsideInput) {
-      // 입력값이 있고 검색 결과가 없으면 자유 입력으로 추가
-      if (searchQuery.trim() && sites.length === 0 && filteredOptions.length === 0) {
-        const customOpt = { 
-          option_id: `custom_${Date.now()}`, 
-          option_name: searchQuery.trim(),
-          unit: 'EA',
-          unit_price: 0,
-          show_spec: 'n'
-        };
-        onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current && !inputRef.current.contains(e.target as Node)
+      ) {
+        if (searchQuery.trim() && sites.length === 0 && filteredOptions.length === 0) {
+          const customOpt = { 
+            option_id: `custom_${Date.now()}`, 
+            option_name: searchQuery.trim(),
+            unit: 'EA',
+            unit_price: 0,
+            show_spec: 'n'
+          };
+          onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
+        }
+        setShowDropdown(false);
+        setIsEditing(false);
+        setSearchQuery("");
+        setSites([]);
       }
-      setShowDropdown(false); 
-      setIsEditing(false); 
-      setSearchQuery(""); 
-      setSites([]);
+    };
+    if (isEditing) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  };
-  
-  if (isEditing) {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }
-}, [isEditing, searchQuery, sites.length, filteredOptions.length, onAddItem]);
-   
+  }, [isEditing, searchQuery, sites.length, filteredOptions.length, onAddItem]);
+
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
     onAddItem(opt, calculated);
-    setShowDropdown(false); setIsEditing(false); setSearchQuery(""); setSites([]);
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+    setSites([]);
   };
 
   const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
@@ -336,114 +344,19 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
       const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
       onAddDelivery({ ...site, alias: matchedRegion }, type);
     }
-    setShowDropdown(false); setIsEditing(false); setSearchQuery(""); setSites([]);
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+    setSites([]);
   };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  console.log('EmptyRowCell - isEditing:', isEditing, 'showDropdown:', showDropdown, 'searchQuery:', searchQuery);
-
-  if (isEditing) {
-    console.log('편집모드 - filteredOptions:', filteredOptions.length, 'sites:', sites.length);
+  if (!isEditing) {
     return (
       <>
         <td className="c center">&nbsp;</td>
-       <td className="c wrap" style={{ position: "relative", overflow: "visible" }}>
-          <input 
-            ref={inputRef} 
-            type="text" 
-            value={searchQuery} 
-           onChange={(e) => { 
-  console.log('입력값:', e.target.value);
-  setSearchQuery(e.target.value); 
-  setShowDropdown(true); 
-}}
-            onFocus={() => setShowDropdown(true)} 
-            placeholder="검색..." 
-            autoFocus 
-            style={{ 
-              width: "100%", 
-              height: "100%",
-              padding: 0,
-              margin: 0,
-              border: "none", 
-              fontSize: 11, 
-              outline: "none", 
-              background: "transparent",
-              lineHeight: 1.3,
-            }} 
-          />
-          {showDropdown && searchQuery.trim() && (
-            <div ref={dropdownRef} style={{ position: "absolute", top: "100%", left: 0, right: 0, maxHeight: 300, overflowY: "auto", background: "#fff", border: "1px solid #ccc", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 1000 }}>
-              {sites.length > 0 && (
-                <>
-                  <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>운송비</div>
-                  {sites.map((site: any, idx: number) => (
-                    <div key={`site-${idx}`} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
-                      <div style={{ fontWeight: 700, marginBottom: 6 }}>{site.alias}</div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => handleDeliverySelect(site, 'delivery')} style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>일반 {fmtNum(site.delivery)}원</button>
-                        <button onClick={() => handleDeliverySelect(site, 'crane')} style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>크레인 {fmtNum(site.crane)}원</button>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-              {filteredOptions.length > 0 && (
-                <>
-                  <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>품목</div>
-  {filteredOptions.map((opt: any) => {
-  const isRent = String(opt.option_name || "").includes("임대");
-  
-  if (isRent) {
-    return (
-      <div key={opt.option_id} style={{ padding: "8px 10px", borderBottom: "1px solid #eee", fontSize: 12 }}>
-        <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-        <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-          <input
-            type="number"
-            defaultValue={1}
-            min={1}
-            id={`rent-empty-${opt.option_id}`}
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center" }}
-          />
-          <span>개월</span>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
-              const months = Number(input?.value) || 1;
-              const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-              onAddItem({ ...opt, _months: months }, calculated);
-              setShowDropdown(false); setIsEditing(false); setSearchQuery(""); setSites([]);
-            }}
-            style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
-          >
-            추가
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
-      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-      <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-    </div>
-  );
-})}
-                </>
-              )}
-              {filteredOptions.length === 0 && sites.length === 0 && !isSearchingSite && (
-                <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음</div>
-              )}
-              {isSearchingSite && <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 중...</div>}
-            </div>
-          )}
-        </td>
+        <td className="c" onClick={() => setIsEditing(true)} style={{ cursor: "pointer" }}>&nbsp;</td>
         <td className="c"></td>
         <td className="c"></td>
         <td className="c"></td>
@@ -457,7 +370,128 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }:
   return (
     <>
       <td className="c center">&nbsp;</td>
-      <td className="c" onClick={() => { console.log('빈 행 클릭!'); setIsEditing(true); }} style={{ cursor: "pointer", outline: "none" }}>&nbsp;</td>
+      <td className="c" style={{ position: "relative", overflow: "visible", padding: 0 }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);
+          }}
+          onFocus={() => setShowDropdown(true)}
+          placeholder="검색..."
+          style={{ 
+            width: "100%", 
+            height: "100%",
+            padding: "6px 8px",
+            margin: 0,
+            border: "none", 
+            fontSize: 11, 
+            outline: "none", 
+            background: "transparent",
+            boxSizing: "border-box",
+          }}
+        />
+        {showDropdown && searchQuery.trim() && (
+          <div 
+            ref={dropdownRef} 
+            style={{ 
+              position: "absolute", 
+              top: "100%", 
+              left: 0, 
+              width: "320px",
+              maxHeight: 350, 
+              overflowY: "auto", 
+              background: "#fff", 
+              border: "1px solid #ccc", 
+              borderRadius: 6,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
+              zIndex: 9999 
+            }}
+          >
+            {/* 운송비 섹션 */}
+            {sites.length > 0 && (
+              <>
+                <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>운송비</div>
+                {sites.map((site: any, idx: number) => (
+                  <div key={`site-${idx}`} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6 }}>{site.alias}</div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => handleDeliverySelect(site, 'delivery')} style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>일반 {fmtNum(site.delivery)}원</button>
+                      <button onClick={() => handleDeliverySelect(site, 'crane')} style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>크레인 {fmtNum(site.crane)}원</button>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            
+            {/* 품목 섹션 */}
+            {filteredOptions.length > 0 && (
+              <>
+                <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>품목</div>
+                {filteredOptions.map((opt: any) => {
+                  const isRent = String(opt.option_name || "").includes("임대");
+                  
+                  if (isRent) {
+                    return (
+                      <div key={opt.option_id} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                        <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                        <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="number"
+                            defaultValue={1}
+                            min={1}
+                            id={`rent-empty-${opt.option_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
+                          />
+                          <span style={{ fontSize: 11 }}>개월</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
+                              const months = Number(input?.value) || 1;
+                              const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+                              onAddItem({ ...opt, _months: months }, calculated);
+                              setShowDropdown(false);
+                              setIsEditing(false);
+                              setSearchQuery("");
+                              setSites([]);
+                            }}
+                            style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                          >
+                            추가
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div
+                      key={opt.option_id}
+                      onClick={() => handleSelect(opt)}
+                      style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                    >
+                      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                      <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            
+            {filteredOptions.length === 0 && sites.length === 0 && !isSearchingSite && (
+              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
+            )}
+            {isSearchingSite && <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 중...</div>}
+          </div>
+        )}
+      </td>
       <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
