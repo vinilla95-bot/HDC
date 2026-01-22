@@ -228,7 +228,7 @@ const message = `사장님 ${itemName}-${itemQty}개 주문합니다! ${quote.cu
     return null;
   };
 
- const generateDispatchMessage = (task: DeliveryTask) => {
+const generateDispatchMessage = (task: DeliveryTask) => {
   const [, month, day] = task.delivery_date.split("-").map(Number);
   
   const date = new Date(task.delivery_date);
@@ -241,6 +241,13 @@ const message = `사장님 ${itemName}-${itemQty}개 주문합니다! ${quote.cu
   const addrWithoutTime = task.site_addr?.replace(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})\s*/, "").trim() || "";
   
   const dateStr = `${month}/${day}(${dayOfWeek})${timeStr ? " " + timeStr : ""}`;
+  
+  // ✅ 컨테이너 수량
+  const containerItem = task.items?.find((i: any) => {
+    const name = (i.optionName || i.displayName || "").toLowerCase();
+    return name.includes("컨테이너") || name.includes("신품") || name.includes("중고");
+  });
+  const qty = containerItem?.qty || 1;
 
   // ✅ 창문 관련 옵션만 필터링
   const windowKeywords = ["미닫이", "여닫이", "이중창", "중창", "샷시", "샤시", "창문", "창짝"];
@@ -263,13 +270,12 @@ const message = `사장님 ${itemName}-${itemQty}개 주문합니다! ${quote.cu
   if (task.contract_type === "used") saleType = "중고판매";
   else if (task.contract_type === "rental") saleType = "임대";
 
-  let text = `사장님 ${dateStr} ${saleType} (${task.spec || ""})(${optionNames}) 상차 현대 하차 ${addrWithoutTime}`;
+  let text = `사장님 ${dateStr} ${saleType} (${task.spec || ""})${qty}동(${optionNames}) 상차 현대 하차 ${addrWithoutTime}`;
   text += ` ${task.customer_name || ""}`;
   text += ` 인수자 ${task.customer_phone || ""} 입니다~`;
 
   return text;
 };
-
   const updateOrderStatus = async (id: number, status: string) => {
     await supabase.from("pending_orders").update({ status }).eq("id", id);
     setPendingOrders(prev => prev.map(o => (o.id === id ? { ...o, status } : o)));
