@@ -241,22 +241,31 @@ React.useEffect(() => {
   }, [searchQuery, options]);
 
   const commitFreeText = useCallback(() => {
-    const trimmed = (searchQueryRef.current || "").trim();
-    if (trimmed) {
-      const customOpt = { 
-        option_id: `custom_${Date.now()}`, 
-        option_name: trimmed,
-        unit: 'EA',
-        unit_price: 0,
-        show_spec: 'n'
-      };
-      const calculated = { qty: 1, unitPrice: 0, amount: 0, unit: 'EA', lineSpec: { w: 0, l: 0, h: 0 } };
-      onSelectOption(item, customOpt, calculated);
-    }
-    setShowDropdown(false);
-    setIsEditing(false);
-    setSearchQuery("");
-  }, [item, onSelectOption]);
+  const trimmed = (searchQueryRef.current || "").trim();
+  
+  // ✅ 먼저 상태 초기화 (이게 핵심!)
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  setSites([]);
+  
+  // ✅ 그 다음 아이템 추가
+  if (trimmed) {
+    onAddItem({
+      key: `item_${Date.now()}`,
+      optionId: null,
+      optionName: trimmed,
+      displayName: trimmed,
+      unit: "EA",
+      qty: 1,
+      unitPrice: 0,
+      amount: 0,
+      showSpec: "n",
+      lineSpec: null,
+      specText: "",
+    });
+  }
+}, [onAddItem]);
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
