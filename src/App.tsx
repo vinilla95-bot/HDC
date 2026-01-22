@@ -253,6 +253,7 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
       </td>
     );
   }
+// 변경 후
 return (
   <td 
     className="c wrap" 
@@ -260,7 +261,7 @@ return (
     style={{ cursor: "pointer" }} 
     title="클릭하여 품목 변경"
   >
-    <span>{String(item.displayName || "")}</span>
+    {String(item.displayName || "")}
   </td>
 );
 }
