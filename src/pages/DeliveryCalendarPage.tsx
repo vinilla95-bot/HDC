@@ -16,6 +16,7 @@ type DeliveryItem = {
   total_amount: number;
   deposit_status?: string;
   delivery_color?: string;
+  dispatch_status?: string; 
 };
 
 type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto" | "purple" | "navy";
@@ -133,6 +134,7 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   if (item.delivery_color && item.delivery_color !== "auto") {
     return item.delivery_color as ColorType;
   }
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [year, month, day] = item.delivery_date.split('-').map(Number);
@@ -140,17 +142,22 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   deliveryDate.setHours(0, 0, 0, 0);
   const isPast = deliveryDate < today;
   
-  // 2. 미입금 상태면 빨간색
+  // 2. 미입금 상태면 빨간색 (배차완료 여부 상관없이)
   if (item.deposit_status !== "완료") {
     return "red";
   }
   
-  // 3. 입금 완료 + 출고일 지남 → 회색
-  if (item.deposit_status === "완료" && isPast) {
+  // 3. 입금완료 + 배차완료 + 출고일 지남 → 회색
+  if (item.deposit_status === "완료" && item.dispatch_status === "완료" && isPast) {
     return "gray";
   }
   
-  // 4. 기본 색상 - 신품/임대/중고/영업소 모두 파란색
+  // 4. 입금완료 + 배차완료 → 주황색
+  if (item.deposit_status === "완료" && item.dispatch_status === "완료") {
+    return "orange";
+  }
+  
+  // 5. 입금완료 + 배차 미완료 → 파란색
   return "blue";
 }, []);
 
@@ -389,35 +396,37 @@ return text;
   };
 
   // ✅ 수정 저장
-  const handleSaveEdit = async () => {
-    if (!selectedDelivery) return;
+const handleSaveEdit = async () => {
+  if (!selectedDelivery) return;
 
-    const { error } = await supabase
-      .from("quotes")
-      .update({
-        delivery_date: editForm.delivery_date,
-        customer_name: editForm.customer_name,
-        customer_phone: editForm.customer_phone,
-        spec: editForm.spec,
-        site_addr: editForm.site_addr,
-        memo: editForm.memo,
-        delivery_color: editForm.delivery_color,
-      })
-      .eq("quote_id", selectedDelivery.quote_id);
+  const { error } = await supabase
+    .from("quotes")
+    .update({
+      delivery_date: editForm.delivery_date,
+      customer_name: editForm.customer_name,
+      customer_phone: editForm.customer_phone,
+      spec: editForm.spec,
+      site_addr: editForm.site_addr,
+      memo: editForm.memo,
+      delivery_color: editForm.delivery_color,
+      dispatch_status: editForm.dispatch_status,  // ✅ 추가
+    })
+    .eq("quote_id", selectedDelivery.quote_id);
 
-    if (error) {
-      alert("저장 실패: " + error.message);
-      return;
-    }
+  if (error) {
+    alert("저장 실패: " + error.message);
+    return;
+  }
 
-    // 로컬 상태 업데이트
-    setDeliveries(prev => prev.map(d =>
-      d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
-    ));
+  setDeliveries(prev => prev.map(d =>
+    d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
+  ));
 
-   setShowEditModal(false);
-setSelectedDelivery(null); ;
-  };
+  setShowEditModal(false);
+  setSelectedDelivery(null);
+};
+
+
 
   // ✅ 새 일정 추가
   const handleAddSchedule = async () => {
@@ -858,6 +867,10 @@ setSelectedDelivery(null); ;
   <div style={{ width: 14, height: 14, background: colorStyles.purple.bg, borderLeft: `3px solid ${colorStyles.purple.border}`, borderRadius: 2 }}></div>
   <span>재고</span>
 </div>
+  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+  <div style={{ width: 14, height: 14, background: colorStyles.orange.bg, borderLeft: `3px solid ${colorStyles.orange.border}`, borderRadius: 2 }}></div>
+  <span>배차완료</span>
+</div>
   <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
     <span style={{ fontWeight: 700 }}>크</span>
     <span>= 크레인 운송</span>
@@ -972,6 +985,29 @@ setSelectedDelivery(null); ;
                 <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
+            {/* ✅ 배차완료 버튼 */}
+<div>
+  <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
+  <button
+    type="button"
+    onClick={() => setEditForm({ 
+      ...editForm, 
+      dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
+    })}
+    style={{
+      padding: "10px 20px",
+      borderRadius: 8,
+      border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
+      background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
+      color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
+      cursor: "pointer",
+      fontSize: 14,
+      fontWeight: 700,
+    }}
+  >
+    {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
+  </button>
+</div>
                     <button
                       key={c}
                       type="button"
@@ -1277,6 +1313,7 @@ setSelectedDelivery(null); ;
   >
     🚚 배차
   </button>
+              
 </div>
           </div>
         </div>
@@ -1391,29 +1428,58 @@ setSelectedDelivery(null); ;
                 />
               </div>
               <div>
-                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setEditForm({ ...editForm, delivery_color: c })}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 6,
-                        border: editForm.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
-                        background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
-                        color: c === "auto" ? "#666" : colorStyles[c].text,
-                        cursor: "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                    {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : c === "purple" ? "보라" : c === "navy" ? "남색" : "회색"}
-                    </button>
-                  ))}
-                </div>
-              </div>
+  <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
+  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
+      <button
+        key={c}
+        type="button"
+        onClick={() => setNewSchedule({ ...newSchedule, delivery_color: c })}
+        style={{
+          padding: "6px 12px",
+          borderRadius: 6,
+          border: newSchedule.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
+          background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
+          color: c === "auto" ? "#666" : colorStyles[c].text,
+          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
+      </button>
+    ))}
+  </div>
+</div>
+            </div
+            
+               </div>
             </div>
+            
+            {/* ✅ 배차완료 버튼 - 여기에 추가 */}
+            <div>
+              <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
+              <button
+                type="button"
+                onClick={() => setEditForm({ 
+                  ...editForm, 
+                  dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
+                })}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 8,
+                  border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
+                  background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
+                  color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}
+              >
+                {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
+              </button>
+            </div>
+          </div>>
 
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
@@ -1483,6 +1549,7 @@ setSelectedDelivery(null); ;
               >
                 ✕
               </button>
+              
             </div>
 
             <div style={{ marginBottom: 16 }}>
