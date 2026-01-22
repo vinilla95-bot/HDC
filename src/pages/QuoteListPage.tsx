@@ -176,15 +176,15 @@ function InlineItemSearchCell({
   useEffect(() => {
     setSearchQuery(item.displayName || "");
   }, [item.displayName]);
-
-  const filteredOpts = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return options.filter((o: any) => {
-      const name = String(o.option_name || "").toLowerCase();
-      return name.includes(q) || matchKorean(name, q);
-    }).slice(0, 12);
-  }, [searchQuery, options]);
+  
+const filteredOpts = useMemo(() => {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q || !options || options.length === 0) return [];
+  return options.filter((o: any) => {
+    const name = String(o.option_name || "").toLowerCase();
+    return name.includes(q) || matchKorean(name, q);
+  }).slice(0, 12);
+}, [searchQuery, options]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
