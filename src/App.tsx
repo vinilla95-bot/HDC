@@ -1375,11 +1375,10 @@ const inventoryScreen = (
             selectedBizcardId={selectedBizcardId}
             setSelectedBizcardId={setSelectedBizcardId}
             options={options}
-           onSelectOption={(item, opt, calc) => {
+          onSelectOption={(item, opt, calc) => {
   const rawName = String(opt.option_name || "");
   const rent = rawName.includes("임대");
   
-  // 품목명만 변경하는 경우 - displayName만 수정
   if (opt._isDisplayNameOnly) {
     setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
       ...i, 
@@ -1391,7 +1390,10 @@ const inventoryScreen = (
   const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
   setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
     ...i, optionId: opt.option_id, optionName: rawName, displayName: rent ? `${rawName} 1개월` : rawName,
-    ...
+    unit: rent ? "개월" : calc.unit || "EA", showSpec: opt.show_spec || "n",
+    baseQty: calc.qty || 1, baseUnitPrice: calc.unitPrice || 0, baseAmount: calc.amount || 0,
+    displayQty: 1, customerUnitPrice, finalAmount: customerUnitPrice, months: 1,
+    lineSpec: { w: form.w, l: form.l, h: form.h }
   }));
 }}
             onAddItem={(opt, calc) => addOption(opt)}
