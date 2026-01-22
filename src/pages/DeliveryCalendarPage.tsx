@@ -123,6 +123,10 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
   setDeliveries([...quotesData, ...inventoryData] as DeliveryItem[]);
   setLoading(false);
 };
+
+  useEffect(() => {
+  loadDeliveries();
+}, []);
   /// ✅ 색상 결정 로직
 const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   // 1. 수동 색상이 설정되어 있으면 사용
