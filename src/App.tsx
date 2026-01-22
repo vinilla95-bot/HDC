@@ -226,13 +226,15 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
     }
   }, [isEditing, searchQuery, item, onSelectOption]);
 
-  const handleSelect = (opt: any) => {
-    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-    onSelectOption(item, opt, calculated);
-    setShowDropdown(false); 
-    setIsEditing(false); 
-    setSearchQuery("");
-  };
+ // ✅ 수정: 해당 행의 lineSpec 사용
+const handleSelect = (opt: any) => {
+  const spec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
+  const calculated = calculateOptionLine(opt, spec.w, spec.l, spec.h || form.h);
+  onSelectOption(item, opt, calculated);
+  setShowDropdown(false); 
+  setIsEditing(false); 
+  setSearchQuery("");
+};
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
@@ -1451,7 +1453,7 @@ const inventoryScreen = (
             selectedBizcardId={selectedBizcardId}
             setSelectedBizcardId={setSelectedBizcardId}
             options={options}
-          onSelectOption={(item, opt, calc) => {
+         onSelectOption={(item, opt, calc) => {
   const rawName = String(opt.option_name || "");
   const rent = rawName.includes("임대");
   
@@ -1464,12 +1466,14 @@ const inventoryScreen = (
   }
   
   const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
+  // ✅ 수정: 기존 lineSpec 유지
+  const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
   setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
     ...i, optionId: opt.option_id, optionName: rawName, displayName: rent ? `${rawName} 1개월` : rawName,
     unit: rent ? "개월" : calc.unit || "EA", showSpec: opt.show_spec || "n",
     baseQty: calc.qty || 1, baseUnitPrice: calc.unitPrice || 0, baseAmount: calc.amount || 0,
     displayQty: 1, customerUnitPrice, finalAmount: customerUnitPrice, months: 1,
-    lineSpec: { w: form.w, l: form.l, h: form.h }
+    lineSpec: existingLineSpec  // ✅ 기존 lineSpec 유지
   }));
 }}
             onAddItem={(opt, calc) => addOption(opt)}
