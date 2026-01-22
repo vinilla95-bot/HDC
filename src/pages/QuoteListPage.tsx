@@ -166,13 +166,17 @@ function InlineItemSearchCell({
   onDelete: () => void;
   editable?: boolean;
 }) {
-  console.log('InlineItemSearchCell - options 받음:', options?.length);
-  
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchQueryRef = useRef(searchQuery);  // ✅ ref 추가
+
+  // ✅ searchQuery 변경 시 ref도 업데이트
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
   
   const filteredOpts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -184,28 +188,23 @@ function InlineItemSearchCell({
     }).slice(0, 15);
   }, [searchQuery, options]);
 
-  // ✅ 자유입력 저장 함수
+  // ✅ 자유입력 저장 함수 (ref 사용)
   const saveAsCustomText = useCallback(() => {
-    if (searchQuery.trim() && searchQuery.trim() !== item.displayName) {
-      onUpdateName(searchQuery.trim());
+    const trimmed = searchQueryRef.current.trim();
+    if (trimmed) {
+      onUpdateName(trimmed);
     }
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
-  }, [searchQuery, item.displayName, onUpdateName]);
+  }, [onUpdateName]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current && !inputRef.current.contains(e.target as Node)
-      ) {
-        saveAsCustomText();
-      } else if (
-        !dropdownRef.current &&
-        inputRef.current && !inputRef.current.contains(e.target as Node)
-      ) {
-        saveAsCustomText();
+      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
+        if (!dropdownRef.current || !dropdownRef.current.contains(e.target as Node)) {
+          saveAsCustomText();
+        }
       }
     };
     if (isEditing) {
@@ -245,7 +244,6 @@ function InlineItemSearchCell({
           type="text"
           value={searchQuery}
           onChange={(e) => {
-            console.log('입력값:', e.target.value);
             setSearchQuery(e.target.value);
             setShowDropdown(true);
           }}
@@ -351,7 +349,7 @@ function InlineItemSearchCell({
         setIsEditing(true);
       }}
       style={{ cursor: 'pointer', display: 'block', width: '100%', textAlign: 'left' }}
-      title="클릭하여 수정 또는 품목 검색"
+      title="클릭하여 수정"
     >
       {item.displayName || " "}
     </span>
