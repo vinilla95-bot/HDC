@@ -1377,25 +1377,25 @@ captureContainer.appendChild(clonedSheet);
   }, [q, dateFilter]);
 
   useEffect(() => {
-    if (current) {
-      setEditItems(pickItems(current).map((raw, idx) => {
-        const it = normItem(raw);
-        return {
-          key: `item_${idx}_${Date.now()}`,
-          optionId: (raw as any).optionId || "",
-          optionName: it.name,
-          displayName: it.name,
-          unit: it.unit,
-          qty: it.qty,
-          unitPrice: it.unitPrice,
-          amount: it.amount,
-          showSpec: (raw as any).showSpec || "n",
-          lineSpec: (raw as any).lineSpec || { w: current.w || 3, l: current.l || 6, h: 2.6 },
-        };
-      }));
-      setEditMode(false);
-    }
-  }, [current]);
+  if (current) {
+    setEditItems(pickItems(current).map((raw, idx) => {
+      const it = normItem(raw);
+      return {
+        key: `item_${idx}_${Date.now()}`,
+        optionId: (raw as any).optionId || "",
+        optionName: it.name,
+        displayName: it.name,
+        unit: it.unit,
+        qty: it.qty,
+        unitPrice: it.unitPrice,
+        amount: it.amount,
+        showSpec: (raw as any).showSpec || "n",
+        lineSpec: (raw as any).lineSpec || { w: current.w || 3, l: current.l || 6, h: 2.6 },
+      };
+    }));
+    setEditMode(false);
+  }
+}, [current]);
 
   // ✅ 옵션 검색 결과 필터링 (한 번만 정의)
   const filteredOptions = useMemo(() => {
@@ -1611,33 +1611,19 @@ const specText = item.specText ?? (
         />
       </td>
      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-  <EditableTextCell 
-    value={specText} 
-    onChange={(val) => {
-      const trimmed = val.trim();
-      if (trimmed === '') {
-        // 빈 값이면 규격 숨김
-        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-          ...it,
-          showSpec: 'n',
-          lineSpec: null
-        }));
-      } else {
-        // 값이 있으면 파싱 시도
-        const parts = trimmed.split('x').map(s => parseFloat(s.trim()));
-        const w = parts[0] || 3;
-        const l = parts[1] || 6;
-        const h = parts[2] || 2.6;
-        
-        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-          ...it,
-          lineSpec: { w, l, h },
-          showSpec: 'y'
-        }));
-      }
-    }}
-    editable={editMode}
-  />
+ <EditableTextCell 
+  value={specText} 
+  onChange={(val) => {
+    const trimmed = val.trim();
+    // ✅ specText에 자유입력 값 그대로 저장
+    setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+      ...it,
+      specText: trimmed,  // ✅ 자유입력 그대로 저장
+      showSpec: trimmed ? 'y' : 'n'
+    }));
+  }}
+  editable={editMode}
+/>
 </td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
         <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
