@@ -95,9 +95,10 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
 
 // ============ 인라인 규격 편집 셀 ============
 // ============ 인라인 규격 편집 셀 ============
-function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?: number }; onChange: (spec: { w: number; l: number; h?: number }) => void }) {
+function EditableSpecCell({ spec, specText, onChange }: { spec: { w: number; l: number; h?: number }; specText?: string; onChange: (specText: string) => void }) {
   const [isEditing, setIsEditing] = useState(false);
-  const displayText = (spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '';
+  // ✅ specText 우선, 없으면 spec에서 계산
+  const displayText = specText ?? ((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '');
   const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -109,26 +110,13 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
   }, [isEditing]);
   
   React.useEffect(() => { 
-    setTempValue((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : ''); 
-  }, [spec]);
+    setTempValue(specText ?? ((spec.w || spec.l || spec.h) ? `${spec.w}×${spec.l}×${spec.h || 0}` : '')); 
+  }, [spec, specText]);
 
   const handleBlur = () => { 
     setIsEditing(false); 
-    
-    // 빈 값이면 빈 규격으로 저장
-    if (!tempValue.trim()) {
-      onChange({ w: 0, l: 0, h: 0 });
-      return;
-    }
-    
-    // "3×6×2.6" 또는 "3x6x2.6" 형식 파싱
-    const parts = tempValue.replace(/x/gi, '×').split('×').map(s => parseFloat(s.trim()) || 0);
-    const newSpec = {
-      w: parts[0],
-      l: parts[1],
-      h: parts[2]
-    };
-    onChange(newSpec);
+    // ✅ 자유입력 텍스트 그대로 저장
+    onChange(tempValue.trim());
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => { 
@@ -2046,10 +2034,11 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
       spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }} 
-      onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
+      specText={item.specText}
+      onChange={(newSpecText) => onUpdateSpec(item.key, newSpecText)} 
     />
   ) : (
-    (item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h)
+    item.specText || ((item.lineSpec?.w || form.w) + "×" + (item.lineSpec?.l || form.l) + "×" + (item.lineSpec?.h || form.h))
   )}
 </td>
   <td className="c center">
