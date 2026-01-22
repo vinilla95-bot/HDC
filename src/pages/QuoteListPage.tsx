@@ -173,15 +173,23 @@ function InlineItemSearchCell({
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+const filteredOpts = useMemo(() => {
+  const q = searchQuery.trim();
+  console.log('검색어:', q, '| showDropdown:', showDropdown);
+  
+  if (!q) return [];
+  
+  const result = options.filter((o: any) => {
+    const name = String(o.option_name || "");
+    return matchKorean(name, q);
+  }).slice(0, 15);
+  
+  console.log('검색 결과:', result.length);
+  return result;
+}, [searchQuery, options]);
 
-  const filteredOpts = useMemo(() => {
-    const q = searchQuery.trim();
-    if (!q) return [];
-    return options.filter((o: any) => {
-      const name = String(o.option_name || "");
-      return matchKorean(name, q);
-    }).slice(0, 15);
-  }, [searchQuery, options]);
+  
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -220,9 +228,10 @@ function InlineItemSearchCell({
           type="text"
           value={searchQuery}
           onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setShowDropdown(true);
-          }}
+  console.log('입력값:', e.target.value);
+  setSearchQuery(e.target.value);
+  setShowDropdown(true);
+}}
           onFocus={() => setShowDropdown(true)}
           placeholder="품목 검색..."
           autoFocus
