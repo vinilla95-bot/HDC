@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
-import { supabase } from "../lib/supabase";
 import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine } from "../QuoteService";
 import { A4Quote } from "../App";
@@ -340,6 +339,275 @@ const filteredOpts = useMemo(() => {
     >
       {item.displayName || "(-)"}
     </span>
+  );
+}
+
+function EmptyRowSearchCell({ 
+  options, 
+  current,
+  onAddItem 
+}: { 
+  options: any[]; 
+  current: QuoteRow | null;
+  onAddItem: (item: any) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [sites, setSites] = useState<any[]>([]);
+  const [isSearchingSite, setIsSearchingSite] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const filteredOpts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return options.filter((o: any) => {
+      const name = String(o.option_name || "").toLowerCase();
+      return name.includes(q) || matchKorean(name, q);
+    }).slice(0, 10);
+  }, [searchQuery, options]);
+
+  useEffect(() => {
+    const searchSites = async () => {
+      if (!searchQuery.trim()) {
+        setSites([]);
+        return;
+      }
+      setIsSearchingSite(true);
+      try {
+        const w = current?.w || 3;
+        const l = current?.l || 6;
+        const { list } = await searchSiteRates(searchQuery.trim(), w, l);
+        const q = searchQuery.trim().toLowerCase();
+        const filtered = list.filter((s: any) => {
+          const alias = String(s.alias || "").toLowerCase();
+          return alias.includes(q) || matchKorean(alias, q);
+        });
+        setSites(filtered.slice(0, 5));
+      } catch (e) {
+        setSites([]);
+      }
+      setIsSearchingSite(false);
+    };
+    const timer = setTimeout(searchSites, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, current]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current && !inputRef.current.contains(e.target as Node)
+      ) {
+        setShowDropdown(false);
+        setIsEditing(false);
+        setSearchQuery("");
+        setSites([]);
+      }
+    };
+    if (isEditing) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isEditing]);
+
+  const handleSelectOption = (opt: any) => {
+    const w = current?.w || 3;
+    const l = current?.l || 6;
+    const res = calculateOptionLine(opt, w, l);
+    const rawName = String(opt.option_name || "");
+    const rent = rawName.includes("임대");
+    const months = opt._months || 1;
+    const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
+    
+    onAddItem({
+      key: `item_${Date.now()}`,
+      optionId: opt.option_id,
+      optionName: rawName,
+      displayName: rent ? `${rawName} ${months}개월` : rawName,
+      unit: rent ? "개월" : (res.unit || "EA"),
+      qty: 1,
+      unitPrice: customerUnitPrice,
+      amount: customerUnitPrice,
+      showSpec: opt.show_spec || "n",
+      lineSpec: { w, l, h: 2.6 },
+      months: months,
+    });
+    
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+    setSites([]);
+  };
+
+  const handleSelectDelivery = (site: any, type: 'delivery' | 'crane') => {
+    const price = type === 'delivery' ? site.delivery : site.crane;
+    const name = type === 'delivery' ? `5톤 일반트럭 운송비-${site.alias}` : `크레인 운송비-${site.alias}`;
+    
+    onAddItem({
+      key: `item_${Date.now()}`,
+      optionId: type === 'delivery' ? 'DELIVERY' : 'CRANE',
+      optionName: name,
+      displayName: name,
+      unit: "EA",
+      qty: 1,
+      unitPrice: price,
+      amount: price,
+      showSpec: "y",
+      lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
+    });
+    
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+    setSites([]);
+  };
+
+  if (!isEditing) {
+    return (
+      <span
+        onClick={() => setIsEditing(true)}
+        style={{ cursor: 'pointer', display: 'block', width: '100%', color: '#999' }}
+      >
+        + 품목/운송비 추가
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input
+        ref={inputRef}
+        type="text"
+        value={searchQuery}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          setShowDropdown(true);
+        }}
+        onFocus={() => setShowDropdown(true)}
+        placeholder="품목 또는 지역 검색..."
+        autoFocus
+        style={{ 
+          width: '100%', 
+          padding: '4px 6px', 
+          border: '1px solid #2e5b86', 
+          borderRadius: 4,
+          fontSize: 12, 
+          outline: 'none',
+        }}
+      />
+      {showDropdown && searchQuery.trim() && (
+        <div 
+          ref={dropdownRef}
+          style={{ 
+            position: 'absolute', 
+            top: '100%', 
+            left: 0, 
+            width: '320px',
+            maxHeight: 350, 
+            overflowY: 'auto', 
+            background: '#fff', 
+            border: '1px solid #ccc',
+            borderRadius: 6,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
+            zIndex: 99999,
+          }}
+        >
+          {/* 운송비 섹션 */}
+          {sites.length > 0 && (
+            <>
+              <div style={{ padding: '6px 10px', background: '#f5f5f5', fontSize: 11, fontWeight: 700, color: '#666' }}>운송비</div>
+              {sites.map((site: any, idx: number) => (
+                <div key={`site-${idx}`} style={{ padding: '8px 10px', borderBottom: '1px solid #eee' }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>{site.alias}</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button 
+                      onClick={() => handleSelectDelivery(site, 'delivery')} 
+                      style={{ flex: 1, padding: '6px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}
+                    >
+                      일반 {money(site.delivery)}원
+                    </button>
+                    <button 
+                      onClick={() => handleSelectDelivery(site, 'crane')} 
+                      style={{ flex: 1, padding: '6px 8px', background: '#fff3e0', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}
+                    >
+                      크레인 {money(site.crane)}원
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          
+          {/* 품목 섹션 */}
+          {filteredOpts.length > 0 && (
+            <>
+              <div style={{ padding: '6px 10px', background: '#f5f5f5', fontSize: 11, fontWeight: 700, color: '#666' }}>품목</div>
+              {filteredOpts.map((opt: any) => {
+                const isRent = String(opt.option_name || "").includes("임대");
+                
+                if (isRent) {
+                  return (
+                    <div key={opt.option_id} style={{ padding: '8px 10px', borderBottom: '1px solid #eee' }}>
+                      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                      <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{opt.unit || 'EA'} · {money(opt.unit_price || 0)}원</div>
+                      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <input
+                          type="number"
+                          defaultValue={1}
+                          min={1}
+                          id={`rent-empty-${opt.option_id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ width: 40, padding: '4px', border: '1px solid #ccc', borderRadius: 4, textAlign: 'center', fontSize: 11 }}
+                        />
+                        <span style={{ fontSize: 11 }}>개월</span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
+                            const months = Number(input?.value) || 1;
+                            handleSelectOption({ ...opt, _months: months });
+                          }}
+                          style={{ padding: '4px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+                        >
+                          추가
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div
+                    key={opt.option_id}
+                    onClick={() => handleSelectOption(opt)}
+                    style={{ 
+                      padding: '8px 10px', 
+                      cursor: 'pointer', 
+                      borderBottom: '1px solid #eee', 
+                      fontSize: 12,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                  >
+                    <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                    <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>
+                      {opt.unit || 'EA'} · {money(opt.unit_price || 0)}원
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+          
+          {filteredOpts.length === 0 && sites.length === 0 && !isSearchingSite && (
+            <div style={{ padding: '10px', color: '#999', fontSize: 12 }}>검색 결과 없음</div>
+          )}
+          {isSearchingSite && <div style={{ padding: '10px', color: '#999', fontSize: 12 }}>검색 중...</div>}
+        </div>
+      )}
+    </div>
   );
 }
 // ============ 인라인 텍스트 편집 셀 ============
