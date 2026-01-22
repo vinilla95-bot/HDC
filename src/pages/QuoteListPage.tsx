@@ -151,7 +151,6 @@ function EditableNumberCell({ value, onChange, editable = true }: { value: numbe
   );
 }
 
-// ============ 인라인 품목 검색/변경 셀 ============
 function InlineItemSearchCell({ 
   item, 
   options, 
@@ -218,9 +217,13 @@ function InlineItemSearchCell({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      onUpdateName(searchQuery);
-      setIsEditing(false);
-      setShowDropdown(false);
+      if (filteredOpts.length > 0) {
+        handleSelect(filteredOpts[0]);
+      } else {
+        onUpdateName(searchQuery);
+        setIsEditing(false);
+        setShowDropdown(false);
+      }
     } else if (e.key === "Escape") {
       setSearchQuery(item.displayName || "");
       setIsEditing(false);
@@ -275,27 +278,62 @@ function InlineItemSearchCell({
               textAlign: 'left'
             }}
           >
-            {filteredOpts.map((opt: any) => (
-              <div
-                key={opt.option_id}
-                onClick={() => handleSelect(opt)}
-                style={{ 
-                  padding: '10px 12px', 
-                  cursor: 'pointer', 
-                  borderBottom: '1px solid #eee', 
-                  fontSize: 12,
-                  textAlign: 'left',
-                  background: '#fff'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-              >
-                <div style={{ fontWeight: 700, textAlign: 'left' }}>{opt.option_name}</div>
-                <div style={{ fontSize: 10, color: '#888', marginTop: 2, textAlign: 'left' }}>
-                  {opt.unit || 'EA'} · {money(opt.unit_price || 0)}원
+            {filteredOpts.map((opt: any) => {
+              const isRent = String(opt.option_name || "").includes("임대");
+              
+              if (isRent) {
+                return (
+                  <div key={opt.option_id} style={{ padding: '10px 12px', borderBottom: '1px solid #eee', textAlign: 'left', background: '#fff' }}>
+                    <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                    <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{opt.unit || 'EA'} · {money(opt.unit_price || 0)}원</div>
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <input
+                        type="number"
+                        defaultValue={1}
+                        min={1}
+                        id={`rent-inline-${opt.option_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: 40, padding: '4px', border: '1px solid #ccc', borderRadius: 4, textAlign: 'center', fontSize: 11 }}
+                      />
+                      <span style={{ fontSize: 11 }}>개월</span>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
+                          const months = Number(input?.value) || 1;
+                          handleSelect({ ...opt, _months: months });
+                        }}
+                        style={{ padding: '4px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+                      >
+                        선택
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <div
+                  key={opt.option_id}
+                  onClick={() => handleSelect(opt)}
+                  style={{ 
+                    padding: '10px 12px', 
+                    cursor: 'pointer', 
+                    borderBottom: '1px solid #eee', 
+                    fontSize: 12,
+                    textAlign: 'left',
+                    background: '#fff'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                >
+                  <div style={{ fontWeight: 700, textAlign: 'left' }}>{opt.option_name}</div>
+                  <div style={{ fontSize: 10, color: '#888', marginTop: 2, textAlign: 'left' }}>
+                    {opt.unit || 'EA'} · {money(opt.unit_price || 0)}원
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
