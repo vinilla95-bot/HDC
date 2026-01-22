@@ -423,7 +423,6 @@ function InlineItemSearchCell({
     </span>
   );
 }
-
 function EmptyRowSearchCell({ 
   options, 
   current,
@@ -440,6 +439,35 @@ function EmptyRowSearchCell({
   const [isSearchingSite, setIsSearchingSite] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // ✅ 최신 값 참조용 ref 추가
+  const searchQueryRef = useRef(searchQuery);
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  // ✅ 자유 입력 저장 함수
+  const commitFreeText = useCallback(() => {
+    const trimmed = (searchQueryRef.current || "").trim();
+    if (trimmed) {
+      onAddItem({
+        key: `item_${Date.now()}`,
+        optionId: null,
+        optionName: trimmed,
+        displayName: trimmed,
+        unit: "EA",
+        qty: 1,
+        unitPrice: 0,
+        amount: 0,
+        showSpec: "n",
+        lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
+      });
+    }
+    setShowDropdown(false);
+    setIsEditing(false);
+    setSearchQuery("");
+    setSites([]);
+  }, [onAddItem, current]);
 
   const filteredOpts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -476,23 +504,21 @@ function EmptyRowSearchCell({
     return () => clearTimeout(timer);
   }, [searchQuery, current]);
 
-  useEffect(() => {
+useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
         inputRef.current && !inputRef.current.contains(e.target as Node)
       ) {
-        setShowDropdown(false);
-        setIsEditing(false);
-        setSearchQuery("");
-        setSites([]);
+        // ✅ 바깥 클릭 시 자유입력 저장
+        commitFreeText();
       }
     };
     if (isEditing) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isEditing]);
+  }, [isEditing, commitFreeText]);
 
   const handleSelectOption = (opt: any) => {
     const w = current?.w || 3;
