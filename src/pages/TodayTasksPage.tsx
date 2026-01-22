@@ -234,47 +234,47 @@ export default function TodayTasksPage() {
     return null;
   };
 
-  const generateDispatchMessage = (task: DeliveryTask) => {
-    const [, month, day] = task.delivery_date.split("-").map(Number);
-    
-    const date = new Date(task.delivery_date);
-    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-    const dayOfWeek = dayNames[date.getDay()];
-    
-    const timeMatch = task.site_addr?.match(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})/);
-    const timeStr = timeMatch ? timeMatch[0].trim() : "";
-    
-    const addrWithoutTime = task.site_addr?.replace(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})\s*/, "").trim() || "";
-    
-    const dateStr = `${month}/${day}(${dayOfWeek})${timeStr ? " " + timeStr : ""}`;
-    
-   const windowKeywords = ["미닫이", "여닫이", "이중창", "중창", "샷시", "샤시", "창문", "창짝"];
-const windowOptions = task.items?.filter((i: any) => {
-  const name = (i.optionName || i.displayName || i.itemName || "").toLowerCase();
-  return windowKeywords.some(kw => name.includes(kw));
-}) || [];
+ const generateDispatchMessage = (task: DeliveryTask) => {
+  const [, month, day] = task.delivery_date.split("-").map(Number);
+  
+  const date = new Date(task.delivery_date);
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const dayOfWeek = dayNames[date.getDay()];
+  
+  const timeMatch = task.site_addr?.match(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})/);
+  const timeStr = timeMatch ? timeMatch[0].trim() : "";
+  
+  const addrWithoutTime = task.site_addr?.replace(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})\s*/, "").trim() || "";
+  
+  const dateStr = `${month}/${day}(${dayOfWeek})${timeStr ? " " + timeStr : ""}`;
 
-// ✅ 창문 옵션 텍스트 (이름-수량 형식)
-let optionText = "기본형";
-if (windowOptions.length > 0) {
-  optionText = windowOptions.map((i: any) => {
-    const name = i.optionName || i.displayName || i.itemName || "";
-    const itemQty = i.qty || 1;
-    return `${name}-${itemQty}개`;
-  }).join(", ");
-}
-    const optionNames = task.items?.map((i: any) => i.optionName || i.displayName || "").filter(Boolean).join("/") || "기본형";
+  // ✅ 창문 관련 옵션만 필터링
+  const windowKeywords = ["미닫이", "여닫이", "이중창", "중창", "샷시", "샤시", "창문", "창짝"];
+  const windowOptions = task.items?.filter((i: any) => {
+    const name = (i.optionName || i.displayName || i.itemName || "").toLowerCase();
+    return windowKeywords.some(kw => name.includes(kw));
+  }) || [];
 
-    let saleType = "신품판매";
-    if (task.contract_type === "used") saleType = "중고판매";
-    else if (task.contract_type === "rental") saleType = "임대";
+  // ✅ 창문 옵션 텍스트 (이름-수량 형식)
+  let optionNames = "기본형";
+  if (windowOptions.length > 0) {
+    optionNames = windowOptions.map((i: any) => {
+      const name = i.optionName || i.displayName || i.itemName || "";
+      const itemQty = i.qty || 1;
+      return `${name}-${itemQty}개`;
+    }).join(", ");
+  }
 
-    let text = `사장님 ${dateStr} ${saleType} (${task.spec || ""})(${qty})동(${optionNames}) 상차 현대 하차 ${addrWithoutTime}`;
-    text += ` ${task.customer_name || ""}`;
-    text += ` 인수자 ${task.customer_phone || ""} 입니다~`;
+  let saleType = "신품판매";
+  if (task.contract_type === "used") saleType = "중고판매";
+  else if (task.contract_type === "rental") saleType = "임대";
 
-    return text;
-  };
+  let text = `사장님 ${dateStr} ${saleType} (${task.spec || ""})(${optionNames}) 상차 현대 하차 ${addrWithoutTime}`;
+  text += ` ${task.customer_name || ""}`;
+  text += ` 인수자 ${task.customer_phone || ""} 입니다~`;
+
+  return text;
+};
 
   const updateOrderStatus = async (id: number, status: string) => {
     await supabase.from("pending_orders").update({ status }).eq("id", id);
