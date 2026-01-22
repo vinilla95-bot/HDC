@@ -987,48 +987,29 @@ const handleSaveEdit = async () => {
                   {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
             {/* ✅ 배차완료 버튼 */}
 <div>
-  <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
-  <button
-    type="button"
-    onClick={() => setEditForm({ 
-      ...editForm, 
-      dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
-    })}
-    style={{
-      padding: "10px 20px",
-      borderRadius: 8,
-      border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
-      background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
-      color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
-      cursor: "pointer",
-      fontSize: 14,
-      fontWeight: 700,
-    }}
-  >
-    {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
-  </button>
+  <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
+  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
+      <button
+        key={c}
+        type="button"
+        onClick={() => setNewSchedule({ ...newSchedule, delivery_color: c })}
+        style={{
+          padding: "6px 12px",
+          borderRadius: 6,
+          border: newSchedule.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
+          background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
+          color: c === "auto" ? "#666" : colorStyles[c].text,
+          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
+      </button>
+    ))}
+  </div>
 </div>
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setNewSchedule({ ...newSchedule, delivery_color: c })}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 6,
-                        border: newSchedule.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
-                        background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
-                        color: c === "auto" ? "#666" : colorStyles[c].text,
-                        cursor: "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
 
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
