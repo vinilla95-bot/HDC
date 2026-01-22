@@ -1380,143 +1380,138 @@ const handleSaveEdit = async () => {
             onChange={(e) => setEditForm({ ...editForm, contract_type: e.target.value })}
             style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
           >
-           <option value="order">신품</option>
-<option value="used">중고</option>
-<option value="rental">임대</option>
-<option value="memo">메모</option>
+            <option value="order">신품</option>
+            <option value="used">중고</option>
+            <option value="rental">임대</option>
+            <option value="memo">메모</option>
           </select>
         </div>
         <div>
           <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
-                <input
-                  value={editForm.customer_name || ""}
-                  onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>연락처</label>
-                <input
-                  value={editForm.customer_phone || ""}
-                  onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
-                <input
-                  value={editForm.spec || ""}
-                  onChange={(e) => setEditForm({ ...editForm, spec: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>하차 주소</label>
-                <input
-                  value={editForm.site_addr || ""}
-                  onChange={(e) => setEditForm({ ...editForm, site_addr: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                  placeholder="시간/주소 입력"
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
-                <textarea
-                  value={editForm.memo || ""}
-                  onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
-                />
-              </div>
-              <div>
-  <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
-  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-    {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
-      <button
-        key={c}
-        type="button"
-        onClick={() => setNewSchedule({ ...newSchedule, delivery_color: c })}
-        style={{
-          padding: "6px 12px",
-          borderRadius: 6,
-          border: newSchedule.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
-          background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
-          color: c === "auto" ? "#666" : colorStyles[c].text,
-          cursor: "pointer",
-          fontSize: 12,
-          fontWeight: 600,
-        }}
-      >
-        {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
-      </button>
-    ))}
-  </div>
-</div>
-            </div
-            
-               </div>
-            </div>
-            
-            {/* ✅ 배차완료 버튼 - 여기에 추가 */}
-            <div>
-              <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
+          <input
+            value={editForm.customer_name || ""}
+            onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>연락처</label>
+          <input
+            value={editForm.customer_phone || ""}
+            onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
+            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
+          <input
+            value={editForm.spec || ""}
+            onChange={(e) => setEditForm({ ...editForm, spec: e.target.value })}
+            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>하차 주소</label>
+          <input
+            value={editForm.site_addr || ""}
+            onChange={(e) => setEditForm({ ...editForm, site_addr: e.target.value })}
+            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+            placeholder="시간/주소 입력"
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
+          <textarea
+            value={editForm.memo || ""}
+            onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
+            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
               <button
+                key={c}
                 type="button"
-                onClick={() => setEditForm({ 
-                  ...editForm, 
-                  dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
-                })}
+                onClick={() => setEditForm({ ...editForm, delivery_color: c })}
                 style={{
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
-                  background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
-                  color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: editForm.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
+                  background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
+                  color: c === "auto" ? "#666" : colorStyles[c].text,
                   cursor: "pointer",
-                  fontSize: 14,
-                  fontWeight: 700,
-                }}
-              >
-                {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
-              </button>
-            </div>
-          </div>>
-
-            {/* 버튼 */}
-            <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-              <button
-                onClick={() => setShowEditModal(false)}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#f5f5f5",
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
+                  fontSize: 12,
                   fontWeight: 600,
-                  cursor: "pointer",
                 }}
               >
-                취소
+                {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
               </button>
-              <button
-                onClick={handleSaveEdit}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#2e5b86",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                저장
-              </button>
-            </div>
+            ))}
           </div>
         </div>
-      )}
+        
+        {/* ✅ 배차완료 버튼 */}
+        <div>
+          <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
+          <button
+            type="button"
+            onClick={() => setEditForm({ 
+              ...editForm, 
+              dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
+            })}
+            style={{
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
+              background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
+              color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+          >
+            {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
+          </button>
+        </div>
+      </div>
 
+      {/* 버튼 */}
+      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+        <button
+          onClick={() => setShowEditModal(false)}
+          style={{
+            flex: 1,
+            padding: 14,
+            background: "#f5f5f5",
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          취소
+        </button>
+        <button
+          onClick={handleSaveEdit}
+          style={{
+            flex: 1,
+            padding: 14,
+            background: "#2e5b86",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          저장
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {/* ✅ 배차 양식 팝업 */}
       {selectedDelivery && showDispatchModal && (
         <div
