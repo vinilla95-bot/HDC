@@ -162,10 +162,9 @@ export default function TodayTasksPage() {
 
     if (!quotes || quotes.length === 0) return;
 
-    const { data: existingOrders } = await supabase
-      .from("pending_orders")
-      .select("quote_id, rule_id");
-
+   const { data: existingOrders } = await supabase
+  .from("pending_orders")
+  .select("quote_id, rule_id, status");
     const existingSet = new Set(
       (existingOrders || []).map((o: any) => `${o.quote_id}_${o.rule_id}`)
     );
@@ -283,7 +282,7 @@ const generateDispatchMessage = (task: DeliveryTask) => {
 const deleteOrder = async (id: number) => {
   if (!confirm("정말 삭제하시겠습니까?")) return;
   
-  await supabase.from("pending_orders").delete().eq("id", id);
+  await supabase.from("pending_orders").update({ status: "deleted" }).eq("id", id);
   setPendingOrders(prev => prev.filter(o => o.id !== id));
 };
   const updateDispatchStatus = async (quoteId: string, status: string) => {
