@@ -176,12 +176,20 @@ function EditableSpecCell({ spec, onChange }: { spec: { w: number; l: number; h?
 }
 
 // ============ 인라인 품목 편집 셀 ============
+// ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // ✅ item이 변경되면 편집 모드 종료
+  React.useEffect(() => {
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+  }, [item.displayName]);
 
   const filteredOptions = React.useMemo(() => {
     const q = searchQuery.trim();
@@ -212,9 +220,11 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
         setSearchQuery("");
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [searchQuery, item, onSelectOption]);
+    if (isEditing) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isEditing, searchQuery, item, onSelectOption]);
 
   const handleSelect = (opt: any) => {
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
@@ -226,68 +236,64 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  // 편집 모드
-  if (isEditing) {
+  // ✅ 편집 모드 아닐 때 - 먼저 체크!
+  if (!isEditing) {
     return (
-      <div style={{ position: 'relative', textAlign: 'left', width: '100%' }}>
-        <input 
-          ref={inputRef} 
-          type="text" 
-          value={searchQuery} 
-          onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} 
-          onFocus={() => setShowDropdown(true)} 
-          placeholder="품목 검색..." 
-          autoFocus 
-          style={{ 
-            width: '100%', 
-            padding: '4px 6px', 
-            border: '1px solid #2e5b86', 
-            borderRadius: 4,
-            fontSize: 12, 
-            boxSizing: 'border-box', 
-            outline: 'none', 
-            background: '#fff' 
-          }} 
-        />
-        {showDropdown && searchQuery.trim() && (
-          <div ref={dropdownRef} style={{ 
-            position: 'absolute', 
-            top: '100%', 
-            left: 0, 
-            width: '300px',
-            maxHeight: 300, 
-            overflowY: 'auto', 
-            background: '#fff', 
-            border: '1px solid #ccc', 
-            borderRadius: 6,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', 
-            zIndex: 9999 
-          }}>
-            {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-              <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: '8px 10px', cursor: 'pointer', borderBottom: '1px solid #eee', fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = '#e3f2fd')} onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}>
-                <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{opt.unit || 'EA'} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-              </div>
-            )) : <div style={{ padding: '10px', color: '#999', fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>}
-          </div>
-        )}
-      </div>
+      <td 
+        className="c wrap" 
+        onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
+        style={{ cursor: "pointer" }} 
+        title="클릭하여 품목 변경"
+      >
+        {String(item.displayName || "")}
+      </td>
     );
   }
 
-  // 편집 모드 아닐 때 - span만 반환
-  // 편집 모드 아닐 때
-// 편집 모드 아닐 때 - 깔끔하게 텍스트만 표시
+  // 편집 모드일 때
   return (
-    <td 
-      className="c wrap" 
-      onClick={() => { setSearchQuery(item.displayName || ""); setIsEditing(true); }} 
-      style={{ cursor: "pointer" }} 
-      title="클릭하여 품목 변경"
-    >
-      <span style={{ display: 'block', width: '100%' }}>
-        {String(item.displayName || "")}
-      </span>
+    <td className="c wrap" style={{ position: "relative", padding: 0, overflow: "visible" }}>
+      <input 
+        ref={inputRef} 
+        type="text" 
+        value={searchQuery} 
+        onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} 
+        onFocus={() => setShowDropdown(true)} 
+        placeholder="품목 검색..." 
+        autoFocus 
+        style={{ 
+          width: "100%", 
+          padding: "4px 6px", 
+          border: "1px solid #2e5b86", 
+          borderRadius: 4,
+          fontSize: 12, 
+          boxSizing: "border-box", 
+          outline: "none", 
+          background: "#fff" 
+        }} 
+      />
+      {showDropdown && searchQuery.trim() && (
+        <div ref={dropdownRef} style={{ 
+          position: "absolute", 
+          top: "100%", 
+          left: 0, 
+          width: "300px",
+          maxHeight: 300, 
+          overflowY: "auto", 
+          background: "#fff", 
+          border: "1px solid #ccc", 
+          borderRadius: 6,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
+          zIndex: 9999 
+        }}>
+          {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
+            <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
+              <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+            </div>
+          )) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>}
+        </div>
+      )}
     </td>
   );
 }
