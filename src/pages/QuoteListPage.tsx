@@ -1567,8 +1567,12 @@ const quotePreviewHtml = useMemo(() => {
 {items.map((item: any, idx: number) => {
   const supply = item.qty * item.unitPrice;
   const vat = Math.round(supply * 0.1);
-  const showSpec = String(item.showSpec || "").toLowerCase() === "y";
-  const specText = showSpec && item.lineSpec ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` : "";
+ // ✅ specText를 직접 저장한 값 우선, 없으면 lineSpec에서 계산
+const specText = item.specText ?? (
+  (String(item.showSpec || "").toLowerCase() === "y" && item.lineSpec) 
+    ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` 
+    : ""
+);
 
   return (
     <tr key={item.key || idx}>
