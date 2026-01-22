@@ -2132,8 +2132,9 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   // ✅ computedItems.length를 더해주어, 아이템이 추가될 때마다 완전히 새로운 컴포넌트로 리셋시킴
   <tr key={`blank-${computedItems.length + i}`}> 
     {i === 0 && editable && options && onAddItem ? (
-     <EmptyRowCell 
-  key={`empty-cell-${computedItems.length}`}  {/* ✅ 핵심: 아이템 개수가 바뀔 때마다 이 컴포넌트를 강제로 '새로고침' 합니다 */}
+     // [수정할 코드] - 주석 제거됨
+<EmptyRowCell 
+  key={`empty-cell-${computedItems.length}`}
   options={options} 
   form={form} 
   onAddItem={onAddItem} 
