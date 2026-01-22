@@ -177,15 +177,17 @@ function InlineItemSearchCell({
     setSearchQuery(item.displayName || "");
   }, [item.displayName]);
 
-  const filteredOpts = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return options.filter((o: any) => {
-      const name = String(o.option_name || "").toLowerCase();
-      return name.includes(q) || matchKorean(name, q);
-    }).slice(0, 12);
-  }, [searchQuery, options]);
-
+ // InlineItemSearchCell 내부 filteredOpts (약 140줄)
+const filteredOpts = useMemo(() => {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return [];
+  
+  return options.filter((o: any) => {
+    const name = String(o.option_name || "").toLowerCase();
+    return name.includes(q) || matchKorean(String(o.option_name || ""), searchQuery);
+  }).slice(0, 12);
+}, [searchQuery, options]);
+  
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -940,14 +942,32 @@ captureContainer.appendChild(clonedSheet);
   }, [current]);
 
   // ✅ 옵션 검색 결과 필터링 (한 번만 정의)
-  const filteredOptions = useMemo(() => {
-    const query = String(optQ || "").trim();
-    if (!query) return [];
+ // filteredOptions (약 720줄)
+const filteredOptions = useMemo(() => {
+  const query = String(optQ || "").trim();
+  if (!query) return [];
 
-    const matched = options.filter((o: any) => {
-      const name = String(o.option_name || "");
-      return matchKorean(name, query);
-    });
+  const qLower = query.toLowerCase();
+
+  const matched = options.filter((o: any) => {
+    const name = String(o.option_name || "");
+    const nameLower = name.toLowerCase();
+    
+    // 일반 포함 검색 + 초성 검색
+    return nameLower.includes(qLower) || matchKorean(name, query);
+  });
+
+  matched.sort((a: any, b: any) => {
+    const nameA = String(a.option_name || "").toLowerCase();
+    const nameB = String(b.option_name || "").toLowerCase();
+    const startsA = nameA.startsWith(qLower) ? 0 : 1;
+    const startsB = nameB.startsWith(qLower) ? 0 : 1;
+    if (startsA !== startsB) return startsA - startsB;
+    return nameA.includes(qLower) ? -1 : 1;
+  });
+
+  return matched.slice(0, 20);
+}, [optQ, options]);
 
     const qLower = query.toLowerCase();
     matched.sort((a: any, b: any) => {
