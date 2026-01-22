@@ -208,6 +208,7 @@ function EditableSpecCell({
 
 // ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
+  // ✅ 초기값 명시적으로 false
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -216,12 +217,23 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
 
   const displayText = item.displayName || "";
   
-  // ✅ item.key가 바뀌면 편집 모드 종료
+  // ✅ item이 바뀌면 무조건 편집 모드 종료
+  const prevKeyRef = React.useRef(item.key);
+  React.useEffect(() => {
+    if (prevKeyRef.current !== item.key) {
+      setIsEditing(false);
+      setShowDropdown(false);
+      setSearchQuery("");
+      prevKeyRef.current = item.key;
+    }
+  }, [item.key]);
+
+  // ✅ 마운트 시에도 편집 모드 아님을 보장
   React.useEffect(() => {
     setIsEditing(false);
     setShowDropdown(false);
     setSearchQuery("");
-  }, [item.key]);
+  }, []);
   
   const searchQueryRef = React.useRef(searchQuery);
   React.useEffect(() => {
@@ -244,7 +256,6 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   const commitFreeText = useCallback(() => {
     const trimmed = (searchQueryRef.current || "").trim();
     
-    // ✅ 먼저 상태 완전 초기화
     setIsEditing(false);
     setShowDropdown(false);
     setSearchQuery("");
@@ -276,7 +287,6 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   }, [isEditing, commitFreeText]);
 
   const handleSelect = (opt: any) => {
-    // ✅ 먼저 상태 완전 초기화
     setIsEditing(false);
     setShowDropdown(false);
     setSearchQuery("");
@@ -287,7 +297,7 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  // ✅ 편집 모드가 아니면 텍스트만 표시
+  // ✅ 편집 모드가 아니면 텍스트만 표시 (이 조건을 먼저!)
   if (!isEditing) {
     return (
       <td 
@@ -301,7 +311,6 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
     );
   }
 
-  // ✅ 편집 모드
   return (
     <td className="c wrap" style={{ position: "relative", padding: "4px 8px", overflow: "visible" }}>
       <input 
