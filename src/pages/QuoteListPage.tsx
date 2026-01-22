@@ -1209,7 +1209,30 @@ const quotePreviewHtml = useMemo(() => {
           onDelete={() => deleteEditItem(item.key)}
         />
       </td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{specText}</td>
+    <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+  <EditableTextCell 
+    value={specText} 
+    onChange={(val) => {
+      const parts = val.split('x').map(s => parseFloat(s.trim()));
+      if (parts.length >= 2) {
+        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+          ...it,
+          lineSpec: { 
+            w: parts[0] || it.lineSpec?.w || 3, 
+            l: parts[1] || it.lineSpec?.l || 6, 
+            h: parts[2] || it.lineSpec?.h || 2.6 
+          },
+          showSpec: 'y'
+        }));
+      } else if (val.trim() === '') {
+        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+          ...it,
+          showSpec: 'n'
+        }));
+      }
+    }} 
+  />
+</td>
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
         <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} />
       </td>
