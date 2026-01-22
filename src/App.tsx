@@ -861,6 +861,25 @@ const row: any = {
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
  
+      const updateRow = (
+  key: string,
+  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec",
+  value: any
+) => {
+  setSelectedItems((prev: any) =>
+    prev.map((item: any) => {
+      if (item.key !== key) return item;
+
+      const rent = isRentRow(item);
+
+      if (field === "displayName") {
+        return { ...item, displayName: String(value ?? "") };
+      }
+
+      if (field === "lineSpec") {
+        return { ...item, lineSpec: value };
+      }
+
       if (field === "months" && rent) {
         const months = Math.max(1, Math.floor(Number(value || 1)));
         const newUnitPrice = item.baseUnitPrice * months;
@@ -1799,7 +1818,8 @@ type A4QuoteProps = {
   onUpdateQty?: (key: string, qty: number) => void;
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
- onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
+onUpdateSpec?: (key: string, spec: { w: number; l: number; h?: number }) => void;
+  editable?: boolean;
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void;
