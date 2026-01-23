@@ -390,102 +390,6 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 }
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
-function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [sites, setSites] = useState<any[]>([]);
-  const [isSearchingSite, setIsSearchingSite] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const searchQueryRef = useRef(searchQuery);
-  useEffect(() => {
-    searchQueryRef.current = searchQuery;
-  }, [searchQuery]);
-
-const commitFreeText = useCallback(() => {
-  console.log("🔴 commitFreeText 호출됨");
-  const trimmed = (searchQueryRef.current || "").trim();
-  
-  console.log("🔴 setIsEditing(false) 실행");
-  setIsEditing(false);
-  setShowDropdown(false);
-  setSearchQuery("");
-  setSites([]);
-  
-  if (trimmed) {
-    console.log("🔴 onAddItem 호출:", trimmed);
-    const customOpt = { 
-      option_id: `custom_${Date.now()}`, 
-      option_name: trimmed,
-      unit: 'EA',
-      unit_price: 0,
-      show_spec: 'n'
-    };
-    onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }, insertIndex);
-  }
-}, [onAddItem]);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditing]);
-
-  const filteredOptions = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return options.filter((o: any) => {
-      const name = String(o.option_name || "").toLowerCase();
-      return name.includes(q) || matchKoreanLocal(name, q);
-    }).slice(0, 10);
-  }, [searchQuery, options]);
-
-  useEffect(() => {
-    const searchSites = async () => {
-      if (!searchQuery.trim() || !onSiteSearch) {
-        setSites([]);
-        return;
-      }
-      setIsSearchingSite(true);
-      try {
-        const results = await onSiteSearch(searchQuery.trim());
-        setSites(results.slice(0, 5));
-      } catch (e) {
-        setSites([]);
-      }
-      setIsSearchingSite(false);
-    };
-    const timer = setTimeout(searchSites, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, onSiteSearch]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current && !inputRef.current.contains(e.target as Node)
-      ) {
-        commitFreeText();
-      }
-    };
-    if (isEditing) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isEditing, commitFreeText]);
-
-  const handleSelect = (opt: any) => {
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    setSites([]);
-    
-    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-   onAddItem(opt, calculated, insertIndex);
-  };
-
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
 function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -501,7 +405,6 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
     searchQueryRef.current = searchQuery;
   }, [searchQuery]);
 
-  // ✅ 자유입력 저장
   const commitFreeText = useCallback(() => {
     const trimmed = (searchQueryRef.current || "").trim();
     
@@ -522,7 +425,6 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
     }
   }, [onAddItem, insertIndex]);
 
-  // ✅ onBlur 핸들러
   const handleBlur = () => {
     commitFreeText();
   };
@@ -620,7 +522,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
             setShowDropdown(true);
           }}
           onFocus={() => setShowDropdown(true)}
-          onBlur={handleBlur}  // ✅ onBlur 추가
+          onBlur={handleBlur}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -672,19 +574,19 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
                   <div 
                     key={`site-${idx}`} 
                     style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}
-                    onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                    onMouseDown={(e) => e.preventDefault()}
                   >
                     <div style={{ fontWeight: 700, marginBottom: 6 }}>{site.alias}</div>
                     <div style={{ display: "flex", gap: 6 }}>
                       <button 
-                        onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleDeliverySelect(site, 'delivery')} 
                         style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
                       >
                         일반 {fmtNum(site.delivery)}원
                       </button>
                       <button 
-                        onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleDeliverySelect(site, 'crane')} 
                         style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
                       >
@@ -707,7 +609,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
                       <div 
                         key={opt.option_id} 
                         style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}
-                        onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                        onMouseDown={(e) => e.preventDefault()}
                       >
                         <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
                         <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
@@ -718,12 +620,12 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
                             min={1}
                             id={`rent-empty-${opt.option_id}`}
                             onClick={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}  // ✅ blur 방지
+                            onMouseDown={(e) => e.stopPropagation()}
                             style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
                           />
                           <span style={{ fontSize: 11 }}>개월</span>
                           <button 
-                            onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={(e) => {
                               e.stopPropagation();
                               const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
@@ -745,6 +647,40 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
                       </div>
                     );
                   }
+                  
+                  return (
+                    <div
+                      key={opt.option_id}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelect(opt)}
+                      style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                    >
+                      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                      <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            
+            {filteredOptions.length === 0 && sites.length === 0 && !isSearchingSite && (
+              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
+            )}
+            {isSearchingSite && <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 중...</div>}
+          </div>
+        )}
+      </td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+      <td className="c"></td>
+    </>
+  );
+}
                   
                   return (
                     <div
