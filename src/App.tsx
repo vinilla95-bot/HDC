@@ -919,54 +919,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
     setSites([]);
   };
 
-    const res = calculateOptionLine(opt, form.w, form.l, form.h);
-    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-    const rent = rawName.includes("임대");
-
-    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
-
-  const defaultMonths = rent ? (monthsParam || opt._months || 1) : 1;
-    const displayQty = 1;
-    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
-
-    let simplifiedLabel = label;
-    if (label && form.siteQ) {
-      const regions = label.split(',').map((r: string) => r.trim());
-      const searchQuery = form.siteQ.toLowerCase();
-      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
-      simplifiedLabel = matched || regions[0];
-    }
-
-    const displayName = isSpecial
-      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
-      : rent
-      ? `${rawName} ${defaultMonths}개월`
-      : rawName;
-
-    const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
-const row: any = {
-  key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-  optionId: String(opt.option_id || rawName),
-  optionName: rawName,
-  displayName,
-  unit: rent ? "개월" : res.unit || "EA",
-  showSpec,
-  baseQty,
-  baseUnitPrice,
-  baseAmount,
-  displayQty,
-  customerUnitPrice,
-  finalAmount: Math.round(displayQty * customerUnitPrice),
-  months: defaultMonths,
-  memo: res.memo || "",
-  lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },  // ✅ 자유입력은 빈 규격
-};
-    setSelectedItems((prev: any) => [...prev, recomputeRow(row)]);
-    setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
-    setSites([]);
-  };
+   
 
   //const sensors = useSensors(
    // useSensor(PointerSensor, {
@@ -1663,7 +1616,10 @@ const inventoryScreen = (
      
       
   
-{/* 모바일 전체화면 미리보기 */}
+</div>
+      </div>
+    )}
+    
 {mobilePreviewOpen && (
   <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 10000, display: 'flex', flexDirection: 'column' }}>
     <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1940,7 +1896,8 @@ type A4QuoteProps = {
 
 
 function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex }: A4QuoteProps) {
-  const spec = `${form.w}x${form.l}x${form.h}`;
+  const ymd = form.quoteDate || new Date().toISOString().slice(0, 10); 
+    const spec = `${form.w}x${form.l}x${form.h}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
   return (
