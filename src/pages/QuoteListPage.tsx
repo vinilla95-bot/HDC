@@ -262,7 +262,7 @@ useEffect(() => {
   if (!editable) {
     return (
       <span style={{ display: "block", width: "100%", textAlign: "left" }}>
-        {item.displayName || "(-)"}
+        {item.displayName || " "}
       </span>
     );
   }
@@ -775,7 +775,7 @@ function EditableTextCell({ value, onChange, editable = true }: { value: string;
   };
 
   if (!editable) {
-    return <span style={{ display: "block", width: "100%", textAlign: "left" }}>{value || "(-)"}</span>;
+    return <span style={{ display: "block", width: "100%", textAlign: "left" }}>{value || " "}</span>;
   }
 
   if (isEditing) {
@@ -798,7 +798,7 @@ function EditableTextCell({ value, onChange, editable = true }: { value: string;
       style={{ cursor: "pointer", display: "block", width: "100%", textAlign: "left" }} 
       title="클릭하여 수정"
     >
-      {value || "(-)"}
+      {value || " "}
     </span>
   );
 }
