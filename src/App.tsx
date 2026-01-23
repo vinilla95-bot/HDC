@@ -208,8 +208,7 @@ function EditableSpecCell({
 }
 
 // ============ 인라인 품목 편집 셀 ============
-function InlineItemCell({ item, options, form, onSelectOption }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void }) {
-  // ✅ 초기값 명시적으로 false
+function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -301,9 +300,13 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
   // ✅ 편집 모드가 아니면 텍스트만 표시 (이 조건을 먼저!)
   if (!isEditing) {
     return (
-      <td 
+     <td 
         className="c wrap" 
-        onClick={() => { setSearchQuery(displayText); setIsEditing(true); }} 
+        onClick={() => { 
+          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);  // ✅ 추가
+          setSearchQuery(displayText); 
+          setIsEditing(true); 
+        }}
         style={{ cursor: "pointer" }} 
         title="클릭하여 품목 변경"
       >
@@ -372,7 +375,7 @@ function InlineItemCell({ item, options, form, onSelectOption }: { item: any; op
 }
 // ============ 빈 행 클릭 시 품목 추가 ============
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
-function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void }) {
+function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -405,7 +408,7 @@ const commitFreeText = useCallback(() => {
       unit_price: 0,
       show_spec: 'n'
     };
-    onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' });
+    onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }, insertIndex);
   }
 }, [onAddItem]);
 
@@ -465,7 +468,7 @@ const commitFreeText = useCallback(() => {
     setSites([]);
     
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-    onAddItem(opt, calculated);
+   onAddItem(opt, calculated, insertIndex);
   };
 
   const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
@@ -479,7 +482,7 @@ const commitFreeText = useCallback(() => {
     setSites([]);
     
     if (onAddDelivery) {
-      onAddDelivery({ ...site, alias: matchedRegion }, type);
+      onAddDelivery({ ...site, alias: matchedRegion }, type, insertIndex);
     }
   };
 
@@ -711,6 +714,7 @@ useEffect(() => {
 
   const [statusMsg, setStatusMsg] = useState("");
   const [sendStatus, setSendStatus] = useState("");
+    const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
 
   // 모바일 전체화면 미리보기
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
@@ -815,7 +819,7 @@ useEffect(() => {
 }, [form.optQ, options]);
 
   
- const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsParam?: number) => {
+const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsParam?: number, insertIndex?: number) => {
     if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
       const newRows = opt.sub_items.map((sub: any, idx: number) => {
         const qty = sub.qty || 0;
@@ -841,11 +845,79 @@ useEffect(() => {
         };
       });
 
-      setSelectedItems((prev: any) => [...prev, ...newRows.map(recomputeRow)]);
+      // ✅ 수정: insertIndex 위치에 삽입
+      setSelectedItems((prev: any) => {
+        const mapped = newRows.map(recomputeRow);
+        if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+          const newArr = [...prev];
+          newArr.splice(insertIndex + 1, 0, ...mapped);
+          return newArr;
+        }
+        return [...prev, ...mapped];
+      });
       setForm((prev) => ({ ...prev, optQ: "" }));
       setSites([]);
       return;
     }
+
+    const res = calculateOptionLine(opt, form.w, form.l, form.h);
+    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+    const rent = rawName.includes("임대");
+
+    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
+    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+
+    const defaultMonths = rent ? (monthsParam || opt._months || 1) : 1;
+    const displayQty = 1;
+    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
+
+    let simplifiedLabel = label;
+    if (label && form.siteQ) {
+      const regions = label.split(',').map((r: string) => r.trim());
+      const searchQuery = form.siteQ.toLowerCase();
+      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
+      simplifiedLabel = matched || regions[0];
+    }
+
+    const displayName = isSpecial
+      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
+      : rent
+      ? `${rawName} ${defaultMonths}개월`
+      : rawName;
+
+    const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
+    const row: any = {
+      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+      optionId: String(opt.option_id || rawName),
+      optionName: rawName,
+      displayName,
+      unit: rent ? "개월" : res.unit || "EA",
+      showSpec,
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty,
+      customerUnitPrice,
+      finalAmount: Math.round(displayQty * customerUnitPrice),
+      months: defaultMonths,
+      memo: res.memo || "",
+      lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },
+    };
+    
+    // ✅ 수정: insertIndex 위치에 삽입
+    setSelectedItems((prev: any) => {
+      const newRow = recomputeRow(row);
+      if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+        const newArr = [...prev];
+        newArr.splice(insertIndex + 1, 0, newRow);
+        return newArr;
+      }
+      return [...prev, newRow];
+    });
+    setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
+    setSites([]);
+  };
 
     const res = calculateOptionLine(opt, form.w, form.l, form.h);
     const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
@@ -1548,15 +1620,15 @@ const inventoryScreen = (
 
         {/* A4 견적서 (인라인 편집) */}
         <div id="quotePreviewApp" style={{ display: "flex", justifyContent: "center" }}>
-          <A4Quote
+        <A4Quote
             form={form}
             setForm={setForm}
             computedItems={computedItems}
             blankRows={blankRows}
             fmt={fmt}
-          onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
-onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
-  editable={true}
+            onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
+            onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
+            editable={true}
             supply_amount={supply_amount}
             vat_amount={vat_amount}
             total_amount={total_amount}
@@ -1565,51 +1637,29 @@ onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
             selectedBizcardId={selectedBizcardId}
             setSelectedBizcardId={setSelectedBizcardId}
             options={options}
-         onSelectOption={(item, opt, calc) => {
-  const rawName = String(opt.option_name || "");
-  const rent = rawName.includes("임대");
-  
-  if (opt._isDisplayNameOnly) {
-    setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-      ...i, 
-      displayName: rawName
-    }));
-    return;
-  }
-  
-  const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
-  // ✅ 수정: 기존 lineSpec 유지
-  const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
-  setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-    ...i, optionId: opt.option_id, optionName: rawName, displayName: rent ? `${rawName} 1개월` : rawName,
-    unit: rent ? "개월" : calc.unit || "EA", showSpec: opt.show_spec || "n",
-    baseQty: calc.qty || 1, baseUnitPrice: calc.unitPrice || 0, baseAmount: calc.amount || 0,
-    displayQty: 1, customerUnitPrice, finalAmount: customerUnitPrice, months: 1,
-    lineSpec: existingLineSpec  // ✅ 기존 lineSpec 유지
-  }));
-}}
-            onAddItem={(opt, calc) => addOption(opt)}
+            onSelectOption={(item, opt, calc) => {
+              // ... 기존 코드 유지
+            }}
+            onAddItem={(opt, calc, insertIdx) => addOption(opt, false, 0, "", undefined, insertIdx)}
             onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
             onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
-           onDeleteItem={(key) => deleteRow(key)}
-            
+            onDeleteItem={(key) => deleteRow(key)}
+            // ✅ 추가
+            focusedRowIndex={focusedRowIndex}
+            setFocusedRowIndex={setFocusedRowIndex}
             onSiteSearch={async (q) => {
               const { list } = await searchSiteRates(q, form.w, form.l);
               return list.filter((s: any) => matchKoreanLocal(String(s.alias || ""), q));
             }}
-            onAddDelivery={(site, type) => {
+            onAddDelivery={(site, type, insertIdx) => {
               setForm((p) => ({ ...p, sitePickedLabel: site.alias, siteQ: site.alias }));
               if (type === 'delivery') {
-                addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, site.delivery, site.alias);
+                addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, site.delivery, site.alias, undefined, insertIdx);
               } else {
-                addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, site.crane, site.alias);
+                addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, site.crane, site.alias, undefined, insertIdx);
               }
             }}
           />
-        </div>
-      </div>
-    )}
-
      
       
   
@@ -1875,7 +1925,7 @@ type A4QuoteProps = {
   quoteDate?: string;
   options?: any[];
   onSelectOption?: (item: any, opt: any, calculated: any) => void;
-  onAddItem?: (opt: any, calculated: any) => void;
+  onAddItem?: (opt: any, calculated: any, insertIndex?: number) => void;  // ✅ 수정
   onUpdateQty?: (key: string, qty: number) => void;
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
@@ -1883,12 +1933,13 @@ type A4QuoteProps = {
   onUpdateSpecText?: (key: string, text: string) => void;
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
-  onAddDelivery?: (site: any, type: 'delivery' | 'crane') => void;
+  onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void;  // ✅ 수정
+  focusedRowIndex?: number;  // ✅ 추가
+  setFocusedRowIndex?: (index: number) => void;  // ✅ 추가
 };
 
 
-function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery }: A4QuoteProps) {
-const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
+function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex }: A4QuoteProps) {
   const spec = `${form.w}x${form.l}x${form.h}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
@@ -2057,7 +2108,39 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
             </tbody>
           </table>
 
+          {/* ✅ +품목추가 버튼 */}
+          {editable && onAddItem && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
+              <button
+                onClick={() => {
+                  const insertIdx = (focusedRowIndex !== undefined && focusedRowIndex >= 0) 
+                    ? focusedRowIndex 
+                    : computedItems.length - 1;
+                  onAddItem(
+                    { option_id: `empty_${Date.now()}`, option_name: '', unit: 'EA', unit_price: 0, show_spec: 'n' },
+                    { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' },
+                    insertIdx
+                  );
+                }}
+                style={{
+                  padding: '6px 12px',
+                  background: '#e3f2fd',
+                  border: '1px solid #90caf9',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#1565c0',
+                }}
+              >
+                + 품목추가
+              </button>
+            </div>
+          )}
+
           <table className="a4Items">
+
+       
             <colgroup>
               <col style={{ width: "7%" }} />
               <col style={{ width: "31%" }} />
@@ -2094,10 +2177,24 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   const rent = String(item.optionName || "").includes("임대");
 
   return (
-    <tr key={item.key ?? idx}>
+  <tr 
+      key={item.key ?? idx}
+      onClick={() => setFocusedRowIndex && setFocusedRowIndex(idx)}
+      style={{ 
+        cursor: editable ? 'pointer' : undefined,
+        background: (editable && focusedRowIndex === idx) ? '#fff8e1' : undefined
+      }}
+    >
   <td className="c center">{idx + 1}</td>
  {editable && options && onSelectOption ? (
-  <InlineItemCell item={item} options={options} form={form} onSelectOption={onSelectOption} />
+ <InlineItemCell 
+  item={item} 
+  options={options} 
+  form={form} 
+  onSelectOption={onSelectOption}
+  rowIndex={idx}
+  onFocus={setFocusedRowIndex}
+/>
 ) : (
   <td className="c wrap">{String(item.displayName || "")}</td>
 )}
@@ -2138,7 +2235,15 @@ const ymd = form.quoteDate || new Date().toISOString().slice(0, 10);
   // ✅ computedItems.length를 더해주어, 아이템이 추가될 때마다 완전히 새로운 컴포넌트로 리셋시킴
   <tr key={`blank-${computedItems.length + i}`}> 
     {i === 0 && editable && options && onAddItem ? (
-      <EmptyRowCell options={options} form={form} onAddItem={onAddItem} onSiteSearch={onSiteSearch} onAddDelivery={onAddDelivery} /> 
+      <EmptyRowCell 
+  options={options} 
+  form={form} 
+  onAddItem={onAddItem} 
+  onSiteSearch={onSiteSearch} 
+  onAddDelivery={onAddDelivery}
+  insertIndex={focusedRowIndex !== undefined && focusedRowIndex >= 0 ? focusedRowIndex : computedItems.length - 1}
+  onFocus={setFocusedRowIndex}
+/> 
     ) : (
       <><td className="c">&nbsp;</td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td></>
     )}
