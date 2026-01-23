@@ -1586,7 +1586,33 @@ const quotePreviewHtml = useMemo(() => {
   </div>
 )}
 
+{/* 품목 테이블 */}
+<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8, overflow: 'visible' }}>
+  <thead>
+    <tr>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '5%' }}>순번</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '33%' }}>품목</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '10%' }}>규격</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '8%' }}>수량</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '13%' }}>단가</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '13%' }}>공급가</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '10%' }}>세액</th>
+      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '8%' }}>비고</th>
+    </tr>
+  </thead>
+  <tbody>
+    {items.map((item: any, idx: number) => {
+      const supply = item.qty * item.unitPrice;
+      const vat = Math.round(supply * 0.1);
+      const specText = item.specText ?? (
+        (String(item.showSpec || "").toLowerCase() === "y" && item.lineSpec) 
+          ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` 
+          : ""
+      );
 
+      return (
+        <tr key={item.key || idx}>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: '
 {/* 품목 테이블 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8, overflow: 'visible' }}>
   <thead>
