@@ -859,51 +859,53 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
       setSites([]);
       return;
     }
+const res = calculateOptionLine(opt, form.w, form.l, form.h);
+const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+const rent = rawName.includes("임대");
+const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
+const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+const defaultMonths = rent ? (monthsParam || opt._months || 1) : 1;
+const displayQty = 1;
+const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
 
-    const res = calculateOptionLine(opt, form.w, form.l, form.h);
-    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-    const rent = rawName.includes("임대");
+let simplifiedLabel = label;
+if (label && form.siteQ) {
+  const regions = label.split(',').map((r: string) => r.trim());
+  const searchQuery = form.siteQ.toLowerCase();
+  const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
+  simplifiedLabel = matched || regions[0];
+}
 
-    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+// ✅ 수정: _isEmptyRow면 빈 문자열
+const displayName = opt._isEmptyRow
+  ? ''
+  : isSpecial
+  ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
+  : rent
+  ? `${rawName} ${defaultMonths}개월`
+  : rawName;
 
-    const defaultMonths = rent ? (monthsParam || opt._months || 1) : 1;
-    const displayQty = 1;
-    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
+const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
 
-    let simplifiedLabel = label;
-    if (label && form.siteQ) {
-      const regions = label.split(',').map((r: string) => r.trim());
-      const searchQuery = form.siteQ.toLowerCase();
-      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
-      simplifiedLabel = matched || regions[0];
-    }
-
-    const displayName = isSpecial
-      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
-      : rent
-      ? `${rawName} ${defaultMonths}개월`
-      : rawName;
-
-    const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
-    const row: any = {
-      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-      optionId: String(opt.option_id || rawName),
-      optionName: rawName,
-      displayName,
-      unit: rent ? "개월" : res.unit || "EA",
-      showSpec,
-      baseQty,
-      baseUnitPrice,
-      baseAmount,
-      displayQty,
-      customerUnitPrice,
-      finalAmount: Math.round(displayQty * customerUnitPrice),
-      months: defaultMonths,
-      memo: res.memo || "",
-      lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },
-    };
+// ✅ 수정: _isEmptyRow면 optionName도 빈 문자열
+const row: any = {
+  key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+  optionId: String(opt.option_id || rawName),
+  optionName: opt._isEmptyRow ? '' : rawName,  // ✅ 여기도 수정
+  displayName,
+  unit: rent ? "개월" : res.unit || "EA",
+  showSpec,
+  baseQty,
+  baseUnitPrice,
+  baseAmount,
+  displayQty,
+  customerUnitPrice,
+  finalAmount: Math.round(displayQty * customerUnitPrice),
+  months: defaultMonths,
+  memo: res.memo || "",
+  lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },
+};
     
     // ✅ 수정: insertIndex 위치에 삽입
     setSelectedItems((prev: any) => {
@@ -2066,19 +2068,20 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
           </table>
 
           {/* ✅ +품목추가 버튼 */}
-          {editable && onAddItem && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
-              <button
-                onClick={() => {
-                  const insertIdx = (focusedRowIndex !== undefined && focusedRowIndex >= 0) 
-                    ? focusedRowIndex 
-                    : computedItems.length - 1;
-                  onAddItem(
-                    { option_id: `empty_${Date.now()}`, option_name: '', unit: 'EA', unit_price: 0, show_spec: 'n' },
-                    { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' },
-                    insertIdx
-                  );
-                }}
+         {editable && onAddItem && (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
+    <button
+      onClick={() => {
+        const insertIdx = (focusedRowIndex !== undefined && focusedRowIndex >= 0) 
+          ? focusedRowIndex 
+          : computedItems.length - 1;
+        onAddItem(
+          { option_id: `empty_${Date.now()}`, option_name: '(품목선택)', unit: 'EA', unit_price: 0, show_spec: 'n', _isEmptyRow: true },
+          { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' },
+          insertIdx
+        );
+      }}
+             
                 style={{
                   padding: '6px 12px',
                   background: '#e3f2fd',
