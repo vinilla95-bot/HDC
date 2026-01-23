@@ -1593,40 +1593,40 @@ const inventoryScreen = (
   selectedBizcardId={selectedBizcardId}
   setSelectedBizcardId={setSelectedBizcardId}
   options={options}
-  onSelectOption={(item, opt, calc) => {
-    const rawName = String(opt.option_name || "");
-    const rent = rawName.includes("임대");
-    
-    // displayName만 변경하는 경우 (자유입력)
-    if (opt._isDisplayNameOnly) {
-      setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-        ...i, 
-        displayName: rawName
-      }));
-      return;
-    }
-    
-    // 일반 옵션 선택
-    const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
-    const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
-    
-    setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : recomputeRow({
+ onSelectOption={(item, opt, calc) => {
+  const rawName = String(opt.option_name || "");
+  const rent = rawName.includes("임대");
+  
+  // displayName만 변경하는 경우 (자유입력)
+  if (opt._isDisplayNameOnly) {
+    setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
       ...i, 
-      optionId: opt.option_id, 
-      optionName: rawName, 
-      displayName: rent ? `${rawName} 1개월` : rawName,
-      unit: rent ? "개월" : calc.unit || "EA", 
-      showSpec: opt.show_spec || "n",
-      baseQty: calc.qty || 1, 
-      baseUnitPrice: calc.unitPrice || 0, 
-      baseAmount: calc.amount || 0,
-      displayQty: 1, 
-      customerUnitPrice, 
-      finalAmount: customerUnitPrice, 
-      months: 1,
-      lineSpec: existingLineSpec
-    })));
-  }}
+      displayName: rawName
+    } as any));
+    return;
+  }
+  
+  // 일반 옵션 선택
+  const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
+  const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
+  
+  setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : recomputeRow({
+    ...i, 
+    optionId: opt.option_id, 
+    optionName: rawName, 
+    displayName: rent ? `${rawName} 1개월` : rawName,
+    unit: rent ? "개월" : calc.unit || "EA", 
+    showSpec: opt.show_spec || "n",
+    baseQty: calc.qty || 1, 
+    baseUnitPrice: calc.unitPrice || 0, 
+    baseAmount: calc.amount || 0,
+    displayQty: 1, 
+    customerUnitPrice, 
+    finalAmount: customerUnitPrice, 
+    months: 1,
+    lineSpec: existingLineSpec
+  } as any)));
+}}
   onAddItem={(opt, calc, insertIdx) => addOption(opt, false, 0, "", undefined, insertIdx)}
   onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
   onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
