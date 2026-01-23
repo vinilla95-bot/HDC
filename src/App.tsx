@@ -295,102 +295,96 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
-      {!isEditing ? (
-        <span
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-            setSearchQuery('');
-            setIsEditing(true);
+  <div style={{ display: "contents" }}>
+    {!isEditing ? (
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+          setSearchQuery('');
+          setIsEditing(true);
+        }}
+        style={{ cursor: "pointer" }}
+        title="클릭하여 품목 변경"
+      >
+        {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
+      </span>
+    ) : (
+      <>
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);
           }}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              commitFreeText();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsEditing(false);
+              setShowDropdown(false);
+              setSearchQuery("");
+            }
+          }}
+          placeholder="품목 검색"
+          autoFocus
           style={{ 
-            cursor: "pointer", 
-            display: "block", 
-            minHeight: "20px", 
-            lineHeight: "20px" 
-          }}
-          title="클릭하여 품목 변경"
-        >
-          {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
-        </span>
-      ) : (
-        <>
-          <input
-            ref={inputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowDropdown(true);
-            }}
-            onFocus={() => setShowDropdown(true)}
-            onBlur={handleBlur}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                e.stopPropagation();
-                commitFreeText();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsEditing(false);
-                setShowDropdown(false);
-                setSearchQuery("");
-              }
-            }}
-            placeholder="품목 검색"
-            autoFocus
+            width: "100%", 
+            padding: "0", 
+            margin: "0",
+            textAlign: "left",
+            border: "none",
+            fontSize: 12, 
+            outline: "none",
+            background: "transparent"
+          }} 
+        />
+        {showDropdown && searchQuery.trim() && (
+          <div 
+            ref={dropdownRef} 
             style={{ 
-              width: "100%", 
-              padding: "0", 
-              margin: "0",
-              textAlign: "left",
-              border: "none",
-              fontSize: 12, 
-              boxSizing: "border-box", 
-              outline: "none",
-              background: "transparent"
-            }} 
-          />
-          {showDropdown && searchQuery.trim() && (
-            <div 
-              ref={dropdownRef} 
-              style={{ 
-                position: "absolute", 
-                top: "100%", 
-                left: 0, 
-                width: "300px",
-                maxHeight: 300, 
-                overflowY: "auto", 
-                background: "#fff", 
-                border: "1px solid #ccc", 
-                borderRadius: 6,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
-                zIndex: 9999 
-              }}
-            >
-              {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-                <div 
-                  key={opt.option_id} 
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleSelect(opt)} 
-                  style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} 
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                >
-                  <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                  <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-                </div>
-              )) : (
-                <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+              position: "absolute", 
+              top: "100%", 
+              left: 0, 
+              width: "300px",
+              maxHeight: 300, 
+              overflowY: "auto", 
+              background: "#fff", 
+              border: "1px solid #ccc", 
+              borderRadius: 6,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
+              zIndex: 9999 
+            }}
+          >
+            {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
+              <div 
+                key={opt.option_id} 
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleSelect(opt)} 
+                style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} 
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              >
+                <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+              </div>
+            )) : (
+              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
+            )}
+          </div>
+        )}
+      </>
+    )}
+  </div>
+);
 }
 
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
@@ -2625,7 +2619,8 @@ td input, td input:focus, td input:focus-visible {
   line-height: 28px !important;
   padding-left: 8px !important;
    padding: 6px 8px !important;
-   
+   position: relative;
+  
 }
 .a4Items td.wrap > div {
   margin: -6px -8px;
