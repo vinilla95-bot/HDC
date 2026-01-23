@@ -1601,7 +1601,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
-    {items.map((item: any, idx: number) => {
+   {items.map((item: any, idx: number) => {
       const supply = item.qty * item.unitPrice;
       const vat = Math.round(supply * 0.1);
       const specText = item.specText ?? (
@@ -1612,7 +1612,7 @@ const quotePreviewHtml = useMemo(() => {
 
       return (
         <tr key={item.key || idx}>
-          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: '
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
 {/* 품목 테이블 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8, overflow: 'visible' }}>
   <thead>
@@ -1628,19 +1628,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
-{items.map((item: any, idx: number) => {
-  const supply = item.qty * item.unitPrice;
-  const vat = Math.round(supply * 0.1);
- // ✅ specText를 직접 저장한 값 우선, 없으면 lineSpec에서 계산
-const specText = item.specText ?? (
-  (String(item.showSpec || "").toLowerCase() === "y" && item.lineSpec) 
-    ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` 
-    : ""
-);
 
-  return (
-    <tr 
-      key={item.key || idx}
       
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'visible', position: 'relative' }}>
