@@ -293,26 +293,21 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  if (!isEditing) {
-    return (
-      <span
-        onClick={() => { 
-          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-          setSearchQuery('');
-          setIsEditing(true); 
-        }}
-        style={{ 
-          cursor: "pointer", 
-          display: "block", 
-          width: "100%", 
-          textAlign: "left" 
-        }}
-        title="클릭하여 품목 변경"
-      >
-        {displayText || <span style={{ color: '#ccc' }}>품목 선택</span>}
-      </span>
-    );
-  }
+if (!isEditing) {
+  return (
+    <span
+      onClick={() => { 
+        if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+        setSearchQuery('');
+        setIsEditing(true); 
+      }}
+      style={{ cursor: "pointer" }}
+      title="클릭하여 품목 변경"
+    >
+      {displayText || <span style={{ color: '#ccc' }}>품목 선택</span>}
+    </span>
+  );
+}
 
   return (
     <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
@@ -2359,16 +2354,6 @@ td input, td input:focus, td input:focus-visible {
   box-shadow: none !important;
 }
 
-/* ✅ wrap 셀 내부 요소 테두리 완전 제거 */
-.a4Items td.wrap span,
-.a4Items td.wrap div,
-.a4Items td.c span,
-.a4Items td.c div {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
  
   .a4Wrap{
     display:flex;
