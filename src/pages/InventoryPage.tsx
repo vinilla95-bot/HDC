@@ -32,6 +32,7 @@ type UsedInventoryItem = {
   price: number;
   note: string;
   photo_url: string;
+  photo_urls?: string[];
   status: string;
   created_at: string;
 };
@@ -50,6 +51,48 @@ const formatDateDisplay = (dateStr: string) => {
   return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
 };
 
+// 홍보글 생성 함수
+const generatePromoText = (item: UsedInventoryItem, platform: "jungonara" | "blog") => {
+  const title = `[중고컨테이너] ${item.spec} ${item.condition} ${item.quantity}대`;
+  const priceText = item.price ? `${item.price}만원` : "가격문의";
+  
+  if (platform === "jungonara") {
+    return `${title}
+
+📦 규격: ${item.spec}
+📊 상태: ${item.condition}
+📦 수량: ${item.quantity}대
+💰 가격: ${priceText}
+${item.note ? `📝 특이사항: ${item.note}` : ""}
+
+✅ 직접 방문 확인 가능
+✅ 배송 가능 (별도 협의)
+✅ 문의 환영
+
+#중고컨테이너 #컨테이너 #${item.spec.replace("x", "평")} #컨테이너판매`;
+  } else {
+    return `# ${title}
+
+안녕하세요, 중고 컨테이너 판매합니다.
+
+## 상품 정보
+- **규격**: ${item.spec}
+- **상태**: ${item.condition}
+- **수량**: ${item.quantity}대
+- **가격**: ${priceText}
+${item.note ? `- **특이사항**: ${item.note}` : ""}
+
+## 상세 설명
+${item.condition} 상태의 ${item.spec} 컨테이너입니다.
+직접 방문하여 상태 확인 가능하며, 배송도 협의 가능합니다.
+
+문의 주시면 친절히 안내드리겠습니다.
+
+---
+#중고컨테이너 #컨테이너판매 #${item.spec.replace("x", "평")}컨테이너`;
+  }
+};
+
 export default function InventoryPage({ 
   onBack,
   onNavigate 
@@ -64,6 +107,9 @@ export default function InventoryPage({
   const [showAddModal, setShowAddModal] = useState(false);
   const [depositTab, setDepositTab] = useState<DepositTabType>("all");
   const [mainTab, setMainTab] = useState<MainTabType>("new");
+  const [showPhotoModal, setShowPhotoModal] = useState<string[] | null>(null);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [showPromoModal, setShowPromoModal] = useState<{ item: UsedInventoryItem; platform: "jungonara" | "blog" } | null>(null);
   
   const [newItem, setNewItem] = useState({
     customer_name: "",
@@ -209,6 +255,26 @@ export default function InventoryPage({
     loadInventory();
   };
 
+  // 사진 배열 가져오기
+  const getPhotoUrls = (item: UsedInventoryItem): string[] => {
+    const urls: string[] = [];
+    if (item.photo_urls && Array.isArray(item.photo_urls)) {
+      urls.push(...item.photo_urls);
+    }
+    if (item.photo_url && !urls.includes(item.photo_url)) {
+      urls.unshift(item.photo_url);
+    }
+    return urls;
+  };
+
+  // 홍보글 복사
+  const copyPromoText = (item: UsedInventoryItem, platform: "jungonara" | "blog") => {
+    const text = generatePromoText(item, platform);
+    navigator.clipboard.writeText(text).then(() => {
+      alert("홍보글이 복사되었습니다!");
+    });
+  };
+
   const thStyle: React.CSSProperties = { padding: "10px 8px", border: "1px solid #1e4a6e", whiteSpace: "nowrap", backgroundColor: "#2e5b86", color: "#ffffff", fontWeight: 700, fontSize: 13, textAlign: "center" };
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -332,33 +398,64 @@ export default function InventoryPage({
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead><tr>
-                  <th style={thStyle}>번호</th><th style={thStyle}>사진</th><th style={thStyle}>규격</th><th style={thStyle}>수량</th><th style={thStyle}>상태</th><th style={thStyle}>가격</th><th style={thStyle}>특이사항</th><th style={thStyle}>등록일</th><th style={thStyle}>판매</th><th style={thStyle}>삭제</th>
+                  <th style={thStyle}>번호</th><th style={thStyle}>사진</th><th style={thStyle}>규격</th><th style={thStyle}>수량</th><th style={thStyle}>상태</th><th style={thStyle}>가격</th><th style={thStyle}>특이사항</th><th style={thStyle}>등록일</th><th style={thStyle}>판매</th><th style={thStyle}>홍보</th><th style={thStyle}>삭제</th>
                 </tr></thead>
                 <tbody>
-                  {usedItems.map((item) => (
-                    <tr key={item.id}>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700 }}>{item.item_number || "-"}</td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        {item.photo_url ? <a href={item.photo_url} target="_blank" rel="noopener noreferrer"><img src={item.photo_url} alt="" style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }} /></a> : "-"}
-                      </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700 }}>{item.spec}</td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.quantity}</td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        <span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: item.condition === "A급" ? "#28a745" : item.condition === "B급" ? "#ffc107" : "#dc3545", color: item.condition === "B급" ? "#000" : "#fff" }}>{item.condition}</span>
-                      </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.price ? `${item.price}만원` : "-"}</td>
-                      <td style={{ padding: 8, border: "1px solid #eee" }}>{item.note || "-"}</td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontSize: 11 }}>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}</td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        <select value={item.status || "판매중"} onChange={async (e) => { await supabase.from("used_inventory").update({ status: e.target.value }).eq("id", item.id); loadInventory(); }} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.status === "판매완료" ? "#6c757d" : "#28a745", color: "#fff" }}>
-                          <option value="판매중">판매중</option><option value="판매완료">판매완료</option>
-                        </select>
-                      </td>
-                      <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                        <button onClick={async () => { if (!confirm("삭제?")) return; await supabase.from("used_inventory").delete().eq("id", item.id); loadInventory(); }} style={{ padding: "4px 8px", background: "#dc3545", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>삭제</button>
-                      </td>
-                    </tr>
-                  ))}
+                  {usedItems.map((item) => {
+                    const photoUrls = getPhotoUrls(item);
+                    return (
+                      <tr key={item.id}>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700 }}>{item.item_number || "-"}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                          {photoUrls.length > 0 ? (
+                            <div 
+                              style={{ display: "flex", gap: 4, justifyContent: "center", cursor: "pointer" }}
+                              onClick={() => { setShowPhotoModal(photoUrls); setCurrentPhotoIndex(0); }}
+                            >
+                              {photoUrls.slice(0, 3).map((url, idx) => (
+                                <img key={idx} src={url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: "1px solid #ddd" }} />
+                              ))}
+                              {photoUrls.length > 3 && (
+                                <div style={{ width: 40, height: 40, borderRadius: 4, background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>+{photoUrls.length - 3}</div>
+                              )}
+                            </div>
+                          ) : "-"}
+                        </td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700 }}>{item.spec}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.quantity}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                          <span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: item.condition === "A급" ? "#28a745" : item.condition === "B급" ? "#ffc107" : "#dc3545", color: item.condition === "B급" ? "#000" : "#fff" }}>{item.condition}</span>
+                        </td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.price ? `${item.price}만원` : "-"}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee" }}>{item.note || "-"}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontSize: 11 }}>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                          <select value={item.status || "판매중"} onChange={async (e) => { await supabase.from("used_inventory").update({ status: e.target.value }).eq("id", item.id); loadInventory(); }} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.status === "판매완료" ? "#6c757d" : "#28a745", color: "#fff" }}>
+                            <option value="판매중">판매중</option><option value="판매완료">판매완료</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <button 
+                              onClick={() => setShowPromoModal({ item, platform: "jungonara" })}
+                              style={{ padding: "4px 6px", background: "#06c755", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}
+                            >
+                              중고나라
+                            </button>
+                            <button 
+                              onClick={() => setShowPromoModal({ item, platform: "blog" })}
+                              style={{ padding: "4px 6px", background: "#03c75a", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}
+                            >
+                              블로그
+                            </button>
+                          </div>
+                        </td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                          <button onClick={async () => { if (!confirm("삭제?")) return; await supabase.from("used_inventory").delete().eq("id", item.id); loadInventory(); }} style={{ padding: "4px 8px", background: "#dc3545", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>삭제</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -366,7 +463,107 @@ export default function InventoryPage({
         </div>
       )}
 
-      {/* 모달 */}
+      {/* 사진 모달 */}
+      {showPhotoModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }} onClick={() => setShowPhotoModal(null)}>
+          <div style={{ position: "relative", maxWidth: "90vw", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
+            <img src={showPhotoModal[currentPhotoIndex]} alt="" style={{ maxWidth: "90vw", maxHeight: "80vh", objectFit: "contain", borderRadius: 8 }} />
+            
+            {/* 이전/다음 버튼 */}
+            {showPhotoModal.length > 1 && (
+              <>
+                <button 
+                  onClick={() => setCurrentPhotoIndex(prev => (prev - 1 + showPhotoModal.length) % showPhotoModal.length)}
+                  style={{ position: "absolute", left: -50, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}
+                >◀</button>
+                <button 
+                  onClick={() => setCurrentPhotoIndex(prev => (prev + 1) % showPhotoModal.length)}
+                  style={{ position: "absolute", right: -50, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}
+                >▶</button>
+              </>
+            )}
+            
+            {/* 썸네일 */}
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
+              {showPhotoModal.map((url, idx) => (
+                <img 
+                  key={idx} 
+                  src={url} 
+                  alt="" 
+                  onClick={() => setCurrentPhotoIndex(idx)}
+                  style={{ 
+                    width: 60, height: 60, objectFit: "cover", borderRadius: 4, cursor: "pointer",
+                    border: currentPhotoIndex === idx ? "3px solid #fff" : "1px solid #666"
+                  }} 
+                />
+              ))}
+            </div>
+            
+            {/* 페이지 표시 */}
+            <div style={{ textAlign: "center", color: "#fff", marginTop: 8, fontSize: 14 }}>
+              {currentPhotoIndex + 1} / {showPhotoModal.length}
+            </div>
+            
+            {/* 닫기 버튼 */}
+            <button onClick={() => setShowPhotoModal(null)} style={{ position: "absolute", top: -40, right: 0, background: "none", border: "none", color: "#fff", fontSize: 30, cursor: "pointer" }}>✕</button>
+          </div>
+        </div>
+      )}
+
+      {/* 홍보글 모달 */}
+      {showPromoModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }} onClick={() => setShowPromoModal(null)}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "90%", maxWidth: 500, maxHeight: "80vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
+              {showPromoModal.platform === "jungonara" ? "🟢 중고나라" : "📝 블로그"} 홍보글
+            </h3>
+            
+            {/* 사진 미리보기 */}
+            {getPhotoUrls(showPromoModal.item).length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#666" }}>첨부할 사진 ({getPhotoUrls(showPromoModal.item).length}장)</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {getPhotoUrls(showPromoModal.item).map((url, idx) => (
+                    <img key={idx} src={url} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4 }} />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* 홍보글 내용 */}
+            <textarea 
+              readOnly 
+              value={generatePromoText(showPromoModal.item, showPromoModal.platform)}
+              style={{ width: "100%", height: 300, padding: 12, border: "1px solid #ddd", borderRadius: 8, fontSize: 13, lineHeight: 1.6, resize: "none", boxSizing: "border-box" }}
+            />
+            
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={() => setShowPromoModal(null)} style={{ flex: 1, padding: 12, background: "#f5f5f5", border: "1px solid #ddd", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>닫기</button>
+              <button 
+                onClick={() => { copyPromoText(showPromoModal.item, showPromoModal.platform); }}
+                style={{ flex: 1, padding: 12, background: showPromoModal.platform === "jungonara" ? "#06c755" : "#03c75a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}
+              >
+                📋 글 복사하기
+              </button>
+            </div>
+            
+            {/* 바로가기 링크 */}
+            <div style={{ marginTop: 12, textAlign: "center" }}>
+              {showPromoModal.platform === "jungonara" ? (
+                <a href="https://web.joongna.com/write" target="_blank" rel="noopener noreferrer" style={{ color: "#06c755", fontSize: 13 }}>
+                  → 중고나라 글쓰기 바로가기
+                </a>
+              ) : (
+                <a href="https://blog.naver.com/PostWriteForm.naver" target="_blank" rel="noopener noreferrer" style={{ color: "#03c75a", fontSize: 13 }}>
+                  → 네이버 블로그 글쓰기 바로가기
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 새 항목 추가 모달 */}
       {showAddModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }} onClick={() => setShowAddModal(false)}>
           <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "90%", maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
