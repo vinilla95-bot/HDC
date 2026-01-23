@@ -214,8 +214,6 @@ function EditableSpecCell({
 }
 
 // ============ 인라인 품목 편집 셀 ============
-// ============ 인라인 품목 편집 셀 ============
-// ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -259,7 +257,6 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
-  // ✅ 자유입력 저장
   const commitFreeText = useCallback(() => {
     const trimmed = (searchQueryRef.current || "").trim();
     
@@ -281,12 +278,10 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     }
   }, [item, form, onSelectOption]);
 
-  // ✅ onBlur 핸들러 - 자연스럽게 편집 종료
   const handleBlur = () => {
     commitFreeText();
   };
 
-  // ✅ 옵션 선택
   const handleSelect = (opt: any) => {
     setIsEditing(false);
     setShowDropdown(false);
@@ -298,7 +293,6 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  // ✅ 편집 모드가 아니면 <span> 반환
   if (!isEditing) {
     return (
       <span
@@ -320,7 +314,6 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     );
   }
 
-  // ✅ 편집 모드
   return (
     <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
       <input 
@@ -329,7 +322,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
         value={searchQuery} 
         onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} 
         onFocus={() => setShowDropdown(true)} 
-        onBlur={handleBlur}  // ✅ onBlur 추가
+        onBlur={handleBlur}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -373,7 +366,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
           {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
             <div 
               key={opt.option_id} 
-              onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(opt)} 
               style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} 
               onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
@@ -388,8 +381,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     </div>
   );
 }
-// ============ 빈 행 클릭 시 품목 추가 ============
-// ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
+
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
 function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -652,40 +644,6 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
                     <div
                       key={opt.option_id}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleSelect(opt)}
-                      style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                    >
-                      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                      <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-                    </div>
-                  );
-                })}
-              </>
-            )}
-            
-            {filteredOptions.length === 0 && sites.length === 0 && !isSearchingSite && (
-              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
-            )}
-            {isSearchingSite && <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 중...</div>}
-          </div>
-        )}
-      </td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-    </>
-  );
-}
-                  
-                  return (
-                    <div
-                      key={opt.option_id}
-                      onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
                       onClick={() => handleSelect(opt)}
                       style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
