@@ -298,22 +298,23 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
   // ✅ 편집 모드가 아니면 텍스트만 표시 (이 조건을 먼저!)
-  if (!isEditing) {
-    return (
-     <td 
-        className="c wrap" 
-        onClick={() => { 
-          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);  // ✅ 추가
-          setSearchQuery(displayText); 
-          setIsEditing(true); 
-        }}
-        style={{ cursor: "pointer" }} 
-        title="클릭하여 품목 변경"
-      >
-        {displayText || <span style={{ color: '#ccc' }}>-</span>}
-      </td>
-    );
-  }
+ // ✅ 편집 모드가 아니면 텍스트만 표시
+if (!isEditing) {
+  return (
+    <td 
+      className="c wrap" 
+      onClick={() => { 
+        if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+        setSearchQuery('');  // ✅ 빈 문자열로 시작
+        setIsEditing(true); 
+      }}
+      style={{ cursor: "pointer" }} 
+      title="클릭하여 품목 변경"
+    >
+      {displayText || <span style={{ color: '#ccc' }}>품목 선택</span>}
+    </td>
+  );
+}
 
   return (
     <td className="c wrap" style={{ position: "relative", padding: "4px 8px", overflow: "visible" }}>
@@ -1575,47 +1576,76 @@ const inventoryScreen = (
 
         {/* A4 견적서 (인라인 편집) */}
         <div id="quotePreviewApp" style={{ display: "flex", justifyContent: "center" }}>
-        <A4Quote
-            form={form}
-            setForm={setForm}
-            computedItems={computedItems}
-            blankRows={blankRows}
-            fmt={fmt}
-            onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
-            onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
-            editable={true}
-            supply_amount={supply_amount}
-            vat_amount={vat_amount}
-            total_amount={total_amount}
-            bizcardName={selectedBizcard?.name || ""}
-            bizcards={bizcards}
-            selectedBizcardId={selectedBizcardId}
-            setSelectedBizcardId={setSelectedBizcardId}
-            options={options}
-            onSelectOption={(item, opt, calc) => {
-              // ... 기존 코드 유지
-            }}
-            onAddItem={(opt, calc, insertIdx) => addOption(opt, false, 0, "", undefined, insertIdx)}
-            onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
-            onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
-            onDeleteItem={(key) => deleteRow(key)}
-            // ✅ 추가
-            focusedRowIndex={focusedRowIndex}
-            setFocusedRowIndex={setFocusedRowIndex}
-            onSiteSearch={async (q) => {
-              const { list } = await searchSiteRates(q, form.w, form.l);
-              return list.filter((s: any) => matchKoreanLocal(String(s.alias || ""), q));
-            }}
-            onAddDelivery={(site, type, insertIdx) => {
-              setForm((p) => ({ ...p, sitePickedLabel: site.alias, siteQ: site.alias }));
-              if (type === 'delivery') {
-                addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, site.delivery, site.alias, undefined, insertIdx);
-              } else {
-                addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, site.crane, site.alias, undefined, insertIdx);
-              }
-            }}
-          />
-     
+      <A4Quote
+  form={form}
+  setForm={setForm}
+  computedItems={computedItems}
+  blankRows={blankRows}
+  fmt={fmt}
+  onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
+  onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
+  editable={true}
+  supply_amount={supply_amount}
+  vat_amount={vat_amount}
+  total_amount={total_amount}
+  bizcardName={selectedBizcard?.name || ""}
+  bizcards={bizcards}
+  selectedBizcardId={selectedBizcardId}
+  setSelectedBizcardId={setSelectedBizcardId}
+  options={options}
+  onSelectOption={(item, opt, calc) => {
+    const rawName = String(opt.option_name || "");
+    const rent = rawName.includes("임대");
+    
+    // displayName만 변경하는 경우 (자유입력)
+    if (opt._isDisplayNameOnly) {
+      setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
+        ...i, 
+        displayName: rawName
+      }));
+      return;
+    }
+    
+    // 일반 옵션 선택
+    const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
+    const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
+    
+    setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : recomputeRow({
+      ...i, 
+      optionId: opt.option_id, 
+      optionName: rawName, 
+      displayName: rent ? `${rawName} 1개월` : rawName,
+      unit: rent ? "개월" : calc.unit || "EA", 
+      showSpec: opt.show_spec || "n",
+      baseQty: calc.qty || 1, 
+      baseUnitPrice: calc.unitPrice || 0, 
+      baseAmount: calc.amount || 0,
+      displayQty: 1, 
+      customerUnitPrice, 
+      finalAmount: customerUnitPrice, 
+      months: 1,
+      lineSpec: existingLineSpec
+    })));
+  }}
+  onAddItem={(opt, calc, insertIdx) => addOption(opt, false, 0, "", undefined, insertIdx)}
+  onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
+  onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
+  onDeleteItem={(key) => deleteRow(key)}
+  focusedRowIndex={focusedRowIndex}
+  setFocusedRowIndex={setFocusedRowIndex}
+  onSiteSearch={async (q) => {
+    const { list } = await searchSiteRates(q, form.w, form.l);
+    return list.filter((s: any) => matchKoreanLocal(String(s.alias || ""), q));
+  }}
+  onAddDelivery={(site, type, insertIdx) => {
+    setForm((p) => ({ ...p, sitePickedLabel: site.alias, siteQ: site.alias }));
+    if (type === 'delivery') {
+      addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, site.delivery, site.alias, undefined, insertIdx);
+    } else {
+      addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, site.crane, site.alias, undefined, insertIdx);
+    }
+  }}
+/>
       
   
 </div>
