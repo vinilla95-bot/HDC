@@ -2358,6 +2358,17 @@ td input, td input:focus, td input:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* ✅ wrap 셀 내부 요소 테두리 완전 제거 */
+.a4Items td.wrap span,
+.a4Items td.wrap div,
+.a4Items td.c span,
+.a4Items td.c div {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
  
   .a4Wrap{
     display:flex;
