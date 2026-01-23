@@ -2208,8 +2208,18 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
         background: (editable && focusedRowIndex === idx) ? '#fff8e1' : undefined
       }}
     >
-  <td className="c center">{idx + 1}</td>
-<td className="c wrap">
+ <td 
+  style={{ 
+    border: '1px solid #333', 
+    padding: '6px 8px', 
+    textAlign: 'left', 
+    position: 'relative',
+    overflow: 'visible',
+    verticalAlign: 'middle',
+    fontSize: 11,
+    background: '#fff'
+  }}
+>
   {editable && options && onSelectOption ? (
     <InlineItemCell 
       item={item} 
