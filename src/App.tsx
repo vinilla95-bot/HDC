@@ -215,6 +215,7 @@ function EditableSpecCell({
 
 // ============ 인라인 품목 편집 셀 ============
 // ============ 인라인 품목 편집 셀 ============
+// ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -224,7 +225,6 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 
   const displayText = item.displayName || "";
   
-  // ✅ item이 바뀌면 무조건 편집 모드 종료
   const prevKeyRef = React.useRef(item.key);
   React.useEffect(() => {
     if (prevKeyRef.current !== item.key) {
@@ -235,7 +235,6 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     }
   }, [item.key]);
 
-  // ✅ 마운트 시에도 편집 모드 아님을 보장
   React.useEffect(() => {
     setIsEditing(false);
     setShowDropdown(false);
@@ -260,17 +259,13 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
+  // ✅ 자유입력 저장
   const commitFreeText = useCallback(() => {
     const trimmed = (searchQueryRef.current || "").trim();
     
     setIsEditing(false);
     setShowDropdown(false);
     setSearchQuery("");
-    
-    // ✅ focus 해제
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
     
     if (trimmed) {
       const customOpt = { 
@@ -286,27 +281,16 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     }
   }, [item, form, onSelectOption]);
 
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        commitFreeText();
-      }
-    };
-    if (isEditing) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isEditing, commitFreeText]);
+  // ✅ onBlur 핸들러 - 자연스럽게 편집 종료
+  const handleBlur = () => {
+    commitFreeText();
+  };
 
+  // ✅ 옵션 선택
   const handleSelect = (opt: any) => {
     setIsEditing(false);
     setShowDropdown(false);
     setSearchQuery("");
-    
-    // ✅ focus 해제
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
     
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
     onSelectOption(item, opt, calculated);
@@ -336,7 +320,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     );
   }
 
-  // ✅ 편집 모드면 <div> 안에 input과 dropdown
+  // ✅ 편집 모드
   return (
     <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
       <input 
@@ -345,6 +329,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
         value={searchQuery} 
         onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} 
         onFocus={() => setShowDropdown(true)} 
+        onBlur={handleBlur}  // ✅ onBlur 추가
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -362,12 +347,13 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
         autoFocus
         style={{ 
           width: "100%", 
-          padding: "4px 6px", 
-          border: "1px solid #2e5b86",
-          borderRadius: 4,
+          padding: "2px 4px", 
+          textAlign: "left",
+          border: "none",
           fontSize: 12, 
           boxSizing: "border-box", 
           outline: "none",
+          background: "transparent"
         }} 
       />
       {showDropdown && searchQuery.trim() && (
@@ -385,7 +371,14 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
           zIndex: 9999 
         }}>
           {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-            <div key={opt.option_id} onClick={() => handleSelect(opt)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
+            <div 
+              key={opt.option_id} 
+              onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+              onClick={() => handleSelect(opt)} 
+              style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} 
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+            >
               <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
               <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
             </div>
