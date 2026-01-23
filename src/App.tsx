@@ -214,6 +214,7 @@ function EditableSpecCell({
 }
 
 // ============ 인라인 품목 편집 셀 ============
+// ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -266,6 +267,11 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     setShowDropdown(false);
     setSearchQuery("");
     
+    // ✅ focus 해제
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    
     if (trimmed) {
       const customOpt = { 
         option_id: `custom_${Date.now()}`, 
@@ -297,33 +303,42 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     setShowDropdown(false);
     setSearchQuery("");
     
+    // ✅ focus 해제
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    
     const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
     onSelectOption(item, opt, calculated);
   };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  // ✅ 편집 모드가 아니면 텍스트만 표시 (이 조건을 먼저!)
- // ✅ 편집 모드가 아니면 텍스트만 표시
-if (!isEditing) {
-  return (
-    <td 
-      className="c wrap" 
-      onClick={() => { 
-        if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-        setSearchQuery('');  // ✅ 빈 문자열로 시작
-        setIsEditing(true); 
-      }}
-      style={{ cursor: "pointer" }} 
-      title="클릭하여 품목 변경"
-    >
-      {displayText || <span style={{ color: '#ccc' }}>품목 선택</span>}
-    </td>
-  );
-}
+  // ✅ 편집 모드가 아니면 <span> 반환
+  if (!isEditing) {
+    return (
+      <span
+        onClick={() => { 
+          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+          setSearchQuery('');
+          setIsEditing(true); 
+        }}
+        style={{ 
+          cursor: "pointer", 
+          display: "block", 
+          width: "100%", 
+          textAlign: "left" 
+        }}
+        title="클릭하여 품목 변경"
+      >
+        {displayText || <span style={{ color: '#ccc' }}>품목 선택</span>}
+      </span>
+    );
+  }
 
+  // ✅ 편집 모드면 <div> 안에 input과 dropdown
   return (
-    <td className="c wrap" style={{ position: "relative", padding: "4px 8px", overflow: "visible" }}>
+    <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
       <input 
         ref={inputRef} 
         type="text" 
@@ -343,16 +358,16 @@ if (!isEditing) {
             setSearchQuery("");
           }
         }}
-        placeholder="품목 검색"  
+        placeholder="품목 검색"
+        autoFocus
         style={{ 
-    width: "100%", 
-    padding: "2px 4px", 
-    textAlign: "center",
-    border: "1px solid transparent",
-    fontSize: 12, 
-    boxSizing: "border-box", 
-    outline: "none",
-    background: "transparent" 
+          width: "100%", 
+          padding: "4px 6px", 
+          border: "1px solid #2e5b86",
+          borderRadius: 4,
+          fontSize: 12, 
+          boxSizing: "border-box", 
+          outline: "none",
         }} 
       />
       {showDropdown && searchQuery.trim() && (
@@ -377,7 +392,7 @@ if (!isEditing) {
           )) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>}
         </div>
       )}
-    </td>
+    </div>
   );
 }
 // ============ 빈 행 클릭 시 품목 추가 ============
@@ -2192,18 +2207,20 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
       }}
     >
   <td className="c center">{idx + 1}</td>
- {editable && options && onSelectOption ? (
- <InlineItemCell 
-  item={item} 
-  options={options} 
-  form={form} 
-  onSelectOption={onSelectOption}
-  rowIndex={idx}
-  onFocus={setFocusedRowIndex}
-/>
-) : (
-  <td className="c wrap">{String(item.displayName || "")}</td>
-)}
+<td className="c wrap" style={{ position: "relative", overflow: "visible" }}>
+  {editable && options && onSelectOption ? (
+    <InlineItemCell 
+      item={item} 
+      options={options} 
+      form={form} 
+      onSelectOption={onSelectOption}
+      rowIndex={idx}
+      onFocus={setFocusedRowIndex}
+    />
+  ) : (
+    String(item.displayName || "")
+  )}
+</td>
  
 <td className="c center">
   {editable && onUpdateSpec ? (
