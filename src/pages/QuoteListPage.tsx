@@ -114,7 +114,6 @@ function EditableNumberCell({ value, onChange, editable = true }: { value: numbe
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    console.log("🟢 키 입력:", e.key);  // ← 이거 찍혀요?
     if (e.key === "Enter") {
       handleBlur();
     } else if (e.key === "Escape") {
@@ -141,26 +140,23 @@ function EditableNumberCell({ value, onChange, editable = true }: { value: numbe
     );
   }
   
+  // ✅ 수정: 숫자 셀이므로 클릭 시 편집모드, 숫자 표시
   return (
     <span
-      onClick={() => {
-        setSearchQuery(item.displayName || "");
-        setIsEditing(true);
-      }}
+      onClick={() => setIsEditing(true)}
       style={{ 
         cursor: "pointer", 
         display: "block", 
         width: "100%", 
-        textAlign: "left",
-        minHeight: 20,  // ✅ 최소 높이 추가
-        background: item.displayName ? "transparent" : "#fffbe6",  // ✅ 빈 셀 하이라이트
+        textAlign: "right",
+        minHeight: 20,
       }}
       title="클릭하여 수정"
     >
-      {item.displayName || "(클릭하여 입력)"}
+      {money(value)}
     </span>
   );
-
+}
 function InlineItemSearchCell({
   item,
   options,
