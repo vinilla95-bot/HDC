@@ -81,8 +81,14 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(String(value));
   const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => { if (isEditing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [isEditing]);
+React.useEffect(() => {
+  if (!isEditing) {
+    // ✅ 편집 모드 종료 시 focus 해제
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }
+}, [isEditing]);
   React.useEffect(() => { setTempValue(String(value)); }, [value]);
 
   const handleBlur = () => { setIsEditing(false); onChange(Number(tempValue) || 0); };
