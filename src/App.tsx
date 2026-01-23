@@ -2204,7 +2204,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
       }}
     >
   <td className="c center">{idx + 1}</td>
-<td className="c wrap" style={{ position: "relative", overflow: "visible" }}>
+<td className="c wrap">
   {editable && options && onSelectOption ? (
     <InlineItemCell 
       item={item} 
@@ -2336,31 +2336,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
 
 
 const a4css = `
-/* ✅ 파란 박스 강제 제거 */
-.a4Items td,
-.a4Items td *,
-.a4Items td:focus,
-.a4Items td:focus-visible,
-.a4Items td:focus-within,
-.a4Items td:active,
-.a4Items td span,
-.a4Items td span:focus,
-.a4Items td div,
-.a4Items td div:focus,
-.a4Items td input,
-.a4Items td input:focus,
-.a4Items td input:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
-  -webkit-appearance: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-}
 
-.a4Items td input {
-  border: none !important;
-  background: transparent !important;
-}
   *, *:focus, *:focus-visible, *:focus-within, *:active { 
   outline: none !important; 
   box-shadow: none !important; 
