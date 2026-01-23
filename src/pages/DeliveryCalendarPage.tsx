@@ -16,7 +16,9 @@ type DeliveryItem = {
   total_amount: number;
   deposit_status?: string;
   delivery_color?: string;
-  dispatch_status?: string; 
+  dispatch_status?: string;
+  source?: "quote" | "inventory";  // ✅ 추가: 데이터 출처
+  inventory_id?: string;  // ✅ 추가: inventory용 ID
 };
 
 type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto" | "purple" | "navy";
@@ -50,6 +52,7 @@ const HOLIDAYS: Record<string, string> = {
   "2026-10-03": "개천절", "2026-10-05": "대체공휴일", "2026-10-09": "한글날",
   "2026-12-25": "크리스마스",
 };
+
 export default function DeliveryCalendarPage({ onBack }: { onBack: () => void }) {
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,55 +83,64 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
   });
 
   const loadDeliveries = async () => {
-  setLoading(true);
-  
-  // quotes와 inventory 둘 다 조회
-  const [quotesRes, inventoryRes] = await Promise.all([
-    supabase
-      .from("quotes")
-      .select("*")
-      .eq("status", "confirmed")
-      .not("delivery_date", "is", null),
-    supabase
-      .from("inventory")
-      .select("*")
-      .not("delivery_date", "is", null)
-  ]);
+    setLoading(true);
+    
+    const [quotesRes, inventoryRes] = await Promise.all([
+      supabase
+        .from("quotes")
+        .select("*")
+        .eq("status", "confirmed")
+        .not("delivery_date", "is", null),
+      supabase
+        .from("inventory")
+        .select("*")
+        .not("delivery_date", "is", null)
+    ]);
 
-  if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
-  if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
+    if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
+    if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
 
-  const quotesData = (quotesRes.data || []).filter((d: any) => d.delivery_date);
-  
-  // inventory 데이터를 DeliveryItem 형식으로 변환
-  const inventoryData = (inventoryRes.data || [])
-    .filter((d: any) => d.delivery_date)
-    .map((inv: any) => ({
-      quote_id: inv.quote_id,
-      contract_type: "inventory",  // 재고 표시용
-      customer_name: inv.customer_name || "",
-      customer_phone: "",
-      spec: inv.spec || "",
-      items: inv.items || [],
-      delivery_date: inv.delivery_date,
-      site_name: "",
-      site_addr: "",
-      memo: inv.interior || "",
-      total_amount: inv.total_amount || 0,
-      deposit_status: inv.deposit_status,
-      delivery_color: inv.delivery_color,
-      container_type: inv.container_type,  // 신품/중고/리스
-      drawing_no: inv.drawing_no,  // 도면번호
-    }));
+    const quotesData = (quotesRes.data || [])
+      .filter((d: any) => d.delivery_date)
+      .map((q: any) => ({
+        ...q,
+        source: "quote" as const,
+      }));
+    
+    // ✅ inventory 데이터 변환 - dispatch_status 포함
+    const inventoryData = (inventoryRes.data || [])
+      .filter((d: any) => d.delivery_date)
+      .map((inv: any) => ({
+        quote_id: inv.id,  // inventory의 id를 quote_id로 사용
+        inventory_id: inv.id,
+        contract_type: "inventory",
+        customer_name: inv.customer_name || "",
+        customer_phone: inv.customer_phone || "",
+        spec: inv.spec || "",
+        items: inv.items || [],
+        delivery_date: inv.delivery_date,
+        site_name: "",
+        site_addr: inv.interior || "",
+        memo: inv.memo || "",
+        total_amount: inv.total_amount || 0,
+        deposit_status: inv.deposit_status,
+        delivery_color: inv.delivery_color,
+        dispatch_status: inv.dispatch_status,  // ✅ 배차상태 포함
+        container_type: inv.container_type,
+        drawing_no: inv.drawing_no,
+        source: "inventory" as const,
+      }));
 
-  setDeliveries([...quotesData, ...inventoryData] as DeliveryItem[]);
-  setLoading(false);
-};
+    setDeliveries([...quotesData, ...inventoryData] as DeliveryItem[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
-  loadDeliveries();
-}, []);
-  /// ✅ 색상 결정 로직
+    loadDeliveries();
+  }, []);
+
+  // ✅ 색상 결정 로직 - 재고도 배차완료시 주황색
+  // ✅ 색상 결정 로직
 const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   // 1. 수동 색상이 설정되어 있으면 사용
   if (item.delivery_color && item.delivery_color !== "auto") {
@@ -142,37 +154,41 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   deliveryDate.setHours(0, 0, 0, 0);
   const isPast = deliveryDate < today;
   
-  // 2. 미입금 상태면 빨간색 (배차완료 여부 상관없이)
+  // 2. 미입금이면 무조건 빨강 (배차완료 여부 상관없이)
   if (item.deposit_status !== "완료") {
     return "red";
   }
   
   // 3. 입금완료 + 배차완료 + 출고일 지남 → 회색
-  if (item.deposit_status === "완료" && item.dispatch_status === "완료" && isPast) {
+  if (item.dispatch_status === "완료" && isPast) {
     return "gray";
   }
   
   // 4. 입금완료 + 배차완료 → 주황색
-  if (item.deposit_status === "완료" && item.dispatch_status === "완료") {
+  if (item.dispatch_status === "완료") {
     return "orange";
   }
   
-  // 5. 입금완료 + 배차 미완료 → 파란색
+  // 5. 입금완료 + 배차미완료 → 재고는 보라, 나머지는 파랑
+  if (item.source === "inventory" || item.contract_type === "inventory") {
+    return "purple";
+  }
+  
   return "blue";
 }, []);
 
   // ✅ 색상 스타일
- const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
-  red: { bg: "#ffebee", border: "#f44336", text: "#c62828" },
-  orange: { bg: "#fff3e0", border: "#ff9800", text: "#e65100" },
-  blue: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
-  yellow: { bg: "#fffde7", border: "#ffc107", text: "#f57f17" },
-  gray: { bg: "#f5f5f5", border: "#9e9e9e", text: "#616161" },
-  green: { bg: "#e8f5e9", border: "#4caf50", text: "#2e7d32" },
-  purple: { bg: "#f3e5f5", border: "#9c27b0", text: "#6a1b9a" },
-  navy: { bg: "#e8eaf6", border: "#3f51b5", text: "#283593" },
-  auto: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
-};
+  const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
+    red: { bg: "#ffebee", border: "#f44336", text: "#c62828" },
+    orange: { bg: "#fff3e0", border: "#ff9800", text: "#e65100" },
+    blue: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
+    yellow: { bg: "#fffde7", border: "#ffc107", text: "#f57f17" },
+    gray: { bg: "#f5f5f5", border: "#9e9e9e", text: "#616161" },
+    green: { bg: "#e8f5e9", border: "#4caf50", text: "#2e7d32" },
+    purple: { bg: "#f3e5f5", border: "#9c27b0", text: "#6a1b9a" },
+    navy: { bg: "#e8eaf6", border: "#3f51b5", text: "#283593" },
+    auto: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
+  };
 
   // ✅ 옵션 요약
   const summarizeOptions = (items: any[], short = true) => {
@@ -217,7 +233,7 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
     return containerItem?.qty || 1;
   };
 
-  // ✅ 운송 타입 가져오기 (크레인/일반트럭)
+  // ✅ 운송 타입 가져오기
   const getTransportType = (item: DeliveryItem): "crane" | "truck" | null => {
     if (!item.items || item.items.length === 0) return null;
     
@@ -235,97 +251,91 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   };
 
   // ✅ 출고 라벨 생성
-const getDeliveryLabel = (item: DeliveryItem) => {
-  const type = item.contract_type || "order";
-  const spec = item.spec || "";
-  const options = summarizeOptions(item.items, true);
-  const customer = item.customer_name || "";
-  const qty = getQty(item);
-  const transportType = getTransportType(item);
-  const memo = item.memo || "";
+  const getDeliveryLabel = (item: DeliveryItem) => {
+    const type = item.contract_type || "order";
+    const spec = item.spec || "";
+    const options = summarizeOptions(item.items, true);
+    const customer = item.customer_name || "";
+    const qty = getQty(item);
+    const transportType = getTransportType(item);
+    const memo = item.memo || "";
 
-  // ✅ 메모만 있는 경우 (규격 없고, 옵션 없고) → 태그 없이 표시
-  const isMemoOnly = !spec && (!item.items || item.items.length === 0);
-  if (isMemoOnly) {
-    return `${customer ? customer + " " : ""}${memo}`.trim() || "메모";
-  }
+    const isMemoOnly = !spec && (!item.items || item.items.length === 0);
+    if (isMemoOnly) {
+      return `${customer ? customer + " " : ""}${memo}`.trim() || "메모";
+    }
 
-  let prefix = "";
-  if (transportType === "crane") {
-    prefix = "크";
-  }
+    let prefix = "";
+    if (transportType === "crane") {
+      prefix = "크";
+    }
 
-  const qtyText = `-${qty}동`;
+    const qtyText = `-${qty}동`;
 
-if (type === "memo") {
-  return customer || "메모";
-} else if (type === "inventory") {
-  const containerType = (item as any).container_type || "신품";
-  const drawingNo = (item as any).drawing_no ? `#${(item as any).drawing_no}` : "";
-  return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}`.trim();
-} else if (type === "rental") {
-  return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
-} else if (type === "used") {
-  return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
-} else {
-  return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
-}
-};
+    if (type === "memo") {
+      return customer || "메모";
+    } else if (type === "inventory") {
+      const containerType = (item as any).container_type || "신품";
+      const drawingNo = (item as any).drawing_no ? `#${(item as any).drawing_no}` : "";
+      return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}`.trim();
+    } else if (type === "rental") {
+      return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
+    } else if (type === "used") {
+      return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
+    } else {
+      return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
+    }
+  };
 
-
- 
-
-// 수정
   // ✅ 배차 양식 생성
   const generateDispatchText = (item: DeliveryItem) => {
     const type = item.contract_type || "order";
     
- // 신품/중고/임대 구분
-let saleType = "신품판매";
-if (type === "used") {
-  saleType = "중고판매";
-} else if (type === "rental") {
-  saleType = "임대";
-} else if (type === "memo") {
-  saleType = "메모";
-}
+    let saleType = "신품판매";
+    if (type === "used") {
+      saleType = "중고판매";
+    } else if (type === "rental") {
+      saleType = "임대";
+    } else if (type === "memo") {
+      saleType = "메모";
+    } else if (type === "inventory") {
+      const containerType = (item as any).container_type || "신품";
+      saleType = `재고${containerType}`;
+    }
 
-// ✅ timezone 이슈 수정 + 요일 추가
-const [year, month, day] = item.delivery_date.split('-').map(Number);
-const d = new Date(year, month - 1, day);
-const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
-const dateStr = `${month}/${day}(${weekDays[d.getDay()]})`;
+    const [year, month, day] = item.delivery_date.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
+    const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+    const dateStr = `${month}/${day}(${weekDays[d.getDay()]})`;
 
-const spec = item.spec || "";
-const qty = getQty(item);
-const qtyText = qty > 1 ? `${qty}` : "1";
-let unloadInfo = "";
-if (item.site_addr) {
-  unloadInfo = item.site_addr;
-}
-if (item.memo) {
-  unloadInfo = unloadInfo ? `${unloadInfo} ${item.memo}` : item.memo;
-}
-const customer = item.customer_name || "";
-const phone = item.customer_phone || "";
+    const spec = item.spec || "";
+    const qty = getQty(item);
+    const qtyText = qty > 1 ? `${qty}` : "1";
+    let unloadInfo = "";
+    if (item.site_addr) {
+      unloadInfo = item.site_addr;
+    }
+    if (item.memo) {
+      unloadInfo = unloadInfo ? `${unloadInfo} ${item.memo}` : item.memo;
+    }
+    const customer = item.customer_name || "";
+    const phone = item.customer_phone || "";
 
-let text = `사장님 ${dateStr} ${saleType} (${spec})${qtyText}동(옵션OR기본형) 상차 현대`;
-if (unloadInfo) {
-  text += ` 하차 ${unloadInfo}`;
-} else {
-  text += ` 하차 `;
-}
-text += ` ${customer}`;
-if (phone) {
-  text += ` 인수자${phone}`;
-} else {
-  text += ` 인수자`;
-}
-text += ` 입니다~`;
-return text;
-
-}; 
-    
+    let text = `사장님 ${dateStr} ${saleType} (${spec})${qtyText}동(옵션OR기본형) 상차 현대`;
+    if (unloadInfo) {
+      text += ` 하차 ${unloadInfo}`;
+    } else {
+      text += ` 하차 `;
+    }
+    text += ` ${customer}`;
+    if (phone) {
+      text += ` 인수자${phone}`;
+    } else {
+      text += ` 인수자`;
+    }
+    text += ` 입니다~`;
+    return text;
+  };
 
   // ✅ 클립보드 복사
   const handleCopyDispatch = async () => {
@@ -367,7 +377,7 @@ return text;
     setDragOverDate(null);
   };
 
-  // ✅ 드롭 (날짜 변경)
+  // ✅ 드롭 (날짜 변경) - quotes/inventory 구분
   const handleDrop = async (e: React.DragEvent, newDate: string) => {
     e.preventDefault();
     setDragOverDate(null);
@@ -377,56 +387,92 @@ return text;
       return;
     }
 
-    // DB 업데이트
-    const { error } = await supabase
-      .from("quotes")
-      .update({ delivery_date: newDate })
-      .eq("quote_id", draggedItem.quote_id);
+    // ✅ inventory인 경우 inventory 테이블 업데이트
+    if (draggedItem.source === "inventory") {
+      const { error } = await supabase
+        .from("inventory")
+        .update({ delivery_date: newDate })
+        .eq("id", draggedItem.inventory_id);
 
-    if (error) {
-      alert("날짜 변경 실패: " + error.message);
+      if (error) {
+        alert("날짜 변경 실패: " + error.message);
+      } else {
+        setDeliveries(prev => prev.map(d =>
+          d.quote_id === draggedItem.quote_id ? { ...d, delivery_date: newDate } : d
+        ));
+      }
     } else {
-      // 로컬 상태 업데이트
-      setDeliveries(prev => prev.map(d =>
-        d.quote_id === draggedItem.quote_id ? { ...d, delivery_date: newDate } : d
-      ));
+      // quotes 테이블 업데이트
+      const { error } = await supabase
+        .from("quotes")
+        .update({ delivery_date: newDate })
+        .eq("quote_id", draggedItem.quote_id);
+
+      if (error) {
+        alert("날짜 변경 실패: " + error.message);
+      } else {
+        setDeliveries(prev => prev.map(d =>
+          d.quote_id === draggedItem.quote_id ? { ...d, delivery_date: newDate } : d
+        ));
+      }
     }
 
     setDraggedItem(null);
   };
 
-  // ✅ 수정 저장
-const handleSaveEdit = async () => {
-  if (!selectedDelivery) return;
+  // ✅ 수정 저장 - quotes/inventory 구분
+  const handleSaveEdit = async () => {
+    if (!selectedDelivery) return;
 
-  const { error } = await supabase
-    .from("quotes")
-    .update({
-      delivery_date: editForm.delivery_date,
-      customer_name: editForm.customer_name,
-      customer_phone: editForm.customer_phone,
-      spec: editForm.spec,
-      site_addr: editForm.site_addr,
-      memo: editForm.memo,
-      delivery_color: editForm.delivery_color,
-      dispatch_status: editForm.dispatch_status,  // ✅ 추가
-    })
-    .eq("quote_id", selectedDelivery.quote_id);
+    // ✅ inventory인 경우
+    if (selectedDelivery.source === "inventory") {
+      const { error } = await supabase
+        .from("inventory")
+        .update({
+          delivery_date: editForm.delivery_date,
+          customer_name: editForm.customer_name,
+          customer_phone: editForm.customer_phone,
+          spec: editForm.spec,
+          interior: editForm.site_addr,  // inventory는 interior 필드 사용
+          memo: editForm.memo,
+          delivery_color: editForm.delivery_color,
+          dispatch_status: editForm.dispatch_status,
+        })
+        .eq("id", selectedDelivery.inventory_id);
 
-  if (error) {
-    alert("저장 실패: " + error.message);
-    return;
-  }
+      if (error) {
+        alert("저장 실패: " + error.message);
+        return;
+      }
+    } else {
+      // quotes 테이블 업데이트
+      const { error } = await supabase
+        .from("quotes")
+        .update({
+          delivery_date: editForm.delivery_date,
+          customer_name: editForm.customer_name,
+          customer_phone: editForm.customer_phone,
+          spec: editForm.spec,
+          site_addr: editForm.site_addr,
+          memo: editForm.memo,
+          delivery_color: editForm.delivery_color,
+          dispatch_status: editForm.dispatch_status,
+        })
+        .eq("quote_id", selectedDelivery.quote_id);
 
-  setDeliveries(prev => prev.map(d =>
-    d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
-  ));
+      if (error) {
+        alert("저장 실패: " + error.message);
+        return;
+      }
+    }
 
-  setShowEditModal(false);
-  setSelectedDelivery(null);
-};
+    setDeliveries(prev => prev.map(d =>
+      d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
+    ));
 
-
+    setShowEditModal(false);
+    setSelectedDelivery(null);
+  };
 
   // ✅ 새 일정 추가
   const handleAddSchedule = async () => {
@@ -459,7 +505,6 @@ const handleSaveEdit = async () => {
       return;
     }
 
-    // 로컬 상태 업데이트
     const newItem: DeliveryItem = {
       quote_id: quoteId,
       contract_type: newSchedule.contract_type,
@@ -472,6 +517,7 @@ const handleSaveEdit = async () => {
       delivery_color: newSchedule.delivery_color,
       total_amount: 0,
       items: [],
+      source: "quote",
     };
     
     setDeliveries(prev => [...prev, newItem]);
@@ -488,26 +534,69 @@ const handleSaveEdit = async () => {
     });
   };
 
-  // ✅ 색상 변경
-  const handleColorChange = async (quote_id: string, color: ColorType) => {
-    const { error } = await supabase
-      .from("quotes")
-      .update({ delivery_color: color })
-      .eq("quote_id", quote_id);
+  // ✅ 색상 변경 - quotes/inventory 구분
+  const handleColorChange = async (item: DeliveryItem, color: ColorType) => {
+    if (item.source === "inventory") {
+      const { error } = await supabase
+        .from("inventory")
+        .update({ delivery_color: color })
+        .eq("id", item.inventory_id);
 
-    if (error) {
-      alert("색상 변경 실패: " + error.message);
-      return;
+      if (error) {
+        alert("색상 변경 실패: " + error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("quotes")
+        .update({ delivery_color: color })
+        .eq("quote_id", item.quote_id);
+
+      if (error) {
+        alert("색상 변경 실패: " + error.message);
+        return;
+      }
     }
 
     setDeliveries(prev => prev.map(d =>
-      d.quote_id === quote_id ? { ...d, delivery_color: color } : d
+      d.quote_id === item.quote_id ? { ...d, delivery_color: color } : d
     ));
 
-    if (selectedDelivery?.quote_id === quote_id) {
+    if (selectedDelivery?.quote_id === item.quote_id) {
       setSelectedDelivery({ ...selectedDelivery, delivery_color: color });
       setEditForm({ ...editForm, delivery_color: color });
     }
+  };
+
+  // ✅ 삭제 - quotes/inventory 구분
+  const handleDelete = async () => {
+    if (!selectedDelivery) return;
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+
+    if (selectedDelivery.source === "inventory") {
+      const { error } = await supabase
+        .from("inventory")
+        .delete()
+        .eq("id", selectedDelivery.inventory_id);
+
+      if (error) {
+        alert("삭제 실패: " + error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("quotes")
+        .delete()
+        .eq("quote_id", selectedDelivery.quote_id);
+
+      if (error) {
+        alert("삭제 실패: " + error.message);
+        return;
+      }
+    }
+
+    setDeliveries(prev => prev.filter(d => d.quote_id !== selectedDelivery.quote_id));
+    setSelectedDelivery(null);
   };
 
   // ✅ 날짜별 출고 그룹핑
@@ -546,7 +635,6 @@ const handleSaveEdit = async () => {
     return days;
   }, [currentMonth]);
 
-  // ✅ 날짜 포맷 수정 - 로컬 시간 기준
   const formatDateKey = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -720,21 +808,20 @@ const handleSaveEdit = async () => {
 
               return (
                 <div
-  key={idx}
-  onDragOver={(e) => handleDragOver(e, dateKey)}
-  onDragLeave={handleDragLeave}
-  onDrop={(e) => handleDrop(e, dateKey)}
-  onClick={() => {
-    setNewSchedule({ ...newSchedule, delivery_date: dateKey });
-    setShowAddModal(true);
-  }}
- 
+                  key={idx}
+                  onDragOver={(e) => handleDragOver(e, dateKey)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, dateKey)}
+                  onClick={() => {
+                    setNewSchedule({ ...newSchedule, delivery_date: dateKey });
+                    setShowAddModal(true);
+                  }}
                   style={{
-  height: 110,  // 고정 높이
-  minHeight: 110,
-  maxHeight: 110,
-  padding: 4,
-  overflow: "hidden",
+                    height: 110,
+                    minHeight: 110,
+                    maxHeight: 110,
+                    padding: 4,
+                    overflow: "hidden",
                     borderRight: idx % 7 !== 6 ? "1px solid #eee" : "none",
                     borderBottom: "1px solid #eee",
                     background: isDragOver ? "#e3f2fd" : isToday ? "#fffde7" : isCurrentMonth ? "#fff" : "#f9f9f9",
@@ -742,43 +829,39 @@ const handleSaveEdit = async () => {
                     transition: "background 0.2s",
                   }}
                 >
-                 
+                  {(() => {
+                    const holidayName = HOLIDAYS[dateKey];
+                    const isHoliday = !!holidayName;
+                    return (
+                      <>
+                        <div style={{
+                          fontSize: 12,
+                          fontWeight: isToday ? 800 : 600,
+                          color: isToday ? "#fff" : (isSunday || isHoliday) ? "#e53935" : isSaturday ? "#1976d2" : "#333",
+                          marginBottom: 2,
+                          padding: "2px 4px",
+                          borderRadius: 4,
+                          background: isToday ? "#2e5b86" : "transparent",
+                          display: "inline-block",
+                        }}>
+                          {date.getDate()}
+                        </div>
+                        {holidayName && (
+                          <div style={{ fontSize: 9, color: "#e53935", fontWeight: 600, marginBottom: 2 }}>
+                            {holidayName}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                   
-{(() => {
-
-  
-   const holidayName = HOLIDAYS[dateKey];
-  const isHoliday = !!holidayName;
-  return (
-    <>
-      <div style={{
-        fontSize: 12,
-        fontWeight: isToday ? 800 : 600,
-        color: isToday ? "#fff" : (isSunday || isHoliday) ? "#e53935" : isSaturday ? "#1976d2" : "#333",
-        marginBottom: 2,
-        padding: "2px 4px",
-        borderRadius: 4,
-        background: isToday ? "#2e5b86" : "transparent",
-        display: "inline-block",
-      }}>
-        {date.getDate()}
-      </div>
-      {holidayName && (
-        <div style={{ fontSize: 9, color: "#e53935", fontWeight: 600, marginBottom: 2 }}>
-          {holidayName}
-        </div>
-      )}
-    </>
-  );
-})()}
-                  {/* 출고 항목들 */}
-                 <div style={{ 
-  display: "flex", 
-  flexDirection: "column", 
-  gap: 2,
-  maxHeight: 70,  // 항목 영역 높이 제한
-  overflow: "hidden"
-}}>
+                  <div style={{ 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    gap: 2,
+                    maxHeight: 70,
+                    overflow: "hidden"
+                  }}>
                     {dayDeliveries.slice(0, 3).map((d, i) => {
                       const color = getItemColor(d);
                       const style = colorStyles[color];
@@ -789,10 +872,10 @@ const handleSaveEdit = async () => {
                           draggable
                           onDragStart={(e) => handleDragStart(e, d)}
                           onClick={(e) => {
-  e.stopPropagation();  // ✅ 추가
-  setSelectedDelivery(d);
-  setEditForm(d);
-}}
+                            e.stopPropagation();
+                            setSelectedDelivery(d);
+                            setEditForm(d);
+                          }}
                           style={{
                             fontSize: 11,
                             padding: "3px 4px",
@@ -804,8 +887,8 @@ const handleSaveEdit = async () => {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             cursor: "grab",
-                            maxWidth: "100%",  // 추가
-  display: "block",
+                            maxWidth: "100%",
+                            display: "block",
                           }}
                           title={`${getDeliveryLabel(d)} (드래그하여 날짜 변경)`}
                         >
@@ -813,7 +896,7 @@ const handleSaveEdit = async () => {
                         </div>
                       );
                     })}
-               {dayDeliveries.length > 3 && (
+                    {dayDeliveries.length > 3 && (
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
@@ -839,43 +922,42 @@ const handleSaveEdit = async () => {
       )}
 
       {/* 범례 */}
-     {/* 범례 */}
-<div style={{
-  display: "flex",
-  gap: 12,
-  marginTop: 16,
-  padding: "12px 16px",
-  background: "#fff",
-  borderRadius: 12,
-  border: "1px solid #e5e7eb",
-  fontSize: 11,
-  flexWrap: "wrap",
-}}>
-  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-    <div style={{ width: 14, height: 14, background: colorStyles.blue.bg, borderLeft: `3px solid ${colorStyles.blue.border}`, borderRadius: 2 }}></div>
-    <span>신품/임대/중고</span>
-  </div>
-  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-    <div style={{ width: 14, height: 14, background: colorStyles.red.bg, borderLeft: `3px solid ${colorStyles.red.border}`, borderRadius: 2 }}></div>
-    <span>미입금</span>
-  </div>
-  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-    <div style={{ width: 14, height: 14, background: colorStyles.gray.bg, borderLeft: `3px solid ${colorStyles.gray.border}`, borderRadius: 2 }}></div>
-    <span>완료(출고지남)</span>
-  </div>
-  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-  <div style={{ width: 14, height: 14, background: colorStyles.purple.bg, borderLeft: `3px solid ${colorStyles.purple.border}`, borderRadius: 2 }}></div>
-  <span>재고</span>
-</div>
-  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-  <div style={{ width: 14, height: 14, background: colorStyles.orange.bg, borderLeft: `3px solid ${colorStyles.orange.border}`, borderRadius: 2 }}></div>
-  <span>배차완료</span>
-</div>
-  <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
-    <span style={{ fontWeight: 700 }}>크</span>
-    <span>= 크레인 운송</span>
-  </div>
-</div>
+      <div style={{
+        display: "flex",
+        gap: 12,
+        marginTop: 16,
+        padding: "12px 16px",
+        background: "#fff",
+        borderRadius: 12,
+        border: "1px solid #e5e7eb",
+        fontSize: 11,
+        flexWrap: "wrap",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 14, height: 14, background: colorStyles.blue.bg, borderLeft: `3px solid ${colorStyles.blue.border}`, borderRadius: 2 }}></div>
+          <span>신품/임대/중고</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 14, height: 14, background: colorStyles.red.bg, borderLeft: `3px solid ${colorStyles.red.border}`, borderRadius: 2 }}></div>
+          <span>미입금</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 14, height: 14, background: colorStyles.gray.bg, borderLeft: `3px solid ${colorStyles.gray.border}`, borderRadius: 2 }}></div>
+          <span>완료(출고지남)</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 14, height: 14, background: colorStyles.purple.bg, borderLeft: `3px solid ${colorStyles.purple.border}`, borderRadius: 2 }}></div>
+          <span>재고</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 14, height: 14, background: colorStyles.orange.bg, borderLeft: `3px solid ${colorStyles.orange.border}`, borderRadius: 2 }}></div>
+          <span>배차완료</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
+          <span style={{ fontWeight: 700 }}>크</span>
+          <span>= 크레인 운송</span>
+        </div>
+      </div>
 
       {/* ✅ 일정 추가 모달 */}
       {showAddModal && (
@@ -930,10 +1012,10 @@ const handleSaveEdit = async () => {
                   onChange={(e) => setNewSchedule({ ...newSchedule, contract_type: e.target.value })}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                 >
-                 <option value="order">신품</option>
-<option value="used">중고</option>
-<option value="rental">임대</option>
-<option value="memo">메모</option>
+                  <option value="order">신품</option>
+                  <option value="used">중고</option>
+                  <option value="rental">임대</option>
+                  <option value="memo">메모</option>
                 </select>
               </div>
               <div>
@@ -957,11 +1039,11 @@ const handleSaveEdit = async () => {
               <div>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
                 <input
-  value={newSchedule.spec}
-  onChange={(e) => setNewSchedule({ ...newSchedule, spec: e.target.value })}
-  placeholder="예: 3x6x2.6"
-  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-/>
+                  value={newSchedule.spec}
+                  onChange={(e) => setNewSchedule({ ...newSchedule, spec: e.target.value })}
+                  placeholder="예: 3x6x2.6"
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
               </div>
               <div>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>하차 주소</label>
@@ -1007,7 +1089,6 @@ const handleSaveEdit = async () => {
               </div>
             </div>
 
-            {/* 버튼 */}
             <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
               <button
                 onClick={(e) => {
@@ -1046,6 +1127,7 @@ const handleSaveEdit = async () => {
           </div>
         </div>
       )}
+
       {/* ✅ 상세보기 팝업 */}
       {selectedDelivery && !showDispatchModal && !showEditModal && (
         <div
@@ -1088,7 +1170,7 @@ const handleSaveEdit = async () => {
                 const type = selectedDelivery.contract_type || "order";
                 const color = getItemColor(selectedDelivery);
                 const style = colorStyles[color];
-                const label = type === "used" ? "중고" : type === "branch" ? "영업소" : type === "rental" ? "임대" : "수주(신품)";
+                const label = type === "inventory" ? "재고" : type === "used" ? "중고" : type === "branch" ? "영업소" : type === "rental" ? "임대" : "수주(신품)";
                 const transportType = getTransportType(selectedDelivery);
                 return (
                   <>
@@ -1116,16 +1198,30 @@ const handleSaveEdit = async () => {
                         🏗️ 크레인
                       </span>
                     )}
+                    {/* ✅ 배차완료 표시 */}
+                    {selectedDelivery.dispatch_status === "완료" && (
+                      <span style={{
+                        padding: "4px 12px",
+                        background: "#fff3e0",
+                        color: "#e65100",
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "1px solid #ff9800",
+                      }}>
+                        🚚 배차완료
+                      </span>
+                    )}
                   </>
                 );
               })()}
 
               {/* 색상 선택 */}
               <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
-              {(["red", "orange", "yellow", "green", "blue", "purple", "navy", "gray"] as ColorType[]).map((c) => (
+                {(["red", "orange", "yellow", "green", "blue", "purple", "navy", "gray"] as ColorType[]).map((c) => (
                   <button
                     key={c}
-                    onClick={() => handleColorChange(selectedDelivery.quote_id, c)}
+                    onClick={() => handleColorChange(selectedDelivery, c)}
                     style={{
                       width: 20,
                       height: 20,
@@ -1138,7 +1234,7 @@ const handleSaveEdit = async () => {
                   />
                 ))}
                 <button
-                  onClick={() => handleColorChange(selectedDelivery.quote_id, "auto")}
+                  onClick={() => handleColorChange(selectedDelivery, "auto")}
                   style={{
                     padding: "2px 6px",
                     fontSize: 10,
@@ -1223,271 +1319,263 @@ const handleSaveEdit = async () => {
                 }}
               >
                 닫기
-  </button>
-  <button
-    onClick={async (e) => {
-      e.stopPropagation();
-      if (!confirm("정말 삭제하시겠습니까?")) return;
-      const { error } = await supabase
-        .from("quotes")
-        .delete()
-        .eq("quote_id", selectedDelivery.quote_id);
-      if (error) {
-        alert("삭제 실패: " + error.message);
-        return;
-      }
-      setDeliveries(prev => prev.filter(d => d.quote_id !== selectedDelivery.quote_id));
-      setSelectedDelivery(null);
-    }}
-    style={{
-      flex: 1,
-      padding: 14,
-      background: "#ffebee",
-      border: "1px solid #f44336",
-      color: "#c62828",
-      borderRadius: 8,
-      fontWeight: 700,
-      cursor: "pointer",
-    }}
-  >
-    🗑️ 삭제
-  </button>
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      setEditForm(selectedDelivery);
-      setShowEditModal(true);
-    }}
-    style={{
-      flex: 1,
-      padding: 14,
-      background: "#fff",
-      border: "1px solid #2e5b86",
-      color: "#2e5b86",
-      borderRadius: 8,
-      fontWeight: 700,
-      cursor: "pointer",
-    }}
-  >
-    ✏️ 수정
-  </button>
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      setShowDispatchModal(true);
-    }}
-    style={{
-      flex: 1,
-      padding: 14,
-      background: "#2e5b86",
-      color: "#fff",
-      border: "none",
-      borderRadius: 8,
-      fontWeight: 700,
-      cursor: "pointer",
-    }}
-  >
-    🚚 배차
-  </button>
-              
-</div>
+              </button>
+              <button
+                onClick={handleDelete}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: "#ffebee",
+                  border: "1px solid #f44336",
+                  color: "#c62828",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                🗑️ 삭제
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditForm(selectedDelivery);
+                  setShowEditModal(true);
+                }}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: "#fff",
+                  border: "1px solid #2e5b86",
+                  color: "#2e5b86",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                ✏️ 수정
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDispatchModal(true);
+                }}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: "#2e5b86",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                🚚 배차
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-{/* ✅ 수정 모달 */}
-{selectedDelivery && showEditModal && (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 10001,
-    }}
-    onClick={(e) => {
-      e.stopPropagation();
-      setShowEditModal(false);
-      setSelectedDelivery(null);
-    }}
-  >
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: 12,
-        padding: 24,
-        width: "90%",
-        maxWidth: 450,
-        maxHeight: "80vh",
-        overflow: "auto",
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>✏️ 일정 수정</h3>
-        <button
+      {/* ✅ 수정 모달 */}
+      {selectedDelivery && showEditModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10001,
+          }}
           onClick={(e) => {
             e.stopPropagation();
             setShowEditModal(false);
             setSelectedDelivery(null);
           }}
-          style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
         >
-          ✕
-        </button>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일</label>
-          <input
-            type="date"
-            value={editForm.delivery_date || ""}
-            onChange={(e) => setEditForm({ ...editForm, delivery_date: e.target.value })}
-            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
-          <select
-            value={editForm.contract_type || "order"}
-            onChange={(e) => setEditForm({ ...editForm, contract_type: e.target.value })}
-            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              width: "90%",
+              maxWidth: 450,
+              maxHeight: "80vh",
+              overflow: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <option value="order">신품</option>
-            <option value="used">중고</option>
-            <option value="rental">임대</option>
-            <option value="memo">메모</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
-          <input
-            value={editForm.customer_name || ""}
-            onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
-            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>연락처</label>
-          <input
-            value={editForm.customer_phone || ""}
-            onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
-            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
-          <input
-            value={editForm.spec || ""}
-            onChange={(e) => setEditForm({ ...editForm, spec: e.target.value })}
-            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>하차 주소</label>
-          <input
-            value={editForm.site_addr || ""}
-            onChange={(e) => setEditForm({ ...editForm, site_addr: e.target.value })}
-            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-            placeholder="시간/주소 입력"
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
-          <textarea
-            value={editForm.memo || ""}
-            onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
-            style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
-          />
-        </div>
-        <div>
-          <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>✏️ 일정 수정 {selectedDelivery.source === "inventory" && "(재고)"}</h3>
               <button
-                key={c}
-                type="button"
-                onClick={() => setEditForm({ ...editForm, delivery_color: c })}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowEditModal(false);
+                  setSelectedDelivery(null);
+                }}
+                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일</label>
+                <input
+                  type="date"
+                  value={editForm.delivery_date || ""}
+                  onChange={(e) => setEditForm({ ...editForm, delivery_date: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              {/* 재고가 아닐 때만 구분 선택 표시 */}
+              {selectedDelivery.source !== "inventory" && (
+                <div>
+                  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
+                  <select
+                    value={editForm.contract_type || "order"}
+                    onChange={(e) => setEditForm({ ...editForm, contract_type: e.target.value })}
+                    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  >
+                    <option value="order">신품</option>
+                    <option value="used">중고</option>
+                    <option value="rental">임대</option>
+                    <option value="memo">메모</option>
+                  </select>
+                </div>
+              )}
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
+                <input
+                  value={editForm.customer_name || ""}
+                  onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>연락처</label>
+                <input
+                  value={editForm.customer_phone || ""}
+                  onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
+                <input
+                  value={editForm.spec || ""}
+                  onChange={(e) => setEditForm({ ...editForm, spec: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
+                  {selectedDelivery.source === "inventory" ? "인테리어/주소" : "하차 주소"}
+                </label>
+                <input
+                  value={editForm.site_addr || ""}
+                  onChange={(e) => setEditForm({ ...editForm, site_addr: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder="시간/주소 입력"
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
+                <textarea
+                  value={editForm.memo || ""}
+                  onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {(["auto", "red", "orange", "yellow", "green", "blue", "purple", "gray"] as ColorType[]).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, delivery_color: c })}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: 6,
+                        border: editForm.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
+                        background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
+                        color: c === "auto" ? "#666" : colorStyles[c].text,
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : c === "purple" ? "보라" : "회색"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* ✅ 배차완료 버튼 */}
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
+                <button
+                  type="button"
+                  onClick={() => setEditForm({ 
+                    ...editForm, 
+                    dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
+                  })}
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 8,
+                    border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
+                    background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
+                    color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: 700,
+                  }}
+                >
+                  {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
+                </button>
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+              <button
+                onClick={() => setShowEditModal(false)}
                 style={{
-                  padding: "6px 12px",
-                  borderRadius: 6,
-                  border: editForm.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
-                  background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
-                  color: c === "auto" ? "#666" : colorStyles[c].text,
-                  cursor: "pointer",
-                  fontSize: 12,
+                  flex: 1,
+                  padding: 14,
+                  background: "#f5f5f5",
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
                   fontWeight: 600,
+                  cursor: "pointer",
                 }}
               >
-                {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
+                취소
               </button>
-            ))}
+              <button
+                onClick={handleSaveEdit}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  background: "#2e5b86",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                저장
+              </button>
+            </div>
           </div>
         </div>
-        
-        {/* ✅ 배차완료 버튼 */}
-        <div>
-          <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
-          <button
-            type="button"
-            onClick={() => setEditForm({ 
-              ...editForm, 
-              dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
-            })}
-            style={{
-              padding: "10px 20px",
-              borderRadius: 8,
-              border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
-              background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
-              color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
-              cursor: "pointer",
-              fontSize: 14,
-              fontWeight: 700,
-            }}
-          >
-            {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
-          </button>
-        </div>
-      </div>
+      )}
 
-      {/* 버튼 */}
-      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-        <button
-          onClick={() => setShowEditModal(false)}
-          style={{
-            flex: 1,
-            padding: 14,
-            background: "#f5f5f5",
-            border: "1px solid #ddd",
-            borderRadius: 8,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          취소
-        </button>
-        <button
-          onClick={handleSaveEdit}
-          style={{
-            flex: 1,
-            padding: 14,
-            background: "#2e5b86",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          저장
-        </button>
-      </div>
-    </div>
-  </div>
-)}
       {/* ✅ 배차 양식 팝업 */}
       {selectedDelivery && showDispatchModal && (
         <div
@@ -1520,7 +1608,6 @@ const handleSaveEdit = async () => {
               >
                 ✕
               </button>
-              
             </div>
 
             <div style={{ marginBottom: 16 }}>
@@ -1575,72 +1662,73 @@ const handleSaveEdit = async () => {
           </div>
         </div>
       )}
-                    {/* 날짜별 전체 목록 모달 */}
-{selectedDateItems && (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 10000,
-    }}
-    onClick={() => setSelectedDateItems(null)}
-  >
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: 12,
-        padding: 24,
-        width: "90%",
-        maxWidth: 500,
-        maxHeight: "80vh",
-        overflow: "auto",
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>📅 {selectedDateItems.date} 일정 ({selectedDateItems.items.length}건)</h3>
-        <button
+
+      {/* 날짜별 전체 목록 모달 */}
+      {selectedDateItems && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
           onClick={() => setSelectedDateItems(null)}
-          style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
         >
-          ✕
-        </button>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {selectedDateItems.items.map((item, idx) => {
-          const color = getItemColor(item);
-          const style = colorStyles[color];
-          return (
-            <div
-              key={item.quote_id + idx}
-              onClick={() => {
-                setSelectedDateItems(null);
-                setSelectedDelivery(item);
-                setEditForm(item);
-              }}
-              style={{
-                padding: "12px",
-                background: style.bg,
-                borderLeft: `4px solid ${style.border}`,
-                borderRadius: 6,
-                cursor: "pointer",
-              }}
-            >
-              <div style={{ fontWeight: 700, color: style.text }}>{getDeliveryLabel(item)}</div>
-              <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-                {item.customer_name} {item.customer_phone && `· ${item.customer_phone}`}
-              </div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              width: "90%",
+              maxWidth: 500,
+              maxHeight: "80vh",
+              overflow: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>📅 {selectedDateItems.date} 일정 ({selectedDateItems.items.length}건)</h3>
+              <button
+                onClick={() => setSelectedDateItems(null)}
+                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
+              >
+                ✕
+              </button>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  </div>
-)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {selectedDateItems.items.map((item, idx) => {
+                const color = getItemColor(item);
+                const style = colorStyles[color];
+                return (
+                  <div
+                    key={item.quote_id + idx}
+                    onClick={() => {
+                      setSelectedDateItems(null);
+                      setSelectedDelivery(item);
+                      setEditForm(item);
+                    }}
+                    style={{
+                      padding: "12px",
+                      background: style.bg,
+                      borderLeft: `4px solid ${style.border}`,
+                      borderRadius: 6,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: style.text }}>{getDeliveryLabel(item)}</div>
+                    <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                      {item.customer_name} {item.customer_phone && `· ${item.customer_phone}`}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
