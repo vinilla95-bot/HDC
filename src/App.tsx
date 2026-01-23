@@ -486,6 +486,91 @@ const commitFreeText = useCallback(() => {
    onAddItem(opt, calculated, insertIndex);
   };
 
+// ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
+function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [sites, setSites] = useState<any[]>([]);
+  const [isSearchingSite, setIsSearchingSite] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const searchQueryRef = useRef(searchQuery);
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  // ✅ 자유입력 저장
+  const commitFreeText = useCallback(() => {
+    const trimmed = (searchQueryRef.current || "").trim();
+    
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setSites([]);
+    
+    if (trimmed) {
+      const customOpt = { 
+        option_id: `custom_${Date.now()}`, 
+        option_name: trimmed,
+        unit: 'EA',
+        unit_price: 0,
+        show_spec: 'n'
+      };
+      onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }, insertIndex);
+    }
+  }, [onAddItem, insertIndex]);
+
+  // ✅ onBlur 핸들러
+  const handleBlur = () => {
+    commitFreeText();
+  };
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const filteredOptions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return options.filter((o: any) => {
+      const name = String(o.option_name || "").toLowerCase();
+      return name.includes(q) || matchKoreanLocal(name, q);
+    }).slice(0, 10);
+  }, [searchQuery, options]);
+
+  useEffect(() => {
+    const searchSites = async () => {
+      if (!searchQuery.trim() || !onSiteSearch) {
+        setSites([]);
+        return;
+      }
+      setIsSearchingSite(true);
+      try {
+        const results = await onSiteSearch(searchQuery.trim());
+        setSites(results.slice(0, 5));
+      } catch (e) {
+        setSites([]);
+      }
+      setIsSearchingSite(false);
+    };
+    const timer = setTimeout(searchSites, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, onSiteSearch]);
+
+  const handleSelect = (opt: any) => {
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setSites([]);
+    
+    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+    onAddItem(opt, calculated, insertIndex);
+  };
+
   const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
     const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
     const query = searchQuery.toLowerCase();
@@ -503,24 +588,24 @@ const commitFreeText = useCallback(() => {
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
- if (!isEditing) {
-  return (
-    <>
-      <td className="c center">&nbsp;</td>
-      <td 
-        className="c" 
-        onClick={() => setIsEditing(true)}
-        style={{ cursor: 'pointer' }}
-      ></td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-      <td className="c"></td>
-    </>
-  );
-}
+  if (!isEditing) {
+    return (
+      <>
+        <td className="c center">&nbsp;</td>
+        <td 
+          className="c" 
+          onClick={() => setIsEditing(true)}
+          style={{ cursor: 'pointer' }}
+        ></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+        <td className="c"></td>
+      </>
+    );
+  }
 
   return (
     <>
@@ -535,6 +620,7 @@ const commitFreeText = useCallback(() => {
             setShowDropdown(true);
           }}
           onFocus={() => setShowDropdown(true)}
+          onBlur={handleBlur}  // ✅ onBlur 추가
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -549,12 +635,13 @@ const commitFreeText = useCallback(() => {
             }
           }}
           placeholder="검색..."
+          autoFocus
           style={{ 
             width: "100%", 
             height: "100%",
             padding: "6px 8px",
             margin: 0,
-           border: "1px solid transparent", 
+            border: "none", 
             fontSize: 11, 
             outline: "none", 
             background: "transparent",
@@ -582,11 +669,27 @@ const commitFreeText = useCallback(() => {
               <>
                 <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>운송비</div>
                 {sites.map((site: any, idx: number) => (
-                  <div key={`site-${idx}`} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                  <div 
+                    key={`site-${idx}`} 
+                    style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}
+                    onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                  >
                     <div style={{ fontWeight: 700, marginBottom: 6 }}>{site.alias}</div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => handleDeliverySelect(site, 'delivery')} style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>일반 {fmtNum(site.delivery)}원</button>
-                      <button onClick={() => handleDeliverySelect(site, 'crane')} style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>크레인 {fmtNum(site.crane)}원</button>
+                      <button 
+                        onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                        onClick={() => handleDeliverySelect(site, 'delivery')} 
+                        style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
+                      >
+                        일반 {fmtNum(site.delivery)}원
+                      </button>
+                      <button 
+                        onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                        onClick={() => handleDeliverySelect(site, 'crane')} 
+                        style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
+                      >
+                        크레인 {fmtNum(site.crane)}원
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -601,7 +704,11 @@ const commitFreeText = useCallback(() => {
                   
                   if (isRent) {
                     return (
-                      <div key={opt.option_id} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}>
+                      <div 
+                        key={opt.option_id} 
+                        style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}
+                        onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
+                      >
                         <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
                         <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
                         <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
@@ -611,10 +718,12 @@ const commitFreeText = useCallback(() => {
                             min={1}
                             id={`rent-empty-${opt.option_id}`}
                             onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}  // ✅ blur 방지
                             style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
                           />
                           <span style={{ fontSize: 11 }}>개월</span>
                           <button 
+                            onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
                             onClick={(e) => {
                               e.stopPropagation();
                               const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
@@ -626,7 +735,7 @@ const commitFreeText = useCallback(() => {
                               setSites([]);
                               
                               const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-                              onAddItem({ ...opt, _months: months }, calculated);
+                              onAddItem({ ...opt, _months: months }, calculated, insertIndex);
                             }}
                             style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
                           >
@@ -640,6 +749,7 @@ const commitFreeText = useCallback(() => {
                   return (
                     <div
                       key={opt.option_id}
+                      onMouseDown={(e) => e.preventDefault()}  // ✅ blur 방지
                       onClick={() => handleSelect(opt)}
                       style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
