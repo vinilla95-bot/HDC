@@ -293,21 +293,34 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-if (!isEditing) {
-  return (
-    <span
-      onClick={() => { 
-        if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-        setSearchQuery('');
-        setIsEditing(true); 
+return (
+  <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
+    <input
+      ref={inputRef}
+      type="text"
+      value={searchQuery}
+      onChange={(e) => {
+        setSearchQuery(e.target.value);
+        if (e.target.value.trim()) setShowDropdown(true);
       }}
-      style={{ cursor: "pointer" }}
-      title="클릭하여 품목 변경"
-    >
-      {displayText || <span style={{ color: '#ccc' }}>품목 선택</span>}
-    </span>
-  );
-}
+      onFocus={() => setShowDropdown(true)}
+      onBlur={() => {
+        setIsEditing(false);
+        setShowDropdown(false);
+        setSearchQuery("");
+        commitFreeText();
+      }}
+      onKeyDown={...}
+      placeholder="품목 검색"
+      style={{ ... }}
+    />
+    {isEditing && showDropdown && searchQuery.trim() && (
+      <div ref={dropdownRef} style={{ ... }}>
+        ...
+      </div>
+    )}
+  </div>
+);
 
   return (
     <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
