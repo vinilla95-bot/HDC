@@ -1203,6 +1203,9 @@ inputs.forEach(input => {
   (input as HTMLElement).style.display = 'none';
 });
 
+const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+      
 captureContainer.appendChild(clonedSheet);
      
 
@@ -1300,6 +1303,10 @@ const inputs = clonedSheet.querySelectorAll('.a4Items input');
 inputs.forEach(input => {
   (input as HTMLElement).style.display = 'none';
 });
+
+      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+      
 captureContainer.appendChild(clonedSheet);
 
       await new Promise(r => setTimeout(r, 300));
@@ -1800,7 +1807,9 @@ clonedSelects.forEach((select, idx) => {
         inputs.forEach(input => {
           (input as HTMLElement).style.display = 'none';
         });
-
+const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+        
         captureContainer.appendChild(clonedSheet);
 
         await new Promise(r => setTimeout(r, 300));
@@ -2098,9 +2107,10 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
           </table>
 
           {/* ✅ +품목추가 버튼 */}
-         {editable && onAddItem && (
-  <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
+        {editable && onAddItem && (
+  <div className="add-item-btn-wrap" style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
     <button
+      className="add-item-btn"
       onClick={() => {
         const insertIdx = (focusedRowIndex !== undefined && focusedRowIndex >= 0) 
           ? focusedRowIndex 
@@ -2535,7 +2545,10 @@ td input, td input:focus, td input:focus-visible {
      .a4Items td:last-child button {
       display: none !important;
     }
-
+/* ✅ 여기에 추가 */
+    .add-item-btn {
+      display: none !important;
+    }
     
     /* 검색 input 숨기기 */
     .a4Items input {
