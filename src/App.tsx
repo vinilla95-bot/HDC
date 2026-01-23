@@ -2198,43 +2198,44 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
     ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}`
     : "";
   const rent = String(item.optionName || "").includes("임대");
-
+<td className="c center">{idx + 1}</td>
   return (
   <tr 
-      key={item.key ?? idx}
-      onClick={() => setFocusedRowIndex && setFocusedRowIndex(idx)}
+    key={item.key ?? idx}
+    onClick={() => setFocusedRowIndex && setFocusedRowIndex(idx)}
+    style={{ 
+      cursor: editable ? 'pointer' : undefined,
+      background: (editable && focusedRowIndex === idx) ? '#fff8e1' : undefined
+    }}
+  >
+    <td className="c center">{idx + 1}</td>
+    <td 
       style={{ 
-        cursor: editable ? 'pointer' : undefined,
-        background: (editable && focusedRowIndex === idx) ? '#fff8e1' : undefined
+        border: '1px solid #333', 
+        padding: '6px 8px', 
+        textAlign: 'left', 
+        position: 'relative',
+        overflow: 'visible',
+        verticalAlign: 'middle',
+        fontSize: 11,
+        background: '#fff'
       }}
     >
- <td 
-  style={{ 
-    border: '1px solid #333', 
-    padding: '6px 8px', 
-    textAlign: 'left', 
-    position: 'relative',
-    overflow: 'visible',
-    verticalAlign: 'middle',
-    fontSize: 11,
-    background: '#fff'
-  }}
->
-  {editable && options && onSelectOption ? (
-    <InlineItemCell 
-      item={item} 
-      options={options} 
-      form={form} 
-      onSelectOption={onSelectOption}
-      rowIndex={idx}
-      onFocus={setFocusedRowIndex}
-    />
-  ) : (
-    String(item.displayName || "")
-  )}
-</td>
- 
-<td className="c center">
+      {editable && options && onSelectOption ? (
+        <InlineItemCell 
+          item={item} 
+          options={options} 
+          form={form} 
+          onSelectOption={onSelectOption}
+          rowIndex={idx}
+          onFocus={setFocusedRowIndex}
+        />
+      ) : (
+        String(item.displayName || "")
+      )}
+    </td>
+    <td className="c center">
+      
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
       spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }} 
