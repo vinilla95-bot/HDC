@@ -342,7 +342,7 @@ if (!isEditing) {
     width: "100%", 
     padding: "2px 4px", 
     textAlign: "center",
-    border: "none",  // ✅ 테두리 제거
+    border: "1px solid transparent",
     fontSize: 12, 
     boxSizing: "border-box", 
     outline: "none",
@@ -540,7 +540,7 @@ const commitFreeText = useCallback(() => {
             height: "100%",
             padding: "6px 8px",
             margin: 0,
-            border: "none", 
+           border: "1px solid transparent", 
             fontSize: 11, 
             outline: "none", 
             background: "transparent",
