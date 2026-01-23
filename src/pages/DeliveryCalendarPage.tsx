@@ -108,28 +108,28 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
       }));
     
     // ✅ inventory 데이터 변환 - dispatch_status 포함
-    const inventoryData = (inventoryRes.data || [])
-      .filter((d: any) => d.delivery_date)
-      .map((inv: any) => ({
-        quote_id: inv.id,  // inventory의 id를 quote_id로 사용
-        inventory_id: inv.id,
-        contract_type: "inventory",
-        customer_name: inv.customer_name || "",
-        customer_phone: inv.customer_phone || "",
-        spec: inv.spec || "",
-        items: inv.items || [],
-        delivery_date: inv.delivery_date,
-        site_name: "",
-        site_addr: inv.interior || "",
-        memo: inv.memo || "",
-        total_amount: inv.total_amount || 0,
-        deposit_status: inv.deposit_status,
-        delivery_color: inv.delivery_color,
-        dispatch_status: inv.dispatch_status,  // ✅ 배차상태 포함
-        container_type: inv.container_type,
-        drawing_no: inv.drawing_no,
-        source: "inventory" as const,
-      }));
+  // inventory 데이터 변환
+const inventoryData = (inventoryRes.data || [])
+  .filter((d: any) => d.delivery_date)
+  .map((inv: any) => ({
+    quote_id: `inv_${inv.id}`,  // ✅ 구분을 위해 prefix 추가
+    inventory_id: inv.id,       // ✅ 실제 inventory id
+    contract_type: "inventory",
+    customer_name: inv.customer_name || "",
+    customer_phone: inv.customer_phone || "",
+    spec: inv.spec || "",
+    items: inv.items || [],
+    delivery_date: inv.delivery_date,
+    site_addr: inv.interior || "",
+    memo: inv.memo || "",
+    total_amount: inv.total_amount || 0,
+    deposit_status: inv.deposit_status,
+    delivery_color: inv.delivery_color,
+    dispatch_status: inv.dispatch_status,  // ✅ 배차상태 포함!
+    container_type: inv.container_type,
+    drawing_no: inv.drawing_no,
+    source: "inventory" as const,
+  }));
 
     setDeliveries([...quotesData, ...inventoryData] as DeliveryItem[]);
     setLoading(false);
@@ -421,58 +421,59 @@ const getItemColor = useCallback((item: DeliveryItem): ColorType => {
   };
 
   // ✅ 수정 저장 - quotes/inventory 구분
-  const handleSaveEdit = async () => {
-    if (!selectedDelivery) return;
+const handleSaveEdit = async () => {
+  if (!selectedDelivery) return;
 
-    // ✅ inventory인 경우
-    if (selectedDelivery.source === "inventory") {
-      const { error } = await supabase
-        .from("inventory")
-        .update({
-          delivery_date: editForm.delivery_date,
-          customer_name: editForm.customer_name,
-          customer_phone: editForm.customer_phone,
-          spec: editForm.spec,
-          interior: editForm.site_addr,  // inventory는 interior 필드 사용
-          memo: editForm.memo,
-          delivery_color: editForm.delivery_color,
-          dispatch_status: editForm.dispatch_status,
-        })
-        .eq("id", selectedDelivery.inventory_id);
+  // ✅ inventory인 경우
+  if (selectedDelivery.source === "inventory") {
+    const { error } = await supabase
+      .from("inventory")  // ✅ inventory 테이블로!
+      .update({
+        delivery_date: editForm.delivery_date,
+        customer_name: editForm.customer_name,
+        customer_phone: editForm.customer_phone,
+        spec: editForm.spec,
+        interior: editForm.site_addr,
+        memo: editForm.memo,
+        delivery_color: editForm.delivery_color,
+        dispatch_status: editForm.dispatch_status,  // ✅ 배차상태
+      })
+      .eq("id", selectedDelivery.inventory_id);  // ✅ inventory_id로!
 
-      if (error) {
-        alert("저장 실패: " + error.message);
-        return;
-      }
-    } else {
-      // quotes 테이블 업데이트
-      const { error } = await supabase
-        .from("quotes")
-        .update({
-          delivery_date: editForm.delivery_date,
-          customer_name: editForm.customer_name,
-          customer_phone: editForm.customer_phone,
-          spec: editForm.spec,
-          site_addr: editForm.site_addr,
-          memo: editForm.memo,
-          delivery_color: editForm.delivery_color,
-          dispatch_status: editForm.dispatch_status,
-        })
-        .eq("quote_id", selectedDelivery.quote_id);
-
-      if (error) {
-        alert("저장 실패: " + error.message);
-        return;
-      }
+    if (error) {
+      alert("저장 실패: " + error.message);
+      return;
     }
+  } else {
+    // quotes 테이블 업데이트
+    const { error } = await supabase
+      .from("quotes")
+      .update({
+        delivery_date: editForm.delivery_date,
+        customer_name: editForm.customer_name,
+        customer_phone: editForm.customer_phone,
+        spec: editForm.spec,
+        site_addr: editForm.site_addr,
+        memo: editForm.memo,
+        delivery_color: editForm.delivery_color,
+        dispatch_status: editForm.dispatch_status,
+      })
+      .eq("quote_id", selectedDelivery.quote_id);
 
-    setDeliveries(prev => prev.map(d =>
-      d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
-    ));
+    if (error) {
+      alert("저장 실패: " + error.message);
+      return;
+    }
+  }
 
-    setShowEditModal(false);
-    setSelectedDelivery(null);
-  };
+  // 로컬 상태 업데이트
+  setDeliveries(prev => prev.map(d =>
+    d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
+  ));
+
+  setShowEditModal(false);
+  setSelectedDelivery(null);
+};
 
   // ✅ 새 일정 추가
   const handleAddSchedule = async () => {
