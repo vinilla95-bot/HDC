@@ -142,15 +142,24 @@ function EditableNumberCell({ value, onChange, editable = true }: { value: numbe
   }
   
   return (
-    <span 
-      onClick={() => setIsEditing(true)} 
-      style={{ cursor: "pointer", display: "block", textAlign: "right", width: "100%" }} 
+    <span
+      onClick={() => {
+        setSearchQuery(item.displayName || "");
+        setIsEditing(true);
+      }}
+      style={{ 
+        cursor: "pointer", 
+        display: "block", 
+        width: "100%", 
+        textAlign: "left",
+        minHeight: 20,  // ✅ 최소 높이 추가
+        background: item.displayName ? "transparent" : "#fffbe6",  // ✅ 빈 셀 하이라이트
+      }}
       title="클릭하여 수정"
     >
-      {money(value)}
+      {item.displayName || "(클릭하여 입력)"}
     </span>
   );
-}
 
 function InlineItemSearchCell({
   item,
@@ -228,7 +237,13 @@ function InlineItemSearchCell({
     // 그 뒤 blur가 오더라도 이미 isEditing=false로 바뀌거나 query reset 되어서 문제 없음.
     commitCustomText();
   };
-
+  
+// ✅ 빈 품목은 자동으로 편집 모드 시작
+useEffect(() => {
+  if (editable && !item.displayName && !isEditing) {
+    setIsEditing(true);
+  }
+}, [editable, item.displayName, isEditing]);
   // ✅ editing 중 바깥 클릭하면 저장(=blur 유도) + dropdown도 닫힘
   useEffect(() => {
     if (!isEditing) return;
