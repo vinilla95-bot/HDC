@@ -845,7 +845,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   const [editOpen, setEditOpen] = useState(false);
   const [sendTo, setSendTo] = useState("");
   const [sendStatus, setSendStatus] = useState("");
-
+const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
   const [rentalForm, setRentalForm] = useState({
     contractStart: "",
     contractEnd: "",
@@ -1549,9 +1549,49 @@ const quotePreviewHtml = useMemo(() => {
 </table>
 
     {/* 옵션 검색 (편집 모드) */}
+{/* ✅ +품목추가 버튼 */}
+{editMode && (
+  <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
+    <button
+      onClick={() => {
+        const insertIdx = (focusedRowIndex >= 0) ? focusedRowIndex : editItems.length - 1;
+        const newItem = {
+          key: `item_${Date.now()}`,
+          optionId: null,
+          optionName: '',
+          displayName: '',
+          unit: 'EA',
+          qty: 1,
+          unitPrice: 0,
+          amount: 0,
+          showSpec: 'n',
+          lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
+          specText: '',
+        };
+        setEditItems(prev => {
+          const newArr = [...prev];
+          newArr.splice(insertIdx + 1, 0, newItem);
+          return newArr;
+        });
+        setFocusedRowIndex(insertIdx + 1);
+      }}
+      style={{
+        padding: '6px 12px',
+        background: '#e3f2fd',
+        border: '1px solid #90caf9',
+        borderRadius: 4,
+        cursor: 'pointer',
+        fontSize: 12,
+        fontWeight: 700,
+        color: '#1565c0',
+      }}
+    >
+      + 품목추가
+    </button>
+  </div>
+)}
 
 
-      {/* 품목 테이블 */}
 {/* 품목 테이블 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8, overflow: 'visible' }}>
   <thead>
@@ -1578,7 +1618,14 @@ const specText = item.specText ?? (
 );
 
   return (
-    <tr key={item.key || idx}>
+    <tr 
+      key={item.key || idx}
+      onClick={() => editMode && setFocusedRowIndex(idx)}
+      style={{ 
+        cursor: editMode ? 'pointer' : undefined,
+        background: (editMode && focusedRowIndex === idx) ? '#fff8e1' : undefined
+      }}
+    >
       <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'visible', position: 'relative' }}>
 
@@ -1648,11 +1695,19 @@ const specText = item.specText ?? (
   <>
     <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
     <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
-      <EmptyRowSearchCell
-        options={options}
-        current={current}
-        onAddItem={(newItem) => setEditItems(prev => [...prev, newItem])}
-      />
+     <EmptyRowSearchCell
+  options={options}
+  current={current}
+  onAddItem={(newItem) => {
+    const insertIdx = (focusedRowIndex >= 0) ? focusedRowIndex : editItems.length - 1;
+    setEditItems(prev => {
+      const newArr = [...prev];
+      newArr.splice(insertIdx + 1, 0, newItem);
+      return newArr;
+    });
+    setFocusedRowIndex(insertIdx + 1);
+  }}
+/>
     </td>
     <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, textAlign: 'center' }}>
       <EditableTextCell 
@@ -1743,7 +1798,9 @@ const specText = item.specText ?? (
 </table>
     </div>
   );
-}, [current, bizcards, selectedBizcardId, editMode, editItems, editForm, optQ, filteredOptions, options]);
+}, [current, bizcards, selectedBizcardId, editMode, editItems, editForm, optQ, filteredOptions, options, focusedRowIndex]);
+
+  
 
 // ✅ 거래명세서 미리보기 - HTML 디자인에 맞춤
   const statementPreviewHtml = useMemo(() => {
