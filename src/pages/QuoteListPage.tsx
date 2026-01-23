@@ -1551,6 +1551,7 @@ const quotePreviewHtml = useMemo(() => {
     {/* 옵션 검색 (편집 모드) */}
 {/* ✅ +품목추가 버튼 */}
 {/* ✅ +품목추가 버튼 */}
+{/* ✅ +품목추가 버튼 */}
 {editMode && (
   <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
     <button
@@ -1601,7 +1602,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
-   {items.map((item: any, idx: number) => {
+    {items.map((item: any, idx: number) => {
       const supply = item.qty * item.unitPrice;
       const vat = Math.round(supply * 0.1);
       const specText = item.specText ?? (
@@ -1613,128 +1614,107 @@ const quotePreviewHtml = useMemo(() => {
       return (
         <tr key={item.key || idx}>
           <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
-{/* 품목 테이블 */}
-<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8, overflow: 'visible' }}>
-  <thead>
-    <tr>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '5%' }}>순번</th>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '33%' }}>품목</th>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '10%' }}>규격</th>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '8%' }}>수량</th>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '13%' }}>단가</th>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '13%' }}>공급가</th>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '10%' }}>세액</th>
-      <th style={{ border: '1px solid #333', padding: 6, background: '#e6e6e6', fontWeight: 900, width: '8%' }}>비고</th>
-    </tr>
-  </thead>
-  <tbody>
-
-      
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
-     <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'visible', position: 'relative' }}>
-
-        <InlineItemSearchCell
-          item={item}
-          options={options}
-          onSelectOption={(opt) => {
-            const w = current?.w || 3;
-            const l = current?.l || 6;
-            const res = calculateOptionLine(opt, w, l);
-            const rawName = String(opt.option_name || "");
-            const rent = rawName.includes("임대");
-            const customerUnitPrice = rent ? Number(res.unitPrice || 0) : Number(res.amount || 0);
-            
-            setEditItems(prev => prev.map(i => i.key !== item.key ? i : {
-              ...i,
-              optionId: opt.option_id,
-              optionName: rawName,
-              displayName: rent ? `${rawName} 1개월` : rawName,
-              unit: rent ? "개월" : (res.unit || "EA"),
-              qty: 1,
-              unitPrice: customerUnitPrice,
-              amount: customerUnitPrice,
-              showSpec: opt.show_spec || "n",
-              lineSpec: { w, l, h: 2.6 },
-            }));
-          }}
-          onUpdateName={(name) => updateEditItemName(item.key, name)}
-          onDelete={() => deleteEditItem(item.key)}
-          editable={editMode}
-        />
-      </td>
-     <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
- <EditableTextCell 
-  value={specText} 
-  onChange={(val) => {
-    const trimmed = val.trim();
-    // ✅ specText에 자유입력 값 그대로 저장
-    setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-      ...it,
-      specText: trimmed,  // ✅ 자유입력 그대로 저장
-      showSpec: trimmed ? 'y' : 'n'
-    }));
-  }}
-  editable={editMode}
-/>
-</td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-        <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
-      </td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-        <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} editable={editMode} />
-      </td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(supply)}</td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(vat)}</td>
-      <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-        {editMode && (
-          <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: 0, margin: 0, lineHeight: 1, fontSize: 12 }}>✕</button>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'visible', position: 'relative' }}>
+            <InlineItemSearchCell
+              item={item}
+              options={options}
+              onSelectOption={(opt) => {
+                const w = current?.w || 3;
+                const l = current?.l || 6;
+                const res = calculateOptionLine(opt, w, l);
+                const rawName = String(opt.option_name || "");
+                const rent = rawName.includes("임대");
+                const customerUnitPrice = rent ? Number(res.unitPrice || 0) : Number(res.amount || 0);
+                
+                setEditItems(prev => prev.map(i => i.key !== item.key ? i : {
+                  ...i,
+                  optionId: opt.option_id,
+                  optionName: rawName,
+                  displayName: rent ? `${rawName} 1개월` : rawName,
+                  unit: rent ? "개월" : (res.unit || "EA"),
+                  qty: 1,
+                  unitPrice: customerUnitPrice,
+                  amount: customerUnitPrice,
+                  showSpec: opt.show_spec || "n",
+                  lineSpec: { w, l, h: 2.6 },
+                }));
+              }}
+              onUpdateName={(name) => updateEditItemName(item.key, name)}
+              onDelete={() => deleteEditItem(item.key)}
+              editable={editMode}
+            />
+          </td>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+            <EditableTextCell 
+              value={specText} 
+              onChange={(val) => {
+                const trimmed = val.trim();
+                setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+                  ...it,
+                  specText: trimmed,
+                  showSpec: trimmed ? 'y' : 'n'
+                }));
+              }}
+              editable={editMode}
+            />
+          </td>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+            <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
+          </td>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+            <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} editable={editMode} />
+          </td>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(supply)}</td>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(vat)}</td>
+          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+            {editMode && (
+              <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: 0, margin: 0, lineHeight: 1, fontSize: 12 }}>✕</button>
+            )}
+          </td>
+        </tr>
+      );
+    })}
+    {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
+      <tr key={`blank-${i}`}>
+        {i === 0 && editMode ? (
+          <>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
+              <EmptyRowSearchCell
+                options={options}
+                current={current}
+                onAddItem={(newItem) => setEditItems(prev => [...prev, newItem])}
+              />
+            </td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, textAlign: 'center' }}>
+              <EditableTextCell 
+                value="" 
+                onChange={() => {}} 
+                editable={false}
+              />
+            </td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+          </>
+        ) : (
+          <>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}>&nbsp;</td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+          </>
         )}
-      </td>
-    </tr>
-  );
-})}
-{Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
-  <tr key={`blank-${i}`}>
-   {i === 0 && editMode ? (
-  <>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
-    <EmptyRowSearchCell
-  options={options}
-  current={current}
-  onAddItem={(newItem) => setEditItems(prev => [...prev, newItem])}
-/>
-    </td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, textAlign: 'center' }}>
-      <EditableTextCell 
-        value="" 
-        onChange={() => {}} 
-        editable={false}
-      />
-    </td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-    <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-  </>
-    ) : (
-      <>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}>&nbsp;</td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-      </>
-    )}
-  </tr>
-))}
+      </tr>
+    ))}
   </tbody>
 </table>
-
 
 {/* 하단 합계/조건 테이블 1 - 합계 행 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
