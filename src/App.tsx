@@ -293,102 +293,112 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
+
+
+ // ... 기존 로직들 (commitFreeText, handleBlur, handleSelect 등)
+
+// return은 딱 한 번만!
 return (
   <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
-    <input
-      ref={inputRef}
-      type="text"
-      value={searchQuery}
-      onChange={(e) => {
-        setSearchQuery(e.target.value);
-        if (e.target.value.trim()) setShowDropdown(true);
-      }}
-      onFocus={() => setShowDropdown(true)}
-      onBlur={() => {
-        setIsEditing(false);
-        setShowDropdown(false);
-        setSearchQuery("");
-        commitFreeText();
-      }}
-      onKeyDown={...}
-      placeholder="품목 검색"
-      style={{ ... }}
-    />
-    {isEditing && showDropdown && searchQuery.trim() && (
-      <div ref={dropdownRef} style={{ ... }}>
-        ...
-      </div>
+    {!isEditing ? (
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+          setSearchQuery('');
+          setIsEditing(true);
+        }}
+        style={{ cursor: "pointer", display: "block", minHeight: "28px", lineHeight: "28px" }}
+        title="클릭하여 품목 변경"
+      >
+        {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
+      </span>
+    ) : (
+      <>
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);   // 입력 즉시 드롭다운 열기 (원하는 동작에 따라 조정)
+          }}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitFreeText();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              setIsEditing(false);
+              setShowDropdown(false);
+              setSearchQuery("");
+            }
+          }}
+          placeholder="품목 검색"
+          autoFocus
+          style={{
+            width: "100%",
+            height: "100%",
+            padding: "4px 8px",
+            border: "none",
+            fontSize: 12,
+            boxSizing: "border-box",
+            outline: "none",
+            background: "transparent"
+          }}
+        />
+
+        {showDropdown && searchQuery.trim() && (
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              width: "320px",
+              maxHeight: "320px",
+              overflowY: "auto",
+              background: "#fff",
+              border: "1px solid #ccc",
+              borderRadius: 6,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+              zIndex: 10000
+            }}
+          >
+            {/* 여기에 filteredOptions 렌더링 로직 */}
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt: any) => (
+                <div
+                  key={opt.option_id}
+                  onClick={() => handleSelect(opt)}
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee",
+                    fontSize: 12
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f0f7ff"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                >
+                  <div style={{ fontWeight: 600 }}>{opt.option_name}</div>
+                  <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
+                    {opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: "12px", color: "#888", fontSize: 12 }}>
+                검색 결과 없음 (Enter로 자유입력)
+              </div>
+            )}
+          </div>
+        )}
+      </>
     )}
   </div>
 );
-
-  return (
-    <div style={{ position: "relative", textAlign: "left", width: "100%" }}>
-      <input 
-        ref={inputRef} 
-        type="text" 
-        value={searchQuery} 
-        onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} 
-        onFocus={() => setShowDropdown(true)} 
-        onBlur={handleBlur}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            e.stopPropagation();
-            commitFreeText();
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsEditing(false);
-            setShowDropdown(false);
-            setSearchQuery("");
-          }
-        }}
-        placeholder="품목 검색"
-        autoFocus
-        style={{ 
-          width: "100%", 
-          padding: "2px 4px", 
-          textAlign: "left",
-          border: "none",
-          fontSize: 12, 
-          boxSizing: "border-box", 
-          outline: "none",
-          background: "transparent"
-        }} 
-      />
-      {showDropdown && searchQuery.trim() && (
-        <div ref={dropdownRef} style={{ 
-          position: "absolute", 
-          top: "100%", 
-          left: 0, 
-          width: "300px",
-          maxHeight: 300, 
-          overflowY: "auto", 
-          background: "#fff", 
-          border: "1px solid #ccc", 
-          borderRadius: 6,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
-          zIndex: 9999 
-        }}>
-          {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => (
-            <div 
-              key={opt.option_id} 
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleSelect(opt)} 
-              style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} 
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-            >
-              <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-            </div>
-          )) : <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
 function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
