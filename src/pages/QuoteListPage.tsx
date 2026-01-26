@@ -235,9 +235,11 @@ function InlineItemSearchCell({
   };
   
 // ✅ 빈 품목은 자동으로 편집 모드 시작
+
 useEffect(() => {
   if (editable && !item.displayName && !isEditing) {
     setIsEditing(true);
+    setShowDropdown(true);
   }
 }, [editable, item.displayName, isEditing]);
   // ✅ editing 중 바깥 클릭하면 저장(=blur 유도) + dropdown도 닫힘
@@ -295,7 +297,7 @@ useEffect(() => {
           }}
         />
 
-        {showDropdown && searchQuery.trim() && filteredOpts.length > 0 && (
+      {showDropdown && (isEditing || searchQuery.trim()) && (
           <div
             ref={dropdownRef}
             style={{
@@ -407,13 +409,18 @@ useEffect(() => {
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                 >
-                  <div style={{ fontWeight: 700, textAlign: "left" }}>{rawName}</div>
+                 <div style={{ fontWeight: 700, textAlign: "left" }}>{rawName}</div>
                   <div style={{ fontSize: 10, color: "#888", marginTop: 2, textAlign: "left" }}>
                     {opt.unit || "EA"} · {money(opt.unit_price || 0)}원
                   </div>
                 </div>
               );
             })}
+            {filteredOpts.length === 0 && (
+              <div style={{ padding: "10px 12px", color: "#999", fontSize: 12 }}>
+                {searchQuery.trim() ? "검색 결과 없음 (Enter로 자유입력)" : "품목명을 입력하세요"}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -561,9 +568,15 @@ useEffect(() => {
     setSites([]);
   };
 
-  const handleSelectDelivery = (site: any, type: 'delivery' | 'crane') => {
+ const handleSelectDelivery = (site: any, type: 'delivery' | 'crane') => {
     const price = type === 'delivery' ? site.delivery : site.crane;
-    const name = type === 'delivery' ? `5톤 일반트럭 운송비-${site.alias}` : `크레인 운송비-${site.alias}`;
+    
+    // ✅ 검색어와 매칭되는 지역명만 추출 (성남 검색 시 "성남"만 적용)
+    const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
+    const query = searchQuery.toLowerCase();
+    const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
+    
+    const name = type === 'delivery' ? `5톤 일반트럭 운송비-${matchedRegion}` : `크레인 운송비-${matchedRegion}`;
     
     onAddItem({
       key: `item_${Date.now()}`,
