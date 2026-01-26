@@ -436,12 +436,12 @@ useEffect(() => {
       onClick={() => {
         setSearchQuery(item.displayName || "");
         setIsEditing(true);
-        // focus는 input에서 autoFocus로 처리
+        setShowDropdown(true);
       }}
-      style={{ cursor: "pointer", display: "block", width: "100%", textAlign: "left" }}
+      style={{ cursor: "text", display: "block", width: "100%", minHeight: 20, textAlign: "left" }}
       title="클릭하여 수정"
     >
-      {item.displayName || " "}
+      {item.displayName || <span style={{ color: '#aaa' }}>&nbsp;</span>}
     </span>
   );
 }
