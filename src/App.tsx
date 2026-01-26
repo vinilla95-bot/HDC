@@ -216,7 +216,7 @@ function EditableSpecCell({
 
 // ============ 인라인 품목 편집 셀 ============
 // ============ 인라인 품목 편집 셀 ============
-function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void }) {
+function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus, autoFocusOnMount }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void; autoFocusOnMount?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -305,17 +305,22 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
- return (
-  <div style={{ display: "contents" }}>
+const handleCellClick = (e: React.MouseEvent) => {
+  e.stopPropagation();
+  if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+  setSearchQuery(displayText || '');
+  setIsEditing(true);
+  setShowDropdown(true);
+};
+
+return (
+  <div 
+    style={{ display: "contents" }}
+    onClick={!isEditing ? handleCellClick : undefined}
+  >
     {!isEditing ? (
       <span
-        onClick={(e) => {
-          e.stopPropagation();
-          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-          setSearchQuery(displayText || '');
-          setIsEditing(true);
-        }}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: "text", display: "block", width: "100%", minHeight: 20 }}
         title="클릭하여 품목 변경"
       >
         {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
@@ -2222,31 +2227,39 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
     }}
   >
     <td className="c center">{idx + 1}</td>
-    <td 
-      style={{ 
-        border: '1px solid #333', 
-        padding: '6px 8px', 
-        textAlign: 'left', 
-        position: 'relative',
-        overflow: 'visible',
-        verticalAlign: 'middle',
-        fontSize: 11,
-        background: '#fff'
-      }}
-    >
-      {editable && options && onSelectOption ? (
-        <InlineItemCell 
-          item={item} 
-          options={options} 
-          form={form} 
-          onSelectOption={onSelectOption}
-          rowIndex={idx}
-          onFocus={setFocusedRowIndex}
-        />
-      ) : (
-        String(item.displayName || "")
-      )}
-    </td>
+   <td 
+  onClick={(e) => {
+    if (editable && options && onSelectOption) {
+      e.stopPropagation();
+      if (setFocusedRowIndex) setFocusedRowIndex(idx);
+    }
+  }}
+  style={{ 
+    border: '1px solid #333', 
+    padding: '6px 8px', 
+    textAlign: 'left', 
+    position: 'relative',
+    overflow: 'visible',
+    verticalAlign: 'middle',
+    fontSize: 11,
+    background: '#fff',
+    cursor: editable ? 'text' : 'default'
+  }}
+>
+  {editable && options && onSelectOption ? (
+    <InlineItemCell 
+      item={item} 
+      options={options} 
+      form={form} 
+      onSelectOption={onSelectOption}
+      rowIndex={idx}
+      onFocus={setFocusedRowIndex}
+      autoFocusOnMount={false}
+    />
+  ) : (
+    String(item.displayName || "")
+  )}
+</td>
     <td className="c center">
       
   {editable && onUpdateSpec ? (
