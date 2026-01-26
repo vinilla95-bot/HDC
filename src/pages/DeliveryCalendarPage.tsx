@@ -179,11 +179,6 @@ const inventoryData = (inventoryRes.data || [])
     
     return "blue";
   }, []);
-      return "purple";
-    }
-    
-    return "blue";
-  }, []);
 
   // ✅ 색상 스타일
   const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
