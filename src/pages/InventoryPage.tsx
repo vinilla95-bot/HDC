@@ -23,7 +23,7 @@ type InventoryItem = {
   container_type: string;
   contract_type: string;
 };
-};
+
 
 type UsedInventoryItem = {
   id: string;
