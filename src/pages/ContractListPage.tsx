@@ -156,7 +156,7 @@ const currentCounts = getTabCounts(activeTab);
 
     if (error) {
       console.error("Update error:", error);
-      alert(`업데이트 실패: ${error.message}`);
+      alert(\`업데이트 실패: \${error.message}\`);
       return;
     }
 
@@ -198,7 +198,7 @@ const currentCounts = getTabCounts(activeTab);
     const inserts = [];
     for (let i = 0; i < qty; i++) {
       inserts.push({
-        quote_id: `${newItem.contract_type.toUpperCase()}_${Date.now()}_${i}`,
+        quote_id: \`\${newItem.contract_type.toUpperCase()}_\${Date.now()}_\${i}\`,
         status: "confirmed",
         contract_type: newItem.contract_type,
         contract_date: newItem.contract_date,
@@ -245,17 +245,21 @@ const currentCounts = getTabCounts(activeTab);
     loadContracts();
   };
 
-  // ✅ 삭제
+  // ✅ 삭제 - 실제 삭제가 아닌 계약 관련 필드만 초기화 (견적목록에는 유지)
   const handleDelete = async (quote_id: string, customer_name: string) => {
-    if (!confirm(`"${customer_name}" 항목을 삭제하시겠습니까?`)) return;
+    if (!confirm(\`"\${customer_name}" 항목을 계약관리에서 제거하시겠습니까?\n(견적목록에는 그대로 유지됩니다)\`)) return;
 
     const { error } = await supabase
       .from("quotes")
-      .delete()
+      .update({
+        contract_type: null,
+        contract_date: null,
+        drawing_no: null,
+      })
       .eq("quote_id", quote_id);
 
     if (error) {
-      alert("삭제 실패: " + error.message);
+      alert("제거 실패: " + error.message);
       return;
     }
 
@@ -390,7 +394,7 @@ const currentCounts = getTabCounts(activeTab);
                               fontSize: 10,
                               cursor: "pointer",
                             }}
-                            title={`${nextDrawingNo}번 자동입력`}
+                            title={\`\${nextDrawingNo}번 자동입력\`}
                           >
                             {nextDrawingNo}
                           </button>
@@ -566,7 +570,7 @@ const currentCounts = getTabCounts(activeTab);
 
   const currentMonthLabel = (() => {
     const now = new Date();
-    return `${now.getMonth() + 1}월`;
+    return \`\${now.getMonth() + 1}월\`;
   })();
 
   // 모달 열 때 현재 탭으로 초기화
@@ -592,13 +596,13 @@ const currentCounts = getTabCounts(activeTab);
 
   return (
     <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
-      <style>{`
+      <style>{\`
         .contract-table th {
           background-color: #2e5b86 !important;
           color: #ffffff !important;
           font-weight: 700 !important;
         }
-      `}</style>
+      \`}</style>
 
       {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
