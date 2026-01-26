@@ -874,7 +874,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   const [editOpen, setEditOpen] = useState(false);
   const [sendTo, setSendTo] = useState("");
   const [sendStatus, setSendStatus] = useState("");
-
+const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
   const [rentalForm, setRentalForm] = useState({
     contractStart: "",
     contractEnd: "",
@@ -1581,7 +1581,7 @@ const quotePreviewHtml = useMemo(() => {
 
 {editMode && (
   <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
-    <button
+   <button
       onClick={() => {
         const newItem = {
           key: `item_${Date.now()}`,
@@ -1598,7 +1598,11 @@ const quotePreviewHtml = useMemo(() => {
         };
         // ✅ 선택된 행 아래에 삽입
         setEditItems(prev => {
-          const idx = prev.findIndex((it, i) => i === prev.length - 1); // 기본: 맨 끝
+          if (focusedRowIndex >= 0 && focusedRowIndex < prev.length) {
+            const newArr = [...prev];
+            newArr.splice(focusedRowIndex + 1, 0, newItem);
+            return newArr;
+          }
           return [...prev, newItem];
         });
       }}
@@ -1643,7 +1647,10 @@ const quotePreviewHtml = useMemo(() => {
       );
 
       return (
-        <tr key={item.key || idx}>
+        <tr 
+          key={item.key || idx}
+          onClick={() => setFocusedRowIndex(idx)}
+        >
           <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>{idx + 1}</td>
           <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, maxHeight: 24, overflow: 'visible', position: 'relative' }}>
             <InlineItemSearchCell
