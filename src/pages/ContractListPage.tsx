@@ -37,7 +37,6 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [depositFilter, setDepositFilter] = useState<"all" | "completed" | "pending">("all");
   
-  // ✅ 모든 컬럼 입력 가능한 새 항목 양식
   const [newItem, setNewItem] = useState({
     contract_type: "order" as TabType,
     contract_date: new Date().toISOString().slice(0, 10),
@@ -55,13 +54,11 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     qty: 1,
   });
 
-  // ✅ 현재 월의 다음 도면번호 계산 (quotes + inventory 통합)
   const nextDrawingNo = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // quotes에서 이번 달 도면번호
     const quotesNumbers = allContracts
       .filter(c => {
         if (!c.contract_date) return false;
@@ -70,7 +67,6 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
       })
       .map(c => parseInt(c.drawing_no) || 0);
 
-    // inventory에서 이번 달 도면번호
     const inventoryNumbers = allInventory
       .filter(c => {
         if (!c.contract_date) return false;
@@ -79,7 +75,6 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
       })
       .map(c => parseInt(c.drawing_no) || 0);
 
-    // ✅ 통합
     const allNumbers = [...quotesNumbers, ...inventoryNumbers].filter(n => n > 0);
     const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
     
@@ -89,7 +84,6 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const loadContracts = async () => {
     setLoading(true);
     
-    // ✅ quotes와 inventory 둘 다 조회
     const [quotesRes, inventoryRes] = await Promise.all([
       supabase.from("quotes").select("*").eq("status", "confirmed"),
       supabase.from("inventory").select("quote_id, contract_date, drawing_no")
@@ -101,7 +95,6 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     const quotesData = quotesRes.data || [];
     const inventoryData = inventoryRes.data || [];
 
-    // ✅ 정렬 (날짜 내림차순 → 도면번호 내림차순)
     const sorted = [...quotesData].sort((a, b) => {
       const dateA = a.contract_date || "";
       const dateB = b.contract_date || "";
@@ -123,31 +116,31 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   }, []);
 
   const contracts = useMemo(() => {
-  let filtered = allContracts.filter(c => {
-    const type = c.contract_type || "order";
-    return type === activeTab;
-  });
-  
-  if (depositFilter === "completed") {
-    filtered = filtered.filter(c => c.deposit_status === "완료");
-  } else if (depositFilter === "pending") {
-    filtered = filtered.filter(c => c.deposit_status !== "완료");
-  }
-  
-  return filtered;
-}, [allContracts, activeTab, depositFilter]);
+    let filtered = allContracts.filter(c => {
+      const type = c.contract_type || "order";
+      return type === activeTab;
+    });
+    
+    if (depositFilter === "completed") {
+      filtered = filtered.filter(c => c.deposit_status === "완료");
+    } else if (depositFilter === "pending") {
+      filtered = filtered.filter(c => c.deposit_status !== "완료");
+    }
+    
+    return filtered;
+  }, [allContracts, activeTab, depositFilter]);
+
   const getTabCounts = (tab: TabType) => {
-  const tabData = allContracts.filter(c => (c.contract_type || "order") === tab);
-  return {
-    all: tabData.length,
-    completed: tabData.filter(c => c.deposit_status === "완료").length,
-    pending: tabData.filter(c => c.deposit_status !== "완료").length,
+    const tabData = allContracts.filter(c => (c.contract_type || "order") === tab);
+    return {
+      all: tabData.length,
+      completed: tabData.filter(c => c.deposit_status === "완료").length,
+      pending: tabData.filter(c => c.deposit_status !== "완료").length,
+    };
   };
-};
 
-const currentCounts = getTabCounts(activeTab);
+  const currentCounts = getTabCounts(activeTab);
 
-  // ✅ 업데이트
   const updateField = async (quote_id: string, field: string, value: any) => {
     const { error } = await supabase
       .from("quotes")
@@ -156,7 +149,7 @@ const currentCounts = getTabCounts(activeTab);
 
     if (error) {
       console.error("Update error:", error);
-      alert(`업데이트 실패: ${error.message}`);
+      alert("업데이트 실패: " + error.message);
       return;
     }
 
@@ -165,16 +158,12 @@ const currentCounts = getTabCounts(activeTab);
     ));
   };
 
-  // ✅ 도면번호 자동 입력
   const autoFillDrawingNo = (quote_id: string) => {
     updateField(quote_id, "drawing_no", String(nextDrawingNo));
   };
 
-  // ✅ 새 항목 추가
   const handleAddNew = async () => {
     const qty = newItem.qty || 1;
-    
-    // 같은 월의 최대 도면번호 찾기 (quotes + inventory 통합)
     const [year, month] = newItem.contract_date.split("-");
     
     const quotesMonthItems = allContracts.filter(item => {
@@ -194,11 +183,10 @@ const currentCounts = getTabCounts(activeTab);
     
     const maxNo = allMonthNumbers.length > 0 ? Math.max(...allMonthNumbers) : 0;
 
-    // 여러 개 추가
     const inserts = [];
     for (let i = 0; i < qty; i++) {
       inserts.push({
-        quote_id: `${newItem.contract_type.toUpperCase()}_${Date.now()}_${i}`,
+        quote_id: newItem.contract_type.toUpperCase() + "_" + Date.now() + "_" + i,
         status: "confirmed",
         contract_type: newItem.contract_type,
         contract_date: newItem.contract_date,
@@ -245,17 +233,22 @@ const currentCounts = getTabCounts(activeTab);
     loadContracts();
   };
 
-  // ✅ 삭제
+  // ✅ 삭제 - 실제 삭제가 아닌 계약 관련 필드만 초기화 (견적목록에는 유지)
   const handleDelete = async (quote_id: string, customer_name: string) => {
-    if (!confirm(`"${customer_name}" 항목을 삭제하시겠습니까?`)) return;
+    const msg = '"' + customer_name + '" 항목을 계약관리에서 제거하시겠습니까?\n(견적목록에는 그대로 유지됩니다)';
+    if (!confirm(msg)) return;
 
     const { error } = await supabase
       .from("quotes")
-      .delete()
+      .update({
+        contract_type: null,
+        contract_date: null,
+        drawing_no: null,
+      })
       .eq("quote_id", quote_id);
 
     if (error) {
-      alert("삭제 실패: " + error.message);
+      alert("제거 실패: " + error.message);
       return;
     }
 
@@ -264,7 +257,6 @@ const currentCounts = getTabCounts(activeTab);
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  // ✅ 행 상태 판단 함수
   const getRowStatus = (c: ContractQuote) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -390,21 +382,21 @@ const currentCounts = getTabCounts(activeTab);
                               fontSize: 10,
                               cursor: "pointer",
                             }}
-                            title={`${nextDrawingNo}번 자동입력`}
+                            title={nextDrawingNo + "번 자동입력"}
                           >
                             {nextDrawingNo}
                           </button>
                         )}
                       </div>
                     </td>
-                   <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-  <input
-    defaultValue={c.spec || ""}
-    onBlur={(e) => updateField(c.quote_id, "spec", e.target.value)}
-    style={{ width: 60, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, textAlign: "center" }}
-    placeholder="규격"
-  />
-</td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      <input
+                        defaultValue={c.spec || ""}
+                        onBlur={(e) => updateField(c.quote_id, "spec", e.target.value)}
+                        style={{ width: 60, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, textAlign: "center" }}
+                        placeholder="규격"
+                      />
+                    </td>
                     <td style={{ padding: 8, border: "1px solid #eee" }}>
                       <select
                         value={c.bank_account || ""}
@@ -459,33 +451,33 @@ const currentCounts = getTabCounts(activeTab);
                           <option value="태광">태광</option>
                         </select>
                       ) : (
-                       <input
-  defaultValue={c.customer_name || ""}
-  onBlur={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
+                        <input
+                          defaultValue={c.customer_name || ""}
+                          onBlur={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
                           style={{ width: 70, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontWeight: 700 }}
                           placeholder="발주처"
                         />
                       )}
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
-  <input
-    key={c.quote_id}
-    defaultValue={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
-    onBlur={(e) => {
-      const newItems = [{ displayName: e.target.value }];
-      updateField(c.quote_id, "items", newItems);
-    }}
-    style={{ 
-      width: "100%", 
-      padding: 4, 
-      border: "1px solid #ddd", 
-      borderRadius: 4, 
-      fontSize: 11,
-      boxSizing: "border-box"
-    }}
-    placeholder="옵션 입력"
-  />
-</td>
+                      <input
+                        key={c.quote_id}
+                        defaultValue={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
+                        onBlur={(e) => {
+                          const newItems = [{ displayName: e.target.value }];
+                          updateField(c.quote_id, "items", newItems);
+                        }}
+                        style={{ 
+                          width: "100%", 
+                          padding: 4, 
+                          border: "1px solid #ddd", 
+                          borderRadius: 4, 
+                          fontSize: 11,
+                          boxSizing: "border-box"
+                        }}
+                        placeholder="옵션 입력"
+                      />
+                    </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                       <input
                         type="checkbox"
@@ -503,8 +495,8 @@ const currentCounts = getTabCounts(activeTab);
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee" }}>
                       <input
-  defaultValue={c.depositor || ""}
-  onBlur={(e) => updateField(c.quote_id, "depositor", e.target.value)}
+                        defaultValue={c.depositor || ""}
+                        onBlur={(e) => updateField(c.quote_id, "depositor", e.target.value)}
                         style={{ width: 50, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
                         placeholder="입금자"
                       />
@@ -566,10 +558,9 @@ const currentCounts = getTabCounts(activeTab);
 
   const currentMonthLabel = (() => {
     const now = new Date();
-    return `${now.getMonth() + 1}월`;
+    return (now.getMonth() + 1) + "월";
   })();
 
-  // 모달 열 때 현재 탭으로 초기화
   const openAddModal = () => {
     setNewItem({
       contract_type: activeTab,
@@ -600,7 +591,6 @@ const currentCounts = getTabCounts(activeTab);
         }
       `}</style>
 
-      {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
           계약관리
@@ -624,7 +614,6 @@ const currentCounts = getTabCounts(activeTab);
         </button>
       </div>
 
-      {/* 탭 버튼 */}
       <div style={{
         display: "flex",
         background: "#fff",
@@ -633,86 +622,73 @@ const currentCounts = getTabCounts(activeTab);
         borderBottom: "none",
         overflow: "hidden"
       }}>
-        <button
-          style={tabStyle(activeTab === "order")}
-          onClick={() => setActiveTab("order")}
-        >
+        <button style={tabStyle(activeTab === "order")} onClick={() => setActiveTab("order")}>
           📋 수주 ({orderCount})
         </button>
-        <button
-          style={tabStyle(activeTab === "branch")}
-          onClick={() => setActiveTab("branch")}
-        >
+        <button style={tabStyle(activeTab === "branch")} onClick={() => setActiveTab("branch")}>
           🏢 영업소 ({branchCount})
         </button>
-        <button
-          style={tabStyle(activeTab === "used")}
-          onClick={() => setActiveTab("used")}
-        >
+        <button style={tabStyle(activeTab === "used")} onClick={() => setActiveTab("used")}>
           📦 중고 ({usedCount})
         </button>
-        <button
-          style={tabStyle(activeTab === "rental")}
-          onClick={() => setActiveTab("rental")}
-        >
+        <button style={tabStyle(activeTab === "rental")} onClick={() => setActiveTab("rental")}>
           🏠 임대 ({rentalCount})
         </button>
       </div>
-{/* 입금 필터 */}
-<div style={{
-  display: "flex",
-  gap: 8,
-  padding: "12px 16px",
-  background: "#fff",
-  border: "1px solid #e5e7eb",
-  borderTop: "none",
-}}>
-  <button
-    onClick={() => setDepositFilter("all")}
-    style={{
-      padding: "8px 16px",
-      border: depositFilter === "all" ? "2px solid #2e5b86" : "1px solid #ddd",
-      borderRadius: 8,
-      background: depositFilter === "all" ? "#e3f2fd" : "#fff",
-      fontWeight: depositFilter === "all" ? 700 : 500,
-      cursor: "pointer",
-    }}
-  >
-    📋 전체 ({currentCounts.all})
-  </button>
-  <button
-    onClick={() => setDepositFilter("completed")}
-    style={{
-      padding: "8px 16px",
-      border: depositFilter === "completed" ? "2px solid #4caf50" : "1px solid #ddd",
-      borderRadius: 8,
-      background: depositFilter === "completed" ? "#e8f5e9" : "#fff",
-      color: depositFilter === "completed" ? "#2e7d32" : "#333",
-      fontWeight: depositFilter === "completed" ? 700 : 500,
-      cursor: "pointer",
-    }}
-  >
-    ✅ 입금완료 ({currentCounts.completed})
-  </button>
-  <button
-    onClick={() => setDepositFilter("pending")}
-    style={{
-      padding: "8px 16px",
-      border: depositFilter === "pending" ? "2px solid #f44336" : "1px solid #ddd",
-      borderRadius: 8,
-      background: depositFilter === "pending" ? "#ffebee" : "#fff",
-      color: depositFilter === "pending" ? "#c62828" : "#333",
-      fontWeight: depositFilter === "pending" ? 700 : 500,
-      cursor: "pointer",
-    }}
-  >
-    ❌ 미입금 ({currentCounts.pending})
-  </button>
-</div>
-      {/* 테이블 */}
+
+      <div style={{
+        display: "flex",
+        gap: 8,
+        padding: "12px 16px",
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderTop: "none",
+      }}>
+        <button
+          onClick={() => setDepositFilter("all")}
+          style={{
+            padding: "8px 16px",
+            border: depositFilter === "all" ? "2px solid #2e5b86" : "1px solid #ddd",
+            borderRadius: 8,
+            background: depositFilter === "all" ? "#e3f2fd" : "#fff",
+            fontWeight: depositFilter === "all" ? 700 : 500,
+            cursor: "pointer",
+          }}
+        >
+          📋 전체 ({currentCounts.all})
+        </button>
+        <button
+          onClick={() => setDepositFilter("completed")}
+          style={{
+            padding: "8px 16px",
+            border: depositFilter === "completed" ? "2px solid #4caf50" : "1px solid #ddd",
+            borderRadius: 8,
+            background: depositFilter === "completed" ? "#e8f5e9" : "#fff",
+            color: depositFilter === "completed" ? "#2e7d32" : "#333",
+            fontWeight: depositFilter === "completed" ? 700 : 500,
+            cursor: "pointer",
+          }}
+        >
+          ✅ 입금완료 ({currentCounts.completed})
+        </button>
+        <button
+          onClick={() => setDepositFilter("pending")}
+          style={{
+            padding: "8px 16px",
+            border: depositFilter === "pending" ? "2px solid #f44336" : "1px solid #ddd",
+            borderRadius: 8,
+            background: depositFilter === "pending" ? "#ffebee" : "#fff",
+            color: depositFilter === "pending" ? "#c62828" : "#333",
+            fontWeight: depositFilter === "pending" ? 700 : 500,
+            cursor: "pointer",
+          }}
+        >
+          ❌ 미입금 ({currentCounts.pending})
+        </button>
+      </div>
+
       {renderTable()}
 
-      {/* ✅ 새 항목 추가 모달 - 모든 컬럼 입력 가능 */}
       {showAddModal && (
         <div
           style={{
@@ -740,7 +716,6 @@ const currentCounts = getTabCounts(activeTab);
           >
             <h3 style={{ margin: "0 0 16px 0" }}>새 항목 추가</h3>
 
-            {/* 구분 */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
               <select
@@ -755,7 +730,6 @@ const currentCounts = getTabCounts(activeTab);
               </select>
             </div>
 
-            {/* 내린날짜 */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>내린날짜</label>
               <input
@@ -766,7 +740,6 @@ const currentCounts = getTabCounts(activeTab);
               />
             </div>
 
-            {/* 도면번호 + 수량 */}
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
@@ -793,18 +766,16 @@ const currentCounts = getTabCounts(activeTab);
               </div>
             </div>
 
-            {/* 규격 */}
-          <div style={{ marginBottom: 12 }}>
-  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
-  <input
-    value={newItem.spec}
-    onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
-    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-    placeholder="예: 3x6, 3x9x2.6"
-  />
-</div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
+              <input
+                value={newItem.spec}
+                onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                placeholder="예: 3x6, 3x9x2.6"
+              />
+            </div>
 
-            {/* 계좌 + 세발 + 입금 */}
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>계좌</label>
@@ -849,7 +820,6 @@ const currentCounts = getTabCounts(activeTab);
               </div>
             </div>
 
-            {/* 발주처 */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
               {newItem.contract_type === "branch" ? (
@@ -868,15 +838,14 @@ const currentCounts = getTabCounts(activeTab);
                 </select>
               ) : (
                 <input
-  value={newItem.customer_name}
-  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+                  value={newItem.customer_name}
+                  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                   placeholder="발주처 입력"
                 />
               )}
             </div>
 
-            {/* 옵션 */}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>옵션</label>
               <input
@@ -887,7 +856,6 @@ const currentCounts = getTabCounts(activeTab);
               />
             </div>
 
-            {/* 특수 + 내장 */}
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>특수</label>
@@ -911,7 +879,6 @@ const currentCounts = getTabCounts(activeTab);
               </div>
             </div>
 
-            {/* 입금자 + 출고일 */}
             <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>입금자</label>
@@ -968,7 +935,6 @@ const currentCounts = getTabCounts(activeTab);
         </div>
       )}
 
-      {/* 견적서 팝업 */}
       {selectedQuote && (
         <div
           style={{
