@@ -11,6 +11,7 @@ type InventoryItem = {
   bank_account: string;
   tax_invoice: string;
   deposit_status: string;
+  sebal_status: string;  // ✅ 추가
   customer_name: string;
   items: any[];
   special_order: boolean;
@@ -21,6 +22,7 @@ type InventoryItem = {
   inventory_status: string;
   container_type: string;
   contract_type: string;
+};
 };
 
 type UsedInventoryItem = {
@@ -340,8 +342,8 @@ export default function InventoryPage({
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead><tr>
-                    <th style={thStyle}>상태</th><th style={thStyle}>구분</th><th style={thStyle}>타입</th><th style={thStyle}>등록일</th><th style={thStyle}>규격</th><th style={thStyle}>발주처</th><th style={thStyle}>도면번호</th><th style={thStyle}>입금</th><th style={thStyle}>메모</th><th style={thStyle}>출고일</th><th style={thStyle}>삭제</th>
-                  </tr></thead>
+  <th style={thStyle}>상태</th><th style={thStyle}>영업소</th><th style={thStyle}>타입</th><th style={thStyle}>등록일</th><th style={thStyle}>규격</th><th style={thStyle}>발주처</th><th style={thStyle}>도면번호</th><th style={thStyle}>세발</th><th style={thStyle}>입금</th><th style={thStyle}>메모</th><th style={thStyle}>출고일</th><th style={thStyle}>삭제</th>
+</tr></thead>
                   <tbody>
                     {filteredItems.map((item) => {
                       const isCompleted = item.inventory_status === "출고완료" || item.inventory_status === "찜";
@@ -354,11 +356,8 @@ export default function InventoryPage({
                             </select>
                           </td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                            <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-                              <button onClick={() => handleMoveToContract(item, "order")} style={{ padding: "4px 6px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>→수주</button>
-                              <button onClick={() => handleMoveToContract(item, "branch")} style={{ padding: "4px 6px", background: "#6f42c1", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>→영업소</button>
-                            </div>
-                          </td>
+  <button onClick={() => handleMoveToContract(item, "branch")} style={{ padding: "4px 8px", background: "#6f42c1", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>→영업소</button>
+</td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.container_type || "신품"} onChange={(e) => updateField(item.quote_id, "container_type", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}>
                               <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option>
@@ -373,7 +372,16 @@ export default function InventoryPage({
                           <td style={{ padding: 8, border: "1px solid #eee" }}><input defaultValue={item.customer_name || ""} onBlur={(e) => updateField(item.quote_id, "customer_name", e.target.value)} style={{ width: 80, padding: 4, border: "1px solid #ddd", borderRadius: 4 }} /></td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}><input defaultValue={item.drawing_no || ""} onBlur={(e) => updateField(item.quote_id, "drawing_no", e.target.value)} style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center", fontWeight: 700 }} /></td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                            <select value={item.sebal_status || ""} onChange={(e) => updateField(item.quote_id, "sebal_status", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.sebal_status === "완료" ? "#28a745" : item.sebal_status === "계약금만" ? "#ffc107" : "#fff", color: item.sebal_status === "완료" ? "#fff" : "#000", fontWeight: 600 }}>
+                              <option value="">-</option>
+                              <option value="완료">완료</option>
+                              <option value="미완료">미완료</option>
+                              <option value="계약금만">계약금만</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.deposit_status || ""} onChange={(e) => updateField(item.quote_id, "deposit_status", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.deposit_status === "완료" ? "#28a745" : "#fff", color: item.deposit_status === "완료" ? "#fff" : "#000" }}>
+                              
                               <option value="">-</option><option value="대기">대기</option><option value="완료">완료</option><option value="계약금">계약금</option><option value="미입금">미입금</option>
                             </select>
                           </td>
@@ -572,6 +580,7 @@ export default function InventoryPage({
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label><select value={newItem.container_type} onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option></select></div>
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>도면번호 <span style={{ color: "#2e5b86", fontSize: 12 }}>(자동: {nextDrawingNo})</span></label><input value={newItem.drawing_no} onChange={(e) => setNewItem({ ...newItem, drawing_no: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} placeholder={String(nextDrawingNo)} /></div>
+              
               <div style={{ width: 80 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label><input type="number" min={1} value={newItem.qty} onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} /></div>
             </div>
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>규격 *</label><select value={newItem.spec} onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, fontWeight: 700 }}>{SPEC_OPTIONS.map(spec => <option key={spec} value={spec}>{spec}</option>)}</select></div>
