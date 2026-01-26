@@ -82,17 +82,14 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   const [tempValue, setTempValue] = useState(String(value));
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // ✅ 빈 품목이면 자동으로 편집모드 진입 (최초 1회만)
-const hasAutoStarted = React.useRef(false);
-
-React.useEffect(() => {
-  if (isEmpty && !isEditing && !hasAutoStarted.current) {
-    hasAutoStarted.current = true;
-    setIsEditing(true);
-    setShowDropdown(true);
-    setSearchQuery('');  // ✅ 빈 품목일 때만 빈 값
+ React.useEffect(() => {
+  if (!isEditing) {
+    // ✅ 편집 모드 종료 시 focus 해제
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   }
-}, [isEmpty]);
+}, [isEditing]);
   React.useEffect(() => { setTempValue(String(value)); }, [value]);
 
   const handleBlur = () => { setIsEditing(false); onChange(Number(tempValue) || 0); };
@@ -309,18 +306,20 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
  return (
-  <span
-    onClick={(e) => {
-      e.stopPropagation();
-      if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-      setSearchQuery(displayText || '');  // ✅ 기존 품목명 유지
-      setIsEditing(true);
-    }}
-    style={{ cursor: "pointer" }}
-    title="클릭하여 품목 변경"
-  >
-    {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
-  </span>
+  <div style={{ display: "contents" }}>
+    {!isEditing ? (
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+          setSearchQuery(displayText || '');
+          setIsEditing(true);
+        }}
+        style={{ cursor: "pointer" }}
+        title="클릭하여 품목 변경"
+      >
+        {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
+      </span>
     ) : (
       <>
         <input
