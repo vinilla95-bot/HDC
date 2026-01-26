@@ -80,6 +80,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     site_addr: "",
     memo: "",
     delivery_color: "auto" as ColorType,
+    deposit_status: "완료",  // ✅ 입금상태 추가 (기본값: 완료)
   });
 
   const loadDeliveries = async () => {
@@ -107,7 +108,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
         source: "quote" as const,
       }));
     
-    // ✅ inventory 데이터 변환 - dispatch_status 포함
+    // ✅ inventory 데이터 변환
   // inventory 데이터 변환
 const inventoryData = (inventoryRes.data || [])
   .filter((d: any) => d.delivery_date)
@@ -504,6 +505,7 @@ const handleSaveEdit = async () => {
         site_addr: newSchedule.site_addr,
         memo: newSchedule.memo,
         delivery_color: newSchedule.delivery_color,
+        deposit_status: newSchedule.deposit_status,  // ✅ 입금상태 추가
         total_amount: 0,
         items: [],
       });
@@ -523,6 +525,7 @@ const handleSaveEdit = async () => {
       site_addr: newSchedule.site_addr,
       memo: newSchedule.memo,
       delivery_color: newSchedule.delivery_color,
+      deposit_status: newSchedule.deposit_status,  // ✅ 입금상태 추가
       total_amount: 0,
       items: [],
       source: "quote",
@@ -539,6 +542,7 @@ const handleSaveEdit = async () => {
       site_addr: "",
       memo: "",
       delivery_color: "auto",
+      deposit_status: "완료",  // ✅ 입금상태 초기화
     });
   };
 
@@ -1079,6 +1083,60 @@ const handleSaveEdit = async () => {
                   placeholder="메모 입력"
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
                 />
+              </div>
+              {/* ✅ 입금 상태 */}
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>입금 상태</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setNewSchedule({ ...newSchedule, deposit_status: "완료" })}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      border: newSchedule.deposit_status === "완료" ? "2px solid #2e7d32" : "1px solid #ddd",
+                      background: newSchedule.deposit_status === "완료" ? "#e8f5e9" : "#f5f5f5",
+                      color: newSchedule.deposit_status === "완료" ? "#2e7d32" : "#666",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✓ 입금완료
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewSchedule({ ...newSchedule, deposit_status: "계약금" })}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      border: newSchedule.deposit_status === "계약금" ? "2px solid #f57f17" : "1px solid #ddd",
+                      background: newSchedule.deposit_status === "계약금" ? "#fffde7" : "#f5f5f5",
+                      color: newSchedule.deposit_status === "계약금" ? "#f57f17" : "#666",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    계약금
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewSchedule({ ...newSchedule, deposit_status: "" })}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      border: !newSchedule.deposit_status ? "2px solid #c62828" : "1px solid #ddd",
+                      background: !newSchedule.deposit_status ? "#ffebee" : "#f5f5f5",
+                      color: !newSchedule.deposit_status ? "#c62828" : "#666",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    미입금
+                  </button>
+                </div>
               </div>
               <div>
                 <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
