@@ -156,23 +156,36 @@ const inventoryData = (inventoryRes.data || [])
     const isDepositComplete = item.deposit_status === "완료";
     const isDispatchComplete = item.dispatch_status === "완료";
     
+    // 🔍 디버깅: 색상 결정 로그
+    console.log(`[색상] ${item.customer_name} | 타입:${item.contract_type} | 입금:${item.deposit_status} | 배차:${item.dispatch_status} | 입금완료:${isDepositComplete} | 배차완료:${isDispatchComplete}`);
+    
     // 2. 입금완료 + 배차완료 + 출고일 지남 → 회색 (모든 타입: 신품/중고/임대/재고)
     if (isDepositComplete && isDispatchComplete && isPast) {
+      console.log(`  → 회색 (입금완료+배차완료+출고지남)`);
       return "gray";
     }
     
     // 3. 입금완료 + 배차완료 → 주황색 (모든 타입: 신품/중고/임대/재고)
     if (isDepositComplete && isDispatchComplete) {
+      console.log(`  → 주황색 (입금완료+배차완료)`);
       return "orange";
     }
     
     // 4. 미입금이면 빨강
     if (!isDepositComplete) {
+      console.log(`  → 빨강 (미입금)`);
       return "red";
     }
     
     // 5. 입금완료 + 배차미완료 → 재고는 보라, 나머지는 파랑
     if (item.source === "inventory" || item.contract_type === "inventory") {
+      console.log(`  → 보라 (재고)`);
+      return "purple";
+    }
+    
+    console.log(`  → 파랑 (기본)`);
+    return "blue";
+  }, []);
       return "purple";
     }
     
@@ -426,6 +439,12 @@ const inventoryData = (inventoryRes.data || [])
 const handleSaveEdit = async () => {
   if (!selectedDelivery) return;
 
+  // 🔍 디버깅: 저장 전 로그
+  console.log(`[저장] quote_id: ${selectedDelivery.quote_id}`);
+  console.log(`[저장] source: ${selectedDelivery.source}`);
+  console.log(`[저장] dispatch_status: ${editForm.dispatch_status}`);
+  console.log(`[저장] deposit_status: ${editForm.deposit_status}`);
+
   // ✅ inventory인 경우
   if (selectedDelivery.source === "inventory") {
     const { error } = await supabase
@@ -443,29 +462,36 @@ const handleSaveEdit = async () => {
       .eq("id", selectedDelivery.inventory_id);  // ✅ inventory_id로!
 
     if (error) {
+      console.error("[저장 에러]", error);
       alert("저장 실패: " + error.message);
       return;
     }
+    console.log("[저장 성공] inventory");
   } else {
     // quotes 테이블 업데이트
+    const updateData = {
+      delivery_date: editForm.delivery_date,
+      customer_name: editForm.customer_name,
+      customer_phone: editForm.customer_phone,
+      spec: editForm.spec,
+      site_addr: editForm.site_addr,
+      memo: editForm.memo,
+      delivery_color: editForm.delivery_color,
+      dispatch_status: editForm.dispatch_status,
+    };
+    console.log("[저장] quotes 업데이트 데이터:", updateData);
+    
     const { error } = await supabase
       .from("quotes")
-      .update({
-        delivery_date: editForm.delivery_date,
-        customer_name: editForm.customer_name,
-        customer_phone: editForm.customer_phone,
-        spec: editForm.spec,
-        site_addr: editForm.site_addr,
-        memo: editForm.memo,
-        delivery_color: editForm.delivery_color,
-        dispatch_status: editForm.dispatch_status,
-      })
+      .update(updateData)
       .eq("quote_id", selectedDelivery.quote_id);
 
     if (error) {
+      console.error("[저장 에러]", error);
       alert("저장 실패: " + error.message);
       return;
     }
+    console.log("[저장 성공] quotes");
   }
 
   // ✅ DB에서 다시 불러오기 (색상 등 확실히 반영)
