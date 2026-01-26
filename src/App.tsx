@@ -390,6 +390,8 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
                 {searchQuery.trim() ? "검색 결과 없음 (Enter로 자유입력)" : "품목명을 입력하세요"}
               </div>
             )}
+          </div>
+        )}
       </>
     )}
   </div>
