@@ -236,12 +236,16 @@ function InlineItemSearchCell({
   
 // ✅ 빈 품목은 자동으로 편집 모드 시작
 
+// ✅ 빈 품목은 자동으로 편집 모드 시작 (최초 1회만)
+const hasAutoStarted = useRef(false);
+
 useEffect(() => {
-  if (editable && !item.displayName && !isEditing) {
+  if (editable && !item.displayName && !isEditing && !hasAutoStarted.current) {
+    hasAutoStarted.current = true;
     setIsEditing(true);
     setShowDropdown(true);
   }
-}, [editable, item.displayName, isEditing]);
+}, [editable, item.displayName]);
   // ✅ editing 중 바깥 클릭하면 저장(=blur 유도) + dropdown도 닫힘
   useEffect(() => {
     if (!isEditing) return;
@@ -457,6 +461,7 @@ function EmptyRowSearchCell({
   const [isSearchingSite, setIsSearchingSite] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const hasAutoStarted = useRef(false);
 
   // ✅ 최신 값 참조용 ref 추가
   const searchQueryRef = useRef(searchQuery);
@@ -1573,9 +1578,7 @@ const quotePreviewHtml = useMemo(() => {
 </table>
 
     {/* 옵션 검색 (편집 모드) */}
-{/* ✅ +품목추가 버튼 */}
-{/* ✅ +품목추가 버튼 */}
-{/* ✅ +품목추가 버튼 */}
+
 {editMode && (
   <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
     <button
@@ -1593,7 +1596,11 @@ const quotePreviewHtml = useMemo(() => {
           lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
           specText: '',
         };
-        setEditItems(prev => [...prev, newItem]);
+        // ✅ 선택된 행 아래에 삽입
+        setEditItems(prev => {
+          const idx = prev.findIndex((it, i) => i === prev.length - 1); // 기본: 맨 끝
+          return [...prev, newItem];
+        });
       }}
       style={{
         padding: '6px 12px',
