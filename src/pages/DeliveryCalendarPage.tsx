@@ -468,10 +468,8 @@ const handleSaveEdit = async () => {
     }
   }
 
-  // 로컬 상태 업데이트
-  setDeliveries(prev => prev.map(d =>
-    d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
-  ));
+  // ✅ DB에서 다시 불러오기 (색상 등 확실히 반영)
+  await loadDeliveries();
 
   setShowEditModal(false);
   setSelectedDelivery(null);
@@ -571,12 +569,14 @@ const handleSaveEdit = async () => {
     }
   };
 
-  // ✅ 삭제 - quotes/inventory 구분
+  // ✅ 삭제 - quotes는 캘린더에서만 제거(status→draft), inventory는 실제 삭제
   const handleDelete = async () => {
     if (!selectedDelivery) return;
-    if (!confirm("정말 삭제하시겠습니까?")) return;
-
+    
     if (selectedDelivery.source === "inventory") {
+      // inventory는 실제 삭제
+      if (!confirm("정말 삭제하시겠습니까?")) return;
+      
       const { error } = await supabase
         .from("inventory")
         .delete()
@@ -587,13 +587,20 @@ const handleSaveEdit = async () => {
         return;
       }
     } else {
+      // ✅ quotes는 삭제하지 않고 delivery_date만 null로 변경
+      // → 캘린더에서는 안 보이지만 견적목록/계약관리에는 남아있음
+      if (!confirm("출고일정에서 제거하시겠습니까?\n(견적/계약 목록에는 그대로 유지됩니다)")) return;
+      
       const { error } = await supabase
         .from("quotes")
-        .delete()
+        .update({ 
+          delivery_date: null,
+          dispatch_status: null,
+        })
         .eq("quote_id", selectedDelivery.quote_id);
 
       if (error) {
-        alert("삭제 실패: " + error.message);
+        alert("제거 실패: " + error.message);
         return;
       }
     }
