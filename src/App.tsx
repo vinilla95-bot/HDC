@@ -222,7 +222,8 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  const displayText = item.displayName || "";
+ const displayText = item.displayName || "";
+const isEmpty = !item.displayName || item.displayName === '(품목선택)' || item.optionName === '';
   
   const prevKeyRef = React.useRef(item.key);
   React.useEffect(() => {
@@ -234,11 +235,19 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     }
   }, [item.key]);
 
-  React.useEffect(() => {
+ React.useEffect(() => {
     setIsEditing(false);
     setShowDropdown(false);
     setSearchQuery("");
   }, []);
+
+  // ✅ 빈 품목이면 자동으로 편집모드 진입
+  React.useEffect(() => {
+    if (isEmpty && !isEditing) {
+      setIsEditing(true);
+      setShowDropdown(true);
+    }
+  }, [isEmpty]);
   
   const searchQueryRef = React.useRef(searchQuery);
   React.useEffect(() => {
@@ -347,7 +356,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
             background: "transparent"
           }} 
         />
-        {showDropdown && searchQuery.trim() && (
+      {showDropdown && (isEditing || searchQuery.trim()) && (
           <div 
             ref={dropdownRef} 
             style={{ 
@@ -377,10 +386,10 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
                 <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
               </div>
             )) : (
-              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
+              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>
+                {searchQuery.trim() ? "검색 결과 없음 (Enter로 자유입력)" : "품목명을 입력하세요"}
+              </div>
             )}
-          </div>
-        )}
       </>
     )}
   </div>
