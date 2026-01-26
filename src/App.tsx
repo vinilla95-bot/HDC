@@ -225,6 +225,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const hasAutoStarted = React.useRef(false);
 
  const displayText = item.displayName || "";
 const isEmpty = !item.displayName || item.displayName === '(품목선택)' || item.optionName === '';
