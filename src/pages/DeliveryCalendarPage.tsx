@@ -139,43 +139,45 @@ const inventoryData = (inventoryRes.data || [])
     loadDeliveries();
   }, []);
 
-  // ✅ 색상 결정 로직 - 재고도 배차완료시 주황색
-  // ✅ 색상 결정 로직
-const getItemColor = useCallback((item: DeliveryItem): ColorType => {
-  // 1. 수동 색상이 설정되어 있으면 사용
-  if (item.delivery_color && item.delivery_color !== "auto") {
-    return item.delivery_color as ColorType;
-  }
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const [year, month, day] = item.delivery_date.split('-').map(Number);
-  const deliveryDate = new Date(year, month - 1, day);
-  deliveryDate.setHours(0, 0, 0, 0);
-  const isPast = deliveryDate < today;
-  
-  // 2. 미입금이면 무조건 빨강 (배차완료 여부 상관없이)
-  if (item.deposit_status !== "완료") {
-    return "red";
-  }
-  
-  // 3. 입금완료 + 배차완료 + 출고일 지남 → 회색
-  if (item.dispatch_status === "완료" && isPast) {
-    return "gray";
-  }
-  
-  // 4. 입금완료 + 배차완료 → 주황색
-  if (item.dispatch_status === "완료") {
-    return "orange";
-  }
-  
-  // 5. 입금완료 + 배차미완료 → 재고는 보라, 나머지는 파랑
-  if (item.source === "inventory" || item.contract_type === "inventory") {
-    return "purple";
-  }
-  
-  return "blue";
-}, []);
+  // ✅ 색상 결정 로직 - 모든 타입(신품/중고/임대/재고) 동일하게 적용
+  const getItemColor = useCallback((item: DeliveryItem): ColorType => {
+    // 1. 수동 색상이 설정되어 있으면 사용
+    if (item.delivery_color && item.delivery_color !== "auto") {
+      return item.delivery_color as ColorType;
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [year, month, day] = item.delivery_date.split('-').map(Number);
+    const deliveryDate = new Date(year, month - 1, day);
+    deliveryDate.setHours(0, 0, 0, 0);
+    const isPast = deliveryDate < today;
+    
+    const isDepositComplete = item.deposit_status === "완료";
+    const isDispatchComplete = item.dispatch_status === "완료";
+    
+    // 2. 입금완료 + 배차완료 + 출고일 지남 → 회색 (모든 타입: 신품/중고/임대/재고)
+    if (isDepositComplete && isDispatchComplete && isPast) {
+      return "gray";
+    }
+    
+    // 3. 입금완료 + 배차완료 → 주황색 (모든 타입: 신품/중고/임대/재고)
+    if (isDepositComplete && isDispatchComplete) {
+      return "orange";
+    }
+    
+    // 4. 미입금이면 빨강
+    if (!isDepositComplete) {
+      return "red";
+    }
+    
+    // 5. 입금완료 + 배차미완료 → 재고는 보라, 나머지는 파랑
+    if (item.source === "inventory" || item.contract_type === "inventory") {
+      return "purple";
+    }
+    
+    return "blue";
+  }, []);
 
   // ✅ 색상 스타일
   const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
