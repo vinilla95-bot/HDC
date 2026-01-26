@@ -303,21 +303,19 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  return (
-  <div style={{ display: "contents" }}>
-    {!isEditing ? (
-      <span
-        onClick={(e) => {
-          e.stopPropagation();
-          if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-          setSearchQuery('');
-          setIsEditing(true);
-        }}
-        style={{ cursor: "pointer" }}
-        title="클릭하여 품목 변경"
-      >
-        {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
-      </span>
+ return (
+  <span
+    onClick={(e) => {
+      e.stopPropagation();
+      if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+      setSearchQuery(displayText || '');  // ✅ 기존 품목명 유지
+      setIsEditing(true);
+    }}
+    style={{ cursor: "pointer" }}
+    title="클릭하여 품목 변경"
+  >
+    {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
+  </span>
     ) : (
       <>
         <input
