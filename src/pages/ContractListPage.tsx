@@ -1,968 +1,718 @@
-// src/pages/DeliveryCalendarPage.tsx
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+// src/pages/ContractListPage.tsx
+import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "../QuoteService";
 
-type DeliveryItem = {
+type ContractQuote = {
+  id?: string;
   quote_id: string;
-  contract_type: string;
-  customer_name: string;
-  customer_phone: string;
+  contract_date: string;
+  drawing_no: string;
   spec: string;
+  bank_account: string;
+  tax_invoice: string;
+  deposit_status: string;
+  customer_name: string;
   items: any[];
+  special_order: boolean;
+  steel_paint: boolean;
+  interior: string;
+  depositor: string;
   delivery_date: string;
-  site_name?: string;
-  site_addr?: string;
-  memo?: string;
   total_amount: number;
-  deposit_status?: string;
-  delivery_color?: string;
-  dispatch_status?: string;
-  source?: "quote" | "inventory";  // ✅ 추가: 데이터 출처
-  inventory_id?: string;  // ✅ 추가: inventory용 ID
+  contract_type: string;
+  container_type: string;
 };
 
-type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto" | "purple" | "navy";
+type TabType = "order" | "branch" | "used" | "rental";
 
-// ✅ 대한민국 공휴일 (2024-2026)
-const HOLIDAYS: Record<string, string> = {
-  // 2024년
-  "2024-01-01": "신정",
-  "2024-02-09": "설날연휴", "2024-02-10": "설날", "2024-02-11": "설날연휴", "2024-02-12": "대체공휴일",
-  "2024-03-01": "삼일절", "2024-04-10": "국회의원선거",
-  "2024-05-05": "어린이날", "2024-05-06": "대체공휴일", "2024-05-15": "부처님오신날",
-  "2024-06-06": "현충일", "2024-08-15": "광복절",
-  "2024-09-16": "추석연휴", "2024-09-17": "추석", "2024-09-18": "추석연휴",
-  "2024-10-03": "개천절", "2024-10-09": "한글날", "2024-12-25": "크리스마스",
-  // 2025년
-  "2025-01-01": "신정",
-  "2025-01-28": "설날연휴", "2025-01-29": "설날", "2025-01-30": "설날연휴",
-  "2025-03-01": "삼일절", "2025-03-03": "대체공휴일",
-  "2025-05-05": "어린이날", "2025-05-06": "부처님오신날",
-  "2025-06-06": "현충일", "2025-08-15": "광복절",
-  "2025-10-03": "개천절",
-  "2025-10-05": "추석연휴", "2025-10-06": "추석", "2025-10-07": "추석연휴", "2025-10-08": "대체공휴일",
-  "2025-10-09": "한글날", "2025-12-25": "크리스마스",
-  // 2026년
-  "2026-01-01": "신정",
-  "2026-02-16": "설날연휴", "2026-02-17": "설날", "2026-02-18": "설날연휴",
-  "2026-03-01": "삼일절", "2026-03-02": "대체공휴일",
-  "2026-05-05": "어린이날", "2026-05-24": "부처님오신날",
-  "2026-06-06": "현충일", "2026-08-15": "광복절", "2026-08-17": "대체공휴일",
-  "2026-09-24": "추석연휴", "2026-09-25": "추석", "2026-09-26": "추석연휴",
-  "2026-10-03": "개천절", "2026-10-05": "대체공휴일", "2026-10-09": "한글날",
-  "2026-12-25": "크리스마스",
-};
+// 규격 옵션
+const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
 
-export default function DeliveryCalendarPage({ onBack }: { onBack: () => void }) {
-  const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
+export default function ContractListPage({ onBack }: { onBack: () => void }) {
+  const [activeTab, setActiveTab] = useState<TabType>("order");
+  const [allContracts, setAllContracts] = useState<ContractQuote[]>([]);
+  const [allInventory, setAllInventory] = useState<{quote_id: string; contract_date: string; drawing_no: string}[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [selectedDelivery, setSelectedDelivery] = useState<DeliveryItem | null>(null);
-  const [showDispatchModal, setShowDispatchModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<ContractQuote | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<DeliveryItem>>({});
-  const [copySuccess, setCopySuccess] = useState(false);
-  const [draggedItem, setDraggedItem] = useState<DeliveryItem | null>(null);
-  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
-  const [selectedDateItems, setSelectedDateItems] = useState<{date: string, items: DeliveryItem[]} | null>(null);
+  const [depositFilter, setDepositFilter] = useState<"all" | "completed" | "pending">("all");
   
-  // 새 일정 추가 폼
-  const [newSchedule, setNewSchedule] = useState({
-    delivery_date: "",
-    customer_name: "",
-    customer_phone: "",
+  // ✅ 모든 컬럼 입력 가능한 새 항목 양식
+  const [newItem, setNewItem] = useState({
+    contract_type: "order" as TabType,
+    contract_date: new Date().toISOString().slice(0, 10),
+    drawing_no: "",
     spec: "3x6",
-    contract_type: "order",
-    site_addr: "",
-    memo: "",
-    delivery_color: "auto" as ColorType,
+    bank_account: "",
+    tax_invoice: "",
+    deposit_status: "",
+    customer_name: "",
+    options: "",
+    special_order: false,
+    interior: "",
+    depositor: "",
+    delivery_date: "",
+    qty: 1,
   });
 
-  const loadDeliveries = async () => {
+  // ✅ 현재 월의 다음 도면번호 계산 (quotes + inventory 통합)
+  const nextDrawingNo = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // quotes에서 이번 달 도면번호
+    const quotesNumbers = allContracts
+      .filter(c => {
+        if (!c.contract_date) return false;
+        const d = new Date(c.contract_date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .map(c => parseInt(c.drawing_no) || 0);
+
+    // inventory에서 이번 달 도면번호
+    const inventoryNumbers = allInventory
+      .filter(c => {
+        if (!c.contract_date) return false;
+        const d = new Date(c.contract_date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .map(c => parseInt(c.drawing_no) || 0);
+
+    // ✅ 통합
+    const allNumbers = [...quotesNumbers, ...inventoryNumbers].filter(n => n > 0);
+    const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
+    
+    return maxNo + 1;
+  }, [allContracts, allInventory]);
+
+  const loadContracts = async () => {
     setLoading(true);
     
+    // ✅ quotes와 inventory 둘 다 조회
     const [quotesRes, inventoryRes] = await Promise.all([
-      supabase
-        .from("quotes")
-        .select("*")
-        .eq("status", "confirmed")
-        .not("delivery_date", "is", null),
-      supabase
-        .from("inventory")
-        .select("*")
-        .not("delivery_date", "is", null)
+      supabase.from("quotes").select("*").eq("status", "confirmed"),
+      supabase.from("inventory").select("quote_id, contract_date, drawing_no")
     ]);
 
     if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
     if (inventoryRes.error) console.error("Inventory load error:", inventoryRes.error);
 
-    const quotesData = (quotesRes.data || [])
-      .filter((d: any) => d.delivery_date)
-      .map((q: any) => ({
-        ...q,
-        source: "quote" as const,
-      }));
-    
-    // ✅ inventory 데이터 변환 - dispatch_status 포함
-  // inventory 데이터 변환
-const inventoryData = (inventoryRes.data || [])
-  .filter((d: any) => d.delivery_date)
-  .map((inv: any) => ({
-    quote_id: `inv_${inv.id}`,  // ✅ 구분을 위해 prefix 추가
-    inventory_id: inv.id,       // ✅ 실제 inventory id
-    contract_type: "inventory",
-    customer_name: inv.customer_name || "",
-    customer_phone: inv.customer_phone || "",
-    spec: inv.spec || "",
-    items: inv.items || [],
-    delivery_date: inv.delivery_date,
-    site_addr: inv.interior || "",
-    memo: inv.memo || "",
-    total_amount: inv.total_amount || 0,
-    deposit_status: inv.deposit_status,
-    delivery_color: inv.delivery_color,
-    dispatch_status: inv.dispatch_status,  // ✅ 배차상태 포함!
-    container_type: inv.container_type,
-    drawing_no: inv.drawing_no,
-    source: "inventory" as const,
-  }));
+    const quotesData = quotesRes.data || [];
+    const inventoryData = inventoryRes.data || [];
 
-    setDeliveries([...quotesData, ...inventoryData] as DeliveryItem[]);
+    // ✅ 정렬 (날짜 내림차순 → 도면번호 내림차순)
+    const sorted = [...quotesData].sort((a, b) => {
+      const dateA = a.contract_date || "";
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+      const numA = Number(a.drawing_no) || 0;
+      const numB = Number(b.drawing_no) || 0;
+      return numB - numA;
+    });
+
+    setAllContracts(sorted as ContractQuote[]);
+    setAllInventory(inventoryData);
     setLoading(false);
   };
 
   useEffect(() => {
-    loadDeliveries();
+    loadContracts();
   }, []);
 
-  // ✅ 색상 결정 로직 - 모든 타입(신품/중고/임대/재고) 동일하게 적용
-  const getItemColor = useCallback((item: DeliveryItem): ColorType => {
-    // 1. 수동 색상이 설정되어 있으면 사용
-    if (item.delivery_color && item.delivery_color !== "auto") {
-      return item.delivery_color as ColorType;
-    }
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const [year, month, day] = item.delivery_date.split('-').map(Number);
-    const deliveryDate = new Date(year, month - 1, day);
-    deliveryDate.setHours(0, 0, 0, 0);
-    const isPast = deliveryDate < today;
-    
-    const isDepositComplete = item.deposit_status === "완료";
-    const isDispatchComplete = item.dispatch_status === "완료";
-    
-    // 2. 입금완료 + 배차완료 + 출고일 지남 → 회색 (모든 타입: 신품/중고/임대/재고)
-    if (isDepositComplete && isDispatchComplete && isPast) {
-      return "gray";
-    }
-    
-    // 3. 입금완료 + 배차완료 → 주황색 (모든 타입: 신품/중고/임대/재고)
-    if (isDepositComplete && isDispatchComplete) {
-      return "orange";
-    }
-    
-    // 4. 미입금이면 빨강
-    if (!isDepositComplete) {
-      return "red";
-    }
-    
-    // 5. 입금완료 + 배차미완료 → 재고는 보라, 나머지는 파랑
-    if (item.source === "inventory" || item.contract_type === "inventory") {
-      return "purple";
-    }
-    
-    return "blue";
-  }, []);
-
-  // ✅ 색상 스타일
-  const colorStyles: Record<ColorType, { bg: string; border: string; text: string }> = {
-    red: { bg: "#ffebee", border: "#f44336", text: "#c62828" },
-    orange: { bg: "#fff3e0", border: "#ff9800", text: "#e65100" },
-    blue: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
-    yellow: { bg: "#fffde7", border: "#ffc107", text: "#f57f17" },
-    gray: { bg: "#f5f5f5", border: "#9e9e9e", text: "#616161" },
-    green: { bg: "#e8f5e9", border: "#4caf50", text: "#2e7d32" },
-    purple: { bg: "#f3e5f5", border: "#9c27b0", text: "#6a1b9a" },
-    navy: { bg: "#e8eaf6", border: "#3f51b5", text: "#283593" },
-    auto: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
-  };
-
-  // ✅ 옵션 요약
-  const summarizeOptions = (items: any[], short = true) => {
-    if (!items || items.length === 0) return "";
-    const limit = short ? 2 : 5;
-    const names = items.slice(0, limit).map((i: any) => {
-      const name = i.optionName || i.displayName || i.itemName || "";
-      if (short) {
-        return name.length > 8 ? name.slice(0, 8) + ".." : name;
-      }
-      return name;
-    });
-    const summary = names.join(", ");
-    if (short) {
-      return items.length > limit ? `${summary} 외${items.length - limit}` : summary;
-    }
-    return items.length > limit ? `${summary} 외 ${items.length - limit}건` : summary;
-  };
-
-  // ✅ 현장명 가져오기
-  const getSiteName = (item: DeliveryItem) => {
-    if (item.site_name) return item.site_name;
-    if (item.items && item.items.length > 0) {
-      const deliveryItem = item.items.find((i: any) =>
-        (i.optionName || i.displayName || "").includes("운송")
-      );
-      if (deliveryItem && deliveryItem.displayName) {
-        const match = deliveryItem.displayName.match(/운송비[^\-]*-(.+)/);
-        if (match) return match[1];
-      }
-    }
-    return "";
-  };
-
-  // ✅ 수량 가져오기
-  const getQty = (item: DeliveryItem) => {
-    if (!item.items || item.items.length === 0) return 1;
-    const containerItem = item.items.find((i: any) => {
-      const name = (i.optionName || i.displayName || "").toLowerCase();
-      return name.includes("컨테이너") || name.includes("신품") || name.includes("중고");
-    });
-    return containerItem?.qty || 1;
-  };
-
-  // ✅ 운송 타입 가져오기
-  const getTransportType = (item: DeliveryItem): "crane" | "truck" | null => {
-    if (!item.items || item.items.length === 0) return null;
-    
-    const transportItem = item.items.find((i: any) => {
-      const name = (i.optionName || i.displayName || i.itemName || "").toLowerCase();
-      return name.includes("운송") || name.includes("트럭") || name.includes("크레인");
-    });
-    
-    if (transportItem) {
-      const name = (transportItem.optionName || transportItem.displayName || transportItem.itemName || "").toLowerCase();
-      if (name.includes("크레인")) return "crane";
-      if (name.includes("5톤") || name.includes("일반") || name.includes("트럭")) return "truck";
-    }
-    return null;
-  };
-
-  // ✅ 출고 라벨 생성
-  const getDeliveryLabel = (item: DeliveryItem) => {
-    const type = item.contract_type || "order";
-    const spec = item.spec || "";
-    const options = summarizeOptions(item.items, true);
-    const customer = item.customer_name || "";
-    const qty = getQty(item);
-    const transportType = getTransportType(item);
-    const memo = item.memo || "";
-
-    const isMemoOnly = !spec && (!item.items || item.items.length === 0);
-    if (isMemoOnly) {
-      return `${customer ? customer + " " : ""}${memo}`.trim() || "메모";
-    }
-
-    let prefix = "";
-    if (transportType === "crane") {
-      prefix = "크";
-    }
-
-    const qtyText = `-${qty}동`;
-
-    if (type === "memo") {
-      return customer || "메모";
-    } else if (type === "inventory") {
-      const containerType = (item as any).container_type || "신품";
-      const drawingNo = (item as any).drawing_no ? `#${(item as any).drawing_no}` : "";
-      return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}`.trim();
-    } else if (type === "rental") {
-      return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
-    } else if (type === "used") {
-      return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
-    } else {
-      return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
-    }
-  };
-
-  // ✅ 배차 양식 생성
-  const generateDispatchText = (item: DeliveryItem) => {
-    const type = item.contract_type || "order";
-    
-    let saleType = "신품판매";
-    if (type === "used") {
-      saleType = "중고판매";
-    } else if (type === "rental") {
-      saleType = "임대";
-    } else if (type === "memo") {
-      saleType = "메모";
-    } else if (type === "inventory") {
-      const containerType = (item as any).container_type || "신품";
-      saleType = `재고${containerType}`;
-    }
-
-    const [year, month, day] = item.delivery_date.split('-').map(Number);
-    const d = new Date(year, month - 1, day);
-    const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
-    const dateStr = `${month}/${day}(${weekDays[d.getDay()]})`;
-
-    const spec = item.spec || "";
-    const qty = getQty(item);
-    const qtyText = qty > 1 ? `${qty}` : "1";
-    let unloadInfo = "";
-    if (item.site_addr) {
-      unloadInfo = item.site_addr;
-    }
-    if (item.memo) {
-      unloadInfo = unloadInfo ? `${unloadInfo} ${item.memo}` : item.memo;
-    }
-    const customer = item.customer_name || "";
-    const phone = item.customer_phone || "";
-
-    let text = `사장님 ${dateStr} ${saleType} (${spec})${qtyText}동(옵션OR기본형) 상차 현대`;
-    if (unloadInfo) {
-      text += ` 하차 ${unloadInfo}`;
-    } else {
-      text += ` 하차 `;
-    }
-    text += ` ${customer}`;
-    if (phone) {
-      text += ` 인수자${phone}`;
-    } else {
-      text += ` 인수자`;
-    }
-    text += ` 입니다~`;
-    return text;
-  };
-
-  // ✅ 클립보드 복사
-  const handleCopyDispatch = async () => {
-    if (!selectedDelivery) return;
-
-    const text = generateDispatchText(selectedDelivery);
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    }
-  };
-
-  // ✅ 드래그 시작
-  const handleDragStart = (e: React.DragEvent, item: DeliveryItem) => {
-    setDraggedItem(item);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  // ✅ 드래그 오버
-  const handleDragOver = (e: React.DragEvent, dateKey: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverDate(dateKey);
-  };
-
-  // ✅ 드래그 종료
-  const handleDragLeave = () => {
-    setDragOverDate(null);
-  };
-
-  // ✅ 드롭 (날짜 변경) - quotes/inventory 구분
-  const handleDrop = async (e: React.DragEvent, newDate: string) => {
-    e.preventDefault();
-    setDragOverDate(null);
-
-    if (!draggedItem || draggedItem.delivery_date === newDate) {
-      setDraggedItem(null);
-      return;
-    }
-
-    // ✅ inventory인 경우 inventory 테이블 업데이트
-    if (draggedItem.source === "inventory") {
-      const { error } = await supabase
-        .from("inventory")
-        .update({ delivery_date: newDate })
-        .eq("id", draggedItem.inventory_id);
-
-      if (error) {
-        alert("날짜 변경 실패: " + error.message);
-      } else {
-        setDeliveries(prev => prev.map(d =>
-          d.quote_id === draggedItem.quote_id ? { ...d, delivery_date: newDate } : d
-        ));
-      }
-    } else {
-      // quotes 테이블 업데이트
-      const { error } = await supabase
-        .from("quotes")
-        .update({ delivery_date: newDate })
-        .eq("quote_id", draggedItem.quote_id);
-
-      if (error) {
-        alert("날짜 변경 실패: " + error.message);
-      } else {
-        setDeliveries(prev => prev.map(d =>
-          d.quote_id === draggedItem.quote_id ? { ...d, delivery_date: newDate } : d
-        ));
-      }
-    }
-
-    setDraggedItem(null);
-  };
-
-  // ✅ 수정 저장 - quotes/inventory 구분
-const handleSaveEdit = async () => {
-  if (!selectedDelivery) return;
-
-  // ✅ inventory인 경우
-  if (selectedDelivery.source === "inventory") {
-    const { error } = await supabase
-      .from("inventory")  // ✅ inventory 테이블로!
-      .update({
-        delivery_date: editForm.delivery_date,
-        customer_name: editForm.customer_name,
-        customer_phone: editForm.customer_phone,
-        spec: editForm.spec,
-        interior: editForm.site_addr,
-        memo: editForm.memo,
-        delivery_color: editForm.delivery_color,
-        dispatch_status: editForm.dispatch_status,  // ✅ 배차상태
-      })
-      .eq("id", selectedDelivery.inventory_id);  // ✅ inventory_id로!
-
-    if (error) {
-      alert("저장 실패: " + error.message);
-      return;
-    }
-  } else {
-    // quotes 테이블 업데이트
-    const { error } = await supabase
-      .from("quotes")
-      .update({
-        delivery_date: editForm.delivery_date,
-        customer_name: editForm.customer_name,
-        customer_phone: editForm.customer_phone,
-        spec: editForm.spec,
-        site_addr: editForm.site_addr,
-        memo: editForm.memo,
-        delivery_color: editForm.delivery_color,
-        dispatch_status: editForm.dispatch_status,
-      })
-      .eq("quote_id", selectedDelivery.quote_id);
-
-    if (error) {
-      alert("저장 실패: " + error.message);
-      return;
-    }
+  const contracts = useMemo(() => {
+  let filtered = allContracts.filter(c => {
+    const type = c.contract_type || "order";
+    return type === activeTab;
+  });
+  
+  if (depositFilter === "completed") {
+    filtered = filtered.filter(c => c.deposit_status === "완료");
+  } else if (depositFilter === "pending") {
+    filtered = filtered.filter(c => c.deposit_status !== "완료");
   }
-
-  // 로컬 상태 업데이트
-  setDeliveries(prev => prev.map(d =>
-    d.quote_id === selectedDelivery.quote_id ? { ...d, ...editForm } : d
-  ));
-
-  setShowEditModal(false);
-  setSelectedDelivery(null);
+  
+  return filtered;
+}, [allContracts, activeTab, depositFilter]);
+  const getTabCounts = (tab: TabType) => {
+  const tabData = allContracts.filter(c => (c.contract_type || "order") === tab);
+  return {
+    all: tabData.length,
+    completed: tabData.filter(c => c.deposit_status === "완료").length,
+    pending: tabData.filter(c => c.deposit_status !== "완료").length,
+  };
 };
 
-  // ✅ 새 일정 추가
-  const handleAddSchedule = async () => {
-    if (!newSchedule.delivery_date) {
-      alert("출고일을 선택해주세요.");
-      return;
-    }
+const currentCounts = getTabCounts(activeTab);
 
-    const quoteId = `SCHEDULE_${Date.now()}`;
-    
+  // ✅ 업데이트
+  const updateField = async (quote_id: string, field: string, value: any) => {
     const { error } = await supabase
       .from("quotes")
-      .insert({
-        quote_id: quoteId,
-        status: "confirmed",
-        contract_type: newSchedule.contract_type,
-        delivery_date: newSchedule.delivery_date,
-        customer_name: newSchedule.customer_name,
-        customer_phone: newSchedule.customer_phone,
-        spec: newSchedule.spec,
-        site_addr: newSchedule.site_addr,
-        memo: newSchedule.memo,
-        delivery_color: newSchedule.delivery_color,
-        total_amount: 0,
-        items: [],
-      });
+      .update({ [field]: value })
+      .eq("quote_id", quote_id);
 
     if (error) {
-      alert("일정 추가 실패: " + error.message);
+      console.error("Update error:", error);
+      alert(`업데이트 실패: ${error.message}`);
       return;
     }
 
-    const newItem: DeliveryItem = {
-      quote_id: quoteId,
-      contract_type: newSchedule.contract_type,
-      delivery_date: newSchedule.delivery_date,
-      customer_name: newSchedule.customer_name,
-      customer_phone: newSchedule.customer_phone,
-      spec: newSchedule.spec,
-      site_addr: newSchedule.site_addr,
-      memo: newSchedule.memo,
-      delivery_color: newSchedule.delivery_color,
-      total_amount: 0,
-      items: [],
-      source: "quote",
-    };
-    
-    setDeliveries(prev => [...prev, newItem]);
-    setShowAddModal(false);
-    setNewSchedule({
-      delivery_date: "",
-      customer_name: "",
-      customer_phone: "",
-      spec: "3x6",
-      contract_type: "order",
-      site_addr: "",
-      memo: "",
-      delivery_color: "auto",
-    });
-  };
-
-  // ✅ 색상 변경 - quotes/inventory 구분
-  const handleColorChange = async (item: DeliveryItem, color: ColorType) => {
-    if (item.source === "inventory") {
-      const { error } = await supabase
-        .from("inventory")
-        .update({ delivery_color: color })
-        .eq("id", item.inventory_id);
-
-      if (error) {
-        alert("색상 변경 실패: " + error.message);
-        return;
-      }
-    } else {
-      const { error } = await supabase
-        .from("quotes")
-        .update({ delivery_color: color })
-        .eq("quote_id", item.quote_id);
-
-      if (error) {
-        alert("색상 변경 실패: " + error.message);
-        return;
-      }
-    }
-
-    setDeliveries(prev => prev.map(d =>
-      d.quote_id === item.quote_id ? { ...d, delivery_color: color } : d
+    setAllContracts(prev => prev.map(c =>
+      c.quote_id === quote_id ? { ...c, [field]: value } : c
     ));
-
-    if (selectedDelivery?.quote_id === item.quote_id) {
-      setSelectedDelivery({ ...selectedDelivery, delivery_color: color });
-      setEditForm({ ...editForm, delivery_color: color });
-    }
   };
 
-  // ✅ 삭제 - quotes/inventory 구분
-  const handleDelete = async () => {
-    if (!selectedDelivery) return;
-    if (!confirm("정말 삭제하시겠습니까?")) return;
-
-    if (selectedDelivery.source === "inventory") {
-      const { error } = await supabase
-        .from("inventory")
-        .delete()
-        .eq("id", selectedDelivery.inventory_id);
-
-      if (error) {
-        alert("삭제 실패: " + error.message);
-        return;
-      }
-    } else {
-      const { error } = await supabase
-        .from("quotes")
-        .delete()
-        .eq("quote_id", selectedDelivery.quote_id);
-
-      if (error) {
-        alert("삭제 실패: " + error.message);
-        return;
-      }
-    }
-
-    setDeliveries(prev => prev.filter(d => d.quote_id !== selectedDelivery.quote_id));
-    setSelectedDelivery(null);
+  // ✅ 도면번호 자동 입력
+  const autoFillDrawingNo = (quote_id: string) => {
+    updateField(quote_id, "drawing_no", String(nextDrawingNo));
   };
 
-  // ✅ 날짜별 출고 그룹핑
-  const deliveriesByDate = useMemo(() => {
-    const map: Record<string, DeliveryItem[]> = {};
-    deliveries.forEach((d) => {
-      const date = d.delivery_date;
-      if (!map[date]) map[date] = [];
-      map[date].push(d);
+  // ✅ 새 항목 추가
+  const handleAddNew = async () => {
+    const qty = newItem.qty || 1;
+    
+    // 같은 월의 최대 도면번호 찾기 (quotes + inventory 통합)
+    const [year, month] = newItem.contract_date.split("-");
+    
+    const quotesMonthItems = allContracts.filter(item => {
+      const [y, m] = (item.contract_date || "").split("-");
+      return y === year && m === month;
     });
-    return map;
-  }, [deliveries]);
+    
+    const inventoryMonthItems = allInventory.filter(item => {
+      const [y, m] = (item.contract_date || "").split("-");
+      return y === year && m === month;
+    });
+    
+    const allMonthNumbers = [
+      ...quotesMonthItems.map(item => Number(item.drawing_no) || 0),
+      ...inventoryMonthItems.map(item => Number(item.drawing_no) || 0)
+    ];
+    
+    const maxNo = allMonthNumbers.length > 0 ? Math.max(...allMonthNumbers) : 0;
 
-  // ✅ 캘린더 데이터 생성
-  const calendarDays = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-
-    const firstDay = new Date(year, month, 1);
-    const startDayOfWeek = firstDay.getDay();
-
-    const calendarStart = new Date(firstDay);
-    calendarStart.setDate(calendarStart.getDate() - startDayOfWeek);
-
-    const days: { date: Date; isCurrentMonth: boolean }[] = [];
-
-    for (let i = 0; i < 42; i++) {
-      const date = new Date(calendarStart);
-      date.setDate(calendarStart.getDate() + i);
-      days.push({
-        date,
-        isCurrentMonth: date.getMonth() === month,
+    // 여러 개 추가
+    const inserts = [];
+    for (let i = 0; i < qty; i++) {
+      inserts.push({
+        quote_id: `${newItem.contract_type.toUpperCase()}_${Date.now()}_${i}`,
+        status: "confirmed",
+        contract_type: newItem.contract_type,
+        contract_date: newItem.contract_date,
+        drawing_no: newItem.drawing_no || String(maxNo + 1 + i),
+        spec: newItem.spec,
+        bank_account: newItem.bank_account,
+        tax_invoice: newItem.tax_invoice,
+        deposit_status: newItem.deposit_status,
+        customer_name: newItem.customer_name,
+        items: newItem.options ? [{ displayName: newItem.options }] : [],
+        special_order: newItem.special_order,
+        interior: newItem.interior,
+        depositor: newItem.depositor,
+        delivery_date: newItem.delivery_date || null,
+        total_amount: 0,
+        source: "contract",
       });
     }
 
-    return days;
-  }, [currentMonth]);
+    const { error } = await supabase.from("quotes").insert(inserts);
 
-  const formatDateKey = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    if (error) {
+      alert("추가 실패: " + error.message);
+      return;
+    }
+
+    setShowAddModal(false);
+    setNewItem({
+      contract_type: activeTab,
+      contract_date: new Date().toISOString().slice(0, 10),
+      drawing_no: "",
+      spec: "3x6",
+      bank_account: "",
+      tax_invoice: "",
+      deposit_status: "",
+      customer_name: "",
+      options: "",
+      special_order: false,
+      interior: "",
+      depositor: "",
+      delivery_date: "",
+      qty: 1,
+    });
+    loadContracts();
   };
 
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  // ✅ 삭제
+  const handleDelete = async (quote_id: string, customer_name: string) => {
+    if (!confirm(`"${customer_name}" 항목을 삭제하시겠습니까?`)) return;
+
+    const { error } = await supabase
+      .from("quotes")
+      .delete()
+      .eq("quote_id", quote_id);
+
+    if (error) {
+      alert("삭제 실패: " + error.message);
+      return;
+    }
+
+    loadContracts();
   };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  };
-
-  const goToday = () => {
-    const now = new Date();
-    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-  };
-
-  const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
-
-  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
-
-  const today = new Date();
-  const todayKey = formatDateKey(today);
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
+  // ✅ 행 상태 판단 함수
+  const getRowStatus = (c: ContractQuote) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const isCompleted = c.deposit_status === "완료" && c.delivery_date && new Date(c.delivery_date) <= today;
+    const isNotPaid = c.deposit_status !== "완료";
+    
+    return { isCompleted, isNotPaid };
+  };
+
+  const thStyle: React.CSSProperties = {
+    padding: "10px 8px",
+    border: "1px solid #1e4a6e",
+    whiteSpace: "nowrap",
+    backgroundColor: "#2e5b86",
+    color: "#ffffff",
+    fontWeight: 700,
+    fontSize: 13,
+    textAlign: "center",
+  };
+
+  const tabStyle = (isActive: boolean): React.CSSProperties => ({
+    padding: "12px 24px",
+    border: "none",
+    borderBottom: isActive ? "3px solid #2e5b86" : "3px solid transparent",
+    background: isActive ? "#fff" : "#f5f5f5",
+    color: isActive ? "#2e5b86" : "#666",
+    fontWeight: isActive ? 800 : 500,
+    fontSize: 14,
+    cursor: "pointer",
+    transition: "all 0.2s",
+  });
+
+  const renderTable = () => (
+    <>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: "#888" }}>로딩 중...</div>
+      ) : contracts.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 40, color: "#888" }}>
+          {activeTab === "order" && "수주 데이터가 없습니다."}
+          {activeTab === "branch" && "영업소 데이터가 없습니다."}
+          {activeTab === "used" && "중고 데이터가 없습니다."}
+          {activeTab === "rental" && "임대 데이터가 없습니다."} 
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto", background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e5e7eb", borderTop: "none" }}>
+          <table className="contract-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 4px", fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>구분</th>
+                <th style={thStyle}>내린날짜</th>
+                <th style={thStyle}>도면번호</th>
+                <th style={thStyle}>규격</th>
+                <th style={thStyle}>계좌</th>
+                <th style={thStyle}>세발</th>
+                <th style={thStyle}>입금</th>
+                <th style={thStyle}>발주처</th>
+                <th style={{ ...thStyle, minWidth: 120 }}>옵션</th>
+                <th style={thStyle}>특수</th>
+                <th style={thStyle}>내장</th>
+                <th style={thStyle}>입금자</th>
+                <th style={thStyle}>출고일</th>
+                <th style={thStyle}>보기</th>
+                <th style={thStyle}>삭제</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map((c) => {
+                const { isCompleted, isNotPaid } = getRowStatus(c);
+                
+                let bgColor = "#fff";
+                if (isCompleted) {
+                  bgColor = "#d0d0d0";
+                }
+                
+                return (
+                  <tr
+                    key={c.quote_id}
+                    style={{
+                      background: bgColor,
+                      outline: isNotPaid && !isCompleted ? "2px solid #dc3545" : "none",
+                      outlineOffset: "-1px",
+                      opacity: isCompleted ? 0.6 : 1,
+                    }}
+                  >
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.contract_type || "order"}
+                        onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="order">수주</option>
+                        <option value="branch">영업소</option>
+                        <option value="used">중고</option>
+                        <option value="rental">임대</option> 
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      <input
+                        type="date"
+                        value={c.contract_date || ""}
+                        onChange={(e) => updateField(c.quote_id, "contract_date", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <input
+                          value={c.drawing_no || ""}
+                          onChange={(e) => updateField(c.quote_id, "drawing_no", e.target.value)}
+                          style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
+                          placeholder={String(nextDrawingNo)}
+                        />
+                        {!c.drawing_no && (
+                          <button
+                            onClick={() => autoFillDrawingNo(c.quote_id)}
+                            style={{
+                              padding: "2px 6px",
+                              background: "#2e5b86",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 4,
+                              fontSize: 10,
+                              cursor: "pointer",
+                            }}
+                            title={`${nextDrawingNo}번 자동입력`}
+                          >
+                            {nextDrawingNo}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                   <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+  <input
+    defaultValue={c.spec || ""}
+    onBlur={(e) => updateField(c.quote_id, "spec", e.target.value)}
+    style={{ width: 60, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, textAlign: "center" }}
+    placeholder="규격"
+  />
+</td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.bank_account || ""}
+                        onChange={(e) => updateField(c.quote_id, "bank_account", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="">-</option>
+                        <option value="현대">현대</option>
+                        <option value="국민">국민</option>
+                        <option value="기업">기업</option>
+                        <option value="현금영수증">현금영수증</option>
+                        <option value="현찰">현찰</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.tax_invoice || ""}
+                        onChange={(e) => updateField(c.quote_id, "tax_invoice", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="">-</option>
+                        <option value="완료">완료</option>
+                        <option value="계약금만">계약금만</option>
+                        <option value="대기">대기</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <select
+                        value={c.deposit_status || ""}
+                        onChange={(e) => updateField(c.quote_id, "deposit_status", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      >
+                        <option value="">-</option>
+                        <option value="완료">완료</option>
+                        <option value="계약금">계약금</option>
+                        <option value="미입금">미입금</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", fontWeight: 700 }}>
+                      {activeTab === "branch" ? (
+                        <select
+                          value={c.customer_name || ""}
+                          onChange={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
+                          style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700 }}
+                        >
+                          <option value="">-</option>
+                          <option value="라인">라인</option>
+                          <option value="한진">한진</option>
+                          <option value="한진더조은">한진더조은</option>
+                          <option value="동부A">동부A</option>
+                          <option value="동부B">동부B</option>
+                          <option value="태광">태광</option>
+                        </select>
+                      ) : (
+                       <input
+  defaultValue={c.customer_name || ""}
+  onBlur={(e) => updateField(c.quote_id, "customer_name", e.target.value)}
+                          style={{ width: 70, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontWeight: 700 }}
+                          placeholder="발주처"
+                        />
+                      )}
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
+  <input
+    key={c.quote_id}
+    defaultValue={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
+    onBlur={(e) => {
+      const newItems = [{ displayName: e.target.value }];
+      updateField(c.quote_id, "items", newItems);
+    }}
+    style={{ 
+      width: "100%", 
+      padding: 4, 
+      border: "1px solid #ddd", 
+      borderRadius: 4, 
+      fontSize: 11,
+      boxSizing: "border-box"
+    }}
+    placeholder="옵션 입력"
+  />
+</td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={c.special_order || false}
+                        onChange={(e) => updateField(c.quote_id, "special_order", e.target.checked)}
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <input
+                        value={c.interior || ""}
+                        onChange={(e) => updateField(c.quote_id, "interior", e.target.value)}
+                        style={{ width: 35, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center" }}
+                        placeholder="-"
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <input
+  defaultValue={c.depositor || ""}
+  onBlur={(e) => updateField(c.quote_id, "depositor", e.target.value)}
+                        style={{ width: 50, padding: 4, border: "1px solid #ddd", borderRadius: 4 }}
+                        placeholder="입금자"
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee" }}>
+                      <input
+                        type="date"
+                        value={c.delivery_date || ""}
+                        onChange={(e) => updateField(c.quote_id, "delivery_date", e.target.value)}
+                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+                      />
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      <button
+                        onClick={() => setSelectedQuote(c)}
+                        style={{
+                          padding: "4px 8px",
+                          background: "#2e5b86",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 4,
+                          fontSize: 11,
+                          cursor: "pointer",
+                        }}
+                      >
+                        보기
+                      </button>
+                    </td>
+                    <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+                      <button
+                        onClick={() => handleDelete(c.quote_id, c.customer_name)}
+                        style={{
+                          padding: "4px 8px",
+                          background: "#dc3545",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 4,
+                          fontSize: 11,
+                          cursor: "pointer",
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+
+  const orderCount = allContracts.filter(c => (c.contract_type || "order") === "order").length;
+  const branchCount = allContracts.filter(c => c.contract_type === "branch").length;
+  const usedCount = allContracts.filter(c => c.contract_type === "used").length;
+  const rentalCount = allContracts.filter(c => c.contract_type === "rental").length; 
+
+  const currentMonthLabel = (() => {
+    const now = new Date();
+    return `${now.getMonth() + 1}월`;
+  })();
+
+  // 모달 열 때 현재 탭으로 초기화
+  const openAddModal = () => {
+    setNewItem({
+      contract_type: activeTab,
+      contract_date: new Date().toISOString().slice(0, 10),
+      drawing_no: "",
+      spec: "3x6",
+      bank_account: "",
+      tax_invoice: "",
+      deposit_status: "",
+      customer_name: "",
+      options: "",
+      special_order: false,
+      interior: "",
+      depositor: "",
+      delivery_date: "",
+      qty: 1,
+    });
+    setShowAddModal(true);
+  };
+
   return (
     <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
+      <style>{`
+        .contract-table th {
+          background-color: #2e5b86 !important;
+          color: #ffffff !important;
+          font-weight: 700 !important;
+        }
+      `}</style>
+
       {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>
-          출고일정
+          계약관리
           <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>
-            (총 {deliveries.length}건)
+            ({currentMonthLabel} 도면: {nextDrawingNo - 1}개)
           </span>
         </h2>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
           style={{
             padding: "8px 16px",
-            background: "#2e5b86",
+            background: "#28a745",
             color: "#fff",
             border: "none",
             borderRadius: 8,
             fontWeight: 700,
             cursor: "pointer",
-            fontSize: 13,
           }}
         >
-          + 일정추가
+          + 새 항목 추가
         </button>
       </div>
 
-      {/* 월 네비게이션 */}
+      {/* 탭 버튼 */}
       <div style={{
         display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 16,
         background: "#fff",
-        padding: "12px 16px",
-        borderRadius: 12,
+        borderRadius: "12px 12px 0 0",
         border: "1px solid #e5e7eb",
+        borderBottom: "none",
+        overflow: "hidden"
       }}>
         <button
-          onClick={prevMonth}
-          style={{
-            padding: "8px 16px",
-            background: "#f5f5f5",
-            border: "1px solid #ddd",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          style={tabStyle(activeTab === "order")}
+          onClick={() => setActiveTab("order")}
         >
-          ◀ 이전
+          📋 수주 ({orderCount})
         </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 18, fontWeight: 800 }}>{monthLabel}</span>
-          <button
-            onClick={goToday}
-            style={{
-              padding: "6px 12px",
-              background: "#2e5b86",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            오늘
-          </button>
-        </div>
         <button
-          onClick={nextMonth}
-          style={{
-            padding: "8px 16px",
-            background: "#f5f5f5",
-            border: "1px solid #ddd",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          style={tabStyle(activeTab === "branch")}
+          onClick={() => setActiveTab("branch")}
         >
-          다음 ▶
+          🏢 영업소 ({branchCount})
+        </button>
+        <button
+          style={tabStyle(activeTab === "used")}
+          onClick={() => setActiveTab("used")}
+        >
+          📦 중고 ({usedCount})
+        </button>
+        <button
+          style={tabStyle(activeTab === "rental")}
+          onClick={() => setActiveTab("rental")}
+        >
+          🏠 임대 ({rentalCount})
         </button>
       </div>
+{/* 입금 필터 */}
+<div style={{
+  display: "flex",
+  gap: 8,
+  padding: "12px 16px",
+  background: "#fff",
+  border: "1px solid #e5e7eb",
+  borderTop: "none",
+}}>
+  <button
+    onClick={() => setDepositFilter("all")}
+    style={{
+      padding: "8px 16px",
+      border: depositFilter === "all" ? "2px solid #2e5b86" : "1px solid #ddd",
+      borderRadius: 8,
+      background: depositFilter === "all" ? "#e3f2fd" : "#fff",
+      fontWeight: depositFilter === "all" ? 700 : 500,
+      cursor: "pointer",
+    }}
+  >
+    📋 전체 ({currentCounts.all})
+  </button>
+  <button
+    onClick={() => setDepositFilter("completed")}
+    style={{
+      padding: "8px 16px",
+      border: depositFilter === "completed" ? "2px solid #4caf50" : "1px solid #ddd",
+      borderRadius: 8,
+      background: depositFilter === "completed" ? "#e8f5e9" : "#fff",
+      color: depositFilter === "completed" ? "#2e7d32" : "#333",
+      fontWeight: depositFilter === "completed" ? 700 : 500,
+      cursor: "pointer",
+    }}
+  >
+    ✅ 입금완료 ({currentCounts.completed})
+  </button>
+  <button
+    onClick={() => setDepositFilter("pending")}
+    style={{
+      padding: "8px 16px",
+      border: depositFilter === "pending" ? "2px solid #f44336" : "1px solid #ddd",
+      borderRadius: 8,
+      background: depositFilter === "pending" ? "#ffebee" : "#fff",
+      color: depositFilter === "pending" ? "#c62828" : "#333",
+      fontWeight: depositFilter === "pending" ? 700 : 500,
+      cursor: "pointer",
+    }}
+  >
+    ❌ 미입금 ({currentCounts.pending})
+  </button>
+</div>
+      {/* 테이블 */}
+      {renderTable()}
 
-      {/* 안내 */}
-      <div style={{
-        background: "#fff8e1",
-        border: "1px solid #ffe082",
-        borderRadius: 8,
-        padding: "8px 12px",
-        marginBottom: 12,
-        fontSize: 12,
-        color: "#f57f17",
-      }}>
-        💡 일정을 드래그하여 날짜를 변경할 수 있습니다 | 크[신품] = 크레인 운송
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign: "center", padding: 40, color: "#888" }}>로딩 중...</div>
-      ) : (
-        <div style={{
-          background: "#fff",
-          borderRadius: 12,
-          border: "1px solid #e5e7eb",
-          overflow: "hidden",
-        }}>
-          {/* 요일 헤더 */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
-            background: "#2e5b86",
-          }}>
-            {weekDays.map((day, idx) => (
-              <div
-                key={day}
-                style={{
-                  padding: "10px 4px",
-                  textAlign: "center",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  color: idx === 0 ? "#ffcccc" : idx === 6 ? "#cce5ff" : "#fff",
-                }}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* 캘린더 그리드 */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
-          }}>
-            {calendarDays.map(({ date, isCurrentMonth }, idx) => {
-              const dateKey = formatDateKey(date);
-              const dayDeliveries = deliveriesByDate[dateKey] || [];
-              const isToday = dateKey === todayKey;
-              const dayOfWeek = date.getDay();
-              const isSunday = dayOfWeek === 0;
-              const isSaturday = dayOfWeek === 6;
-              const isDragOver = dragOverDate === dateKey;
-
-              return (
-                <div
-                  key={idx}
-                  onDragOver={(e) => handleDragOver(e, dateKey)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, dateKey)}
-                  onClick={() => {
-                    setNewSchedule({ ...newSchedule, delivery_date: dateKey });
-                    setShowAddModal(true);
-                  }}
-                  style={{
-                    height: 110,
-                    minHeight: 110,
-                    maxHeight: 110,
-                    padding: 4,
-                    overflow: "hidden",
-                    borderRight: idx % 7 !== 6 ? "1px solid #eee" : "none",
-                    borderBottom: "1px solid #eee",
-                    background: isDragOver ? "#e3f2fd" : isToday ? "#fffde7" : isCurrentMonth ? "#fff" : "#f9f9f9",
-                    opacity: isCurrentMonth ? 1 : 0.5,
-                    transition: "background 0.2s",
-                  }}
-                >
-                  {(() => {
-                    const holidayName = HOLIDAYS[dateKey];
-                    const isHoliday = !!holidayName;
-                    return (
-                      <>
-                        <div style={{
-                          fontSize: 12,
-                          fontWeight: isToday ? 800 : 600,
-                          color: isToday ? "#fff" : (isSunday || isHoliday) ? "#e53935" : isSaturday ? "#1976d2" : "#333",
-                          marginBottom: 2,
-                          padding: "2px 4px",
-                          borderRadius: 4,
-                          background: isToday ? "#2e5b86" : "transparent",
-                          display: "inline-block",
-                        }}>
-                          {date.getDate()}
-                        </div>
-                        {holidayName && (
-                          <div style={{ fontSize: 9, color: "#e53935", fontWeight: 600, marginBottom: 2 }}>
-                            {holidayName}
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                  
-                  <div style={{ 
-                    display: "flex", 
-                    flexDirection: "column", 
-                    gap: 2,
-                    maxHeight: 70,
-                    overflow: "hidden"
-                  }}>
-                    {dayDeliveries.slice(0, 3).map((d, i) => {
-                      const color = getItemColor(d);
-                      const style = colorStyles[color];
-
-                      return (
-                        <div
-                          key={d.quote_id + i}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, d)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedDelivery(d);
-                            setEditForm(d);
-                          }}
-                          style={{
-                            fontSize: 11,
-                            padding: "3px 4px",
-                            background: style.bg,
-                            borderLeft: `3px solid ${style.border}`,
-                            color: style.text,
-                            borderRadius: 2,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            cursor: "grab",
-                            maxWidth: "100%",
-                            display: "block",
-                          }}
-                          title={`${getDeliveryLabel(d)} (드래그하여 날짜 변경)`}
-                        >
-                          {getDeliveryLabel(d)}
-                        </div>
-                      );
-                    })}
-                    {dayDeliveries.length > 3 && (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedDateItems({ date: dateKey, items: dayDeliveries });
-                        }}
-                        style={{
-                          fontSize: 10,
-                          color: "#2e5b86",
-                          padding: "2px 4px",
-                          cursor: "pointer",
-                          fontWeight: 700,
-                        }}
-                      >
-                        +{dayDeliveries.length - 3}건 더보기
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 범례 */}
-      <div style={{
-        display: "flex",
-        gap: 12,
-        marginTop: 16,
-        padding: "12px 16px",
-        background: "#fff",
-        borderRadius: 12,
-        border: "1px solid #e5e7eb",
-        fontSize: 11,
-        flexWrap: "wrap",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.blue.bg, borderLeft: `3px solid ${colorStyles.blue.border}`, borderRadius: 2 }}></div>
-          <span>신품/임대/중고</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.red.bg, borderLeft: `3px solid ${colorStyles.red.border}`, borderRadius: 2 }}></div>
-          <span>미입금</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.gray.bg, borderLeft: `3px solid ${colorStyles.gray.border}`, borderRadius: 2 }}></div>
-          <span>완료(출고지남)</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.purple.bg, borderLeft: `3px solid ${colorStyles.purple.border}`, borderRadius: 2 }}></div>
-          <span>재고</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 14, height: 14, background: colorStyles.orange.bg, borderLeft: `3px solid ${colorStyles.orange.border}`, borderRadius: 2 }}></div>
-          <span>배차완료</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, borderLeft: "1px solid #ddd", paddingLeft: 8 }}>
-          <span style={{ fontWeight: 700 }}>크</span>
-          <span>= 크레인 운송</span>
-        </div>
-      </div>
-
-      {/* ✅ 일정 추가 모달 */}
+      {/* ✅ 새 항목 추가 모달 - 모든 컬럼 입력 가능 */}
       {showAddModal && (
         <div
           style={{
@@ -981,127 +731,214 @@ const handleSaveEdit = async () => {
               background: "#fff",
               borderRadius: 12,
               padding: 24,
-              width: "90%",
-              maxWidth: 450,
-              maxHeight: "80vh",
+              width: "95%",
+              maxWidth: 500,
+              maxHeight: "90vh",
               overflow: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>➕ 일정 추가</h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
+            <h3 style={{ margin: "0 0 16px 0" }}>새 항목 추가</h3>
+
+            {/* 구분 */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
+              <select
+                value={newItem.contract_type}
+                onChange={(e) => setNewItem({ ...newItem, contract_type: e.target.value as TabType })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
               >
-                ✕
-              </button>
+                <option value="order">수주</option>
+                <option value="branch">영업소</option>
+                <option value="used">중고</option>
+                <option value="rental">임대</option>
+              </select>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일 *</label>
+            {/* 내린날짜 */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>내린날짜</label>
+              <input
+                type="date"
+                value={newItem.contract_date}
+                onChange={(e) => setNewItem({ ...newItem, contract_date: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+              />
+            </div>
+
+            {/* 도면번호 + 수량 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
+                  도면번호 
+                  <span style={{ color: "#888", fontWeight: 400 }}>(비우면 자동: {nextDrawingNo})</span>
+                </label>
                 <input
-                  type="date"
-                  value={newSchedule.delivery_date}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, delivery_date: e.target.value })}
+                  value={newItem.drawing_no}
+                  onChange={(e) => setNewItem({ ...newItem, drawing_no: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder={String(nextDrawingNo)}
+                />
+              </div>
+              <div style={{ width: 80 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>수량</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={newItem.qty}
+                  onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                 />
               </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
+            </div>
+
+            {/* 규격 */}
+          <div style={{ marginBottom: 12 }}>
+  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
+  <input
+    value={newItem.spec}
+    onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })}
+    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+    placeholder="예: 3x6, 3x9x2.6"
+  />
+</div>
+
+            {/* 계좌 + 세발 + 입금 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>계좌</label>
                 <select
-                  value={newSchedule.contract_type}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, contract_type: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  value={newItem.bank_account}
+                  onChange={(e) => setNewItem({ ...newItem, bank_account: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
                 >
-                  <option value="order">신품</option>
-                  <option value="used">중고</option>
-                  <option value="rental">임대</option>
-                  <option value="memo">메모</option>
+                  <option value="">-</option>
+                  <option value="현대">현대</option>
+                  <option value="국민">국민</option>
+                  <option value="기업">기업</option>
+                  <option value="현금영수증">현금영수증</option>
+                  <option value="현찰">현찰</option>
                 </select>
               </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
-                <input
-                  value={newSchedule.customer_name}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, customer_name: e.target.value })}
-                  placeholder="발주처 입력"
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>세발</label>
+                <select
+                  value={newItem.tax_invoice}
+                  onChange={(e) => setNewItem({ ...newItem, tax_invoice: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+                >
+                  <option value="">-</option>
+                  <option value="완료">완료</option>
+                  <option value="계약금만">계약금만</option>
+                  <option value="대기">대기</option>
+                </select>
               </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>연락처</label>
-                <input
-                  value={newSchedule.customer_phone}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, customer_phone: e.target.value })}
-                  placeholder="010-0000-0000"
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
-                <input
-                  value={newSchedule.spec}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, spec: e.target.value })}
-                  placeholder="예: 3x6x2.6"
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>하차 주소</label>
-                <input
-                  value={newSchedule.site_addr}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, site_addr: e.target.value })}
-                  placeholder="시간/주소 입력"
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
-                <textarea
-                  value={newSchedule.memo}
-                  onChange={(e) => setNewSchedule({ ...newSchedule, memo: e.target.value })}
-                  placeholder="메모 입력"
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(["auto", "red", "orange", "yellow", "green", "blue", "gray"] as ColorType[]).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setNewSchedule({ ...newSchedule, delivery_color: c })}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 6,
-                        border: newSchedule.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
-                        background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
-                        color: c === "auto" ? "#666" : colorStyles[c].text,
-                        cursor: "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : "회색"}
-                    </button>
-                  ))}
-                </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>입금</label>
+                <select
+                  value={newItem.deposit_status}
+                  onChange={(e) => setNewItem({ ...newItem, deposit_status: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+                >
+                  <option value="">-</option>
+                  <option value="완료">완료</option>
+                  <option value="계약금">계약금</option>
+                  <option value="미입금">미입금</option>
+                </select>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            {/* 발주처 */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
+              {newItem.contract_type === "branch" ? (
+                <select
+                  value={newItem.customer_name}
+                  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+                >
+                  <option value="">-</option>
+                  <option value="라인">라인</option>
+                  <option value="한진">한진</option>
+                  <option value="한진더조은">한진더조은</option>
+                  <option value="동부A">동부A</option>
+                  <option value="동부B">동부B</option>
+                  <option value="태광">태광</option>
+                </select>
+              ) : (
+                <input
+  value={newItem.customer_name}
+  onChange={(e) => setNewItem({ ...newItem, customer_name: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder="발주처 입력"
+                />
+              )}
+            </div>
+
+            {/* 옵션 */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>옵션</label>
+              <input
+                value={newItem.options}
+                onChange={(e) => setNewItem({ ...newItem, options: e.target.value })}
+                style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                placeholder="옵션 입력"
+              />
+            </div>
+
+            {/* 특수 + 내장 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>특수</label>
+                <div style={{ padding: 10 }}>
+                  <input
+                    type="checkbox"
+                    checked={newItem.special_order}
+                    onChange={(e) => setNewItem({ ...newItem, special_order: e.target.checked })}
+                    style={{ width: 20, height: 20 }}
+                  />
+                </div>
+              </div>
+              <div style={{ flex: 2 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>내장</label>
+                <input
+                  value={newItem.interior}
+                  onChange={(e) => setNewItem({ ...newItem, interior: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder="내장"
+                />
+              </div>
+            </div>
+
+            {/* 입금자 + 출고일 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>입금자</label>
+                <input
+                  value={newItem.depositor}
+                  onChange={(e) => setNewItem({ ...newItem, depositor: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                  placeholder="입금자"
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일</label>
+                <input
+                  type="date"
+                  value={newItem.delivery_date}
+                  onChange={(e) => setNewItem({ ...newItem, delivery_date: e.target.value })}
+                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAddModal(false);
-                  setSelectedDelivery(null);
-                }}
+                onClick={() => setShowAddModal(false)}
                 style={{
                   flex: 1,
-                  padding: 14,
+                  padding: 12,
                   background: "#f5f5f5",
                   border: "1px solid #ddd",
                   borderRadius: 8,
@@ -1112,15 +949,15 @@ const handleSaveEdit = async () => {
                 취소
               </button>
               <button
-                onClick={handleAddSchedule}
+                onClick={handleAddNew}
                 style={{
                   flex: 1,
-                  padding: 14,
-                  background: "#2e5b86",
+                  padding: 12,
+                  background: "#28a745",
                   color: "#fff",
                   border: "none",
                   borderRadius: 8,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
@@ -1131,8 +968,8 @@ const handleSaveEdit = async () => {
         </div>
       )}
 
-      {/* ✅ 상세보기 팝업 */}
-      {selectedDelivery && !showDispatchModal && !showEditModal && (
+      {/* 견적서 팝업 */}
+      {selectedQuote && (
         <div
           style={{
             position: "fixed",
@@ -1143,7 +980,7 @@ const handleSaveEdit = async () => {
             justifyContent: "center",
             zIndex: 10000,
           }}
-          onClick={() => setSelectedDelivery(null)}
+          onClick={() => setSelectedQuote(null)}
         >
           <div
             style={{
@@ -1151,583 +988,54 @@ const handleSaveEdit = async () => {
               borderRadius: 12,
               padding: 24,
               width: "90%",
-              maxWidth: 500,
+              maxWidth: 600,
               maxHeight: "80vh",
               overflow: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>출고 상세</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>견적 상세</h3>
               <button
-                onClick={() => setSelectedDelivery(null)}
+                onClick={() => setSelectedQuote(null)}
                 style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
               >
                 ✕
               </button>
             </div>
 
-            {/* 구분 태그 + 색상 */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-              {(() => {
-                const type = selectedDelivery.contract_type || "order";
-                const color = getItemColor(selectedDelivery);
-                const style = colorStyles[color];
-                const label = type === "inventory" ? "재고" : type === "used" ? "중고" : type === "branch" ? "영업소" : type === "rental" ? "임대" : "수주(신품)";
-                const transportType = getTransportType(selectedDelivery);
-                return (
-                  <>
-                    <span style={{
-                      padding: "4px 12px",
-                      background: style.bg,
-                      color: style.text,
-                      borderRadius: 20,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      border: `1px solid ${style.border}`,
-                    }}>
-                      {label}
-                    </span>
-                    {transportType === "crane" && (
-                      <span style={{
-                        padding: "4px 12px",
-                        background: "#fff3e0",
-                        color: "#e65100",
-                        borderRadius: 20,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        border: "1px solid #ff9800",
-                      }}>
-                        🏗️ 크레인
-                      </span>
-                    )}
-                    {/* ✅ 배차완료 표시 */}
-                    {selectedDelivery.dispatch_status === "완료" && (
-                      <span style={{
-                        padding: "4px 12px",
-                        background: "#fff3e0",
-                        color: "#e65100",
-                        borderRadius: 20,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        border: "1px solid #ff9800",
-                      }}>
-                        🚚 배차완료
-                      </span>
-                    )}
-                  </>
-                );
-              })()}
-
-              {/* 색상 선택 */}
-              <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
-                {(["red", "orange", "yellow", "green", "blue", "purple", "navy", "gray"] as ColorType[]).map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => handleColorChange(selectedDelivery, c)}
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      border: selectedDelivery.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
-                      background: colorStyles[c].border,
-                      cursor: "pointer",
-                    }}
-                    title={c}
-                  />
-                ))}
-                <button
-                  onClick={() => handleColorChange(selectedDelivery, "auto")}
-                  style={{
-                    padding: "2px 6px",
-                    fontSize: 10,
-                    borderRadius: 4,
-                    border: "1px solid #ddd",
-                    background: selectedDelivery.delivery_color === "auto" || !selectedDelivery.delivery_color ? "#eee" : "#fff",
-                    cursor: "pointer",
-                  }}
-                >
-                  자동
-                </button>
-              </div>
+            <div style={{ marginBottom: 12 }}>
+              <strong>고객명:</strong> {selectedQuote.customer_name}
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <strong>규격:</strong> {selectedQuote.spec}
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <strong>금액:</strong> {fmt(selectedQuote.total_amount)}원
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>출고일</span>
-                <span style={{ fontWeight: 700, fontSize: 15 }}>{selectedDelivery.delivery_date}</span>
-              </div>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>발주처</span>
-                <span style={{ fontWeight: 700 }}>{selectedDelivery.customer_name || "-"}</span>
-              </div>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>연락처</span>
-                <span>{selectedDelivery.customer_phone || "-"}</span>
-              </div>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>규격</span>
-                <span style={{ fontWeight: 600 }}>{selectedDelivery.spec || "-"}</span>
-              </div>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>현장</span>
-                <span>{getSiteName(selectedDelivery) || "-"}</span>
-              </div>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>주소</span>
-                <span>{selectedDelivery.site_addr || "-"}</span>
-              </div>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>입금상태</span>
-                <span style={{
-                  fontWeight: 700,
-                  color: selectedDelivery.deposit_status === "완료" ? "#2e7d32" :
-                    selectedDelivery.deposit_status === "미입금" ? "#c62828" : "#f57f17"
-                }}>
-                  {selectedDelivery.deposit_status || "미입금"}
-                </span>
-              </div>
-              <div style={{ display: "flex", borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-                <span style={{ width: 80, color: "#666", fontSize: 13 }}>금액</span>
-                <span style={{ fontWeight: 700 }}>{fmt(selectedDelivery.total_amount)}원</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ color: "#666", fontSize: 13 }}>옵션</span>
-                <span style={{ fontSize: 13, lineHeight: 1.5 }}>
-                  {summarizeOptions(selectedDelivery.items, false) || "-"}
-                </span>
-              </div>
-              {selectedDelivery.memo && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                  <span style={{ color: "#666", fontSize: 13 }}>메모</span>
-                  <span style={{ fontSize: 13, background: "#f9f9f9", padding: 8, borderRadius: 6 }}>
-                    {selectedDelivery.memo}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* 버튼 */}
-            <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-              <button
-                onClick={() => setSelectedDelivery(null)}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#f5f5f5",
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                닫기
-              </button>
-              <button
-                onClick={handleDelete}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#ffebee",
-                  border: "1px solid #f44336",
-                  color: "#c62828",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                🗑️ 삭제
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditForm(selectedDelivery);
-                  setShowEditModal(true);
-                }}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#fff",
-                  border: "1px solid #2e5b86",
-                  color: "#2e5b86",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                ✏️ 수정
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDispatchModal(true);
-                }}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#2e5b86",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                🚚 배차
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ✅ 수정 모달 */}
-      {selectedDelivery && showEditModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10001,
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowEditModal(false);
-            setSelectedDelivery(null);
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 24,
-              width: "90%",
-              maxWidth: 450,
-              maxHeight: "80vh",
-              overflow: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>✏️ 일정 수정 {selectedDelivery.source === "inventory" && "(재고)"}</h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowEditModal(false);
-                  setSelectedDelivery(null);
-                }}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>출고일</label>
-                <input
-                  type="date"
-                  value={editForm.delivery_date || ""}
-                  onChange={(e) => setEditForm({ ...editForm, delivery_date: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              {/* 재고가 아닐 때만 구분 선택 표시 */}
-              {selectedDelivery.source !== "inventory" && (
-                <div>
-                  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
-                  <select
-                    value={editForm.contract_type || "order"}
-                    onChange={(e) => setEditForm({ ...editForm, contract_type: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                  >
-                    <option value="order">신품</option>
-                    <option value="used">중고</option>
-                    <option value="rental">임대</option>
-                    <option value="memo">메모</option>
-                  </select>
-                </div>
-              )}
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>발주처</label>
-                <input
-                  value={editForm.customer_name || ""}
-                  onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>연락처</label>
-                <input
-                  value={editForm.customer_phone || ""}
-                  onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>규격</label>
-                <input
-                  value={editForm.spec || ""}
-                  onChange={(e) => setEditForm({ ...editForm, spec: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-                  {selectedDelivery.source === "inventory" ? "인테리어/주소" : "하차 주소"}
-                </label>
-                <input
-                  value={editForm.site_addr || ""}
-                  onChange={(e) => setEditForm({ ...editForm, site_addr: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
-                  placeholder="시간/주소 입력"
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
-                <textarea
-                  value={editForm.memo || ""}
-                  onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>색상</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(["auto", "red", "orange", "yellow", "green", "blue", "purple", "gray"] as ColorType[]).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setEditForm({ ...editForm, delivery_color: c })}
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 6,
-                        border: editForm.delivery_color === c ? "2px solid #333" : "1px solid #ddd",
-                        background: c === "auto" ? "#f5f5f5" : colorStyles[c].bg,
-                        color: c === "auto" ? "#666" : colorStyles[c].text,
-                        cursor: "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {c === "auto" ? "자동" : c === "red" ? "빨강" : c === "orange" ? "주황" : c === "yellow" ? "노랑" : c === "green" ? "초록" : c === "blue" ? "파랑" : c === "purple" ? "보라" : "회색"}
-                    </button>
+            <div style={{ marginTop: 16 }}>
+              <strong>품목:</strong>
+              <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: "#f5f5f5" }}>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>품명</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>수량</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>단가</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>금액</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(selectedQuote.items || []).map((item: any, idx: number) => (
+                    <tr key={idx}>
+                      <td style={{ padding: 6, border: "1px solid #eee" }}>{item.displayName || item.optionName}</td>
+                      <td style={{ padding: 6, border: "1px solid #eee", textAlign: "center" }}>{item.qty}</td>
+                      <td style={{ padding: 6, border: "1px solid #eee", textAlign: "right" }}>{fmt(item.unitPrice)}</td>
+                      <td style={{ padding: 6, border: "1px solid #eee", textAlign: "right" }}>{fmt(item.amount)}</td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-              
-              {/* ✅ 배차완료 버튼 */}
-              <div>
-                <label style={{ display: "block", marginBottom: 8, fontWeight: 600, fontSize: 13 }}>배차 상태</label>
-                <button
-                  type="button"
-                  onClick={() => setEditForm({ 
-                    ...editForm, 
-                    dispatch_status: editForm.dispatch_status === "완료" ? "" : "완료" 
-                  })}
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: 8,
-                    border: editForm.dispatch_status === "완료" ? "2px solid #e65100" : "1px solid #ddd",
-                    background: editForm.dispatch_status === "완료" ? "#fff3e0" : "#f5f5f5",
-                    color: editForm.dispatch_status === "완료" ? "#e65100" : "#666",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    fontWeight: 700,
-                  }}
-                >
-                  {editForm.dispatch_status === "완료" ? "✓ 배차완료" : "배차 미완료"}
-                </button>
-              </div>
-            </div>
-
-            {/* 버튼 */}
-            <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-              <button
-                onClick={() => setShowEditModal(false)}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#f5f5f5",
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                취소
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#2e5b86",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                저장
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ✅ 배차 양식 팝업 */}
-      {selectedDelivery && showDispatchModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10001,
-          }}
-          onClick={() => setShowDispatchModal(false)}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 24,
-              width: "90%",
-              maxWidth: 500,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>🚚 배차 양식</h3>
-              <button
-                onClick={() => setShowDispatchModal(false)}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>아래 내용을 복사해서 사용하세요</div>
-              <div style={{
-                background: "#f9f9f9",
-                border: "1px solid #e5e7eb",
-                borderRadius: 8,
-                padding: 16,
-                fontSize: 14,
-                lineHeight: 1.6,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}>
-                {generateDispatchText(selectedDelivery)}
-              </div>
-            </div>
-
-            {/* 버튼 */}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => setShowDispatchModal(false)}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: "#f5f5f5",
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                ← 뒤로
-              </button>
-              <button
-                onClick={handleCopyDispatch}
-                style={{
-                  flex: 1,
-                  padding: 14,
-                  background: copySuccess ? "#28a745" : "#2e5b86",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "background 0.2s",
-                }}
-              >
-                {copySuccess ? "✓ 복사됨!" : "📋 복사하기"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 날짜별 전체 목록 모달 */}
-      {selectedDateItems && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10000,
-          }}
-          onClick={() => setSelectedDateItems(null)}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 24,
-              width: "90%",
-              maxWidth: 500,
-              maxHeight: "80vh",
-              overflow: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>📅 {selectedDateItems.date} 일정 ({selectedDateItems.items.length}건)</h3>
-              <button
-                onClick={() => setSelectedDateItems(null)}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
-              >
-                ✕
-              </button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {selectedDateItems.items.map((item, idx) => {
-                const color = getItemColor(item);
-                const style = colorStyles[color];
-                return (
-                  <div
-                    key={item.quote_id + idx}
-                    onClick={() => {
-                      setSelectedDateItems(null);
-                      setSelectedDelivery(item);
-                      setEditForm(item);
-                    }}
-                    style={{
-                      padding: "12px",
-                      background: style.bg,
-                      borderLeft: `4px solid ${style.border}`,
-                      borderRadius: 6,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, color: style.text }}>{getDeliveryLabel(item)}</div>
-                    <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-                      {item.customer_name} {item.customer_phone && `· ${item.customer_phone}`}
-                    </div>
-                  </div>
-                );
-              })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
