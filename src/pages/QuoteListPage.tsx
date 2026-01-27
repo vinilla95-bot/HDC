@@ -164,7 +164,7 @@ function InlineItemSearchCell({
   onUpdateName,
   onDelete,
   editable = true,
-  current,  // ✅ 추가
+  current,  // ✅ 새로 추가된 prop
 }: {
   item: any;
   options: any[];
@@ -172,13 +172,15 @@ function InlineItemSearchCell({
   onUpdateName: (name: string) => void;
   onDelete: () => void;
   editable?: boolean;
-  current?: QuoteRow | null;  // ✅ 추가
+  current?: QuoteRow | null;  // ✅ 새로 추가
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [sites, setSites] = useState<any[]>([]);  // ✅ 추가
-  const [isSearchingSite, setIsSearchingSite] = useState(false);  // ✅ 추가
+  const [sites, setSites] = useState<any[]>([]);  // ✅ 지역 검색 결과
+  const [isSearchingSite, setIsSearchingSite] = useState(false);
+
+ 
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
