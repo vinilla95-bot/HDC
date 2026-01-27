@@ -544,34 +544,69 @@ useEffect(() => {
     }
   }, [isEditing, commitFreeText]);
 
-  const handleSelectOption = (opt: any) => {
-    const w = current?.w || 3;
-    const l = current?.l || 6;
-    const res = calculateOptionLine(opt, w, l);
-    const rawName = String(opt.option_name || "");
-    const rent = rawName.includes("임대");
-    const months = opt._months || 1;
-    const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
-    
-    onAddItem({
-      key: `item_${Date.now()}`,
-      optionId: opt.option_id,
-      optionName: rawName,
-      displayName: rent ? `${rawName} ${months}개월` : rawName,
-      unit: rent ? "개월" : (res.unit || "EA"),
-      qty: 1,
-      unitPrice: customerUnitPrice,
-      amount: customerUnitPrice,
-      showSpec: opt.show_spec || "n",
-      lineSpec: { w, l, h: 2.6 },
-      months: months,
+const handleSelectOption = (opt: any) => {
+  const w = current?.w || 3;
+  const l = current?.l || 6;
+  
+  // ✅ sub_items가 있는 패키지 옵션 처리
+  if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+    opt.sub_items.forEach((sub: any, subIdx: number) => {
+      const subRes = calculateOptionLine({ 
+        option_id: sub.option_id,
+        option_name: sub.name,
+        unit: sub.unit,
+        unit_price: sub.unitPrice,
+        show_spec: sub.showSpec,
+      }, w, l);
+      
+      onAddItem({
+        key: `item_${Date.now()}_${subIdx}`,
+        optionId: sub.option_id || null,
+        optionName: sub.name || "",
+        displayName: sub.name || "",
+        unit: subRes.unit || sub.unit || "EA",
+        qty: sub.qty || 1,
+        unitPrice: Number(subRes.amount || sub.unitPrice || 0),
+        amount: (sub.qty || 1) * Number(subRes.amount || sub.unitPrice || 0),
+        showSpec: sub.showSpec || "n",
+        lineSpec: { w, l, h: 2.6 },
+        specText: "",
+      });
     });
     
     setShowDropdown(false);
     setIsEditing(false);
     setSearchQuery("");
     setSites([]);
-  };
+    return;
+  }
+  
+  // 기존 단일 옵션 처리
+  const res = calculateOptionLine(opt, w, l);
+  const rawName = String(opt.option_name || "");
+  const rent = rawName.includes("임대");
+  const months = opt._months || 1;
+  const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
+  
+  onAddItem({
+    key: `item_${Date.now()}`,
+    optionId: opt.option_id,
+    optionName: rawName,
+    displayName: rent ? `${rawName} ${months}개월` : rawName,
+    unit: rent ? "개월" : (res.unit || "EA"),
+    qty: 1,
+    unitPrice: customerUnitPrice,
+    amount: customerUnitPrice,
+    showSpec: opt.show_spec || "n",
+    lineSpec: { w, l, h: 2.6 },
+    months: months,
+  });
+  
+  setShowDropdown(false);
+  setIsEditing(false);
+  setSearchQuery("");
+  setSites([]);
+};
 
  const handleSelectDelivery = (site: any, type: 'delivery' | 'crane') => {
     const price = type === 'delivery' ? site.delivery : site.crane;
