@@ -1091,52 +1091,56 @@ const addEditItemFromOption = (opt: any) => {
   }
 }
 
-  async function handleConfirmContract() {
-    requireCurrent();
-    const confirmed = window.confirm(
-      `이 견적을 계약 확정하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n금액: ${money(current!.total_amount)}원`
-    );
-    if (!confirmed) return;
+ async function handleConfirmContract() {
+  requireCurrent();
+  const confirmed = window.confirm(
+    `이 견적을 계약 확정하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n금액: ${money(current!.total_amount)}원`
+  );
+  if (!confirmed) return;
 
-    try {
-      toast("계약 확정 중...");
-      
-      const items = pickItems(current);
-      let contractType = "order";
-      
-      for (const it of items) {
-        const name = (it.optionName || it.displayName || it.item_name || "").toString();
-        if (name.includes("임대")) {
-          contractType = "rental";
-          break;
-        } else if (name.includes("중고")) {
-          contractType = "used";
-          break;
-        }
+  try {
+    toast("계약 확정 중...");
+    
+    const items = pickItems(current);
+    let contractType = "order";
+    
+    for (const it of items) {
+      const name = (it.optionName || it.displayName || it.item_name || "").toString();
+      if (name.includes("임대")) {
+        contractType = "rental";
+        break;
+      } else if (name.includes("중고")) {
+        contractType = "used";
+        break;
       }
-      
-  const { error, data } = await supabase
-  .from("quotes")
-  .update({ 
-    status: "confirmed",
-    contract_type: contractType,
-    contract_date: new Date().toISOString().slice(0, 10)
-  })
-  .eq("quote_id", current!.quote_id)
-  .select();  // ✅ 업데이트된 데이터 반환받기
+    }
+    
+    const { error, data } = await supabase
+      .from("quotes")
+      .update({ 
+        status: "confirmed",
+        contract_type: contractType,
+        contract_date: new Date().toISOString().slice(0, 10)
+      })
+      .eq("quote_id", current!.quote_id)
+      .select();
 
-if (error) throw error;
-toast("계약 확정 완료!");
-
-if (onConfirmContract) {
-  onConfirmContract(current!);
-}
-
-await loadList(q);
-
-// ✅ 현재 견적 데이터 다시 설정
-if (data && data[0]) {
-  setCurrent(data[0] as QuoteRow);
+    if (error) throw error;
+    toast("계약 확정 완료!");
+    
+    if (onConfirmContract) {
+      onConfirmContract(current!);
+    }
+    
+    await loadList(q);
+    
+    // ✅ 현재 견적 데이터 다시 설정
+    if (data && data[0]) {
+      setCurrent(data[0] as QuoteRow);
+    }
+  } catch (e: any) {
+    toast("계약 확정 실패: " + (e?.message || String(e)));
+  }
 }
 
   async function loadList(keyword = ""): Promise<void> {
