@@ -1,7 +1,10 @@
 // src/pages/InventoryPage.tsx
 import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "../QuoteService";
-const OPENAI_API_KEY = "sk-여기에_API키_입력";
+
+// ⚠️ OpenAI API 키 입력
+const OPENAI_API_KEY = "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";
+
 type InventoryItem = {
   id?: string;
   quote_id: string;
@@ -11,7 +14,7 @@ type InventoryItem = {
   bank_account: string;
   tax_invoice: string;
   deposit_status: string;
-  sebal_status: string;  // ✅ 추가
+  sebal_status: string;
   customer_name: string;
   items: any[];
   special_order: boolean;
@@ -23,7 +26,6 @@ type InventoryItem = {
   container_type: string;
   contract_type: string;
 };
-
 
 type UsedInventoryItem = {
   id: string;
@@ -37,10 +39,17 @@ type UsedInventoryItem = {
   photo_urls?: string[];
   status: string;
   created_at: string;
+  usage?: string[];
+  has_interior?: boolean;
+  floor?: string[];
+  door?: string[];
+  electric?: string;
+  aircon?: string;
+  sink?: string;
+  toilet?: string;
 };
 
 const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
-
 type DepositTabType = "all" | "paid" | "unpaid";
 type MainTabType = "new" | "used";
 
@@ -55,31 +64,101 @@ const formatDateDisplay = (dateStr: string) => {
 
 // GPT 홍보글 생성
 const generatePromoWithGPT = async (item: UsedInventoryItem, platform: "jungonara" | "blog"): Promise<string> => {
-  const infoParts = [`규격: ${item.spec}`, `상태: ${item.condition}`, `수량: ${item.quantity}대`];
+  const infoParts: string[] = [];
+  infoParts.push(`규격: ${item.spec}`);
+  infoParts.push(`상태: ${item.condition}`);
+  infoParts.push(`수량: ${item.quantity}대`);
   infoParts.push(item.price ? `가격: ${item.price}만원` : "가격: 문의");
+  
+  if (item.usage && item.usage.length > 0) infoParts.push(`용도: ${item.usage.join(", ")}`);
+  if (item.has_interior) infoParts.push("내장: 있음");
+  if (item.floor && item.floor.length > 0) infoParts.push(`바닥: ${item.floor.join(", ")}`);
+  if (item.door && item.door.length > 0) infoParts.push(`출입문: ${item.door.join(", ")}`);
+  if (item.electric) infoParts.push(`전기: ${item.electric}`);
+  if (item.aircon) infoParts.push(`에어컨: ${item.aircon}`);
+  if (item.sink) infoParts.push(`싱크대: ${item.sink}`);
+  if (item.toilet) infoParts.push(`화장실: ${item.toilet}`);
   if (item.note) infoParts.push(`특이사항: ${item.note}`);
 
-  const systemPrompt = `너는 중고컨테이너 판매 글 작성 전문가야. 
-제목은 🔷로 감싸고 슬래시(/)로 키워드 나열. 가격은 ➡️ 사용. 옵션 있으면 🔸컨테이너 마감사양🔸 섹션 작성. 
-마무리는: 공장직영 + 위치 화성시 + 010-8773-7557 + 방충망 서비스/상차 안내. 부가세별도 명시.`;
+  const systemPrompt = `너는 중고컨테이너 판매 글 작성 전문가야.
+아래 샘플글 스타일을 정확히 따라해:
+
+[샘플글]
+🔷다락형/농막/화장실*싱크대완비/ 전시용 새상품 할인판매/컨테이너숙소/체류형쉼터🔷
+
+"바닥 합판 MDF 아님❌️ OSB 아님❌️
+최고급 말레이시아산 18T 라민보드!! 품질자부"
+
+전시용 상품, 할인 판매합니다
+할인 가격: 1,540만 ➡️ 1,200만원 (부가세별도)
+사이즈 3m*6m*3.25m
+
+🔸컨테이너 마감사양🔸
+누전차단기,스위치,콘센트,LED등,접지 포함
+내벽 천정: 목재 고정+100T 난연글라스울 삼중단열+석고+도배+mdf 몰딩마감
+바닥: M-Bar 30cm간격 철강용접 튼튼+말레이시아산18T고급합판+ 온돌판넬+모노륨 장판마감
+외벽: 초코색페인트도색
+
+컨테이너 제작 공장 직영입니다😁
+위치 화성시입니다.
+010-8773-7557
+
+방충망 서비스, 상차 해 드립니다~
+운임 및 하차 별도 (전화로 문의 주세요)
+
+===
+
+[작성 규칙]
+1. 제목은 🔷로 감싸고, 슬래시(/)로 키워드 나열
+2. 가격은 ➡️ 이모지 사용
+3. 옵션이 있으면 🔸컨테이너 마감사양🔸 섹션에 상세히 작성
+4. 옵션이 별로 없으면 간단하게 작성 (억지로 늘리지 마)
+5. 마무리는 항상: 공장직영 + 위치 화성시 + 010-8773-7557 + 방충망 서비스/상차 안내
+6. "중고" 컨테이너임을 명시
+7. 상태(A급/B급/C급)에 따라 적절한 표현 사용
+8. 부가세별도 명시`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
       body: JSON.stringify({
         model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `중고 컨테이너 ${platform === "jungonara" ? "중고나라" : "블로그"} 판매글 써줘:\n${infoParts.join("\n")}` }
+          { role: "user", content: `이 중고 컨테이너 ${platform === "jungonara" ? "중고나라" : "블로그"} 판매글 써줘:\n\n${infoParts.join("\n")}` }
         ],
+        temperature: 0.7,
         max_tokens: 1000
       })
     });
+
     const data = await response.json();
-    return data.choices[0].message.content;
+    if (data.choices && data.choices[0]) {
+      return data.choices[0].message.content;
+    }
+    throw new Error("No response");
   } catch (error) {
-    return `🔷중고컨테이너/${item.spec}/${item.condition}🔷\n\n가격: ➡️ ${item.price || "문의"}만원 (부가세별도)\n\n공장직영 / 화성시 / 010-8773-7557`;
+    console.error("GPT API 에러:", error);
+    // 에러시 기본 템플릿 반환
+    const priceText = item.price ? `${item.price}만원` : "가격문의";
+    return `🔷중고컨테이너/${item.spec}/${item.condition}🔷
+
+중고 ${item.condition} 컨테이너 판매합니다
+가격: ➡️ ${priceText} (부가세별도)
+사이즈: ${item.spec}
+수량: ${item.quantity}대
+${item.note ? `\n📝 ${item.note}` : ""}
+
+컨테이너 제작 공장 직영입니다😁
+위치 화성시입니다.
+010-8773-7557
+
+방충망 서비스, 상차 해 드립니다~
+운임 및 하차 별도 (전화로 문의 주세요)`;
   }
 };
 
@@ -101,7 +180,7 @@ export default function InventoryPage({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showPromoModal, setShowPromoModal] = useState<{ item: UsedInventoryItem; platform: "jungonara" | "blog" } | null>(null);
   const [promoText, setPromoText] = useState("");
-const [promoLoading, setPromoLoading] = useState(false);
+  const [promoLoading, setPromoLoading] = useState(false);
   
   const [newItem, setNewItem] = useState({
     customer_name: "",
@@ -247,7 +326,6 @@ const [promoLoading, setPromoLoading] = useState(false);
     loadInventory();
   };
 
-  // 사진 배열 가져오기
   const getPhotoUrls = (item: UsedInventoryItem): string[] => {
     const urls: string[] = [];
     if (item.photo_urls && Array.isArray(item.photo_urls)) {
@@ -259,7 +337,28 @@ const [promoLoading, setPromoLoading] = useState(false);
     return urls;
   };
 
+  const openPromoModal = async (item: UsedInventoryItem, platform: "jungonara" | "blog") => {
+    setShowPromoModal({ item, platform });
+    setPromoText("");
+    setPromoLoading(true);
+    const text = await generatePromoWithGPT(item, platform);
+    setPromoText(text);
+    setPromoLoading(false);
+  };
 
+  const copyPromoText = () => {
+    navigator.clipboard.writeText(promoText).then(() => {
+      alert("홍보글이 복사되었습니다!");
+    });
+  };
+
+  const regeneratePromo = async () => {
+    if (!showPromoModal) return;
+    setPromoLoading(true);
+    const text = await generatePromoWithGPT(showPromoModal.item, showPromoModal.platform);
+    setPromoText(text);
+    setPromoLoading(false);
+  };
 
   const thStyle: React.CSSProperties = { padding: "10px 8px", border: "1px solid #1e4a6e", whiteSpace: "nowrap", backgroundColor: "#2e5b86", color: "#ffffff", fontWeight: 700, fontSize: 13, textAlign: "center" };
   const getStatusColor = (status: string) => {
@@ -275,19 +374,16 @@ const [promoLoading, setPromoLoading] = useState(false);
 
   return (
     <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
-      {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>📦 재고현황 <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>(총 {allItems.length + usedItems.length}건)</span></h2>
         {mainTab === "new" && <button onClick={() => setShowAddModal(true)} style={{ padding: "8px 16px", background: "#28a745", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>+ 새 항목 추가</button>}
       </div>
 
-      {/* 메인 탭 */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <button onClick={() => setMainTab("new")} style={{ padding: "12px 24px", background: mainTab === "new" ? "#2e5b86" : "#e5e7eb", color: mainTab === "new" ? "#fff" : "#666", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>📦 신품 재고 ({allItems.length})</button>
         <button onClick={() => setMainTab("used")} style={{ padding: "12px 24px", background: mainTab === "used" ? "#f59e0b" : "#e5e7eb", color: mainTab === "used" ? "#fff" : "#666", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>🏷️ 중고 재고 ({usedItems.length})</button>
       </div>
 
-      {/* 신품 재고 */}
       {mainTab === "new" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 20 }}>
@@ -326,8 +422,8 @@ const [promoLoading, setPromoLoading] = useState(false);
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead><tr>
-  <th style={thStyle}>상태</th><th style={thStyle}>영업소</th><th style={thStyle}>타입</th><th style={thStyle}>등록일</th><th style={thStyle}>규격</th><th style={thStyle}>발주처</th><th style={thStyle}>도면번호</th><th style={thStyle}>세발</th><th style={thStyle}>입금</th><th style={thStyle}>메모</th><th style={thStyle}>출고일</th><th style={thStyle}>삭제</th>
-</tr></thead>
+                    <th style={thStyle}>상태</th><th style={thStyle}>영업소</th><th style={thStyle}>타입</th><th style={thStyle}>등록일</th><th style={thStyle}>규격</th><th style={thStyle}>발주처</th><th style={thStyle}>도면번호</th><th style={thStyle}>세발</th><th style={thStyle}>입금</th><th style={thStyle}>메모</th><th style={thStyle}>출고일</th><th style={thStyle}>삭제</th>
+                  </tr></thead>
                   <tbody>
                     {filteredItems.map((item) => {
                       const isCompleted = item.inventory_status === "출고완료" || item.inventory_status === "찜";
@@ -340,8 +436,8 @@ const [promoLoading, setPromoLoading] = useState(false);
                             </select>
                           </td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-  <button onClick={() => handleMoveToContract(item, "branch")} style={{ padding: "4px 8px", background: "#6f42c1", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>→영업소</button>
-</td>
+                            <button onClick={() => handleMoveToContract(item, "branch")} style={{ padding: "4px 8px", background: "#6f42c1", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer" }}>→영업소</button>
+                          </td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.container_type || "신품"} onChange={(e) => updateField(item.quote_id, "container_type", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}>
                               <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option>
@@ -357,15 +453,11 @@ const [promoLoading, setPromoLoading] = useState(false);
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}><input defaultValue={item.drawing_no || ""} onBlur={(e) => updateField(item.quote_id, "drawing_no", e.target.value)} style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center", fontWeight: 700 }} /></td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.sebal_status || ""} onChange={(e) => updateField(item.quote_id, "sebal_status", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.sebal_status === "완료" ? "#28a745" : item.sebal_status === "계약금만" ? "#ffc107" : "#fff", color: item.sebal_status === "완료" ? "#fff" : "#000", fontWeight: 600 }}>
-                              <option value="">-</option>
-                              <option value="완료">완료</option>
-                              <option value="미완료">미완료</option>
-                              <option value="계약금만">계약금만</option>
+                              <option value="">-</option><option value="완료">완료</option><option value="미완료">미완료</option><option value="계약금만">계약금만</option>
                             </select>
                           </td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.deposit_status || ""} onChange={(e) => updateField(item.quote_id, "deposit_status", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.deposit_status === "완료" ? "#28a745" : "#fff", color: item.deposit_status === "완료" ? "#fff" : "#000" }}>
-                              
                               <option value="">-</option><option value="대기">대기</option><option value="완료">완료</option><option value="계약금">계약금</option><option value="미입금">미입금</option>
                             </select>
                           </td>
@@ -383,7 +475,6 @@ const [promoLoading, setPromoLoading] = useState(false);
         </>
       )}
 
-      {/* 중고 재고 */}
       {mainTab === "used" && (
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden" }}>
           {loading ? <div style={{ textAlign: "center", padding: 40 }}>로딩 중...</div> : usedItems.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: "#888" }}>중고 재고가 없습니다.<br/>앱에서 등록해주세요.</div> : (
@@ -400,10 +491,7 @@ const [promoLoading, setPromoLoading] = useState(false);
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontWeight: 700 }}>{item.item_number || "-"}</td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                           {photoUrls.length > 0 ? (
-                            <div 
-                              style={{ display: "flex", gap: 4, justifyContent: "center", cursor: "pointer" }}
-                              onClick={() => { setShowPhotoModal(photoUrls); setCurrentPhotoIndex(0); }}
-                            >
+                            <div style={{ display: "flex", gap: 4, justifyContent: "center", cursor: "pointer" }} onClick={() => { setShowPhotoModal(photoUrls); setCurrentPhotoIndex(0); }}>
                               {photoUrls.slice(0, 3).map((url, idx) => (
                                 <img key={idx} src={url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: "1px solid #ddd" }} />
                               ))}
@@ -428,20 +516,8 @@ const [promoLoading, setPromoLoading] = useState(false);
                         </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <button 
-                              value={promoLoading ? "AI가 작성 중..." : promoText}
-// 이렇게 수정
-onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromoText(e.target.value)}
-                              style={{ padding: "4px 6px", background: "#06c755", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}
-                            >
-                              중고나라
-                            </button>
-                            <button 
-                              onClick={() => setShowPromoModal({ item, platform: "blog" })}
-                              style={{ padding: "4px 6px", background: "#03c75a", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}
-                            >
-                              블로그
-                            </button>
+                            <button onClick={() => openPromoModal(item, "jungonara")} style={{ padding: "4px 6px", background: "#06c755", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>중고나라</button>
+                            <button onClick={() => openPromoModal(item, "blog")} style={{ padding: "4px 6px", background: "#03c75a", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>블로그</button>
                           </div>
                         </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
@@ -462,43 +538,18 @@ onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromoText(e.target.v
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }} onClick={() => setShowPhotoModal(null)}>
           <div style={{ position: "relative", maxWidth: "90vw", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
             <img src={showPhotoModal[currentPhotoIndex]} alt="" style={{ maxWidth: "90vw", maxHeight: "80vh", objectFit: "contain", borderRadius: 8 }} />
-            
-            {/* 이전/다음 버튼 */}
             {showPhotoModal.length > 1 && (
               <>
-                <button 
-                  onClick={() => setCurrentPhotoIndex(prev => (prev - 1 + showPhotoModal.length) % showPhotoModal.length)}
-                  style={{ position: "absolute", left: -50, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}
-                >◀</button>
-                <button 
-                  onClick={() => setCurrentPhotoIndex(prev => (prev + 1) % showPhotoModal.length)}
-                  style={{ position: "absolute", right: -50, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}
-                >▶</button>
+                <button onClick={() => setCurrentPhotoIndex(prev => (prev - 1 + showPhotoModal.length) % showPhotoModal.length)} style={{ position: "absolute", left: -50, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}>◀</button>
+                <button onClick={() => setCurrentPhotoIndex(prev => (prev + 1) % showPhotoModal.length)} style={{ position: "absolute", right: -50, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "#fff", border: "none", fontSize: 20, cursor: "pointer" }}>▶</button>
               </>
             )}
-            
-            {/* 썸네일 */}
             <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
               {showPhotoModal.map((url, idx) => (
-                <img 
-                  key={idx} 
-                  src={url} 
-                  alt="" 
-                  onClick={() => setCurrentPhotoIndex(idx)}
-                  style={{ 
-                    width: 60, height: 60, objectFit: "cover", borderRadius: 4, cursor: "pointer",
-                    border: currentPhotoIndex === idx ? "3px solid #fff" : "1px solid #666"
-                  }} 
-                />
+                <img key={idx} src={url} alt="" onClick={() => setCurrentPhotoIndex(idx)} style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4, cursor: "pointer", border: currentPhotoIndex === idx ? "3px solid #fff" : "1px solid #666" }} />
               ))}
             </div>
-            
-            {/* 페이지 표시 */}
-            <div style={{ textAlign: "center", color: "#fff", marginTop: 8, fontSize: 14 }}>
-              {currentPhotoIndex + 1} / {showPhotoModal.length}
-            </div>
-            
-            {/* 닫기 버튼 */}
+            <div style={{ textAlign: "center", color: "#fff", marginTop: 8, fontSize: 14 }}>{currentPhotoIndex + 1} / {showPhotoModal.length}</div>
             <button onClick={() => setShowPhotoModal(null)} style={{ position: "absolute", top: -40, right: 0, background: "none", border: "none", color: "#fff", fontSize: 30, cursor: "pointer" }}>✕</button>
           </div>
         </div>
@@ -510,9 +561,9 @@ onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromoText(e.target.v
           <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "90%", maxWidth: 500, maxHeight: "80vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
               {showPromoModal.platform === "jungonara" ? "🟢 중고나라" : "📝 블로그"} 홍보글
+              <span style={{ fontSize: 12, color: "#666", fontWeight: 400 }}>AI 자동생성</span>
             </h3>
             
-            {/* 사진 미리보기 */}
             {getPhotoUrls(showPromoModal.item).length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#666" }}>첨부할 사진 ({getPhotoUrls(showPromoModal.item).length}장)</div>
@@ -524,33 +575,30 @@ onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromoText(e.target.v
               </div>
             )}
             
-            {/* 홍보글 내용 */}
-            <textarea 
-              readOnly 
-              value={generatePromoText(showPromoModal.item, showPromoModal.platform)}
-              style={{ width: "100%", height: 300, padding: 12, border: "1px solid #ddd", borderRadius: 8, fontSize: 13, lineHeight: 1.6, resize: "none", boxSizing: "border-box" }}
-            />
+            {promoLoading ? (
+              <div style={{ textAlign: "center", padding: 40, color: "#666" }}>
+                <div style={{ fontSize: 24, marginBottom: 12 }}>✨</div>
+                AI가 홍보글을 작성하고 있습니다...
+              </div>
+            ) : (
+              <textarea 
+                value={promoText}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromoText(e.target.value)}
+                style={{ width: "100%", height: 300, padding: 12, border: "1px solid #ddd", borderRadius: 8, fontSize: 13, lineHeight: 1.6, resize: "none", boxSizing: "border-box" }}
+              />
+            )}
             
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
               <button onClick={() => setShowPromoModal(null)} style={{ flex: 1, padding: 12, background: "#f5f5f5", border: "1px solid #ddd", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>닫기</button>
-              <button 
-                onClick={() => { copyPromoText(showPromoModal.item, showPromoModal.platform); }}
-                style={{ flex: 1, padding: 12, background: showPromoModal.platform === "jungonara" ? "#06c755" : "#03c75a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}
-              >
-                📋 글 복사하기
-              </button>
+              <button onClick={regeneratePromo} disabled={promoLoading} style={{ padding: "12px 16px", background: "#6c757d", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", opacity: promoLoading ? 0.5 : 1 }}>🔄 재생성</button>
+              <button onClick={copyPromoText} disabled={promoLoading || !promoText} style={{ flex: 1, padding: 12, background: showPromoModal.platform === "jungonara" ? "#06c755" : "#03c75a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", opacity: promoLoading || !promoText ? 0.5 : 1 }}>📋 복사하기</button>
             </div>
             
-            {/* 바로가기 링크 */}
             <div style={{ marginTop: 12, textAlign: "center" }}>
               {showPromoModal.platform === "jungonara" ? (
-                <a href="https://web.joongna.com/write" target="_blank" rel="noopener noreferrer" style={{ color: "#06c755", fontSize: 13 }}>
-                  → 중고나라 글쓰기 바로가기
-                </a>
+                <a href="https://web.joongna.com/write" target="_blank" rel="noopener noreferrer" style={{ color: "#06c755", fontSize: 13 }}>→ 중고나라 글쓰기 바로가기</a>
               ) : (
-                <a href="https://blog.naver.com/PostWriteForm.naver" target="_blank" rel="noopener noreferrer" style={{ color: "#03c75a", fontSize: 13 }}>
-                  → 네이버 블로그 글쓰기 바로가기
-                </a>
+                <a href="https://blog.naver.com/PostWriteForm.naver" target="_blank" rel="noopener noreferrer" style={{ color: "#03c75a", fontSize: 13 }}>→ 네이버 블로그 글쓰기 바로가기</a>
               )}
             </div>
           </div>
@@ -566,7 +614,6 @@ onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromoText(e.target.v
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label><select value={newItem.container_type} onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option></select></div>
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>도면번호 <span style={{ color: "#2e5b86", fontSize: 12 }}>(자동: {nextDrawingNo})</span></label><input value={newItem.drawing_no} onChange={(e) => setNewItem({ ...newItem, drawing_no: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} placeholder={String(nextDrawingNo)} /></div>
-              
               <div style={{ width: 80 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label><input type="number" min={1} value={newItem.qty} onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} /></div>
             </div>
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>규격 *</label><select value={newItem.spec} onChange={(e) => setNewItem({ ...newItem, spec: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, fontWeight: 700 }}>{SPEC_OPTIONS.map(spec => <option key={spec} value={spec}>{spec}</option>)}</select></div>
