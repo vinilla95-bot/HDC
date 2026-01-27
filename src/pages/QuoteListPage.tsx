@@ -1637,7 +1637,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
-    {items.map((item: any, idx: number) => {
+   {items.map((item: any, idx: number) => {
       const supply = item.qty * item.unitPrice;
       const vat = Math.round(supply * 0.1);
       const specText = item.specText ?? (
@@ -1659,6 +1659,46 @@ const quotePreviewHtml = useMemo(() => {
               onSelectOption={(opt) => {
                 const w = current?.w || 3;
                 const l = current?.l || 6;
+                
+                // ✅ sub_items가 있는 패키지 옵션 처리
+                if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+                  const newItems = opt.sub_items.map((sub: any, subIdx: number) => {
+                    const subRes = calculateOptionLine({ 
+                      option_id: sub.option_id,
+                      option_name: sub.name,
+                      unit: sub.unit,
+                      unit_price: sub.unitPrice,
+                      show_spec: sub.showSpec,
+                    }, w, l);
+                    
+                    return {
+                      key: `item_${Date.now()}_${subIdx}`,
+                      optionId: sub.option_id || null,
+                      optionName: sub.name || "",
+                      displayName: sub.name || "",
+                      unit: subRes.unit || sub.unit || "EA",
+                      qty: sub.qty || 1,
+                      unitPrice: Number(subRes.amount || sub.unitPrice || 0),
+                      amount: (sub.qty || 1) * Number(subRes.amount || sub.unitPrice || 0),
+                      showSpec: sub.showSpec || "n",
+                      lineSpec: { w, l, h: 2.6 },
+                      specText: "",
+                    };
+                  });
+                  
+                  // 현재 행을 sub_items로 교체
+                  setEditItems(prev => {
+                    const currentIdx = prev.findIndex(i => i.key === item.key);
+                    if (currentIdx === -1) return [...prev, ...newItems];
+                    
+                    const before = prev.slice(0, currentIdx);
+                    const after = prev.slice(currentIdx + 1);
+                    return [...before, ...newItems, ...after];
+                  });
+                  return;
+                }
+                
+                // 기존 단일 옵션 처리
                 const res = calculateOptionLine(opt, w, l);
                 const rawName = String(opt.option_name || "");
                 const rent = rawName.includes("임대");
@@ -1712,47 +1752,6 @@ const quotePreviewHtml = useMemo(() => {
         </tr>
       );
     })}
-    {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
-      <tr key={`blank-${i}`}>
-        {i === 0 && editMode ? (
-          <>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
-              <EmptyRowSearchCell
-                options={options}
-                current={current}
-                onAddItem={(newItem) => setEditItems(prev => [...prev, newItem])}
-              />
-            </td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24, textAlign: 'center' }}>
-              <EditableTextCell 
-                value="" 
-                onChange={() => {}} 
-                editable={false}
-              />
-            </td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-          </>
-        ) : (
-          <>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}>&nbsp;</td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
-          </>
-        )}
-      </tr>
-    ))}
-  </tbody>
-</table>
 
 {/* 하단 합계/조건 테이블 1 - 합계 행 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
