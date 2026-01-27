@@ -332,24 +332,35 @@ const postToJungonara = async (item: UsedInventoryItem) => {
     loadInventory();
   };
 
-  const handleAddNew = async () => {
-    if (!newItem.spec) { alert("규격을 선택해주세요."); return; }
-    const qty = newItem.qty || 1;
-    const startNo = newItem.drawing_no ? parseInt(newItem.drawing_no) || nextDrawingNo : nextDrawingNo;
-    const inserts = [];
-    for (let i = 0; i < qty; i++) {
-      inserts.push({
-        quote_id: `INV_${Date.now()}_${i}`, contract_date: newItem.contract_date, drawing_no: String(startNo + i),
-        customer_name: newItem.customer_name, spec: newItem.spec, inventory_status: newItem.inventory_status,
-        container_type: newItem.container_type, total_amount: newItem.total_amount, deposit_status: newItem.deposit_status, items: [],
-      });
-    }
-    const { error } = await supabase.from("inventory").insert(inserts);
-    if (error) { alert("추가 실패: " + error.message); return; }
-    setShowAddModal(false);
-    setNewItem({ customer_name: "", spec: "3x6", inventory_status: "작업지시완료", container_type: "신품", contract_date: new Date().toISOString().slice(0, 10), total_amount: 0, qty: 1, deposit_status: "", drawing_no: "" });
-    loadInventory();
-  };
+ const handleAddNew = async () => {
+  if (!newItem.spec) { alert("규격을 선택해주세요."); return; }
+  const qty = newItem.qty || 1;
+  const startNo = newItem.drawing_no ? parseInt(newItem.drawing_no) || nextDrawingNo : nextDrawingNo;
+  const inserts = [];
+  for (let i = 0; i < qty; i++) {
+    inserts.push({
+      quote_id: `INV_${Date.now()}_${i}`, contract_date: newItem.contract_date, drawing_no: String(startNo + i),
+      customer_name: newItem.customer_name, spec: newItem.spec, inventory_status: newItem.inventory_status,
+      container_type: newItem.container_type, total_amount: newItem.total_amount, deposit_status: newItem.deposit_status, items: [],
+    });
+  }
+  const { error } = await supabase.from("inventory").insert(inserts);
+  if (error) { alert("추가 실패: " + error.message); return; }
+  setShowAddModal(false);
+  // ✅ deposit_status를 "대기"로 변경
+  setNewItem({ 
+    customer_name: "", 
+    spec: "3x6", 
+    inventory_status: "작업지시완료", 
+    container_type: "신품", 
+    contract_date: new Date().toISOString().slice(0, 10), 
+    total_amount: 0, 
+    qty: 1, 
+    deposit_status: "대기",  // ✅ "" → "대기"로 변경
+    drawing_no: "" 
+  });
+  loadInventory();
+};
 
   const handleDelete = async (quote_id: string, spec: string) => {
     if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
