@@ -1,7 +1,7 @@
 // src/pages/InventoryPage.tsx
 import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "../QuoteService";
-
+const OPENAI_API_KEY = "sk-여기에_API키_입력";
 type InventoryItem = {
   id?: string;
   quote_id: string;
@@ -53,45 +53,33 @@ const formatDateDisplay = (dateStr: string) => {
   return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
 };
 
-// 홍보글 생성 함수
-const generatePromoText = (item: UsedInventoryItem, platform: "jungonara" | "blog") => {
-  const title = `[중고컨테이너] ${item.spec} ${item.condition} ${item.quantity}대`;
-  const priceText = item.price ? `${item.price}만원` : "가격문의";
-  
-  if (platform === "jungonara") {
-    return `${title}
+// GPT 홍보글 생성
+const generatePromoWithGPT = async (item: UsedInventoryItem, platform: "jungonara" | "blog"): Promise<string> => {
+  const infoParts = [`규격: ${item.spec}`, `상태: ${item.condition}`, `수량: ${item.quantity}대`];
+  infoParts.push(item.price ? `가격: ${item.price}만원` : "가격: 문의");
+  if (item.note) infoParts.push(`특이사항: ${item.note}`);
 
-📦 규격: ${item.spec}
-📊 상태: ${item.condition}
-📦 수량: ${item.quantity}대
-💰 가격: ${priceText}
-${item.note ? `📝 특이사항: ${item.note}` : ""}
+  const systemPrompt = `너는 중고컨테이너 판매 글 작성 전문가야. 
+제목은 🔷로 감싸고 슬래시(/)로 키워드 나열. 가격은 ➡️ 사용. 옵션 있으면 🔸컨테이너 마감사양🔸 섹션 작성. 
+마무리는: 공장직영 + 위치 화성시 + 010-8773-7557 + 방충망 서비스/상차 안내. 부가세별도 명시.`;
 
-✅ 직접 방문 확인 가능
-✅ 배송 가능 (별도 협의)
-✅ 문의 환영
-
-#중고컨테이너 #컨테이너 #${item.spec.replace("x", "평")} #컨테이너판매`;
-  } else {
-    return `# ${title}
-
-안녕하세요, 중고 컨테이너 판매합니다.
-
-## 상품 정보
-- **규격**: ${item.spec}
-- **상태**: ${item.condition}
-- **수량**: ${item.quantity}대
-- **가격**: ${priceText}
-${item.note ? `- **특이사항**: ${item.note}` : ""}
-
-## 상세 설명
-${item.condition} 상태의 ${item.spec} 컨테이너입니다.
-직접 방문하여 상태 확인 가능하며, 배송도 협의 가능합니다.
-
-문의 주시면 친절히 안내드리겠습니다.
-
----
-#중고컨테이너 #컨테이너판매 #${item.spec.replace("x", "평")}컨테이너`;
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `중고 컨테이너 ${platform === "jungonara" ? "중고나라" : "블로그"} 판매글 써줘:\n${infoParts.join("\n")}` }
+        ],
+        max_tokens: 1000
+      })
+    });
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    return `🔷중고컨테이너/${item.spec}/${item.condition}🔷\n\n가격: ➡️ ${item.price || "문의"}만원 (부가세별도)\n\n공장직영 / 화성시 / 010-8773-7557`;
   }
 };
 
@@ -112,6 +100,8 @@ export default function InventoryPage({
   const [showPhotoModal, setShowPhotoModal] = useState<string[] | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showPromoModal, setShowPromoModal] = useState<{ item: UsedInventoryItem; platform: "jungonara" | "blog" } | null>(null);
+  const [promoText, setPromoText] = useState("");
+const [promoLoading, setPromoLoading] = useState(false);
   
   const [newItem, setNewItem] = useState({
     customer_name: "",
@@ -445,7 +435,8 @@ export default function InventoryPage({
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             <button 
-                              onClick={() => setShowPromoModal({ item, platform: "jungonara" })}
+                              value={promoLoading ? "AI가 작성 중..." : promoText}
+onChange={(e) => setPromoText(e.target.value)}
                               style={{ padding: "4px 6px", background: "#06c755", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}
                             >
                               중고나라
