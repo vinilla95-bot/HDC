@@ -1115,27 +1115,29 @@ const addEditItemFromOption = (opt: any) => {
         }
       }
       
-      const { error } = await supabase
-        .from("quotes")
-        .update({ 
-          status: "confirmed",
-          contract_type: contractType,
-          contract_date: new Date().toISOString().slice(0, 10)
-        })
-        .eq("quote_id", current!.quote_id);
+  const { error, data } = await supabase
+  .from("quotes")
+  .update({ 
+    status: "confirmed",
+    contract_type: contractType,
+    contract_date: new Date().toISOString().slice(0, 10)
+  })
+  .eq("quote_id", current!.quote_id)
+  .select();  // ✅ 업데이트된 데이터 반환받기
 
-      if (error) throw error;
-      toast("계약 확정 완료!");
-      
-      if (onConfirmContract) {
-        onConfirmContract(current!);
-      }
-      
-      await loadList(q);
-    } catch (e: any) {
-      toast("계약 확정 실패: " + (e?.message || String(e)));
-    }
-  }
+if (error) throw error;
+toast("계약 확정 완료!");
+
+if (onConfirmContract) {
+  onConfirmContract(current!);
+}
+
+await loadList(q);
+
+// ✅ 현재 견적 데이터 다시 설정
+if (data && data[0]) {
+  setCurrent(data[0] as QuoteRow);
+}
 
   async function loadList(keyword = ""): Promise<void> {
     setLoading(true);
