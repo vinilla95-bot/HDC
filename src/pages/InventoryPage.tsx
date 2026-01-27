@@ -1,7 +1,7 @@
 // src/pages/InventoryPage.tsx
 import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "../QuoteService";
-
+const BOT_SERVER_URL = "http://localhost:5000";
 // ⚠️ OpenAI API 키 입력
 const OPENAI_API_KEY = "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";
 
@@ -226,7 +226,30 @@ export default function InventoryPage({
   };
 
   useEffect(() => { loadInventory(); }, []);
+const postToJungonara = async (item: UsedInventoryItem) => {
+    if (!confirm(`"${item.spec} ${item.condition}" 중고나라 자동 등록하시겠습니까?\n\n※ PC에서 봇 서버가 실행 중이어야 합니다.`)) {
+      return;
+    }
 
+    try {
+      const response = await fetch(`${BOT_SERVER_URL}/post`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_id: item.id }),
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        alert("✅ 봇이 시작되었습니다!\n\nPC 브라우저에서 자동으로 중고나라 글쓰기가 진행됩니다.");
+      } else {
+        alert(`❌ 실패: ${result.message}`);
+      }
+    } catch (error) {
+      alert("❌ 봇 서버에 연결할 수 없습니다.\n\nPC에서 서버를 실행해주세요:\npython jungonara_server.py");
+    }
+  };
+
+  useEffect(() => { loadInventory(); }, []);
   const normalizeSpec = (spec: string) => {
     if (!spec) return null;
     const s = spec.toLowerCase().replace(/\s/g, "").replace("*", "x");
@@ -525,7 +548,8 @@ export default function InventoryPage({
                         </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <button onClick={() => openPromoModal(item, "jungonara")} style={{ padding: "4px 6px", background: "#06c755", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>중고나라</button>
+                            <button onClick={() => postToJungonara(item)} style={{ padding: "4px 6px", background: "#06c755", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>자동등록</button>
+<button onClick={() => openPromoModal(item, "jungonara")} style={{ padding: "4px 6px", background: "#888", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>복사</button>
                             <button onClick={() => openPromoModal(item, "blog")} style={{ padding: "4px 6px", background: "#03c75a", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>블로그</button>
                           </div>
                         </td>
