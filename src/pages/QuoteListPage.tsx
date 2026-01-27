@@ -1774,18 +1774,24 @@ const quotePreviewHtml = useMemo(() => {
             />
           </td>
           <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-            <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
-          </td>
-          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-            <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} editable={editMode} />
-          </td>
-          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(supply)}</td>
-          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>{money(vat)}</td>
-          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-            {editMode && (
-              <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: 0, margin: 0, lineHeight: 1, fontSize: 12 }}>✕</button>
-            )}
-          </td>
+  <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
+</td>
+<td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+  {item.unitPrice || editMode ? (
+    <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} editable={editMode} />
+  ) : ''}
+</td>
+<td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+  {supply ? money(supply) : ''}
+</td>
+<td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+  {vat ? money(vat) : ''}
+</td>
+<td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
+  {editMode && (
+    <button onClick={() => deleteEditItem(item.key)} style={{ color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: 0, margin: 0, lineHeight: 1, fontSize: 12 }}>✕</button>
+  )}
+</td>
         </tr>
       );
     })}
