@@ -548,9 +548,9 @@ const handleSelectOption = (opt: any) => {
   const w = current?.w || 3;
   const l = current?.l || 6;
   
-  // ✅ sub_items가 있는 패키지 옵션 처리
+  // ✅ sub_items가 있는 패키지 옵션 처리 - 배열로 한 번에 전달
   if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
-    opt.sub_items.forEach((sub: any, subIdx: number) => {
+    const newItems = opt.sub_items.map((sub: any, subIdx: number) => {
       const subRes = calculateOptionLine({ 
         option_id: sub.option_id,
         option_name: sub.name,
@@ -559,7 +559,7 @@ const handleSelectOption = (opt: any) => {
         show_spec: sub.showSpec,
       }, w, l);
       
-      onAddItem({
+      return {
         key: `item_${Date.now()}_${subIdx}`,
         optionId: sub.option_id || null,
         optionName: sub.name || "",
@@ -571,8 +571,11 @@ const handleSelectOption = (opt: any) => {
         showSpec: sub.showSpec || "n",
         lineSpec: { w, l, h: 2.6 },
         specText: "",
-      });
+      };
     });
+    
+    // ✅ 배열로 한 번에 전달 (forEach 제거!)
+    onAddItem(newItems);
     
     setShowDropdown(false);
     setIsEditing(false);
@@ -580,6 +583,33 @@ const handleSelectOption = (opt: any) => {
     setSites([]);
     return;
   }
+  
+  // 기존 단일 옵션 처리
+  const res = calculateOptionLine(opt, w, l);
+  const rawName = String(opt.option_name || "");
+  const rent = rawName.includes("임대");
+  const months = opt._months || 1;
+  const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
+  
+  onAddItem({
+    key: `item_${Date.now()}`,
+    optionId: opt.option_id,
+    optionName: rawName,
+    displayName: rent ? `${rawName} ${months}개월` : rawName,
+    unit: rent ? "개월" : (res.unit || "EA"),
+    qty: 1,
+    unitPrice: customerUnitPrice,
+    amount: customerUnitPrice,
+    showSpec: opt.show_spec || "n",
+    lineSpec: { w, l, h: 2.6 },
+    months: months,
+  });
+  
+  setShowDropdown(false);
+  setIsEditing(false);
+  setSearchQuery("");
+  setSites([]);
+};
   
   // 기존 단일 옵션 처리
   const res = calculateOptionLine(opt, w, l);
@@ -2028,18 +2058,46 @@ const quotePreviewHtml = useMemo(() => {
                 </tr>
               );
             })}
-            {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
-              <tr key={`blank-${i}`}>
-                <td style={itemTdStyle}>&nbsp;</td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-              </tr>
-            ))}
-          </tbody>
+        {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
+  <tr key={`blank-${i}`}>
+    {i === 0 && editMode ? (
+      <>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
+          <EmptyRowSearchCell
+            options={options}
+            current={current}
+            onAddItem={(newItem) => {
+              if (Array.isArray(newItem)) {
+                setEditItems(prev => [...prev, ...newItem]);
+              } else {
+                setEditItems(prev => [...prev, newItem]);
+              }
+            }}
+          />
+        </td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+      </>
+    ) : (
+      <>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}>&nbsp;</td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+        <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+      </>
+    )}
+  </tr>
+))}
+</tbody>
           <tfoot>
             <tr>
               <td colSpan={4} style={{ ...itemTdStyle, textAlign: 'center', fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
