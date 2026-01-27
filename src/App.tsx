@@ -1560,6 +1560,8 @@ const inventoryScreen = (
     }) : <div className="result-item" style={{ color: "#999" }}>검색 결과 없음</div>}
   </div>
 )}
+
+          
           <hr />
           <div className="row"><label>현장지역</label><input value={form.siteQ} onChange={(e) => handleSiteSearch(e.target.value)} placeholder="운송비 검색" /></div>
           {sites.length > 0 && (
@@ -1575,7 +1577,67 @@ const inventoryScreen = (
               ))}
             </div>
           )}
+
+{/* ✅ 선택된 품목 리스트 - 여기에 추가 */}
+          {computedItems.length > 0 && (
+            <div className="box" style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 800, marginBottom: 8, fontSize: 13 }}>선택된 품목 ({computedItems.length})</div>
+              {computedItems.map((item: any) => {
+                const rent = isRentRow(item);
+                return (
+                  <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <input
+                        value={item.displayName || ''}
+                        onChange={(e) => updateRow(item.key, 'displayName', e.target.value)}
+                        style={{ flex: 1, fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
+                      />
+                      <button onClick={() => deleteRow(item.key)} style={{ marginLeft: 8, color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>✕</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ fontSize: 11, color: '#666' }}>수량:</span>
+                        <input
+                          type="number"
+                          value={item.displayQty}
+                          onChange={(e) => updateRow(item.key, 'displayQty', Number(e.target.value))}
+                          style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+                        />
+                      </div>
+                      {rent ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#666' }}>개월:</span>
+                          <input
+                            type="number"
+                            value={item.months || 1}
+                            onChange={(e) => updateRow(item.key, 'months', Number(e.target.value))}
+                            style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#666' }}>단가:</span>
+                          <input
+                            type="number"
+                            value={item.customerUnitPrice}
+                            onChange={(e) => updateRow(item.key, 'customerUnitPrice', Number(e.target.value))}
+                            style={{ width: 80, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'right', fontSize: 12 }}
+                          />
+                        </div>
+                      )}
+                      <div style={{ fontSize: 12, fontWeight: 700, marginLeft: 'auto' }}>
+                        {fmt(item.finalAmount)}원
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className="actions">
+          
+        
             <button className="btn" onClick={handleSaveNew}>신규 저장</button>
             <button className="btn" onClick={handleSaveUpdate} disabled={!currentQuoteId}>수정 저장</button>
             <button className="btn" onClick={handleSend} disabled={!!sendStatus}>{sendStatus || "견적서 보내기"}</button>
