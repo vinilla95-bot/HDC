@@ -2278,13 +2278,15 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
       <EditableNumberCell value={qty} onChange={(v) => onUpdateQty(item.key, v)} />
     ) : String(qty)}
   </td>
-  <td className="c right">
-    {editable && onUpdatePrice ? (
-      <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} disabled={rent} />
-    ) : fmt(unitSupply)}
-  </td>
-  <td className="c right" style={{ whiteSpace: 'nowrap' }}>{fmt(supply)}</td>
-  <td className="c right" style={{ whiteSpace: 'nowrap' }}>{fmt(vat)}</td>
+ <td className="c right">
+  {editable && onUpdatePrice && !rent ? (
+    <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
+  ) : (
+    unitSupply ? fmt(unitSupply) : ''
+  )}
+</td>
+<td className="c right" style={{ whiteSpace: 'nowrap' }}>{supply ? fmt(supply) : ''}</td>
+<td className="c right" style={{ whiteSpace: 'nowrap' }}>{vat ? fmt(vat) : ''}</td>
   <td className="c center">
     {editable && onDeleteItem ? (
       <button onClick={() => onDeleteItem(item.key)} style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 14 }}>✕</button>
