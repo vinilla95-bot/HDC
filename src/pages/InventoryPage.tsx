@@ -259,13 +259,7 @@ const [promoLoading, setPromoLoading] = useState(false);
     return urls;
   };
 
-  // 홍보글 복사
-  const copyPromoText = (item: UsedInventoryItem, platform: "jungonara" | "blog") => {
-    const text = generatePromoText(item, platform);
-    navigator.clipboard.writeText(text).then(() => {
-      alert("홍보글이 복사되었습니다!");
-    });
-  };
+
 
   const thStyle: React.CSSProperties = { padding: "10px 8px", border: "1px solid #1e4a6e", whiteSpace: "nowrap", backgroundColor: "#2e5b86", color: "#ffffff", fontWeight: 700, fontSize: 13, textAlign: "center" };
   const getStatusColor = (status: string) => {
@@ -436,7 +430,8 @@ const [promoLoading, setPromoLoading] = useState(false);
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             <button 
                               value={promoLoading ? "AI가 작성 중..." : promoText}
-onChange={(e) => setPromoText(e.target.value)}
+// 이렇게 수정
+onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromoText(e.target.value)}
                               style={{ padding: "4px 6px", background: "#06c755", color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}
                             >
                               중고나라
