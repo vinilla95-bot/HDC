@@ -1777,9 +1777,11 @@ const quotePreviewHtml = useMemo(() => {
   <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
 </td>
 <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-  {item.unitPrice || editMode ? (
-    <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} editable={editMode} />
-  ) : ''}
+  {editMode ? (
+    <EditableNumberCell value={item.unitPrice} onChange={(val) => updateEditItemPrice(item.key, val)} editable={true} />
+  ) : (
+    item.unitPrice ? money(item.unitPrice) : ''
+  )}
 </td>
 <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden', whiteSpace: 'nowrap' }}>
   {supply ? money(supply) : ''}
