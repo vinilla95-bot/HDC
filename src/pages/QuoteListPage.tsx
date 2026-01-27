@@ -611,32 +611,7 @@ const handleSelectOption = (opt: any) => {
   setSites([]);
 };
   
-  // 기존 단일 옵션 처리
-  const res = calculateOptionLine(opt, w, l);
-  const rawName = String(opt.option_name || "");
-  const rent = rawName.includes("임대");
-  const months = opt._months || 1;
-  const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
-  
-  onAddItem({
-    key: `item_${Date.now()}`,
-    optionId: opt.option_id,
-    optionName: rawName,
-    displayName: rent ? `${rawName} ${months}개월` : rawName,
-    unit: rent ? "개월" : (res.unit || "EA"),
-    qty: 1,
-    unitPrice: customerUnitPrice,
-    amount: customerUnitPrice,
-    showSpec: opt.show_spec || "n",
-    lineSpec: { w, l, h: 2.6 },
-    months: months,
-  });
-  
-  setShowDropdown(false);
-  setIsEditing(false);
-  setSearchQuery("");
-  setSites([]);
-};
+
 
  const handleSelectDelivery = (site: any, type: 'delivery' | 'crane') => {
     const price = type === 'delivery' ? site.delivery : site.crane;
@@ -1702,7 +1677,7 @@ const quotePreviewHtml = useMemo(() => {
     </tr>
   </thead>
   <tbody>
-   {items.map((item: any, idx: number) => {
+{items.map((item: any, idx: number) => {
       const supply = item.qty * item.unitPrice;
       const vat = Math.round(supply * 0.1);
       const specText = item.specText ?? (
@@ -1725,7 +1700,6 @@ const quotePreviewHtml = useMemo(() => {
                 const w = current?.w || 3;
                 const l = current?.l || 6;
                 
-                // ✅ sub_items가 있는 패키지 옵션 처리
                 if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
                   const newItems = opt.sub_items.map((sub: any, subIdx: number) => {
                     const subRes = calculateOptionLine({ 
@@ -1751,7 +1725,6 @@ const quotePreviewHtml = useMemo(() => {
                     };
                   });
                   
-                  // 현재 행을 sub_items로 교체
                   setEditItems(prev => {
                     const currentIdx = prev.findIndex(i => i.key === item.key);
                     if (currentIdx === -1) return [...prev, ...newItems];
@@ -1763,7 +1736,6 @@ const quotePreviewHtml = useMemo(() => {
                   return;
                 }
                 
-                // 기존 단일 옵션 처리
                 const res = calculateOptionLine(opt, w, l);
                 const rawName = String(opt.option_name || "");
                 const rent = rawName.includes("임대");
@@ -1817,6 +1789,49 @@ const quotePreviewHtml = useMemo(() => {
         </tr>
       );
     })}
+
+    {/* 빈 행 렌더링 */}
+    {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
+      <tr key={`blank-${i}`}>
+        {i === 0 && editMode ? (
+          <>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>{items.length + 1}</td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'left', height: 24, overflow: 'visible', position: 'relative' }}>
+              <EmptyRowSearchCell
+                options={options}
+                current={current}
+                onAddItem={(newItem) => {
+                  if (Array.isArray(newItem)) {
+                    setEditItems(prev => [...prev, ...newItem]);
+                  } else {
+                    setEditItems(prev => [...prev, newItem]);
+                  }
+                }}
+              />
+            </td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+          </>
+        ) : (
+          <>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}>&nbsp;</td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+            <td style={{ border: '1px solid #333', padding: '2px 6px', height: 24 }}></td>
+          </>
+        )}
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 {/* 하단 합계/조건 테이블 1 - 합계 행 */}
 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #333', marginTop: 8 }}>
@@ -2058,7 +2073,7 @@ const quotePreviewHtml = useMemo(() => {
                 </tr>
               );
             })}
-        {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
+       {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
   <tr key={`blank-${i}`}>
     {i === 0 && editMode ? (
       <>
