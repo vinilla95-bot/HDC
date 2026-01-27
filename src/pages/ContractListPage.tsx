@@ -115,11 +115,12 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     loadContracts();
   }, []);
 
-  const contracts = useMemo(() => {
-    let filtered = allContracts.filter(c => {
-      const type = c.contract_type || "order";
-      return type === activeTab;
-    });
+ const contracts = useMemo(() => {
+  let filtered = allContracts.filter(c => {
+    // contract_type이 null이면 목록에서 제외
+    if (!c.contract_type) return false;
+    return c.contract_type === activeTab;
+  });
     
     if (depositFilter === "completed") {
       filtered = filtered.filter(c => c.deposit_status === "완료");
