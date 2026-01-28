@@ -424,8 +424,8 @@ const postToJungonara = async (item: UsedInventoryItem) => {
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setMainTab("new")} style={{ padding: "12px 24px", background: mainTab === "new" ? "#2e5b86" : "#e5e7eb", color: mainTab === "new" ? "#fff" : "#666", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>📦 신품 재고 ({allItems.length})</button>
-        <button onClick={() => setMainTab("used")} style={{ padding: "12px 24px", background: mainTab === "used" ? "#f59e0b" : "#e5e7eb", color: mainTab === "used" ? "#fff" : "#666", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>🏷️ 중고 재고 ({usedItems.length})</button>
+        <button onClick={() => setMainTab("new")} style={{ padding: "12px 24px", background: mainTab === "new" ? "#2e5b86" : "#e5e7eb", color: mainTab === "new" ? "#fff" : "#666", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>신품 재고 ({allItems.length})</button>
+        <button onClick={() => setMainTab("used")} style={{ padding: "12px 24px", background: mainTab === "used" ? "#f59e0b" : "#e5e7eb", color: mainTab === "used" ? "#fff" : "#666", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>중고 재고 ({usedItems.length})</button>
       </div>
 
       {mainTab === "new" && (
