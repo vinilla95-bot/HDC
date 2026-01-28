@@ -1007,20 +1007,30 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
               <strong>금액:</strong> {fmt(selectedQuote.total_amount)}원
             </div>
 
-            <div style={{ marginTop: 12 }}>
-  <strong>옵션:</strong>{' '}
-  <span style={{ color: '#333' }}>
-    {(selectedQuote.items || []).length > 0 
-      ? selectedQuote.items.map((item: any) => {
-          const name = item.displayName || item.optionName || '';
-          const qty = item.qty ? `(${item.qty})` : '';
-          return name + qty;
-        }).filter(Boolean).join(', ')
-      : '-'
-    }
-  </span>
-</div>
-
+  <div style={{ marginTop: 16 }}>
+              <strong>품목:</strong>
+              <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: "
+#f5f5f5" }}>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>품명</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>수량</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>단가</th>
+                    <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>금액</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(selectedQuote.items || []).map((item: any, idx: number) => (
+                    <tr key={idx}>
+                      <td style={{ padding: 6, border: "1px solid #eee" }}>{item.displayName || item.optionName}</td>
+                      <td style={{ padding: 6, border: "1px solid #eee", textAlign: "center" }}>{item.qty}</td>
+                      <td style={{ padding: 6, border: "1px solid #eee", textAlign: "right" }}>{fmt(item.unitPrice)}</td>
+                      <td style={{ padding: 6, border: "1px solid #eee", textAlign: "right" }}>{fmt(item.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {/* 도면 이미지 섹션 */}
             {(selectedQuote.contract_type === "order" || selectedQuote.contract_type === "branch") && (
               <div style={{ marginTop: 20 }}>
