@@ -24,7 +24,7 @@ type ContractQuote = {
   drawing_image?: string;
 };
 
-type TabType = "order" | "branch" | "used" | "rental";
+type TabType = "all" | "order" | "branch" | "used" | "rental";
 
 // 규격 옵션
 const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
@@ -32,7 +32,7 @@ const SPEC_OPTIONS = ["3x3", "3x4", "3x6", "3x9"];
 export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<TabType>("order");
   const [allContracts, setAllContracts] = useState<ContractQuote[]>([]);
-  const [allInventory, setAllInventory] = useState<{quote_id: string; contract_date: string; drawing_no: string}[]>([]);
+ const [allInventory, setAllInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState<ContractQuote | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -87,7 +87,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     
     const [quotesRes, inventoryRes] = await Promise.all([
       supabase.from("quotes").select("*").eq("status", "confirmed"),
-      supabase.from("inventory").select("quote_id, contract_date, drawing_no")
+      supabase.from("inventory").select("*")
     ]);
 
     if (quotesRes.error) console.error("Quotes load error:", quotesRes.error);
@@ -116,21 +116,82 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     loadContracts();
   }, []);
 
-  const contracts = useMemo(() => {
-    let filtered = allContracts.filter(c => {
-      // contract_type이 null이면 목록에서 제외
+const contracts = useMemo(() => {
+  let filtered: any[] = [];
+  
+  if (activeTab === "all") {
+    // 통합: quotes(수주,영업소) + inventory 합치기
+    const quotesData = allContracts.filter(c => 
+      c.contract_type === "order" || c.contract_type === "branch"
+    );
+    
+    // inventory 데이터를 ContractQuote 형태로 변환
+    const inventoryData = allInventory.map(inv => ({
+      ...inv,
+      contract_type: "inventory" as string,
+      customer_name: inv.customer_name || "",
+      spec: inv.spec || "",
+      deposit_status: inv.deposit_status || "",
+      bank_account: inv.bank_account || "",
+      tax_invoice: inv.tax_invoice || "",
+      interior: inv.interior || "",
+      depositor: inv.depositor || "",
+      delivery_date: inv.delivery_date || "",
+      items: inv.items || [],
+      special_order: inv.special_order || false,
+      total_amount: inv.total_amount || 0,
+    }));
+    
+    // 합치기
+    const combined = [...quotesData, ...inventoryData];
+    
+    // 중복 제거: 같은 월+도면번호가 있으면 quotes(수주/영업소) 우선, inventory 제외
+    const seen = new Set<string>();
+    filtered = combined.filter(item => {
+      if (!item.contract_date || !item.drawing_no) return true;
+      const [year, month] = item.contract_date.split("-");
+      const key = `${year}-${month}-${item.drawing_no}`;
+      
+      // quotes 데이터면 무조건 포함하고 key 등록
+      if (item.contract_type === "order" || item.contract_type === "branch") {
+        seen.add(key);
+        return true;
+      }
+      
+      // inventory 데이터면 이미 있는지 확인
+      if (seen.has(key)) {
+        return false; // 중복이면 제외
+      }
+      seen.add(key);
+      return true;
+    });
+    
+    // 날짜 오름차순, 도면번호 오름차순 정렬
+    filtered.sort((a, b) => {
+      const dateA = a.contract_date || "";
+      const dateB = b.contract_date || "";
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB); // 오름차순
+      }
+      const numA = Number(a.drawing_no) || 0;
+      const numB = Number(b.drawing_no) || 0;
+      return numA - numB; // 오름차순
+    });
+  } else {
+    filtered = allContracts.filter(c => {
       if (!c.contract_type) return false;
       return c.contract_type === activeTab;
     });
-    
-    if (depositFilter === "completed") {
-      filtered = filtered.filter(c => c.deposit_status === "완료");
-    } else if (depositFilter === "pending") {
-      filtered = filtered.filter(c => c.deposit_status !== "완료");
-    }
-    
-    return filtered;
-  }, [allContracts, activeTab, depositFilter]);
+  }
+  
+  if (depositFilter === "completed") {
+    filtered = filtered.filter(c => c.deposit_status === "완료");
+  } else if (depositFilter === "pending") {
+    filtered = filtered.filter(c => c.deposit_status !== "완료");
+  }
+  
+  return filtered;
+}, [allContracts, allInventory, activeTab, depositFilter]);
 
   const getTabCounts = (tab: TabType) => {
     const tabData = allContracts.filter(c => (c.contract_type || "order") === tab);
@@ -323,6 +384,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
         <div style={{ textAlign: "center", padding: 40, color: "#888" }}>로딩 중...</div>
       ) : contracts.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40, color: "#888" }}>
+          {activeTab === "all" && "통합 데이터가 없습니다."}
           {activeTab === "order" && "수주 데이터가 없습니다."}
           {activeTab === "branch" && "영업소 데이터가 없습니다."}
           {activeTab === "used" && "중고 데이터가 없습니다."}
@@ -369,18 +431,22 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                       opacity: isCompleted ? 0.6 : 1,
                     }}
                   >
-                    <td style={{ padding: 8, border: "1px solid #eee" }}>
-                      <select
-                        value={c.contract_type || "order"}
-                        onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
-                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                      >
-                        <option value="order">수주</option>
-                        <option value="branch">영업소</option>
-                        <option value="used">중고</option>
-                        <option value="rental">임대</option> 
-                      </select>
-                    </td>
+                   <td style={{ padding: 8, border: "1px solid #eee" }}>
+  {c.contract_type === "inventory" ? (
+    <span style={{ padding: "4px 8px", background: "#17a2b8", color: "#fff", borderRadius: 4, fontSize: 11, fontWeight: 600 }}>재고</span>
+  ) : (
+    <select
+      value={c.contract_type || "order"}
+      onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
+      style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+    >
+      <option value="order">수주</option>
+      <option value="branch">영업소</option>
+      <option value="used">중고</option>
+      <option value="rental">임대</option> 
+    </select>
+  )}
+</td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                       <input
                         type="date"
@@ -578,6 +644,36 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     </>
   );
 
+
+  // 통합 카운트 계산 (중복 제거)
+const allCount = useMemo(() => {
+  const quotesData = allContracts.filter(c => 
+    c.contract_type === "order" || c.contract_type === "branch"
+  );
+  const seen = new Set<string>();
+  quotesData.forEach(item => {
+    if (item.contract_date && item.drawing_no) {
+      const [year, month] = item.contract_date.split("-");
+      seen.add(`${year}-${month}-${item.drawing_no}`);
+    }
+  });
+  
+  let inventoryCount = 0;
+  allInventory.forEach(inv => {
+    if (inv.contract_date && inv.drawing_no) {
+      const [year, month] = inv.contract_date.split("-");
+      const key = `${year}-${month}-${inv.drawing_no}`;
+      if (!seen.has(key)) {
+        inventoryCount++;
+        seen.add(key);
+      }
+    } else {
+      inventoryCount++;
+    }
+  });
+  
+  return quotesData.length + inventoryCount;
+}, [allContracts, allInventory]);
   const orderCount = allContracts.filter(c => (c.contract_type || "order") === "order").length;
   const branchCount = allContracts.filter(c => c.contract_type === "branch").length;
   const usedCount = allContracts.filter(c => c.contract_type === "used").length;
@@ -649,6 +745,9 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
         borderBottom: "none",
         overflow: "hidden"
       }}>
+        <button style={tabStyle(activeTab === "all")} onClick={() => setActiveTab("all")}>
+  📊 통합 ({allCount})
+</button>
         <button style={tabStyle(activeTab === "order")} onClick={() => setActiveTab("order")}>
           📋 수주 ({orderCount})
         </button>
