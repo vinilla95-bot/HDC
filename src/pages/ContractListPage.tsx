@@ -21,6 +21,7 @@ type ContractQuote = {
   total_amount: number;
   contract_type: string;
   container_type: string;
+  drawing_image?: string;
 };
 
 type TabType = "order" | "branch" | "used" | "rental";
@@ -115,6 +116,32 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     loadContracts();
   }, []);
 
+
+const uploadDrawingImage = async (quote_id: string, file: File) => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${quote_id}_${Date.now()}.${fileExt}`;
+  const filePath = `drawings/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('contract-files')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    alert('업로드 실패: ' + uploadError.message);
+    return;
+  }
+
+  const { data: urlData } = supabase.storage
+    .from('contract-files')
+    .getPublicUrl(filePath);
+
+  const imageUrl = urlData.publicUrl;
+
+  await updateField(quote_id, 'drawing_image', imageUrl);
+  
+  setSelectedQuote(prev => prev ? { ...prev, drawing_image: imageUrl } : null);
+};
+  
  const contracts = useMemo(() => {
   let filtered = allContracts.filter(c => {
     // contract_type이 null이면 목록에서 제외
@@ -1004,9 +1031,65 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      )}
+        
+
+            {/* 도면 이미지 섹션 - 여기에 추가! */}
+            {(selectedQuote.contract_type === "order" || selectedQuote.contract_type === "branch") && (
+              <div style={{ marginTop: 20 }}>
+                <strong>도면:</strong>
+                <div style={{ marginTop: 8 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadDrawingImage(selectedQuote.quote_id, file);
+                    }}
+                    style={{ marginBottom: 12 }}
+                  />
+                  {selectedQuote.drawing_image && (
+                    <div style={{ marginTop: 8 }}>
+                      <img
+                        src={selectedQuote.drawing_image}
+                        alt="도면"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: 400,
+                          border: '1px solid #ddd',
+                          borderRadius: 8,
+                        }}
+                      />
+                      <button
+                        onClick={async () => {
+                          if (confirm('도면을 삭제하시겠습니까?')) {
+                            await updateField(selectedQuote.quote_id, 'drawing_image', null);
+                            setSelectedQuote(prev => prev ? { ...prev, drawing_image: undefined } : null);
+                          }
+                        }}
+                        style={{
+                          display: 'block',
+                          marginTop: 8,
+                          padding: '6px 12px',
+                          background: '#dc3545',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 4,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        도면 삭제
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+          </div>  {/* ← 모달 내부 div */}
+        </div>  {/* ← 모달 배경 div */}
+      )}  {/* ← selectedQuote && */}
+          
     </div>
   );
 }
