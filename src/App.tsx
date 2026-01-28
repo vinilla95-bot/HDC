@@ -949,6 +949,7 @@ const row: any = {
   months: defaultMonths,
   memo: res.memo || "",
   lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },
+  _isCustomFreeText: opt._isCustomFreeText || false,
 };
     
     // ✅ 수정: insertIndex 위치에 삽입
