@@ -190,6 +190,7 @@ export default function InventoryPage({
   const [showPromoModal, setShowPromoModal] = useState<{ item: UsedInventoryItem; platform: "jungonara" | "blog" } | null>(null);
   const [promoText, setPromoText] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
+  const [editUsedItem, setEditUsedItem] = useState<UsedInventoryItem | null>(null);
   
   const [newItem, setNewItem] = useState({
     customer_name: "",
