@@ -561,7 +561,16 @@ const postToJungonara = async (item: UsedInventoryItem) => {
     item.toilet && `화장실`,
   ].filter(Boolean).join(", ") || "-"}
 </td>
-<td style={{ padding: 8, border: "1px solid #eee" }}>{item.note || "-"}</td>
+<td style={{ padding: 8, border: "1px solid #eee" }}>
+  <input
+    defaultValue={item.note || ""}
+    onBlur={async (e) => {
+      await supabase.from("used_inventory").update({ note: e.target.value }).eq("id", item.id);
+    }}
+    style={{ width: 80, padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+    placeholder="특이사항"
+  />
+</td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontSize: 11 }}>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}</td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                           <select value={item.status || "판매중"} onChange={async (e) => { await supabase.from("used_inventory").update({ status: e.target.value }).eq("id", item.id); loadInventory(); }} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.status === "판매완료" ? "#6c757d" : "#28a745", color: "#fff" }}>
