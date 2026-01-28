@@ -524,7 +524,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead><tr>
-                  <th style={thStyle}>번호</th><th style={thStyle}>사진</th><th style={thStyle}>규격</th><th style={thStyle}>수량</th><th style={thStyle}>상태</th><th style=<th style={thStyle}>가격</th><th style={thStyle}>옵션</th><th style={thStyle}>특이사항</th><th style={thStyle}>등록일</th><th style={thStyle}>판매</th><th style={thStyle}>홍보</th><th style={thStyle}>삭제</th>
+                  <th style={thStyle}>번호</th><th style={thStyle}>사진</th><th style={thStyle}>규격</th><th style={thStyle}>수량</th><th style={thStyle}>상태</th><th style={thStyle}>가격</th><th style={thStyle}>옵션</th><th style={thStyle}>특이사항</th><th style={thStyle}>등록일</th><th style={thStyle}>판매</th><th style={thStyle}>홍보</th><th style={thStyle}>삭제</th>
                 </tr></thead>
                 <tbody>
                   {usedItems.map((item) => {
