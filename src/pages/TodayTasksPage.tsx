@@ -308,7 +308,7 @@ const deleteOrder = async (id: number) => {
   const handleManualCopy = async (message: string, id: number | string, type: "order" | "dispatch", chatRoom: string) => {
     try {
       await navigator.clipboard.writeText(message);
-      alert(`📋 복사됨!\n\n"${chatRoom}" 채팅방에 붙여넣기 하세요.`);
+      alert(`복사됨!\n\n"${chatRoom}" 채팅방에 붙여넣기 하세요.`);
       if (type === "order") await updateOrderStatus(id as number, "sent");
       else await updateDispatchStatus(id as string, "완료");
     } catch {
@@ -318,7 +318,7 @@ const deleteOrder = async (id: number) => {
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
-      alert("📋 복사됨!");
+      alert("복사됨!");
     }
   };
 
@@ -395,7 +395,7 @@ const deleteOrder = async (id: number) => {
       {/* 자재 주문 */}
       <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e0e0e0", marginBottom: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #eee", background: "#fafbfc", display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: "12px 12px 0 0" }}>
-          <span style={{ fontSize: 18, fontWeight: 800 }}>📦 자재 주문</span>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>자재 주문</span>
           <span style={{ padding: "4px 12px", background: pendingCount > 0 ? "#fff3e0" : "#e8f5e9", color: pendingCount > 0 ? "#e65100" : "#2e7d32", borderRadius: 12, fontSize: 14, fontWeight: 700 }}>
             {pendingCount > 0 ? `${pendingCount}건 대기` : "✅ 완료"}
           </span>
@@ -498,7 +498,7 @@ const deleteOrder = async (id: number) => {
       {/* 배차 요청 */}
       <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e0e0e0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #eee", background: "#fafbfc", display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: "12px 12px 0 0" }}>
-          <span style={{ fontSize: 18, fontWeight: 800 }}>🚚 배차 요청 (내일 출고)</span>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>배차 요청 (내일 출고)</span>
           <span style={{ padding: "4px 12px", background: dispatchCount > 0 ? "#fff3e0" : "#e8f5e9", color: dispatchCount > 0 ? "#e65100" : "#2e7d32", borderRadius: 12, fontSize: 14, fontWeight: 700 }}>
             {dispatchCount > 0 ? `${dispatchCount}건 대기` : "✅ 완료"}
           </span>
@@ -570,10 +570,10 @@ const deleteOrder = async (id: number) => {
                         <span style={{ color: "#4caf50", fontSize: 14, fontWeight: 600 }}>✅ 완료</span>
                       ) : (
                         <button 
-                          onClick={() => handleManualCopy(dispatchMessages[task.quote_id] || message, task.quote_id, "dispatch", "배차기사")} 
+                          onClick={() => handleManualCopy(dispatchMessages[task.quote_id] || message, task.quote_id, "dispatch", "배차팀")} 
                           style={{ padding: "10px 20px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                         >
-                          📋 복사
+                          복사
                         </button>
                       )}
                     </td>
