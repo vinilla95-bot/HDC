@@ -524,7 +524,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead><tr>
-                  <th style={thStyle}>번호</th><th style={thStyle}>사진</th><th style={thStyle}>규격</th><th style={thStyle}>수량</th><th style={thStyle}>상태</th><th style={thStyle}>가격</th><th style={thStyle}>특이사항</th><th style={thStyle}>등록일</th><th style={thStyle}>판매</th><th style={thStyle}>홍보</th><th style={thStyle}>삭제</th>
+                  <th style={thStyle}>번호</th><th style={thStyle}>사진</th><th style={thStyle}>규격</th><th style={thStyle}>수량</th><th style={thStyle}>상태</th><th style=<th style={thStyle}>가격</th><th style={thStyle}>옵션</th><th style={thStyle}>특이사항</th><th style={thStyle}>등록일</th><th style={thStyle}>판매</th><th style={thStyle}>홍보</th><th style={thStyle}>삭제</th>
                 </tr></thead>
                 <tbody>
                   {usedItems.map((item) => {
@@ -550,7 +550,18 @@ const postToJungonara = async (item: UsedInventoryItem) => {
                           <span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: item.condition === "A급" ? "#28a745" : item.condition === "B급" ? "#ffc107" : "#dc3545", color: item.condition === "B급" ? "#000" : "#fff" }}>{item.condition}</span>
                         </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.price ? `${item.price}만원` : "-"}</td>
-                        <td style={{ padding: 8, border: "1px solid #eee" }}>{item.note || "-"}</td>
+<td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
+  {[
+    item.has_interior && "내장",
+    item.electric,
+    item.floor?.join(","),
+    item.door?.join(","),
+    item.aircon && `에어컨`,
+    item.sink && `싱크대`,
+    item.toilet && `화장실`,
+  ].filter(Boolean).join(", ") || "-"}
+</td>
+<td style={{ padding: 8, border: "1px solid #eee" }}>{item.note || "-"}</td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center", fontSize: 11 }}>{item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}</td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                           <select value={item.status || "판매중"} onChange={async (e) => { await supabase.from("used_inventory").update({ status: e.target.value }).eq("id", item.id); loadInventory(); }} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.status === "판매완료" ? "#6c757d" : "#28a745", color: "#fff" }}>
