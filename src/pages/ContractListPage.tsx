@@ -1011,8 +1011,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
               <strong>품목:</strong>
               <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: "
-#f5f5f5" }}>
+                <tr style={{ background: "#f5f5f5" }}>
                     <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>품명</th>
                     <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>수량</th>
                     <th style={{ padding: 6, border: "1px solid #ddd", color: "#333" }}>단가</th>
