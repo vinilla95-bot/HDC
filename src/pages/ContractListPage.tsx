@@ -167,16 +167,18 @@ const contracts = useMemo(() => {
     });
     
     // 날짜 오름차순, 도면번호 오름차순 정렬
-    filtered.sort((a, b) => {
-      const dateA = a.contract_date || "";
-      const dateB = b.contract_date || "";
-      if (dateA !== dateB) {
-        return dateA.localeCompare(dateB); // 오름차순
-      }
-      const numA = Number(a.drawing_no) || 0;
-      const numB = Number(b.drawing_no) || 0;
-      return numA - numB; // 오름차순
-    });
+   // 날짜 내림차순, 도면번호 내림차순 정렬
+filtered.sort((a, b) => {
+  const dateA = a.contract_date || "";
+  const dateB = b.contract_date || "";
+  if (dateA !== dateB) {
+    return dateB.localeCompare(dateA); // 내림차순
+  }
+  const numA = Number(a.drawing_no) || 0;
+  const numB = Number(b.drawing_no) || 0;
+  return numB - numA; // 내림차순
+});
+   
   } else {
     filtered = allContracts.filter(c => {
       if (!c.contract_type) return false;
