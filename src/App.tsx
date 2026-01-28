@@ -802,7 +802,7 @@ useEffect(() => {
   );
 
   const recomputeRow = (r: SelectedRow): SelectedRow => {
-    const rent = isRentRow(r);
+   const rent = isRentRow(r) && !(r as any)._isCustomFreeText;
 
     const baseQty = Number((r as any).baseQty || 1);
     const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
@@ -1031,10 +1031,10 @@ const row: any = {
         }
         return recomputeRow({ ...item, displayQty: qty });
       }
-
-   if (field === "customerUnitPrice") {
-  if (rent) return item;
-  const p = Number(value || 0);  // ✅ 음수(할인) 허용
+      
+if (field === "customerUnitPrice") {
+  if (rent && !item._isCustomFreeText) return item;
+  const p = Number(value || 0);
   return recomputeRow({ ...item, customerUnitPrice: p });
 }
 
