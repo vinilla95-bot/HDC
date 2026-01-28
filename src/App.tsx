@@ -282,8 +282,10 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
         option_name: trimmed,
         unit: 'EA',
         unit_price: 0,
-        show_spec: 'n',
-        _isDisplayNameOnly: true
+       show_spec: 'n',
+_isCustomFreeText: true
+      _isDisplayNameOnly: true,
+
       };
       const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
       onSelectOption(item, customOpt, calculated);
@@ -903,7 +905,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
     }
 const res = calculateOptionLine(opt, form.w, form.l, form.h);
 const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-const rent = rawName.includes("임대");
+const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
 const baseQty = isSpecial ? 1 : Number(res.qty || 1);
 const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
 const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
