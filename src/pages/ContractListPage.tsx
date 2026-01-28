@@ -116,38 +116,12 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     loadContracts();
   }, []);
 
-
-const uploadDrawingImage = async (quote_id: string, file: File) => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${quote_id}_${Date.now()}.${fileExt}`;
-  const filePath = `drawings/${fileName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('contract-files')
-    .upload(filePath, file);
-
-  if (uploadError) {
-    alert('업로드 실패: ' + uploadError.message);
-    return;
-  }
-
-  const { data: urlData } = supabase.storage
-    .from('contract-files')
-    .getPublicUrl(filePath);
-
-  const imageUrl = urlData.publicUrl;
-
-  await updateField(quote_id, 'drawing_image', imageUrl);
-  
-  setSelectedQuote(prev => prev ? { ...prev, drawing_image: imageUrl } : null);
-};
-  
- const contracts = useMemo(() => {
-  let filtered = allContracts.filter(c => {
-    // contract_type이 null이면 목록에서 제외
-    if (!c.contract_type) return false;
-    return c.contract_type === activeTab;
-  });
+  const contracts = useMemo(() => {
+    let filtered = allContracts.filter(c => {
+      // contract_type이 null이면 목록에서 제외
+      if (!c.contract_type) return false;
+      return c.contract_type === activeTab;
+    });
     
     if (depositFilter === "completed") {
       filtered = filtered.filter(c => c.deposit_status === "완료");
@@ -184,6 +158,31 @@ const uploadDrawingImage = async (quote_id: string, file: File) => {
     setAllContracts(prev => prev.map(c =>
       c.quote_id === quote_id ? { ...c, [field]: value } : c
     ));
+  };
+
+  const uploadDrawingImage = async (quote_id: string, file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${quote_id}_${Date.now()}.${fileExt}`;
+    const filePath = `drawings/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('contract-files')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      alert('업로드 실패: ' + uploadError.message);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('contract-files')
+      .getPublicUrl(filePath);
+
+    const imageUrl = urlData.publicUrl;
+
+    await updateField(quote_id, 'drawing_image', imageUrl);
+    
+    setSelectedQuote(prev => prev ? { ...prev, drawing_image: imageUrl } : null);
   };
 
   const autoFillDrawingNo = (quote_id: string) => {
@@ -1031,9 +1030,8 @@ const uploadDrawingImage = async (quote_id: string, file: File) => {
                 </tbody>
               </table>
             </div>
-        
 
-            {/* 도면 이미지 섹션 - 여기에 추가! */}
+            {/* 도면 이미지 섹션 */}
             {(selectedQuote.contract_type === "order" || selectedQuote.contract_type === "branch") && (
               <div style={{ marginTop: 20 }}>
                 <strong>도면:</strong>
@@ -1085,11 +1083,9 @@ const uploadDrawingImage = async (quote_id: string, file: File) => {
                 </div>
               </div>
             )}
-
-          </div>  {/* ← 모달 내부 div */}
-        </div>  {/* ← 모달 배경 div */}
-      )}  {/* ← selectedQuote && */}
-          
+          </div>
+        </div>
+      )}
     </div>
   );
 }
