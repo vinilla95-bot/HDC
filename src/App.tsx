@@ -2281,7 +2281,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
   const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l
     ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}`
     : "";
-  const rent = String(item.optionName || "").includes("임대");
+ const rent = String(item.optionName || "").includes("임대") && !item._isCustomFreeText;
 <td className="c center">{idx + 1}</td>
   return (
   <tr 
