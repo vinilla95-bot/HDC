@@ -1771,11 +1771,11 @@ const quotePreviewHtml = useMemo(() => {
 {items.map((item: any, idx: number) => {
       const supply = item.qty * item.unitPrice;
       const vat = Math.round(supply * 0.1);
-      const specText = item.specText ?? (
-        (String(item.showSpec || "").toLowerCase() === "y" && item.lineSpec) 
-          ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` 
-          : ""
-      );
+     const specText = item.specText || (
+  (String(item.showSpec || "").toLowerCase() === "y" && item.lineSpec) 
+    ? `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}` 
+    : ""
+);
 
       return (
         <tr 
