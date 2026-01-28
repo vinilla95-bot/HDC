@@ -748,19 +748,19 @@ const allCount = useMemo(() => {
         overflow: "hidden"
       }}>
         <button style={tabStyle(activeTab === "all")} onClick={() => setActiveTab("all")}>
-  📊 통합 ({allCount})
+  통합 ({allCount})
 </button>
         <button style={tabStyle(activeTab === "order")} onClick={() => setActiveTab("order")}>
-          📋 수주 ({orderCount})
+          수주 ({orderCount})
         </button>
         <button style={tabStyle(activeTab === "branch")} onClick={() => setActiveTab("branch")}>
-          🏢 영업소 ({branchCount})
+          영업소 ({branchCount})
         </button>
         <button style={tabStyle(activeTab === "used")} onClick={() => setActiveTab("used")}>
-          📦 중고 ({usedCount})
+          중고 ({usedCount})
         </button>
         <button style={tabStyle(activeTab === "rental")} onClick={() => setActiveTab("rental")}>
-          🏠 임대 ({rentalCount})
+          임대 ({rentalCount})
         </button>
       </div>
 
@@ -783,7 +783,7 @@ const allCount = useMemo(() => {
             cursor: "pointer",
           }}
         >
-          📋 전체 ({currentCounts.all})
+          전체 ({currentCounts.all})
         </button>
         <button
           onClick={() => setDepositFilter("completed")}
