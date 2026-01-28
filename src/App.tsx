@@ -278,15 +278,14 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     
     if (trimmed) {
       const customOpt = { 
-        option_id: `custom_${Date.now()}`, 
-        option_name: trimmed,
-        unit: 'EA',
-        unit_price: 0,
-       show_spec: 'n',
-_isCustomFreeText: true
-      _isDisplayNameOnly: true,
-
-      };
+  option_id: `custom_${Date.now()}`, 
+  option_name: trimmed,
+  unit: 'EA',
+  unit_price: 0,
+  show_spec: 'n',
+  _isDisplayNameOnly: true,
+  _isCustomFreeText: true
+};
       const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
       onSelectOption(item, customOpt, calculated);
     }
@@ -431,13 +430,14 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
     setSites([]);
     
     if (trimmed) {
-      const customOpt = { 
-        option_id: `custom_${Date.now()}`, 
-        option_name: trimmed,
-        unit: 'EA',
-        unit_price: 0,
-        show_spec: 'n'
-      };
+     const customOpt = { 
+  option_id: `custom_${Date.now()}`, 
+  option_name: trimmed,
+  unit: 'EA',
+  unit_price: 0,
+  show_spec: 'n',
+  _isCustomFreeText: true
+};
       onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }, insertIndex);
     }
   }, [onAddItem, insertIndex]);
