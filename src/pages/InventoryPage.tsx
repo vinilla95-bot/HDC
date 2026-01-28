@@ -419,7 +419,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
   return (
     <div style={{ padding: 16, background: "#f6f7fb", minHeight: "100vh" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>📦 재고현황 <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>(총 {allItems.length + usedItems.length}건)</span></h2>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>재고현황 <span style={{ fontSize: 12, fontWeight: 400, color: "#666", marginLeft: 8 }}>(총 {allItems.length + usedItems.length}건)</span></h2>
         {mainTab === "new" && <button onClick={() => setShowAddModal(true)} style={{ padding: "8px 16px", background: "#28a745", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>+ 새 항목 추가</button>}
       </div>
 
@@ -443,7 +443,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
               </div>
             </div>
             <div style={{ background: "#fff", borderRadius: 12, padding: 20, border: "1px solid #e5e7eb" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#ffc107", marginBottom: 12 }}>🚚 출고대기 <span style={{ background: "#ffc107", color: "#000", padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>{waitingItems.length}대</span></div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#ffc107", marginBottom: 12 }}>출고대기 <span style={{ background: "#ffc107", color: "#000", padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>{waitingItems.length}대</span></div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 {["3x3", "3x4", "3x6", "3x9"].map(spec => (
                   <div key={spec} style={{ background: "#fffbeb", padding: "10px 16px", borderRadius: 8, textAlign: "center", minWidth: 60 }}>
@@ -456,7 +456,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
           </div>
 
           <div style={{ display: "flex", background: "#fff", borderRadius: "12px 12px 0 0", border: "1px solid #e5e7eb", borderBottom: "none" }}>
-            <button style={tabStyle(depositTab === "all")} onClick={() => setDepositTab("all")}>📋 전체 ({allItems.length})</button>
+            <button style={tabStyle(depositTab === "all")} onClick={() => setDepositTab("all")}>전체 ({allItems.length})</button>
             <button style={tabStyle(depositTab === "paid")} onClick={() => setDepositTab("paid")}>✅ 입금완료 ({paidCount})</button>
             <button style={{ ...tabStyle(depositTab === "unpaid"), color: depositTab === "unpaid" ? "#dc3545" : "#666" }} onClick={() => setDepositTab("unpaid")}>❌ 미입금 ({unpaidCount})</button>
           </div>
@@ -629,7 +629,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }} onClick={() => setShowPromoModal(null)}>
           <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "90%", maxWidth: 500, maxHeight: "80vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
-              {showPromoModal.platform === "jungonara" ? "🟢 중고나라" : "📝 블로그"} 홍보글
+              {showPromoModal.platform === "jungonara" ? "중고나라" : "블로그"} 홍보글
               <span style={{ fontSize: 12, color: "#666", fontWeight: 400 }}>AI 자동생성</span>
             </h3>
             
