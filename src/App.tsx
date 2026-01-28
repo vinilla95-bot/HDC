@@ -811,11 +811,11 @@ useEffect(() => {
     const months = Number((r as any).months ?? 1);
     let customerUnitPrice: number;
 
-    if (rent) {
-      customerUnitPrice = Math.max(0, Math.round(baseUnitPrice * months));
-    } else {
-      customerUnitPrice = Math.max(0, Math.round(Number((r as any).customerUnitPrice ?? 0)));
-    }
+   if (rent) {
+  customerUnitPrice = Math.round(baseUnitPrice * months);
+} else {
+  customerUnitPrice = Math.round(Number((r as any).customerUnitPrice ?? 0));  // ✅ 음수(할인) 허용
+}
 
     const finalAmount = Math.round(displayQty * customerUnitPrice);
 
@@ -1030,11 +1030,11 @@ const row: any = {
         return recomputeRow({ ...item, displayQty: qty });
       }
 
-      if (field === "customerUnitPrice") {
-        if (rent) return item;
-        const p = Math.max(0, Number(value || 0));
-        return recomputeRow({ ...item, customerUnitPrice: p });
-      }
+   if (field === "customerUnitPrice") {
+  if (rent) return item;
+  const p = Number(value || 0);  // ✅ 음수(할인) 허용
+  return recomputeRow({ ...item, customerUnitPrice: p });
+}
 
       return item;
     })
@@ -1382,9 +1382,10 @@ captureContainer.appendChild(clonedSheet);
     }
   };
 
-  const MIN_ROWS = 12;
-  const blanksCount = Math.max(0, MIN_ROWS - computedItems.length);
-  const blankRows = Array.from({ length: blanksCount });
+const MIN_ROWS = 12;
+// ✅ 최소 1개의 빈 행 유지 (12개 이상이어도 추가 가능하도록)
+const blanksCount = Math.max(1, MIN_ROWS - computedItems.length);
+const blankRows = Array.from({ length: blanksCount });
 
   // ✅ 네비게이션 바 컴포넌트
 const NavBar = ({ current }: { current: string }) => (
@@ -2361,15 +2362,15 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
   // ✅ computedItems.length를 더해주어, 아이템이 추가될 때마다 완전히 새로운 컴포넌트로 리셋시킴
   <tr key={`blank-${computedItems.length + i}`}> 
     {i === 0 && editable && options && onAddItem ? (
-      <EmptyRowCell 
+     <EmptyRowCell 
   options={options} 
   form={form} 
   onAddItem={onAddItem} 
   onSiteSearch={onSiteSearch} 
   onAddDelivery={onAddDelivery}
-  insertIndex={focusedRowIndex !== undefined && focusedRowIndex >= 0 ? focusedRowIndex : computedItems.length - 1}
+  insertIndex={undefined}  // ✅ 빈 행에서 추가하면 항상 맨 아래에
   onFocus={setFocusedRowIndex}
-/> 
+/>
     ) : (
       <><td className="c">&nbsp;</td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td></>
     )}
