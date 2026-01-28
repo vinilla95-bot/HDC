@@ -550,7 +550,11 @@ const postToJungonara = async (item: UsedInventoryItem) => {
                           <span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: item.condition === "A급" ? "#28a745" : item.condition === "B급" ? "#ffc107" : "#dc3545", color: item.condition === "B급" ? "#000" : "#fff" }}>{item.condition}</span>
                         </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.price ? `${item.price}만원` : "-"}</td>
-<td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
+<td 
+  style={{ padding: 8, border: "1px solid #eee", fontSize: 11, cursor: "pointer", background: "#f9f9f9" }}
+  onClick={() => setEditUsedItem(item)}
+  title="클릭해서 수정"
+>
   {[
     item.has_interior && "내장",
     item.electric,
@@ -559,7 +563,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
     item.aircon && `에어컨`,
     item.sink && `싱크대`,
     item.toilet && `화장실`,
-  ].filter(Boolean).join(", ") || "-"}
+  ].filter(Boolean).join(", ") || "클릭해서 추가"}
 </td>
 <td style={{ padding: 8, border: "1px solid #eee" }}>
   <input
