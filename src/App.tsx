@@ -364,7 +364,7 @@ return (
             background: "transparent"
           }} 
         />
-   // InlineItemCell 컴포넌트의 드롭다운 부분 수정
+  
 {showDropdown && (isEditing || searchQuery.trim()) && (
           <div 
             ref={dropdownRef} 
@@ -446,10 +446,9 @@ return (
               <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>
                 {searchQuery.trim() ? "검색 결과 없음 (Enter로 자유입력)" : "품목명을 입력하세요"}
               </div>
-            )}
-          </div>
-        )}
-         
+           )}
+      </>
+    )}
   </div>
 );
 }
