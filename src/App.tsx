@@ -291,10 +291,13 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     }
   }, [item, form, onSelectOption]);
 
-  const handleBlur = () => {
-    commitFreeText();
-  };
-
+  const handleBlur = (e: React.FocusEvent) => {
+  // 드롭다운 내부로 포커스가 이동하는 경우 blur 무시
+  if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
+    return;
+  }
+  commitFreeText();
+};
   const handleSelect = (opt: any) => {
     setIsEditing(false);
     setShowDropdown(false);
@@ -337,7 +340,7 @@ return (
             setShowDropdown(true);
           }}
           onFocus={() => setShowDropdown(true)}
-          onBlur={handleBlur}
+         onBlur={(e) => handleBlur(e)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -579,16 +582,16 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
     <>
       <td className="c center">&nbsp;</td>
       <td className="c" style={{ position: "relative", overflow: "visible", padding: 0 }}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setShowDropdown(true);
-          }}
-          onFocus={() => setShowDropdown(true)}
-          onBlur={handleBlur}
+       <input
+  ref={inputRef}
+  type="text"
+  value={searchQuery}
+  onChange={(e) => {
+    setSearchQuery(e.target.value);
+    setShowDropdown(true);
+  }}
+  onFocus={() => setShowDropdown(true)}
+  onBlur={(e) => handleBlur(e)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -2495,7 +2498,15 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
 
 
 const a4css = `
-
+/* number input 화살표 제거 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
   *, *:focus, *:focus-visible, *:focus-within, *:active { 
   outline: none !important; 
   box-shadow: none !important; 
