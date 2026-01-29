@@ -1176,6 +1176,52 @@ const addEditItemFromOption = (opt: any) => {
   }
 }
 
+
+async function handleCopyQuote() {
+  requireCurrent();
+  
+  try {
+    toast("견적 복사 중...");
+    
+    // 새 quote_id 생성
+    const now = new Date();
+    const ymd = now.toISOString().slice(2, 10).replace(/-/g, "");
+    const hms = now.toTimeString().slice(0, 8).replace(/:/g, "");
+    const newQuoteId = `Q${ymd}-${hms}`;
+    
+    const { error } = await supabase.from("quotes").insert({
+      quote_id: newQuoteId,
+      quote_title: current!.quote_title,
+      customer_name: current!.customer_name,
+      customer_phone: current!.customer_phone,
+      customer_email: current!.customer_email,
+      site_name: current!.site_name,
+      site_addr: current!.site_addr,
+      spec: current!.spec,
+      w: current!.w,
+      l: current!.l,
+      product: current!.product,
+      qty: current!.qty,
+      memo: current!.memo,
+      items: current!.items,
+      supply_amount: current!.supply_amount,
+      vat_amount: current!.vat_amount,
+      total_amount: current!.total_amount,
+      bizcard_id: current!.bizcard_id,
+      vat_included: current!.vat_included,
+      created_at: new Date().toISOString(),
+    });
+    
+    if (error) throw error;
+    
+    toast("견적 복사 완료!");
+    await loadList(q);
+  } catch (e: any) {
+    toast("복사 실패: " + (e?.message || String(e)));
+  }
+}
+
+  
  async function handleConfirmContract() {
   requireCurrent();
   const confirmed = window.confirm(
@@ -2347,7 +2393,7 @@ const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
 {rentalItems.length > 0 ? rentalItems.map((item: any, idx: number) => {
   const name = item.displayName || item.optionName || "";
  const isContainerRental = String(name).includes("컨테이너 임대");
-  const isDelivery = String(name).includes("운송");
+ const isDelivery = String(name).includes("5톤 일반 트럭 운송비") || String(name).includes("크레인 운송비");
 const showSpec = isContainerRental || isDelivery;
 const months = isContainerRental ? (item.months || rentalForm.months) : "";
   
@@ -2795,6 +2841,7 @@ async function saveEdit() {
   <button className="primary" onClick={openSendModal}>{getDocTitle()} 보내기</button>
   <button onClick={downloadJpg}>JPG저장</button>
   <button onClick={handlePrint}>인쇄</button>
+  <button onClick={handleCopyQuote}>복사</button>  {/* ✅ 추가 */}         
  <button onClick={() => {
   if (editMode) {
     saveEditMode();  // 수정 완료 시 저장
