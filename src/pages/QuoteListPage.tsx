@@ -2244,9 +2244,9 @@ const quotePreviewHtml = useMemo(() => {
 
     // 임대 품목 + 운송 품목
     const rentalItems = items.filter(it => {
-      const name = it.optionName || it.displayName || it.item_name || "";
-      return String(name).includes("임대") || String(name).includes("운송");
-    });
+  const name = it.optionName || it.displayName || it.item_name || "";
+  return !String(name).includes("임대 계약시 필요한 정보");
+});
 
     // 합계 계산 (VAT 별도)
     const totalAmount = rentalItems.reduce((acc, raw) => {
