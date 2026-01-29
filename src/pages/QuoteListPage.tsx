@@ -1107,7 +1107,7 @@ const updateEditItemSpec = (key: string, specText: string) => {
       // 옵션 찾아서 단가 재계산
       const opt = options.find((o: any) => o.option_id === item.optionId);
       if (opt) {
-        const calculated = calculateOptionLine(opt, newW, newL);
+       const calculated = calculateOptionLine(opt as any, newW, newL);
         const isRent = (item.unit === "개월") || String(item.displayName || "").includes("임대");
         const months = item.months || 3;
         const newUnitPrice = isRent ? calculated.unitPrice * months : calculated.amount;
@@ -1955,7 +1955,7 @@ displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
       // ✅ 옵션 찾아서 단가 재계산
       const opt = options.find((o: any) => o.option_id === item.optionId);
       if (opt) {
-        const calculated = calculateOptionLine(opt, newW, newL);
+       const calculated = calculateOptionLine(opt as any, newW, newL);
         const isRent = (item.unit === "개월") || String(item.displayName || "").includes("임대");
         const months = item.months || 3;
         const newUnitPrice = isRent 
