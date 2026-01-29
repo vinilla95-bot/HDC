@@ -2563,6 +2563,14 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
 
 
 const a4css = `
+.a4Info tr, .a4Items tr, .a4Bottom tr {
+  display: table-row !important;
+}
+.a4Info td, .a4Info th,
+.a4Items td, .a4Items th,
+.a4Bottom td, .a4Bottom th {
+  display: table-cell !important;
+}
 /* number input 화살표 제거 */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
