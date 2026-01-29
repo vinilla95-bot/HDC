@@ -1113,14 +1113,15 @@ const row: any = {
 if (field === "months" && rent) {
   const months = Math.max(1, Math.floor(Number(value || 1)));
   const newUnitPrice = item.baseUnitPrice * months;
+  const finalAmount = Math.round((item.displayQty || 1) * newUnitPrice);
   
-  // ✅ displayName 명시적으로 유지
-  return recomputeRow({
+  // ✅ recomputeRow 안 거치고 직접 반환
+  return {
     ...item,
     months,
     customerUnitPrice: newUnitPrice,
-    displayName: item.displayName,  // ← 이거 추가!
-  });
+    finalAmount,
+  };
 }
       if (field === "displayQty") {
         const qty = Math.max(0, Math.floor(Number(value || 0)));
