@@ -340,10 +340,15 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   }, []);
 
   // ✅ 옵션 선택 핸들러 (A4Quote에서 호출)
-  const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
-    const rawName = String(opt.option_name || "");
-    const rent = rawName.includes("임대") && !opt._isCustomFreeText;
-    const months = opt._months || 3;
+const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
+  let rawName = String(opt.option_name || "");
+  const rent = rawName.includes("임대") && !opt._isCustomFreeText;
+  const months = opt._months || 3;
+  
+  // ✅ rawName에서 기존 개월 정보 제거 (중복 방지)
+  if (rent) {
+    rawName = rawName.replace(/\s*\/?\s*\d+개월.*$/, "").replace(/\s+\d+개월.*$/, "").trim();
+  }
     
     // displayName만 변경하는 경우
     if (opt._isDisplayNameOnly) {
@@ -359,7 +364,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       ? Number(calculated.unitPrice || 0) * months 
       : Number(calculated.amount || 0);
     
-    const displayName = rent ? `${rawName} ${months}개월` : rawName;
+   const displayName = rent ? `${rawName} / ${months}개월` : rawName;
     
     setEditItems(prev => prev.map(item => 
       item.key === targetItem.key 
