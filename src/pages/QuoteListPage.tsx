@@ -2232,7 +2232,7 @@ const quotePreviewHtml = useMemo(() => {
   const rentalPreviewHtml = useMemo(() => {
     if (!current) return null;
 
-    const items = pickItems(current);
+ const items = editItems;
     const customerName = current.customer_name ?? "";
     const customerPhone = current.customer_phone ?? "";
     const customerEmail = current.customer_email ?? "";
@@ -2241,9 +2241,8 @@ const quotePreviewHtml = useMemo(() => {
 
     const today = new Date();
     const ymd = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
-
-   const cutoffIndex = items.findIndex(it => {
-  const name = it.optionName || it.displayName || it.item_name || "";
+const cutoffIndex = items.findIndex((it: any) => {
+  const name = it.displayName || it.optionName || "";
   return String(name).includes("임대 계약시 필요한 정보");
 });
 const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
@@ -2345,25 +2344,22 @@ const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
           </thead>
           <tbody>
         
-{rentalItems.length > 0 ? rentalItems.map((raw: any, idx) => {
-  const name = raw.displayName || raw.itemName || raw.optionName || raw.item_name || raw.name || "";
+{rentalItems.length > 0 ? rentalItems.map((item: any, idx: number) => {
+  const name = item.displayName || item.optionName || "";
   const isRental = String(name).includes("임대");
   const isDelivery = String(name).includes("운송");
-  const showSpec = isRental || isDelivery;  // 임대 또는 운송일 때만 규격 표시
+  const showSpec = isRental || isDelivery;
   
-  const qty = Number(raw.qty || raw.QTY || 1);
-  const unitPrice = Number(raw.unitPrice || raw.unit_price || raw.UNIT_PRICE || 0);
-  const amount = qty * unitPrice;
-  const months = isRental ? (raw.months || rentalForm.months) : "";
+  const months = isRental ? (item.months || rentalForm.months) : "";
   
   return (
-    <tr key={idx}>
+    <tr key={item.key || idx}>
       <td style={tdStyle}>{name}</td>
       <td style={{ ...tdStyle, textAlign: 'center' }}>{showSpec ? spec : ""}</td>
       <td style={{ ...tdStyle, textAlign: 'center' }}>{months}</td>
-      <td style={{ ...tdStyle, textAlign: 'right' }}>{money(unitPrice)}</td>
-      <td style={{ ...tdStyle, textAlign: 'center' }}>{qty}</td>
-      <td style={{ ...tdStyle, textAlign: 'right' }}>{money(amount)}</td>
+      <td style={{ ...tdStyle, textAlign: 'right' }}>{money(item.unitPrice)}</td>
+      <td style={{ ...tdStyle, textAlign: 'center' }}>{item.qty}</td>
+      <td style={{ ...tdStyle, textAlign: 'right' }}>{money(item.qty * item.unitPrice)}</td>
     </tr>
   );
 
@@ -2500,7 +2496,7 @@ const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
         </div>
       </div>
     );
-  }, [current, rentalForm, bizcards, selectedBizcardId]);
+  }, [current, rentalForm, bizcards, selectedBizcardId,editItems]);
   // 현재 탭에 따른 미리보기 컴포넌트
   const currentPreview = useMemo(() => {
     if (!current) {
