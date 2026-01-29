@@ -669,25 +669,25 @@ const handleSelectOption = (opt: any) => {
   }
   
   // 기존 단일 옵션 처리
-  const res = calculateOptionLine(opt, w, l);
-  const rawName = String(opt.option_name || "");
-  const rent = rawName.includes("임대");
-  const months = opt._months || 3;
-  const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
-  
-  onAddItem({
-    key: `item_${Date.now()}`,
-    optionId: opt.option_id,
-    optionName: rawName,
-  displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
-    unit: rent ? "개월" : (res.unit || "EA"),
-    qty: 1,
-    unitPrice: customerUnitPrice,
-    amount: customerUnitPrice,
-    showSpec: opt.show_spec || "n",
-    lineSpec: { w, l, h: 2.6 },
-    months: months,
-  });
+const res = calculateOptionLine(opt as any, w, l);
+                const rawName = String(opt.option_name || "");
+                const rent = rawName.includes("임대");
+                const months = opt._months || 3;
+                const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
+                
+                setEditItems(prev => prev.map(i => i.key !== item.key ? i : {
+                  ...i,
+                  optionId: opt.option_id,
+                  optionName: rawName,
+                  displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
+                  unit: rent ? "개월" : (res.unit || "EA"),
+                  qty: 1,
+                  unitPrice: customerUnitPrice,
+                  amount: customerUnitPrice,
+                  showSpec: opt.show_spec || "n",
+                  lineSpec: { w, l, h: 2.6 },
+                  months: months,
+                }));
   
   setShowDropdown(false);
   setIsEditing(false);
