@@ -2344,18 +2344,26 @@ const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
             </tr>
           </thead>
           <tbody>
-          {rentalItems.length > 0 ? rentalItems.map((raw, idx) => {
-  const it = normItem(raw);
-  const amount = it.unitPrice * it.qty;
-  const isRental = String(it.name).includes("임대");
+          {rentalItems.length > 0 ? rentalItems.map((raw: any, idx) => {
+  const name = raw.optionName || raw.displayName || raw.item_name || raw.name || "";
+  const isRental = String(name).includes("임대");
+  const qty = Number(raw.qty || raw.QTY || 1);
+  const unitPrice = Number(raw.unitPrice || raw.unit_price || raw.UNIT_PRICE || 0);
+  const amount = qty * unitPrice;
+  const months = isRental ? (raw.months || rentalForm.months) : "";
+  
   return (
     <tr key={idx}>
-      <td style={tdStyle}>{it.name}</td>
+      <td style={tdStyle}>{name}</td>
       <td style={{ ...tdStyle, textAlign: 'center' }}>{spec}</td>
-      <td style={{ ...tdStyle, textAlign: 'center' }}>{isRental ? it.months || rentalForm.months : ""}</td>
-                </tr>
-              );
-            }) : (
+      <td style={{ ...tdStyle, textAlign: 'center' }}>{months}</td>
+      <td style={{ ...tdStyle, textAlign: 'right' }}>{money(unitPrice)}</td>
+      <td style={{ ...tdStyle, textAlign: 'center' }}>{qty}</td>
+      <td style={{ ...tdStyle, textAlign: 'right' }}>{money(amount)}</td>
+    </tr>
+  );
+ }) : (
+          
               <tr>
                 <td style={tdStyle}>컨테이너 임대</td>
                 <td style={{ ...tdStyle, textAlign: 'center' }}>{spec}</td>
