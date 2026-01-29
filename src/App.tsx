@@ -900,38 +900,37 @@ useEffect(() => {
   );
 
   const recomputeRow = (r: SelectedRow): SelectedRow => {
-   const rent = isRentRow(r) && !(r as any)._isCustomFreeText;
+  const rent = isRentRow(r) && !(r as any)._isCustomFreeText;
 
-    const baseQty = Number((r as any).baseQty || 1);
-    const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
-    const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
+  const baseQty = Number((r as any).baseQty || 1);
+  const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
+  const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
 
-    const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
+  const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
 
-    const months = Number((r as any).months ?? 1);
-    let customerUnitPrice: number;
+  const months = Number((r as any).months ?? 1);
+  let customerUnitPrice: number;
 
-   if (rent) {
-  customerUnitPrice = Math.round(baseUnitPrice * months);
-} else {
-  customerUnitPrice = Math.round(Number((r as any).customerUnitPrice ?? 0));  // ✅ 음수(할인) 허용
-}
+  if (rent) {
+    customerUnitPrice = Math.round(baseUnitPrice * months);
+  } else {
+    customerUnitPrice = Math.round(Number((r as any).customerUnitPrice ?? 0));
+  }
 
-    const finalAmount = Math.round(displayQty * customerUnitPrice);
+  const finalAmount = Math.round(displayQty * customerUnitPrice);
 
-    return {
-      ...(r as any),
-      baseQty,
-      baseUnitPrice,
-      baseAmount,
-      displayQty: rent ? Math.max(1, displayQty) : displayQty,
-      customerUnitPrice,
-      finalAmount,
-      months: rent ? Math.max(1, months) : months,
-      displayName: (r as any).displayName ?? (r as any).optionName,
-    } as any;
-  };
-
+  return {
+    ...(r as any),
+    baseQty,
+    baseUnitPrice,
+    baseAmount,
+    displayQty: rent ? Math.max(1, displayQty) : displayQty,
+    customerUnitPrice,
+    finalAmount,
+    months: rent ? Math.max(1, months) : months,
+    // ✅ displayName은 절대 건드리지 않음 - 이미 있으면 그대로 유지
+  } as any;
+};
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
   const filteredOptions = useMemo(() => {
