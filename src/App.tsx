@@ -1819,7 +1819,7 @@ onSelectOption={(item, opt, calc) => {
   if (opt._isDisplayNameOnly) {
     setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
       ...i, 
-      displayName: rawName
+      displayName: rawName,
       _isRent: item._isRent,
     } as any));
     return;
@@ -1851,6 +1851,7 @@ onSelectOption={(item, opt, calc) => {
     finalAmount: customerUnitPrice, 
     months,
     lineSpec: existingLineSpec,
+    _isRent: (item as any)._isRent ?? rent,
     _isCustomFreeText: opt._isCustomFreeText || false,
   } as any));
 }}
