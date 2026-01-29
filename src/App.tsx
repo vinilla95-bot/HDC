@@ -88,6 +88,7 @@ React.useEffect(() => {
     inputRef.current.select();
   }
 }, [isEditing]);
+  
   React.useEffect(() => { setTempValue(String(value)); }, [value]);
 
   const handleBlur = () => { setIsEditing(false); onChange(Number(tempValue) || 0); };
@@ -267,27 +268,72 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
-  const commitFreeText = useCallback(() => {
-    const trimmed = (searchQueryRef.current || "").trim();
+const commitFreeText = useCallback(() => {
+  const trimmed = (searchQueryRef.current || "").trim();
+  
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  
+  if (trimmed) {
+    // ✅ 임대 + 개월수 파싱
+    const isRentText = trimmed.includes("임대");
+    const monthMatch = trimmed.match(/(\d+)\s*개월/);
+    const months = monthMatch ? Number(monthMatch[1]) : 1;
     
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    
-    if (trimmed) {
-      const customOpt = { 
-  option_id: `custom_${Date.now()}`, 
-  option_name: trimmed,
-  unit: 'EA',
-  unit_price: 0,
-  show_spec: 'n',
-  _isDisplayNameOnly: true,
-  _isCustomFreeText: true
-};
-      const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
-      onSelectOption(item, customOpt, calculated);
+    if (isRentText) {
+      // 규격 파싱: "3x6", "3*6", "3×6" 등
+      const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+      const w = specMatch ? Number(specMatch[1]) : form.w;
+      const l = specMatch ? Number(specMatch[2]) : form.l;
+      
+      // 규격별 월 임대료
+      const rentPrices: Record<string, number> = {
+        '3x3': 130000,
+        '3x4': 130000,
+        '3x6': 150000,
+        '3x9': 200000,
+      };
+      
+      const specKey = `${w}x${l}`;
+      const monthlyPrice = rentPrices[specKey] || 150000; // 기본값 15만원
+      const totalPrice = monthlyPrice * months;
+      
+      const rentOpt = {
+        option_id: `rent_${w}x${l}_${Date.now()}`,
+        option_name: `${w}x${l} 임대 ${months}개월`,
+        unit: '개월',
+        unit_price: monthlyPrice,
+        show_spec: 'n',
+        _isCustomFreeText: false,
+        _months: months,
+      };
+      
+      const calculated = {
+        qty: 1,
+        unitPrice: totalPrice,
+        amount: totalPrice,
+        unit: '개월',
+      };
+      
+      onSelectOption(item, rentOpt, calculated);
+      return;
     }
-  }, [item, form, onSelectOption]);
+    
+    // 일반 자유입력
+    const customOpt = { 
+      option_id: `custom_${Date.now()}`, 
+      option_name: trimmed,
+      unit: 'EA',
+      unit_price: 0,
+      show_spec: 'n',
+      _isDisplayNameOnly: true,
+      _isCustomFreeText: true
+    };
+    const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
+    onSelectOption(item, customOpt, calculated);
+  }
+}, [item, form, onSelectOption]);
 
   const handleBlur = (e: React.FocusEvent) => {
   // 드롭다운 내부로 포커스가 이동하는 경우 blur 무시
