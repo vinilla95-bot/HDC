@@ -284,45 +284,44 @@ const commitFreeText = useCallback(() => {
   const monthMatch = trimmed.match(/(\d+)\s*개월/);
   const months = monthMatch ? Number(monthMatch[1]) : 3;  // ✅ [3] → [1] 수정
   
-  if (isRentText) {
-    // 규격 파싱: "3x6", "3*6", "3×6" 등
-    const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-    const w = specMatch ? Number(specMatch[1]) : form.w;
-    const l = specMatch ? Number(specMatch[2]) : form.l;
-    
-    // 규격별 월 임대료
-    const rentPrices: Record<string, number> = {
-      '3x3': 130000,
-      '3x4': 130000,
-      '3x6': 150000,
-      '3x9': 200000,
-    };
-    
-    const specKey = `${w}x${l}`;
-    const monthlyPrice = rentPrices[specKey] || 150000;
-    const totalPrice = monthlyPrice * months;
-    
-    const rentOpt = {
-      option_id: `rent_${w}x${l}_${Date.now()}`,
-      option_name: `${w}x${l} 임대 ${months}개월`,
-      unit: '개월',
-      unit_price: monthlyPrice,
-      show_spec: 'n',
-      _isCustomFreeText: false,
-      _months: months,
-    };
-    
-    const calculated = {
-      qty: 1,
-      unitPrice: totalPrice,
-      amount: totalPrice,
-      unit: '개월',
-    };
-    
-    onSelectOption(item, rentOpt, calculated);
-    return;
-  }
+if (isRentText) {
+  // 규격 파싱: "3x6", "3*6", "3×6" 등
+  const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+  const w = specMatch ? Number(specMatch[1]) : form.w;
+  const l = specMatch ? Number(specMatch[2]) : form.l;
   
+  // 규격별 월 임대료
+  const rentPrices: Record<string, number> = {
+    '3x3': 130000,
+    '3x4': 130000,
+    '3x6': 150000,
+    '3x9': 200000,
+  };
+  
+  const specKey = `${w}x${l}`;
+  const monthlyPrice = rentPrices[specKey] || 150000;
+  const totalPrice = monthlyPrice * months;
+  
+  const rentOpt = {
+    option_id: `rent_${w}x${l}_${Date.now()}`,
+    option_name: `컨테이너 임대 / ${months}개월`,  // ✅ 규격 제거, "컨테이너 임대"로 변경
+    unit: '개월',
+    unit_price: monthlyPrice,
+    show_spec: 'n',
+    _isCustomFreeText: false,
+    _months: months,
+  };
+  
+  const calculated = {
+    qty: 1,
+    unitPrice: totalPrice,
+    amount: totalPrice,
+    unit: '개월',
+  };
+  
+  onSelectOption(item, rentOpt, calculated);
+  return;
+}
   // 일반 자유입력
   const customOpt = { 
     option_id: `custom_${Date.now()}`, 
