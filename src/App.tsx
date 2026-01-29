@@ -117,11 +117,11 @@ function EditableSpecCell({
   const [isEditing, setIsEditing] = useState(false);
   
   // specText가 있으면 그대로 표시, 아니면 spec 객체로 표시
-  const displayText = specText !== undefined && specText !== '' 
-    ? specText 
-    : (spec.w || spec.l || spec.h) 
-      ? `${spec.w}×${spec.l}×${spec.h || 0}` 
-      : '';
+const displayText = specText !== undefined && specText !== '' 
+  ? specText 
+  : (spec.w > 0 || spec.l > 0) 
+    ? `${spec.w}×${spec.l}×${spec.h || 0}` 
+    : '';
   
   const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -2446,7 +2446,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
    <td className="c center">
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
-      spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }} 
+  spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }}} 
       specText={item.specText}
       onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
       onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
