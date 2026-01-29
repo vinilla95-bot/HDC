@@ -423,7 +423,7 @@ function InlineItemSearchCell({
                         <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
                           <input
                             type="number"
-                            defaultValue={1}
+                            defaultValue={3}
                             min={1}
                             id={`rent-inline-${opt.option_id}`}
                             onClick={(e) => e.stopPropagation()}
@@ -443,10 +443,9 @@ function InlineItemSearchCell({
                               const input = document.getElementById(
                                 `rent-inline-${opt.option_id}`
                               ) as HTMLInputElement;
-                              const months = Number(input?.value) || 1;
-
-                              onSelectOption({ ...opt, _months: months });
-
+                             const months = Number(input?.value) || 3;  
+onSelectOption({ ...opt, _months: months, option_name: `컨테이너 임대` });
+                              
                               setShowDropdown(false);
                               setIsEditing(false);
                               setSearchQuery("");
@@ -673,14 +672,14 @@ const handleSelectOption = (opt: any) => {
   const res = calculateOptionLine(opt, w, l);
   const rawName = String(opt.option_name || "");
   const rent = rawName.includes("임대");
-  const months = opt._months || 1;
+  const months = opt._months || 3;
   const customerUnitPrice = rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0);
   
   onAddItem({
     key: `item_${Date.now()}`,
     optionId: opt.option_id,
     optionName: rawName,
-    displayName: rent ? `${rawName} ${months}개월` : rawName,
+  displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
     unit: rent ? "개월" : (res.unit || "EA"),
     qty: 1,
     unitPrice: customerUnitPrice,
@@ -831,7 +830,7 @@ const handleSelectOption = (opt: any) => {
                       <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <input
                           type="number"
-                          defaultValue={1}
+                          defaultValue={3}
                           min={1}
                           id={`rent-empty-${opt.option_id}`}
                           onClick={(e) => e.stopPropagation()}
@@ -842,7 +841,7 @@ const handleSelectOption = (opt: any) => {
                           onClick={(e) => {
                             e.stopPropagation();
                             const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
-                            const months = Number(input?.value) || 1;
+                            const months = Number(input?.value) || 3;
                             handleSelectOption({ ...opt, _months: months });
                           }}
                           style={{ padding: '4px 8px', background: '#e3f2fd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
@@ -1106,13 +1105,13 @@ const addEditItemFromOption = (opt: any) => {
   const res = calculateOptionLine(opt, w, l);
   const rawName = String(opt.option_name || "(이름없음)");
   const rent = rawName.includes("임대");
-  const months = opt._months || 1;
+  const months = opt._months || 3;
   
   setEditItems(prev => [...prev, {
     key: `item_${Date.now()}`,
     optionId: opt.option_id,
     optionName: rawName,
-    displayName: rent ? `${rawName} ${months}개월` : rawName,
+   displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
     unit: rent ? "개월" : (res.unit || "EA"),
     qty: 1,
     unitPrice: rent ? Number(res.unitPrice || 0) * months : Number(res.amount || 0),
@@ -1884,7 +1883,9 @@ const quotePreviewHtml = useMemo(() => {
                   ...i,
                   optionId: opt.option_id,
                   optionName: rawName,
-                  displayName: rent ? `${rawName} 1개월` : rawName,
+                 const months = opt._months || 3;
+
+displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
                   unit: rent ? "개월" : (res.unit || "EA"),
                   qty: 1,
                   unitPrice: customerUnitPrice,
@@ -1900,18 +1901,49 @@ const quotePreviewHtml = useMemo(() => {
             />
           </td>
           <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-            <EditableTextCell 
-              value={specText} 
-              onChange={(val) => {
-                const trimmed = val.trim();
-                setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
-                  ...it,
-                  specText: trimmed,
-                  showSpec: trimmed ? 'y' : 'n'
-                }));
-              }}
-              editable={editMode}
-            />
+          <EditableTextCell 
+  value={specText} 
+  onChange={(val) => {
+    const trimmed = val.trim();
+    
+    // ✅ 규격 파싱: "3x6", "3*6", "3×6" 등
+    const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+    
+    if (specMatch && item.optionId) {
+      const newW = Number(specMatch[1]);
+      const newL = Number(specMatch[2]);
+      
+      // ✅ 옵션 찾아서 단가 재계산
+      const opt = options.find((o: any) => o.option_id === item.optionId);
+      if (opt) {
+        const calculated = calculateOptionLine(opt, newW, newL);
+        const isRent = (item.unit === "개월") || String(item.displayName || "").includes("임대");
+        const months = item.months || 3;
+        const newUnitPrice = isRent 
+          ? calculated.unitPrice * months 
+          : calculated.amount;
+        
+        setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+          ...it,
+          specText: trimmed,
+          showSpec: 'y',
+          lineSpec: { w: newW, l: newL, h: 2.6 },
+          unitPrice: newUnitPrice,
+          amount: (it.qty || 1) * newUnitPrice,
+        }));
+        return;
+      }
+    }
+    
+    // ✅ 옵션이 없거나 규격 파싱 실패 시 기존 로직
+    setEditItems(prev => prev.map(it => it.key !== item.key ? it : {
+      ...it,
+      specText: trimmed,
+      showSpec: trimmed ? 'y' : 'n'
+    }));
+  }}
+  editable={editMode}
+/>
           </td>
           <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
   <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
@@ -3192,6 +3224,15 @@ async function saveEdit() {
 }
 
 const css = `
+/* 숫자 입력 화살표 제거 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
   .quoteListPage {
     margin: 0;
     background: #f6f7fb;
