@@ -1095,7 +1095,7 @@ const updateEditItemName = useCallback((itemKey: string, name: string) => {
   };
 
 
-  const updateEditItemMonths = (key: string, newMonths: number) => {
+const updateEditItemMonths = (key: string, newMonths: number) => {
   setEditItems(prev => prev.map(item => {
     if (item.key !== key) return item;
     
@@ -1104,17 +1104,26 @@ const updateEditItemName = useCallback((itemKey: string, name: string) => {
     
     if (!isRent) return item;
     
-    // 기본 월단가 찾기 (옵션에서)
-    const opt = options.find((o: any) => o.option_id === item.optionId);
-    const baseMonthlyPrice = opt?.unit_price || (item.unitPrice / (item.months || 1));
+    // ✅ 규격별 월 임대료
+    const w = item.lineSpec?.w || 3;
+    const l = item.lineSpec?.l || 6;
+    const specKey = `${w}x${l}`;
     
+    const rentPrices: Record<string, number> = {
+      '3x3': 140000,
+      '3x4': 130000,
+      '3x6': 150000,
+      '3x9': 200000,
+    };
+    
+    const baseMonthlyPrice = rentPrices[specKey] || 150000;
     const newUnitPrice = baseMonthlyPrice * months;
     
     return {
       ...item,
       months,
       unitPrice: newUnitPrice,
-      amount: item.qty * newUnitPrice,
+      amount: (item.qty || 1) * newUnitPrice,
       displayName: `컨테이너 임대 ${months}개월`,
     };
   }));
