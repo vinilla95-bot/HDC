@@ -448,7 +448,7 @@ return (
                       <input
                         type="number"
                         defaultValue={3}
-                        min={3}
+                        min={1}
                         id={`rent-inline-${opt.option_id}`}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -734,7 +734,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
                         <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
                           <input
                             type="number"
-                            defaultValue={1}
+                            defaultValue={3}
                             min={1}
                             id={`rent-empty-${opt.option_id}`}
                             onClick={(e) => e.stopPropagation()}
@@ -1640,7 +1640,7 @@ const inventoryScreen = (
               <input
                 type="number"
                 defaultValue={3}
-                min={3}
+                min={1}
                 id={`rent-months-${o.option_id}`}
                 onClick={(e) => e.stopPropagation()}
                 style={{ width: 50, padding: "4px 6px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center" }}
