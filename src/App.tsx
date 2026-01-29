@@ -224,8 +224,8 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
   const hasAutoStarted = React.useRef(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
- const displayText = item.displayName || "";
-const isEmpty = !item.displayName || item.displayName === '(품목선택)' || item.optionName === '';
+  const displayText = item.displayName || "";
+  const isEmpty = !item.displayName || item.displayName === '(품목선택)' || item.optionName === '';
   
   const prevKeyRef = React.useRef(item.key);
   React.useEffect(() => {
@@ -237,12 +237,11 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     }
   }, [item.key]);
 
- React.useEffect(() => {
+  React.useEffect(() => {
     setIsEditing(false);
     setShowDropdown(false);
     setSearchQuery("");
   }, []);
-  
 
   // ✅ 빈 품목이면 자동으로 편집모드 진입
   React.useEffect(() => {
@@ -270,86 +269,88 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
+  // ✅ filteredOptions 변경 시 selectedIndex 리셋
   React.useEffect(() => {
-  setSelectedIndex(-1);
-}, [filteredOptions]);
+    setSelectedIndex(-1);
+  }, [filteredOptions]);
 
-  
-const commitFreeText = useCallback(() => {
-  const trimmed = (searchQueryRef.current || "").trim();
-  
-  setIsEditing(false);
-  setShowDropdown(false);
-  setSearchQuery("");
-  
-  if (!trimmed || trimmed === item.displayName) {
-    return;
-  }
-  
-  // ✅ 임대 + 개월수 파싱
-  const isRentText = trimmed.includes("임대");
-  const monthMatch = trimmed.match(/(\d+)\s*개월/);
-  const months = monthMatch ? Number(monthMatch[1]) : 3;  // ✅ [3] → [1] 수정
-  
-if (isRentText) {
-  // 규격 파싱: "3x6", "3*6", "3×6" 등
-  const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-  const w = specMatch ? Number(specMatch[1]) : form.w;
-  const l = specMatch ? Number(specMatch[2]) : form.l;
-  
-  // 규격별 월 임대료
-  const rentPrices: Record<string, number> = {
-    '3x3': 130000,
-    '3x4': 130000,
-    '3x6': 150000,
-    '3x9': 200000,
-  };
-  
-  const specKey = `${w}x${l}`;
-  const monthlyPrice = rentPrices[specKey] || 150000;
-  const totalPrice = monthlyPrice * months;
-  
-  const rentOpt = {
-    option_id: `rent_${w}x${l}_${Date.now()}`,
-    option_name: `컨테이너 임대 / ${months}개월`,  // ✅ 규격 제거, "컨테이너 임대"로 변경
-    unit: '개월',
-    unit_price: monthlyPrice,
-    show_spec: 'n',
-    _isCustomFreeText: false,
-    _months: months,
-  };
-  
-  const calculated = {
-    qty: 1,
-    unitPrice: totalPrice,
-    amount: totalPrice,
-    unit: '개월',
-  };
-  
-  onSelectOption(item, rentOpt, calculated);
-  return;
-}
-  // 일반 자유입력
-  const customOpt = { 
-    option_id: `custom_${Date.now()}`, 
-    option_name: trimmed,
-    unit: 'EA',
-    unit_price: 0,
-    show_spec: 'n',
-    _isDisplayNameOnly: true,
-    _isCustomFreeText: true
-  };
-  const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
-  onSelectOption(item, customOpt, calculated);
-}, [item, form, onSelectOption]);
+  const commitFreeText = useCallback(() => {
+    const trimmed = (searchQueryRef.current || "").trim();
+    
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    
+    if (!trimmed || trimmed === item.displayName) {
+      return;
+    }
+    
+    // ✅ 임대 + 개월수 파싱
+    const isRentText = trimmed.includes("임대");
+    const monthMatch = trimmed.match(/(\d+)\s*개월/);
+    const months = monthMatch ? Number(monthMatch[1]) : 3;
+    
+    if (isRentText) {
+      // 규격 파싱: "3x6", "3*6", "3×6" 등
+      const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+      const w = specMatch ? Number(specMatch[1]) : form.w;
+      const l = specMatch ? Number(specMatch[2]) : form.l;
+      
+      // 규격별 월 임대료
+      const rentPrices: Record<string, number> = {
+        '3x3': 130000,
+        '3x4': 130000,
+        '3x6': 150000,
+        '3x9': 200000,
+      };
+      
+      const specKey = `${w}x${l}`;
+      const monthlyPrice = rentPrices[specKey] || 150000;
+      const totalPrice = monthlyPrice * months;
+      
+      const rentOpt = {
+        option_id: `rent_${w}x${l}_${Date.now()}`,
+        option_name: `컨테이너 임대 / ${months}개월`,
+        unit: '개월',
+        unit_price: monthlyPrice,
+        show_spec: 'n',
+        _isCustomFreeText: false,
+        _months: months,
+      };
+      
+      const calculated = {
+        qty: 1,
+        unitPrice: totalPrice,
+        amount: totalPrice,
+        unit: '개월',
+      };
+      
+      onSelectOption(item, rentOpt, calculated);
+      return;
+    }
+    
+    // 일반 자유입력
+    const customOpt = { 
+      option_id: `custom_${Date.now()}`, 
+      option_name: trimmed,
+      unit: 'EA',
+      unit_price: 0,
+      show_spec: 'n',
+      _isDisplayNameOnly: true,
+      _isCustomFreeText: true
+    };
+    const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
+    onSelectOption(item, customOpt, calculated);
+  }, [item, form, onSelectOption]);
     
   const handleBlur = (e: React.FocusEvent) => {
-  // 드롭다운 내부로 포커스가 이동하는 경우 blur 무시
-  if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
-    return;
-  }
-  commitFreeText();
-};
+    // 드롭다운 내부로 포커스가 이동하는 경우 blur 무시
+    if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
+      return;
+    }
+    commitFreeText();
+  };
+
   const handleSelect = (opt: any) => {
     setIsEditing(false);
     setShowDropdown(false);
@@ -361,174 +362,184 @@ if (isRentText) {
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-const handleCellClick = (e: React.MouseEvent) => {
-  e.stopPropagation();
-  if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-  const text = displayText || '';
-  setSearchQuery(text);
-  searchQueryRef.current = text;  // ✅ 이 줄 추가!
-  setIsEditing(true);
-  setShowDropdown(true);
-};
+  const handleCellClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+    const text = displayText || '';
+    setSearchQuery(text);
+    searchQueryRef.current = text;
+    setIsEditing(true);
+    setShowDropdown(true);
+  };
 
-return (
-  <div 
-    style={{ display: "contents" }}
-    onClick={!isEditing ? handleCellClick : undefined}
-  >
-    {!isEditing ? (
-      <span
-        style={{ cursor: "text", display: "block", width: "100%", minHeight: 20 }}
-        title="클릭하여 품목 변경"
-      >
-        {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
-      </span>
-    ) : (
-      <>
-        <input
-          ref={inputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setShowDropdown(true);
-          }}
-          onFocus={() => setShowDropdown(true)}
-         onBlur={(e) => handleBlur(e)}
-       onKeyDown={(e) => {
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    setSelectedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
-  } else if (e.key === "ArrowUp") {
-    e.preventDefault();
-    setSelectedIndex(prev => Math.max(prev - 1, -1));
-  } else if (e.key === "Enter") {
-    e.preventDefault();
-    e.stopPropagation();
-    if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
-      const opt = filteredOptions[selectedIndex];
-      if (String(opt.option_name || "").includes("임대")) {
-        // 임대는 기본 3개월로 선택
-        const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-        onSelectOption(item, { ...opt, _months: 3 }, calculated);
-      } else {
-        handleSelect(opt);
-      }
-      setSelectedIndex(-1);
-    } else {
-      commitFreeText();
-    }
-  } else if (e.key === "Escape") {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    setSelectedIndex(-1);
-  }
-}}
-          placeholder="품목 검색"
-          autoFocus
-          style={{ 
-            width: "100%", 
-            padding: "0", 
-            margin: "0",
-            textAlign: "left",
-            border: "none",
-            fontSize: 12, 
-            outline: "none",
-            background: "transparent"
-          }} 
-        />
-  
-{showDropdown && (isEditing || searchQuery.trim()) && (
-          <div 
-            ref={dropdownRef} 
-            style={{ 
-              position: "absolute", 
-              top: "100%", 
-              left: 0, 
-              width: "300px",
-              maxHeight: 300, 
-              overflowY: "auto", 
-              background: "#fff", 
-              border: "1px solid #ccc", 
-              borderRadius: 6,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
-              zIndex: 9999 
+  return (
+    <div 
+      style={{ display: "contents" }}
+      onClick={!isEditing ? handleCellClick : undefined}
+    >
+      {!isEditing ? (
+        <span
+          style={{ cursor: "text", display: "block", width: "100%", minHeight: 20 }}
+          title="클릭하여 품목 변경"
+        >
+          {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
+        </span>
+      ) : (
+        <>
+          <input
+            ref={inputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowDropdown(true);
             }}
-          >
-            {filteredOptions.length > 0 ? filteredOptions.map((opt: any) => {
-              const isRent = String(opt.option_name || "").includes("임대");
-              
-              if (isRent) {
+            onFocus={() => setShowDropdown(true)}
+            onBlur={(e) => handleBlur(e)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSelectedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSelectedIndex(prev => Math.max(prev - 1, -1));
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
+                  const opt = filteredOptions[selectedIndex];
+                  if (String(opt.option_name || "").includes("임대")) {
+                    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+                    onSelectOption(item, { ...opt, _months: 3 }, calculated);
+                  } else {
+                    handleSelect(opt);
+                  }
+                  setSelectedIndex(-1);
+                } else {
+                  commitFreeText();
+                }
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsEditing(false);
+                setShowDropdown(false);
+                setSearchQuery("");
+                setSelectedIndex(-1);
+              }
+            }}
+            placeholder="품목 검색"
+            autoFocus
+            style={{ 
+              width: "100%", 
+              padding: "0", 
+              margin: "0",
+              textAlign: "left",
+              border: "none",
+              fontSize: 12, 
+              outline: "none",
+              background: "transparent"
+            }} 
+          />
+    
+          {showDropdown && (isEditing || searchQuery.trim()) && (
+            <div 
+              ref={dropdownRef} 
+              style={{ 
+                position: "absolute", 
+                top: "100%", 
+                left: 0, 
+                width: "300px",
+                maxHeight: 300, 
+                overflowY: "auto", 
+                background: "#fff", 
+                border: "1px solid #ccc", 
+                borderRadius: 6,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
+                zIndex: 9999 
+              }}
+            >
+              {filteredOptions.length > 0 ? filteredOptions.map((opt: any, idx: number) => {
+                const isRent = String(opt.option_name || "").includes("임대");
+                const isSelected = selectedIndex === idx;
+                
+                if (isRent) {
+                  return (
+                    <div 
+                      key={opt.option_id} 
+                      style={{ 
+                        padding: "8px 10px", 
+                        borderBottom: "1px solid #eee",
+                        background: isSelected ? "#e3f2fd" : "#fff"
+                      }}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => setSelectedIndex(idx)}
+                    >
+                      <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
+                      <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+                      <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                        <input
+                          type="number"
+                          defaultValue={3}
+                          min={1}
+                          id={`rent-inline-${opt.option_id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onFocus={(e) => e.stopPropagation()}
+                          style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
+                        />
+                        <span style={{ fontSize: 11 }}>개월</span>
+                        <button 
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
+                            const months = Number(input?.value) || 3;
+                            
+                            setIsEditing(false);
+                            setShowDropdown(false);
+                            setSearchQuery("");
+                            
+                            const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+                            onSelectOption(item, { ...opt, _months: months }, calculated);
+                          }}
+                          style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+                        >
+                          선택
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                
                 return (
                   <div 
                     key={opt.option_id} 
-                    style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}
                     onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelect(opt)} 
+                    style={{ 
+                      padding: "8px 10px", 
+                      cursor: "pointer", 
+                      borderBottom: "1px solid #eee", 
+                      fontSize: 12,
+                      background: isSelected ? "#e3f2fd" : "#fff"
+                    }} 
+                    onMouseEnter={() => setSelectedIndex(idx)}
                   >
                     <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
                     <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-                      <input
-                        type="number"
-                        defaultValue={3}
-                        min={1}
-                        id={`rent-inline-${opt.option_id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onFocus={(e) => e.stopPropagation()}
-                        style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
-                      />
-                      <span style={{ fontSize: 11 }}>개월</span>
-                      <button 
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
-                          const months = Number(input?.value) || 3;
-                          
-                          setIsEditing(false);
-                          setShowDropdown(false);
-                          setSearchQuery("");
-                          
-                          const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-                          onSelectOption(item, { ...opt, _months: months }, calculated);
-                        }}
-                        style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
-                      >
-                        선택
-                      </button>
-                    </div>
                   </div>
                 );
-              }
-              
-              return (
-                <div 
-                  key={opt.option_id} 
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleSelect(opt)} 
-                  style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }} 
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                >
-                  <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
-                  <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
+              }) : (
+                <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>
+                  {searchQuery.trim() ? "검색 결과 없음 (Enter로 자유입력)" : "품목명을 입력하세요"}
                 </div>
-              );
-            }) : (
-              <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>
-                {searchQuery.trim() ? "검색 결과 없음 (Enter로 자유입력)" : "품목명을 입력하세요"}
-              </div>
-            )}
-          </div>
-        )}
-      </>
-    )}
-  </div>
-);
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 }
 
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
