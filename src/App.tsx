@@ -543,7 +543,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 }
 
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
-function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { ... }) {
+function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -603,7 +603,7 @@ useEffect(() => {
   setSelectedIndex(-1);
 }, [filteredOptions, sites]);
   
-  useEffect(() => {
+ useEffect(() => {
     const searchSites = async () => {
       if (!searchQuery.trim() || !onSiteSearch) {
         setSites([]);
@@ -619,9 +619,6 @@ useEffect(() => {
       setIsSearchingSite(false);
     };
 
-    useEffect(() => {
-  setSelectedIndex(-1);
-}, [filteredOptions, sites]);
     const timer = setTimeout(searchSites, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
@@ -2520,12 +2517,13 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
     String(item.displayName || "")
   )}
 </td>
-  <td className="c center">
+     <td className="c center">
   {showSpec ? (
     editable && onUpdateSpec ? (
       <EditableSpecCell 
-        spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }
+        spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }}
         specText={item.specText}
+
         onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
         onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
       />
