@@ -2477,16 +2477,18 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
     String(item.displayName || "")
   )}
 </td>
-   <td className="c center">
-  {editable && onUpdateSpec ? (
-    <EditableSpecCell 
-  spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }} 
-      specText={item.specText}
-      onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
-      onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
-    />
-  ) : showSpec ? (
-    item.specText || `${item.lineSpec?.w || form.w}×${item.lineSpec?.l || form.l}×${item.lineSpec?.h || form.h}`
+  <td className="c center">
+  {showSpec ? (
+    editable && onUpdateSpec ? (
+      <EditableSpecCell 
+        spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }} 
+        specText={item.specText}
+        onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
+        onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
+      />
+    ) : (
+      item.specText || `${item.lineSpec?.w || form.w}×${item.lineSpec?.l || form.l}×${item.lineSpec?.h || form.h}`
+    )
   ) : null}
 </td>
   <td className="c center">
