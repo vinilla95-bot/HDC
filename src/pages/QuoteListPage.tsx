@@ -1093,6 +1093,32 @@ const updateEditItemName = useCallback((itemKey: string, name: string) => {
         : item
     ));
   };
+
+
+  const updateEditItemMonths = (key: string, newMonths: number) => {
+  setEditItems(prev => prev.map(item => {
+    if (item.key !== key) return item;
+    
+    const months = Math.max(1, newMonths);
+    const isRent = item.unit === "개월" || String(item.displayName || "").includes("임대");
+    
+    if (!isRent) return item;
+    
+    // 기본 월단가 찾기 (옵션에서)
+    const opt = options.find((o: any) => o.option_id === item.optionId);
+    const baseMonthlyPrice = opt?.unit_price || (item.unitPrice / (item.months || 1));
+    
+    const newUnitPrice = baseMonthlyPrice * months;
+    
+    return {
+      ...item,
+      months,
+      unitPrice: newUnitPrice,
+      amount: item.qty * newUnitPrice,
+      displayName: `컨테이너 임대 ${months}개월`,
+    };
+  }));
+};
 const updateEditItemSpec = (key: string, specText: string) => {
   const trimmed = specText.trim();
   
