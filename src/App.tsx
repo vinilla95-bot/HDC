@@ -1142,7 +1142,6 @@ if (field === "months" && rent) {
       }
       
 if (field === "customerUnitPrice") {
-  if (rent && !item._isCustomFreeText) return item;
   const p = Number(value || 0);
   return recomputeRow({ ...item, customerUnitPrice: p });
 }
@@ -2461,7 +2460,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
     ) : String(qty)}
   </td>
  <td className="c right">
-  {editable && onUpdatePrice && !rent ? (
+  {editable && onUpdatePrice ? (
     <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
   ) : (
     unitSupply ? fmt(unitSupply) : ''
