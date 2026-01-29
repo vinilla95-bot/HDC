@@ -2716,12 +2716,16 @@ td input, td input:focus, td input:focus-visible {
     text-overflow: ellipsis;
   }
 
-  .a4Items tbody td{
-    padding: 6px 8px;
-    vertical-align: middle;
-    min-height: 28px;
-    max-height: 70px;
-  }
+ .a4Items tbody tr {
+  display: table-row !important;
+}
+.a4Items tbody td{
+  display: table-cell !important;
+  padding: 6px 8px;
+  vertical-align: middle;
+  min-height: 28px;
+  max-height: 70px;
+}
   
   .a4Items tbody td.wrap{
   vertical-align: middle;  /* top → middle */
