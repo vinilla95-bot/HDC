@@ -2524,7 +2524,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
   {showSpec ? (
     editable && onUpdateSpec ? (
       <EditableSpecCell 
-        spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }} 
+        spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }
         specText={item.specText}
         onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
         onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
