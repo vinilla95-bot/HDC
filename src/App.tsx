@@ -358,7 +358,9 @@ const commitFreeText = useCallback(() => {
 const handleCellClick = (e: React.MouseEvent) => {
   e.stopPropagation();
   if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-  setSearchQuery(displayText || '');
+  const text = displayText || '';
+  setSearchQuery(text);
+  searchQueryRef.current = text;  // ✅ 이 줄 추가!
   setIsEditing(true);
   setShowDropdown(true);
 };
