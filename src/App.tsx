@@ -243,9 +243,6 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     setSearchQuery("");
   }, []);
   
-  React.useEffect(() => {
-  setSelectedIndex(-1);
-}, [filteredOptions]);
 
   // ✅ 빈 품목이면 자동으로 편집모드 진입
   React.useEffect(() => {
@@ -273,6 +270,11 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
   }, [searchQuery, options]);
 
+  React.useEffect(() => {
+  setSelectedIndex(-1);
+}, [filteredOptions]);
+
+  
 const commitFreeText = useCallback(() => {
   const trimmed = (searchQueryRef.current || "").trim();
   
@@ -2469,7 +2471,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
    <td className="c center">
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
-  spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }}} 
+  spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }} 
       specText={item.specText}
       onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
       onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
