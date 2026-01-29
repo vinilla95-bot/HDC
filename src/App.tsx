@@ -494,10 +494,12 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
     }
   }, [onAddItem, insertIndex]);
 
-  const handleBlur = () => {
+  const handleBlur = (e: React.FocusEvent) => {
+    if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
+      return;
+    }
     commitFreeText();
   };
-
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
