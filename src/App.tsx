@@ -543,13 +543,13 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 }
 
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
-function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
+function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { ... }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [sites, setSites] = useState<any[]>([]);
   const [isSearchingSite, setIsSearchingSite] = useState(false);
- const [selectedIndex, setSelectedIndex] = useState(-1);  // ✅ 추가
+  const [selectedIndex, setSelectedIndex] = useState(-1);  // ✅ 이 줄 추가
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -599,7 +599,10 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
       return name.includes(q) || matchKoreanLocal(name, q);
     }).slice(0, 10);
   }, [searchQuery, options]);
-
+useEffect(() => {
+  setSelectedIndex(-1);
+}, [filteredOptions, sites]);
+  
   useEffect(() => {
     const searchSites = async () => {
       if (!searchQuery.trim() || !onSiteSearch) {
