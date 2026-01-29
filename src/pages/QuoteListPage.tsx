@@ -2022,7 +2022,23 @@ displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
 />
           </td>
           <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-  <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
+  {(item.unit === "개월" || String(item.displayName || "").includes("임대")) ? (
+    editMode ? (
+      <select 
+        value={item.months || 3}
+        onChange={(e) => updateEditItemMonths(item.key, Number(e.target.value))}
+        style={{ border: '1px solid #ccc', borderRadius: 4, padding: '2px 4px', fontSize: 12 }}
+      >
+        {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+    ) : (
+      <span>{item.months || 3}</span>
+    )
+  ) : (
+    <EditableNumberCell value={item.qty} onChange={(val) => updateEditItemQty(item.key, val)} editable={editMode} />
+  )}
 </td>
 <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'right', height: 24, maxHeight: 24, overflow: 'hidden' }}>
   {editMode ? (
