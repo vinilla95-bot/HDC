@@ -2344,9 +2344,9 @@ const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
             </tr>
           </thead>
           <tbody>
-         // 새 코드 - 임대/운송 품목만 규격 표시
+        
 {rentalItems.length > 0 ? rentalItems.map((raw: any, idx) => {
-  const name = raw.optionName || raw.displayName || raw.item_name || raw.name || "";
+  const name = raw.displayName || raw.itemName || raw.optionName || raw.item_name || raw.name || "";
   const isRental = String(name).includes("임대");
   const isDelivery = String(name).includes("운송");
   const showSpec = isRental || isDelivery;  // 임대 또는 운송일 때만 규격 표시
