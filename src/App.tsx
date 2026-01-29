@@ -1807,9 +1807,8 @@ const inventoryScreen = (
   options={options}
  onSelectOption={(item, opt, calc) => {
   const rawName = String(opt.option_name || "");
-  const rent = rawName.includes("임대");
+  const rent = rawName.includes("임대") && !opt._isCustomFreeText;
   
-  // displayName만 변경하는 경우 (자유입력)
   if (opt._isDisplayNameOnly) {
     setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
       ...i, 
@@ -1818,25 +1817,32 @@ const inventoryScreen = (
     return;
   }
   
-  // 일반 옵션 선택
-  const customerUnitPrice = rent ? Number(calc.unitPrice || 0) : Number(calc.amount || 0);
+  // ✅ 이미 개월수가 포함된 경우 (스마트 파싱)
+  const months = opt._months || 1;
   const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
+  
+  // ✅ 이미 "N개월"이 품목명에 있으면 그대로 사용
+  const hasMonthInName = /\d+개월/.test(rawName);
+  const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
+  
+  const customerUnitPrice = Number(calc.unitPrice || calc.amount || 0);
   
   setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : recomputeRow({
     ...i, 
     optionId: opt.option_id, 
     optionName: rawName, 
-    displayName: rent ? `${rawName} 1개월` : rawName,
+    displayName,
     unit: rent ? "개월" : calc.unit || "EA", 
     showSpec: opt.show_spec || "n",
     baseQty: calc.qty || 1, 
-    baseUnitPrice: calc.unitPrice || 0, 
+    baseUnitPrice: opt.unit_price || calc.unitPrice || 0, 
     baseAmount: calc.amount || 0,
     displayQty: 1, 
     customerUnitPrice, 
     finalAmount: customerUnitPrice, 
-    months: 1,
-    lineSpec: existingLineSpec
+    months,
+    lineSpec: existingLineSpec,
+    _isCustomFreeText: opt._isCustomFreeText || false,
   } as any)));
 }}
   onAddItem={(opt, calc, insertIdx) => addOption(opt, false, 0, "", undefined, insertIdx)}
