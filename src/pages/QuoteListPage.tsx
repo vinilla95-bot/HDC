@@ -2346,11 +2346,10 @@ const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
         
 {rentalItems.length > 0 ? rentalItems.map((item: any, idx: number) => {
   const name = item.displayName || item.optionName || "";
-  const isRental = String(name).includes("임대");
+ const isContainerRental = String(name).includes("컨테이너 임대");
   const isDelivery = String(name).includes("운송");
-  const showSpec = isRental || isDelivery;
-  
-  const months = isRental ? (item.months || rentalForm.months) : "";
+const showSpec = isContainerRental || isDelivery;
+const months = isContainerRental ? (item.months || rentalForm.months) : "";
   
   return (
     <tr key={item.key || idx}>
