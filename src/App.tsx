@@ -538,6 +538,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
   const [showDropdown, setShowDropdown] = useState(false);
   const [sites, setSites] = useState<any[]>([]);
   const [isSearchingSite, setIsSearchingSite] = useState(false);
+ const [selectedIndex, setSelectedIndex] = useState(-1);  // ✅ 추가
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -603,10 +604,15 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
       }
       setIsSearchingSite(false);
     };
+
+    useEffect(() => {
+  setSelectedIndex(-1);
+}, [filteredOptions, sites]);
     const timer = setTimeout(searchSites, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
 
+  
   const handleSelect = (opt: any) => {
     setIsEditing(false);
     setShowDropdown(false);
@@ -667,19 +673,42 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
   }}
   onFocus={() => setShowDropdown(true)}
   onBlur={(e) => handleBlur(e)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              e.stopPropagation();
-              commitFreeText();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              setIsEditing(false);
-              setShowDropdown(false);
-              setSearchQuery("");
-              setSites([]);
-            }
-          }}
+         onKeyDown={(e) => {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    const totalItems = sites.length + filteredOptions.length;
+    setSelectedIndex(prev => Math.min(prev + 1, totalItems - 1));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    setSelectedIndex(prev => Math.max(prev - 1, -1));
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    e.stopPropagation();
+    if (selectedIndex >= 0) {
+      if (selectedIndex < sites.length) {
+        // 운송비 선택
+        const site = sites[selectedIndex];
+        handleDeliverySelect(site, 'delivery');
+      } else {
+        // 품목 선택
+        const optIdx = selectedIndex - sites.length;
+        if (filteredOptions[optIdx]) {
+          handleSelect(filteredOptions[optIdx]);
+        }
+      }
+      setSelectedIndex(-1);
+    } else {
+      commitFreeText();
+    }
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setSites([]);
+    setSelectedIndex(-1);
+  }
+}}
           placeholder="검색..."
           autoFocus
           style={{ 
