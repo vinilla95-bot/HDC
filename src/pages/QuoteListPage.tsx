@@ -1721,9 +1721,8 @@ const quotePreviewHtml = useMemo(() => {
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <span style={{ flex: 1 }}>
         <EditableTextCell 
-  value={specText} 
-  onChange={(val) => updateEditItemSpec(item.key, val)}
-  editable={editMode}
+  value={customerName} 
+  onChange={(val) => setEditForm((p: any) => ({ ...p, customer_name: val }))} 
 />
       </span>
       <span style={{ fontWeight: 900, marginLeft: 8, flexShrink: 0 }}>귀하</span>
@@ -1917,12 +1916,13 @@ const quotePreviewHtml = useMemo(() => {
                 const rawName = String(opt.option_name || "");
                 const rent = rawName.includes("임대");
                 const customerUnitPrice = rent ? Number(res.unitPrice || 0) : Number(res.amount || 0);
+                 const months = opt._months || 3;
                 
                 setEditItems(prev => prev.map(i => i.key !== item.key ? i : {
                   ...i,
                   optionId: opt.option_id,
                   optionName: rawName,
-                 const months = opt._months || 3;
+                
 
 displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
                   unit: rent ? "개월" : (res.unit || "EA"),
