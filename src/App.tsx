@@ -222,6 +222,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const hasAutoStarted = React.useRef(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
  const displayText = item.displayName || "";
 const isEmpty = !item.displayName || item.displayName === '(품목선택)' || item.optionName === '';
@@ -241,6 +242,10 @@ const isEmpty = !item.displayName || item.displayName === '(품목선택)' || it
     setShowDropdown(false);
     setSearchQuery("");
   }, []);
+  
+  React.useEffect(() => {
+  setSelectedIndex(-1);
+}, [filteredOptions]);
 
   // ✅ 빈 품목이면 자동으로 편집모드 진입
   React.useEffect(() => {
@@ -388,19 +393,38 @@ return (
           }}
           onFocus={() => setShowDropdown(true)}
          onBlur={(e) => handleBlur(e)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              e.stopPropagation();
-              commitFreeText();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsEditing(false);
-              setShowDropdown(false);
-              setSearchQuery("");
-            }
-          }}
+       onKeyDown={(e) => {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    setSelectedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    setSelectedIndex(prev => Math.max(prev - 1, -1));
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    e.stopPropagation();
+    if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
+      const opt = filteredOptions[selectedIndex];
+      if (String(opt.option_name || "").includes("임대")) {
+        // 임대는 기본 3개월로 선택
+        const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+        onSelectOption(item, { ...opt, _months: 3 }, calculated);
+      } else {
+        handleSelect(opt);
+      }
+      setSelectedIndex(-1);
+    } else {
+      commitFreeText();
+    }
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setSelectedIndex(-1);
+  }
+}}
           placeholder="품목 검색"
           autoFocus
           style={{ 
