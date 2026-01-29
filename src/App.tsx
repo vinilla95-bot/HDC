@@ -745,16 +745,25 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
             {filteredOptions.length > 0 && (
               <>
                 <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>품목</div>
-                {filteredOptions.map((opt: any) => {
+               {filteredOptions.map((opt: any, idx: number) => {
                   const isRent = String(opt.option_name || "").includes("임대");
                   
                   if (isRent) {
                     return (
-                      <div 
-                        key={opt.option_id} 
-                        style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}
-                        onMouseDown={(e) => e.preventDefault()}
-                      >
+    <div 
+      key={opt.option_id} 
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => handleSelect(opt)} 
+      style={{ 
+        padding: "8px 10px", 
+        cursor: "pointer", 
+        borderBottom: "1px solid #eee", 
+        fontSize: 12,
+        background: selectedIndex === idx ? "#e3f2fd" : "#fff"  // ✅ 추가
+      }} 
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
+      onMouseLeave={(e) => (e.currentTarget.style.background = selectedIndex === idx ? "#e3f2fd" : "#fff")}  // ✅ 수정
+    >
                         <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
                         <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
                         <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
