@@ -1110,19 +1110,18 @@ const row: any = {
       if (field === "specText") {
         return { ...item, specText: String(value ?? "") };
       }
-
-    if (field === "months" && rent) {
+if (field === "months" && rent) {
   const months = Math.max(1, Math.floor(Number(value || 1)));
   const newUnitPrice = item.baseUnitPrice * months;
   
-  // ✅ displayName은 그대로 유지, 단가만 변경
+  // ✅ displayName 명시적으로 유지
   return recomputeRow({
     ...item,
     months,
     customerUnitPrice: newUnitPrice,
+    displayName: item.displayName,  // ← 이거 추가!
   });
 }
-
       if (field === "displayQty") {
         const qty = Math.max(0, Math.floor(Number(value || 0)));
         if (rent) {
@@ -2529,8 +2528,8 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
               <tr>
                 <th className="label">중요사항</th>
                 <td className="text" colSpan={7}>
-                  *중요사항*
-                  <br />
+                 
+               
                   1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
                   <br />
                   2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
