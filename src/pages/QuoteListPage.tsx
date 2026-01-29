@@ -1091,7 +1091,45 @@ const updateEditItemName = useCallback((itemKey: string, name: string) => {
         : item
     ));
   };
-
+const updateEditItemSpec = (key: string, specText: string) => {
+  const trimmed = specText.trim();
+  
+  // 규격 파싱: "3x6", "3*6", "3×6" 등
+  const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+  
+  setEditItems(prev => prev.map(item => {
+    if (item.key !== key) return item;
+    
+    if (specMatch && item.optionId) {
+      const newW = Number(specMatch[1]);
+      const newL = Number(specMatch[2]);
+      
+      // 옵션 찾아서 단가 재계산
+      const opt = options.find((o: any) => o.option_id === item.optionId);
+      if (opt) {
+        const calculated = calculateOptionLine(opt, newW, newL);
+        const isRent = (item.unit === "개월") || String(item.displayName || "").includes("임대");
+        const months = item.months || 3;
+        const newUnitPrice = isRent ? calculated.unitPrice * months : calculated.amount;
+        
+        return {
+          ...item,
+          specText: trimmed,
+          showSpec: 'y',
+          lineSpec: { w: newW, l: newL, h: 2.6 },
+          unitPrice: newUnitPrice,
+          amount: (item.qty || 1) * newUnitPrice,
+        };
+      }
+    }
+    
+    return {
+      ...item,
+      specText: trimmed,
+      showSpec: trimmed ? 'y' : 'n'
+    };
+  }));
+};
  
 
   const deleteEditItem = (key: string) => {
@@ -1683,9 +1721,10 @@ const quotePreviewHtml = useMemo(() => {
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <span style={{ flex: 1 }}>
         <EditableTextCell 
-          value={customerName} 
-          onChange={(val) => setEditForm((p: any) => ({ ...p, customer_name: val }))} 
-        />
+  value={specText} 
+  onChange={(val) => updateEditItemSpec(item.key, val)}
+  editable={editMode}
+/>
       </span>
       <span style={{ fontWeight: 900, marginLeft: 8, flexShrink: 0 }}>귀하</span>
     </div>
