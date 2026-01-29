@@ -1111,17 +1111,17 @@ const row: any = {
         return { ...item, specText: String(value ?? "") };
       }
 
-      if (field === "months" && rent) {
-        const months = Math.max(1, Math.floor(Number(value || 1)));
-        const newUnitPrice = item.baseUnitPrice * months;
-        const baseName = String(item.optionName || "").replace(/\s*\d+개월$/, "").trim();
-        return recomputeRow({
-          ...item,
-          months,
-          customerUnitPrice: newUnitPrice,
-          displayName: `${baseName} ${months}개월`,
-        });
-      }
+    if (field === "months" && rent) {
+  const months = Math.max(1, Math.floor(Number(value || 1)));
+  const newUnitPrice = item.baseUnitPrice * months;
+  
+  // ✅ displayName은 그대로 유지, 단가만 변경
+  return recomputeRow({
+    ...item,
+    months,
+    customerUnitPrice: newUnitPrice,
+  });
+}
 
       if (field === "displayQty") {
         const qty = Math.max(0, Math.floor(Number(value || 0)));
