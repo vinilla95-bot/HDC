@@ -874,7 +874,13 @@ useEffect(() => {
   };
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
-  const isRentRow = (row: SelectedRow) => String((row as any)?.optionName || "").includes("임대");
+ const isRentRow = (row: SelectedRow) => {
+  // ✅ 명시적 플래그가 있으면 그걸 사용
+  if ((row as any)._isRent !== undefined) {
+    return (row as any)._isRent;
+  }
+  return String((row as any)?.optionName || "").includes("임대");
+};
 
   useEffect(() => {
     supabase
@@ -1046,7 +1052,9 @@ const row: any = {
   months: defaultMonths,
   memo: res.memo || "",
   lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },
+  _isRent: rent,
   _isCustomFreeText: opt._isCustomFreeText || false,
+  
 };
     
     // ✅ 수정: insertIndex 위치에 삽입
@@ -1812,6 +1820,7 @@ onSelectOption={(item, opt, calc) => {
     setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
       ...i, 
       displayName: rawName
+      _isRent: item._isRent,
     } as any));
     return;
   }
