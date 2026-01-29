@@ -1241,7 +1241,7 @@ const addEditItemFromOption = (opt: any) => {
       let query = supabase
         .from("quotes")
         .select(selectCols)
-        .is("source", null)
+      .or("source.is.null,source.eq.통화녹음")
         .not("quote_id", "like", "SCHEDULE_%")
          .not("quote_id", "like", "KAKAO_%")
         .order("created_at", { ascending: false })
