@@ -275,66 +275,68 @@ const commitFreeText = useCallback(() => {
   setShowDropdown(false);
   setSearchQuery("");
   
-  if (trimmed) {
-    // ✅ 임대 + 개월수 파싱
-    const isRentText = trimmed.includes("임대");
-    const monthMatch = trimmed.match(/(\d+)\s*개월/);
-    const months = monthMatch ? Number(monthMatch[1]) : 1;
-    
-    if (isRentText) {
-      // 규격 파싱: "3x6", "3*6", "3×6" 등
-      const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-      const w = specMatch ? Number(specMatch[1]) : form.w;
-      const l = specMatch ? Number(specMatch[2]) : form.l;
-      
-      // 규격별 월 임대료
-      const rentPrices: Record<string, number> = {
-        '3x3': 130000,
-        '3x4': 130000,
-        '3x6': 150000,
-        '3x9': 200000,
-      };
-      
-      const specKey = `${w}x${l}`;
-      const monthlyPrice = rentPrices[specKey] || 150000; // 기본값 15만원
-      const totalPrice = monthlyPrice * months;
-      
-      const rentOpt = {
-        option_id: `rent_${w}x${l}_${Date.now()}`,
-        option_name: `${w}x${l} 임대 ${months}개월`,
-        unit: '개월',
-        unit_price: monthlyPrice,
-        show_spec: 'n',
-        _isCustomFreeText: false,
-        _months: months,
-      };
-      
-      const calculated = {
-        qty: 1,
-        unitPrice: totalPrice,
-        amount: totalPrice,
-        unit: '개월',
-      };
-      
-      onSelectOption(item, rentOpt, calculated);
-      return;
-    }
-    
-    // 일반 자유입력
-    const customOpt = { 
-      option_id: `custom_${Date.now()}`, 
-      option_name: trimmed,
-      unit: 'EA',
-      unit_price: 0,
-      show_spec: 'n',
-      _isDisplayNameOnly: true,
-      _isCustomFreeText: true
-    };
-    const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
-    onSelectOption(item, customOpt, calculated);
+  if (!trimmed || trimmed === item.displayName) {
+    return;
   }
+  
+  // ✅ 임대 + 개월수 파싱
+  const isRentText = trimmed.includes("임대");
+  const monthMatch = trimmed.match(/(\d+)\s*개월/);
+  const months = monthMatch ? Number(monthMatch[1]) : 3;  // ✅ [3] → [1] 수정
+  
+  if (isRentText) {
+    // 규격 파싱: "3x6", "3*6", "3×6" 등
+    const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+    const w = specMatch ? Number(specMatch[1]) : form.w;
+    const l = specMatch ? Number(specMatch[2]) : form.l;
+    
+    // 규격별 월 임대료
+    const rentPrices: Record<string, number> = {
+      '3x3': 130000,
+      '3x4': 130000,
+      '3x6': 150000,
+      '3x9': 200000,
+    };
+    
+    const specKey = `${w}x${l}`;
+    const monthlyPrice = rentPrices[specKey] || 150000;
+    const totalPrice = monthlyPrice * months;
+    
+    const rentOpt = {
+      option_id: `rent_${w}x${l}_${Date.now()}`,
+      option_name: `${w}x${l} 임대 ${months}개월`,
+      unit: '개월',
+      unit_price: monthlyPrice,
+      show_spec: 'n',
+      _isCustomFreeText: false,
+      _months: months,
+    };
+    
+    const calculated = {
+      qty: 1,
+      unitPrice: totalPrice,
+      amount: totalPrice,
+      unit: '개월',
+    };
+    
+    onSelectOption(item, rentOpt, calculated);
+    return;
+  }
+  
+  // 일반 자유입력
+  const customOpt = { 
+    option_id: `custom_${Date.now()}`, 
+    option_name: trimmed,
+    unit: 'EA',
+    unit_price: 0,
+    show_spec: 'n',
+    _isDisplayNameOnly: true,
+    _isCustomFreeText: true
+  };
+  const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
+  onSelectOption(item, customOpt, calculated);
 }, [item, form, onSelectOption]);
-
+    
   const handleBlur = (e: React.FocusEvent) => {
   // 드롭다운 내부로 포커스가 이동하는 경우 blur 무시
   if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
@@ -444,8 +446,8 @@ return (
                     <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
                       <input
                         type="number"
-                        defaultValue={1}
-                        min={1}
+                        defaultValue={3}
+                        min={3}
                         id={`rent-inline-${opt.option_id}`}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -458,7 +460,7 @@ return (
                         onClick={(e) => {
                           e.stopPropagation();
                           const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
-                          const months = Number(input?.value) || 1;
+                          const months = Number(input?.value) || 3;
                           
                           setIsEditing(false);
                           setShowDropdown(false);
@@ -744,7 +746,7 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
                             onClick={(e) => {
                               e.stopPropagation();
                               const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
-                              const months = Number(input?.value) || 1;
+                              const months = Number(input?.value) || 3;
                               
                               setIsEditing(false);
                               setShowDropdown(false);
@@ -1012,7 +1014,7 @@ const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
 const baseQty = isSpecial ? 1 : Number(res.qty || 1);
 const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
 const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
-const defaultMonths = rent ? (monthsParam || opt._months || 1) : 1;
+const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
 const displayQty = 1;
 const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
 
@@ -1636,8 +1638,8 @@ const inventoryScreen = (
             <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
               <input
                 type="number"
-                defaultValue={1}
-                min={1}
+                defaultValue={3}
+                min={3}
                 id={`rent-months-${o.option_id}`}
                 onClick={(e) => e.stopPropagation()}
                 style={{ width: 50, padding: "4px 6px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center" }}
@@ -1825,7 +1827,7 @@ onSelectOption={(item, opt, calc) => {
     return;
   }
   
-  const months = opt._months || 1;
+  const months = opt._months || 3;
   const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
   
   const hasMonthInName = /\d+개월/.test(rawName);
