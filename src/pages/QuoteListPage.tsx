@@ -340,52 +340,55 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   }, []);
 
   // ✅ 옵션 선택 핸들러 (A4Quote에서 호출)
+// ✅ 옵션 선택 핸들러 (App.tsx 방식 그대로)
 const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
-  let rawName = String(opt.option_name || "");
+  const rawName = String(opt.option_name || "");
   const rent = rawName.includes("임대") && !opt._isCustomFreeText;
-  const months = opt._months || 3;
   
-  // ✅ rawName에서 기존 개월 정보 제거 (중복 방지)
-  if (rent) {
-    rawName = rawName.replace(/\s*\/?\s*\d+개월.*$/, "").replace(/\s+\d+개월.*$/, "").trim();
-  }
-    
-    // displayName만 변경하는 경우
-    if (opt._isDisplayNameOnly) {
-      setEditItems(prev => prev.map(item => 
-        item.key === targetItem.key 
-          ? { ...item, displayName: rawName }
-          : item
-      ));
-      return;
-    }
-    
-    const customerUnitPrice = rent 
-      ? Number(calculated.unitPrice || 0) * months 
-      : Number(calculated.amount || 0);
-    
-   const displayName = rent ? `${rawName} / ${months}개월` : rawName;
-    
+  // displayName만 변경하는 경우
+  if (opt._isDisplayNameOnly) {
     setEditItems(prev => prev.map(item => 
       item.key === targetItem.key 
-        ? {
-            ...item,
-            optionId: opt.option_id,
-            optionName: rawName,
-            displayName,
-            unit: rent ? "개월" : (calculated.unit || "EA"),
-            qty: 1,
-            unitPrice: customerUnitPrice,
-            amount: customerUnitPrice,
-            showSpec: opt.show_spec || "n",
-            months,
-            baseUnitPrice: Number(calculated.unitPrice || 0),
-            _isRent: rent,
-            _isCustomFreeText: opt._isCustomFreeText || false,
-          }
+        ? { ...item, displayName: rawName, _isRent: targetItem._isRent }
         : item
     ));
-  }, []);
+    return;
+  }
+  
+  const months = opt._months || 3;
+  const existingLineSpec = targetItem.lineSpec || { w: current?.w || 3, l: current?.l || 6, h: 2.6 };
+  
+  const hasMonthInName = /\d+개월/.test(rawName);
+  const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
+  
+  const customerUnitPrice = Number(calculated.unitPrice || calculated.amount || 0);
+  
+  // 기존 optionName 유지 (비어있을 때만 새로 설정)
+  const newOptName = targetItem.optionName || rawName;
+  
+  setEditItems(prev => prev.map(item => 
+    item.key === targetItem.key 
+      ? {
+          ...item,
+          optionId: opt.option_id,
+          optionName: newOptName,
+          displayName,
+          unit: rent ? "개월" : (calculated.unit || "EA"),
+          qty: 1,
+          unitPrice: customerUnitPrice,
+          amount: customerUnitPrice,
+          showSpec: opt.show_spec || "n",
+          baseQty: calculated.qty || 1,
+          baseUnitPrice: opt.unit_price || calculated.unitPrice || 0,
+          baseAmount: calculated.amount || 0,
+          months,
+          lineSpec: existingLineSpec,
+          _isRent: targetItem._isRent ?? rent,
+          _isCustomFreeText: opt._isCustomFreeText || false,
+        }
+      : item
+  ));
+}, [current]);
 
   // ✅ 품목 추가 핸들러 (A4Quote에서 호출)
   const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number) => {
