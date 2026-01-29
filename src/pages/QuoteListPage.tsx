@@ -4,6 +4,13 @@ import { supabase } from "../lib/supabase";
 import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine, searchSiteRates } from "../QuoteService";
 import { A4Quote } from "../App";
+import { 
+  RENT_PRICES, 
+  getMonthlyRentPrice, 
+  isContainerRent, 
+  recalculateRentPrice,
+  formatNumber 
+} from "../utils/quoteUtils";
 
 type SupabaseOptionRow = {
   option_id: string;
@@ -1095,39 +1102,14 @@ const updateEditItemName = useCallback((itemKey: string, name: string) => {
   };
 
 
+// updateEditItemMonths 함수를 이렇게 변경:
 const updateEditItemMonths = (key: string, newMonths: number) => {
   setEditItems(prev => prev.map(item => {
     if (item.key !== key) return item;
-    
-    const months = Math.max(1, newMonths);
-    const isRent = item.unit === "개월" || String(item.displayName || "").includes("임대");
-    
-    if (!isRent) return item;
-    
-    // ✅ 규격별 월 임대료
-    const w = item.lineSpec?.w || 3;
-    const l = item.lineSpec?.l || 6;
-    const specKey = `${w}x${l}`;
-    
-    const rentPrices: Record<string, number> = {
-      '3x3': 140000,
-      '3x4': 130000,
-      '3x6': 150000,
-      '3x9': 200000,
-    };
-    
-    const baseMonthlyPrice = rentPrices[specKey] || 150000;
-    const newUnitPrice = baseMonthlyPrice * months;
-    
-    return {
-      ...item,
-      months,
-      unitPrice: newUnitPrice,
-      amount: (item.qty || 1) * newUnitPrice,
-      displayName: `컨테이너 임대 ${months}개월`,
-    };
+    return recalculateRentPrice(item, newMonths);
   }));
 };
+  
 const updateEditItemSpec = (key: string, specText: string) => {
   const trimmed = specText.trim();
   
@@ -2021,8 +2003,9 @@ displayName: rent ? `컨테이너 임대 ${months}개월` : rawName,
   editable={editMode}
 />
           </td>
-          <td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24, maxHeight: 24, overflow: 'hidden' }}>
-  {(item.unit === "개월" || String(item.displayName || "").includes("임대")) ? (
+          // 수량 셀 부분 수정 (약 1400줄쯤):
+<td style={{ border: '1px solid #333', padding: '2px 6px', textAlign: 'center', height: 24 }}>
+  {isContainerRent(item) ? (
     editMode ? (
       <select 
         value={item.months || 3}
