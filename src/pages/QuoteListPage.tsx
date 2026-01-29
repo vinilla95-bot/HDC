@@ -2242,11 +2242,11 @@ const quotePreviewHtml = useMemo(() => {
     const today = new Date();
     const ymd = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 
-    // 임대 품목 + 운송 품목
-    const rentalItems = items.filter(it => {
+   const cutoffIndex = items.findIndex(it => {
   const name = it.optionName || it.displayName || it.item_name || "";
-  return !String(name).includes("임대 계약시 필요한 정보");
+  return String(name).includes("임대 계약시 필요한 정보");
 });
+const rentalItems = cutoffIndex === -1 ? items : items.slice(0, cutoffIndex);
 
     // 합계 계산 (VAT 별도)
     const totalAmount = rentalItems.reduce((acc, raw) => {
