@@ -2383,17 +2383,17 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                   ) : siteText}
                 </td>
                 <th className="k center">규격</th>
-                <td className="v">
-                  {editable && setForm ? (
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
-    <input type="text" inputMode="decimal" value={form.w} onChange={(e) => setForm((p: any) => ({ ...p, w: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 18, textAlign: "center", padding: 0 }} />
-    <span>×</span>
-    <input type="text" inputMode="decimal" value={form.l} onChange={(e) => setForm((p: any) => ({ ...p, l: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 18, textAlign: "center", padding: 0 }} />
-    <span>×</span>
-    <input type="text" inputMode="decimal" value={form.h} onChange={(e) => setForm((p: any) => ({ ...p, h: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 22, textAlign: "center", padding: 0 }} />
-  </div>
-) : spec}
-                </td>
+             <td className="v">
+  {editable && setForm ? (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
+      <input type="text" inputMode="decimal" value={form.w} onChange={(e) => setForm((p: any) => ({ ...p, w: e.target.value === '' ? '' : (Number(e.target.value) || e.target.value) }))} onBlur={(e) => setForm((p: any) => ({ ...p, w: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 24, textAlign: "center", padding: 0 }} />
+      <span>×</span>
+      <input type="text" inputMode="decimal" value={form.l} onChange={(e) => setForm((p: any) => ({ ...p, l: e.target.value === '' ? '' : (Number(e.target.value) || e.target.value) }))} onBlur={(e) => setForm((p: any) => ({ ...p, l: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 24, textAlign: "center", padding: 0 }} />
+      <span>×</span>
+      <input type="text" inputMode="decimal" value={form.h} onChange={(e) => setForm((p: any) => ({ ...p, h: e.target.value === '' ? '' : (Number(e.target.value) || e.target.value) }))} onBlur={(e) => setForm((p: any) => ({ ...p, h: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} />
+    </div>
+  ) : spec}
+</td>
                 <th className="k center">주소</th>
                 <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
               </tr>
