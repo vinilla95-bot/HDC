@@ -956,33 +956,39 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     setSendOpen(true);
   }
 
-  useEffect(() => {
-    if (current) {
-      const items = pickItems(current);
-      const rentalItem = items.find(it => {
-        const name = it.optionName || it.displayName || it.item_name || "";
-        return String(name).includes("임대");
-      });
-      const months = rentalItem?.months || 3;
+ useEffect(() => {
+  if (current) {
+    const items = pickItems(current);
+    const rentalItem = items.find(it => {
+      const name = it.optionName || it.displayName || it.item_name || "";
+      return String(name).includes("임대");
+    });
+    const months = rentalItem?.months || 3;
 
-      const today = new Date();
-      const startDate = current.contract_start || today.toISOString().slice(0, 10);
-      const endDate = new Date(startDate);
+    // ✅ 자동생성 금지 - contract_start가 있을 때만 설정
+    let contractStart = "";
+    let contractEnd = "";
+    
+    if (current.contract_start) {
+      contractStart = current.contract_start.replace(/-/g, '/').slice(2);
+      const endDate = new Date(current.contract_start);
       endDate.setMonth(endDate.getMonth() + months);
+      contractEnd = endDate.toISOString().slice(2, 10).replace(/-/g, '/');
+    }
 
-      setRentalForm({
-        contractStart: startDate.replace(/-/g, '/').slice(2),
-        contractEnd: endDate.toISOString().slice(2, 10).replace(/-/g, '/'),
-        months: months,
-        companyName: "",
-        regNo: "",
-        ceo: "",
-        siteAddr: current.site_addr || "",
-        phone: current.customer_phone || "",
-        officePhone: "",
-        fax: "",
-        email: current.customer_email || "",
-      });
+    setRentalForm({
+      contractStart,
+      contractEnd,
+      months: months,
+      companyName: "",
+      regNo: "",
+      ceo: "",
+      siteAddr: current.site_addr || "",
+      phone: current.customer_phone || "",
+      officePhone: "",
+      fax: "",
+      email: current.customer_email || "",
+    });
 
       setEditForm({
         customer_name: current.customer_name || "",
