@@ -138,34 +138,7 @@ const displayText = specText !== undefined && specText !== ''
   }, [displayText]);
 
   const handleBlur = () => { 
-    setIsEditing(false); 
-    
-    const trimmed = tempValue.trim();
-    
-    // 빈 값
-    if (!trimmed) {
-      if (onTextChange) onTextChange('');
-      onChange({ w: 0, l: 0, h: 0 });
-      return;
-    }
-    
-    // "3×6×2.6" 또는 "3x6x2.6" 형식인지 확인
-    const normalized = trimmed.replace(/x/gi, '×');
-    const parts = normalized.split('×').map(s => parseFloat(s.trim()));
-    
-    // 유효한 숫자 형식이면 spec 객체로 저장
-    if (parts.length >= 2 && parts.every(p => !isNaN(p))) {
-      onChange({
-        w: parts[0] || 0,
-        l: parts[1] || 0,
-        h: parts[2] || 0
-      });
-      if (onTextChange) onTextChange('');
-    } else {
-      // 자유 텍스트로 저장
-      if (onTextChange) onTextChange(trimmed);
-    }
-  };
+  setIsEditing(false); 
   
   const handleKeyDown = (e: React.KeyboardEvent) => { 
     if (e.key === "Enter") handleBlur(); 
@@ -177,26 +150,27 @@ const displayText = specText !== undefined && specText !== ''
 
   if (isEditing) {
     return (
-      <input 
-        ref={inputRef} 
-        type="text" 
-        value={tempValue} 
-        onChange={(e) => setTempValue(e.target.value)} 
-        onBlur={handleBlur} 
-        onKeyDown={handleKeyDown} 
-        onClick={(e) => e.stopPropagation()}
-        placeholder="규격 입력"
-        style={{ 
+     <input 
+  ref={inputRef} 
+  type="text"
+  inputMode="text"
+  value={tempValue} 
+  onChange={(e) => setTempValue(e.target.value)} 
+  onBlur={handleBlur} 
+  onKeyDown={handleKeyDown} 
+  onClick={(e) => e.stopPropagation()}
+  placeholder="규격 입력 (예: 3.5×6×2.6)"
+  style={{ 
     width: "100%", 
     padding: "2px 4px", 
     textAlign: "center",
-    border: "none",  // ✅ 테두리 제거
+    border: "none",
     fontSize: 12, 
     boxSizing: "border-box", 
     outline: "none",
     background: "transparent"
-        }} 
-      />
+  }} 
+/>
     );
   }
   
@@ -276,7 +250,7 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     setSelectedIndex(-1);
   }, [filteredOptions]);
 
- const commitFreeText = useCallback(() => {
+const commitFreeText = useCallback(() => {
   const trimmed = (searchQueryRef.current || "").trim();
   
   setIsEditing(false);
