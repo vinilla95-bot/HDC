@@ -137,8 +137,25 @@ const displayText = specText !== undefined && specText !== ''
     setTempValue(displayText); 
   }, [displayText]);
 
-  const handleBlur = () => { 
-  setIsEditing(false); 
+ const trimmed = tempValue.trim();
+  
+  if (!trimmed) {
+    if (onTextChange) onTextChange('');
+    onChange({ w: 0, l: 0, h: 0 });
+    return;
+  }
+  
+  const normalized = trimmed.replace(/[xX*]/g, '×');
+  const parts = normalized.split('×').map(s => s.trim()).filter(s => s !== '');
+  const nums = parts.map(s => parseFloat(s));
+  
+  if (nums.length >= 2 && nums.slice(0, Math.min(nums.length, 3)).every(p => !isNaN(p) && isFinite(p))) {
+    onChange({ w: nums[0] || 0, l: nums[1] || 0, h: nums[2] || 0 });
+    if (onTextChange) onTextChange('');
+  } else {
+    if (onTextChange) onTextChange(trimmed);
+  }
+};
   
   const handleKeyDown = (e: React.KeyboardEvent) => { 
     if (e.key === "Enter") handleBlur(); 
@@ -281,26 +298,7 @@ const commitFreeText = useCallback(() => {
     onSelectOption(item, customOpt, calculated);
     return;
   }
-  
-  // ✅ 기존 품목의 displayName만 변경하는 경우 - 임대 자동 변환 안 함
-  if (item.optionId && item.optionId !== '') {
-    const customOpt = { 
-      option_id: item.optionId, 
-      option_name: trimmed,
-      unit: item.unit || 'EA',
-      unit_price: item.unitPrice || item.customerUnitPrice || 0,
-      show_spec: item.showSpec || 'n',
-      _isDisplayNameOnly: true,
-    };
-    const calculated = { 
-      qty: item.displayQty || item.qty || 1, 
-      unitPrice: item.customerUnitPrice || item.unitPrice || 0, 
-      amount: item.finalAmount || item.amount || 0, 
-      unit: item.unit || 'EA' 
-    };
-    onSelectOption(item, customOpt, calculated);
-    return;
-  }
+
   
   // ✅ 새 품목 입력 시에만 임대 자동 변환 적용
   const isRentText = trimmed.includes("임대");
