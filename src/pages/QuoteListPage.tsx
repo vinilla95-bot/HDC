@@ -1591,7 +1591,24 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
             <div className="rentalFormBox">
               <div className="formRow">
                 <label>계약시작</label>
-                <input value={rentalForm.contractStart} onChange={(e) => setRentalForm({ ...rentalForm, contractStart: e.target.value })} placeholder="26/01/15" />
+               <input 
+  value={rentalForm.contractStart} 
+  onChange={(e) => {
+    const start = e.target.value;
+    let endDate = "";
+    
+    if (start && start.includes('/')) {
+      try {
+        const [y, mo, d] = start.split('/').map(Number);
+        const dt = new Date(2000 + y, mo - 1 + rentalForm.months, d);
+        endDate = `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
+      } catch (e) {}
+    }
+    
+    setRentalForm({ ...rentalForm, contractStart: start, contractEnd: endDate });
+  }} 
+  placeholder="26/01/15" 
+/>
                 <label>개월</label>
                 <input
                   type="number"
