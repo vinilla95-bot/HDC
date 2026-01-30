@@ -423,14 +423,16 @@ const handleCellClick = (e: React.MouseEvent) => {
               } else if (e.key === "ArrowUp") {
                 e.preventDefault();
                 setSelectedIndex(prev => Math.max(prev - 1, -1));
-              } else if (e.key === "Enter") {
-                e.preventDefault();
-                e.stopPropagation();
-                if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
-                  const opt = filteredOptions[selectedIndex];
-                  if (String(opt.option_name || "").includes("임대")) {
-                    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-                    onSelectOption(item, { ...opt, _months: 3 }, calculated);
+             } else if (e.key === "Enter") {
+  e.preventDefault();
+  e.stopPropagation();
+  if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
+    const opt = filteredOptions[selectedIndex];
+    if (String(opt.option_name || "").includes("임대")) {
+      const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+      const months = 3;
+      const totalPrice = (calculated.unitPrice || opt.unit_price || 0) * months;
+      onSelectOption(item, { ...opt, _months: months }, { ...calculated, unitPrice: totalPrice, amount: totalPrice });
                   } else {
                     handleSelect(opt);
                   }
@@ -508,20 +510,22 @@ const handleCellClick = (e: React.MouseEvent) => {
                           style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
                         />
                         <span style={{ fontSize: 11 }}>개월</span>
-                        <button 
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
-                            const months = Number(input?.value) || 3;
-                            
-                            setIsEditing(false);
-                            setShowDropdown(false);
-                            setSearchQuery("");
-                            
-                            const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-                            onSelectOption(item, { ...opt, _months: months }, calculated);
-                          }}
+                       <button 
+  onMouseDown={(e) => e.preventDefault()}
+  onClick={(e) => {
+    e.stopPropagation();
+    const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
+    const months = Number(input?.value) || 3;
+    
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    
+    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+    // ✅ 임대는 월 단가 × 개월수로 계산
+    const totalPrice = (calculated.unitPrice || opt.unit_price || 0) * months;
+    onSelectOption(item, { ...opt, _months: months }, { ...calculated, unitPrice: totalPrice, amount: totalPrice });
+  }}
                           style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
                         >
                           선택
