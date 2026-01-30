@@ -200,19 +200,19 @@ const displayText = specText !== undefined && specText !== ''
     );
   }
   
-  return (
-    <span 
-       onClick={(e) => {  // ✅ e 파라미터 추가
-      e.stopPropagation(); 
-        setTempValue(displayText); 
-        setIsEditing(true); 
-      }} 
-      style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%" }} 
-      title="클릭하여 규격 수정"
-    >
-      {displayText || <span style={{ color: '#ccc' }}>-</span>}
-    </span>
-  );
+return (
+  <span 
+    onClick={(e) => { 
+      e.stopPropagation();
+      setTempValue(displayText); 
+      setIsEditing(true); 
+    }} 
+    style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%", minHeight: 20 }} 
+    title="클릭하여 규격 수정"
+  >
+    {displayText || <span style={{ color: '#ccc' }}>-</span>}
+  </span>
+);
 }
 
 // ============ 인라인 품목 편집 셀 ============
@@ -2519,10 +2519,10 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
     String(item.displayName || "")
   )}
 </td>
-  <td className="c center">
-  {editable && onUpdateSpec && showSpec ? (
+ <td className="c center">
+  {editable && onUpdateSpec ? (
     <EditableSpecCell 
-      spec={(item.lineSpec?.w > 0) ? item.lineSpec : { w: form.w, l: form.l, h: form.h }}
+      spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }}
       specText={item.specText}
       onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
       onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
