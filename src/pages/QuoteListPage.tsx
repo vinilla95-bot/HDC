@@ -1005,7 +1005,28 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
 
     const [yy, mm, dd] = statementDate.split('-');
     const monthDay = `${parseInt(mm)}/${parseInt(dd)}`;
-    const unpaidAmount = total_amount - paidAmount;
+    
+    // 마감사양 관련 항목 필터링
+    const filteredItems = computedItems.filter((item: any) => {
+      const name = String(item.displayName || item.optionName || "");
+      // 마감사양 관련 키워드 체크
+      if (name.includes("마감 사양") || name.includes("마감사양")) return false;
+      if (name.startsWith("-기본 구성") || name.startsWith("-기본구성")) return false;
+      if (name.startsWith("-내벽") || name.startsWith("-바닥") || name.startsWith("-지붕") || name.startsWith("-도장")) return false;
+      if (name.startsWith("▷선택사항") || name.startsWith("▶선택사항")) return false;
+      if (name.includes("천정") && name.includes("단열")) return false;
+      if (name.includes("프레임") && name.includes("합판")) return false;
+      if (name.includes("테크 마감") || name.includes("테크마감")) return false;
+      if (name.includes("도료 회색 마감") || name.includes("도료회색마감")) return false;
+      if (name.includes("옵션 사항 문의") || name.includes("부가 옵션")) return false;
+      return true;
+    });
+    
+    // 필터링된 항목으로 금액 재계산
+    const filteredSupply = filteredItems.reduce((acc: number, item: any) => acc + (item.finalAmount || 0), 0);
+    const filteredVat = Math.round(filteredSupply * 0.1);
+    const filteredTotal = filteredSupply + filteredVat;
+    const unpaidAmount = filteredTotal - paidAmount;
 
     return (
       <div className="a4Sheet statementSheet" style={{ background: '#fff', padding: 30, width: 1100, minHeight: 500 }}>
@@ -1072,7 +1093,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
         <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #5b9bd5', padding: '8px 12px', marginBottom: 8, gap: 20 }}>
           <div>
             <span style={{ fontWeight: 900, color: '#1a5276', marginRight: 10 }}>합계금액:</span>
-            <span style={{ fontSize: 18, fontWeight: 900 }}>{money(total_amount)}</span>
+            <span style={{ fontSize: 18, fontWeight: 900 }}>{money(filteredTotal)}</span>
           </div>
           <div>
             <span style={{ fontWeight: 700, color: '#059669', marginRight: 6 }}>입금:</span>
@@ -1107,7 +1128,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
             </tr>
           </thead>
           <tbody>
-            {computedItems.map((item: any, idx: number) => {
+            {filteredItems.map((item: any, idx: number) => {
               const supply = item.unitPrice * (item.displayQty || item.qty || 1);
               const vat = Math.round(supply * 0.1);
               return (
@@ -1118,8 +1139,9 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
                       <input 
                         value={item.displayName || item.optionName || ''} 
                         onChange={(e) => {
-                          setEditItems(prev => prev.map((it, i) => 
-                            i === idx ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
+                          const itemKey = item.key;
+                          setEditItems(prev => prev.map((it) => 
+                            it.key === itemKey ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
                           ));
                         }}
                         style={editInputStyle}
@@ -1161,7 +1183,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
                 </tr>
               );
             })}
-            {Array.from({ length: Math.max(0, MIN_ROWS - computedItems.length) }).map((_, i) => (
+            {Array.from({ length: Math.max(0, MIN_ROWS - filteredItems.length) }).map((_, i) => (
               <tr key={`blank-${i}`}>
                 <td style={{ ...itemTdStyle, textAlign: 'center' }}>&nbsp;</td>
                 <td style={itemTdStyle}></td>
@@ -1176,8 +1198,8 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
           <tfoot>
             <tr>
               <td colSpan={4} style={{ ...itemTdStyle, textAlign: 'center', fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(supply_amount)}</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(vat_amount)}</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(filteredSupply)}</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(filteredVat)}</td>
               <td style={itemTdStyle}></td>
             </tr>
           </tfoot>
