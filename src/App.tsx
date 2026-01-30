@@ -184,6 +184,7 @@ const displayText = specText !== undefined && specText !== ''
         onChange={(e) => setTempValue(e.target.value)} 
         onBlur={handleBlur} 
         onKeyDown={handleKeyDown} 
+        onClick={(e) => e.stopPropagation()}
         placeholder="규격 입력"
         style={{ 
     width: "100%", 
@@ -201,7 +202,8 @@ const displayText = specText !== undefined && specText !== ''
   
   return (
     <span 
-      onClick={() => { 
+       onClick={(e) => {  // ✅ e 파라미터 추가
+      e.stopPropagation(); 
         setTempValue(displayText); 
         setIsEditing(true); 
       }} 
