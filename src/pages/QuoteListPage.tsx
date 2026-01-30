@@ -1019,6 +1019,9 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       if (name.includes("테크 마감") || name.includes("테크마감")) return false;
       if (name.includes("도료 회색 마감") || name.includes("도료회색마감")) return false;
       if (name.includes("옵션 사항 문의") || name.includes("부가 옵션")) return false;
+      // 임대계약 필요정보 필터링
+      if (name.includes("임대 계약") || name.includes("임대계약")) return false;
+      if (name.includes("필요한 정보") || name.includes("필요정보")) return false;
       return true;
     });
     
