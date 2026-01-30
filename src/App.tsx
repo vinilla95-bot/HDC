@@ -103,6 +103,7 @@ React.useEffect(() => {
 // ============ 인라인 규격 편집 셀 ============
 // ============ 인라인 규격 편집 셀 ============
 // ============ 인라인 규격 편집 셀 ============
+// ============ 인라인 규격 편집 셀 ============
 function EditableSpecCell({ 
   spec, 
   specText,
@@ -116,12 +117,11 @@ function EditableSpecCell({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   
-  // specText가 있으면 그대로 표시, 아니면 spec 객체로 표시
-const displayText = specText !== undefined && specText !== '' 
-  ? specText 
-  : (spec.w > 0 || spec.l > 0) 
-    ? `${spec.w}×${spec.l}×${spec.h || 0}` 
-    : '';
+  const displayText = specText !== undefined && specText !== '' 
+    ? specText 
+    : (spec.w > 0 || spec.l > 0) 
+      ? `${spec.w}×${spec.l}×${spec.h || 0}` 
+      : '';
   
   const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -137,26 +137,29 @@ const displayText = specText !== undefined && specText !== ''
     setTempValue(displayText); 
   }, [displayText]);
 
- const trimmed = tempValue.trim();
-  
-  if (!trimmed) {
-    if (onTextChange) onTextChange('');
-    onChange({ w: 0, l: 0, h: 0 });
-    return;
-  }
-  
-  const normalized = trimmed.replace(/[xX*]/g, '×');
-  const parts = normalized.split('×').map(s => s.trim()).filter(s => s !== '');
-  const nums = parts.map(s => parseFloat(s));
-  
-  if (nums.length >= 2 && nums.slice(0, Math.min(nums.length, 3)).every(p => !isNaN(p) && isFinite(p))) {
-    onChange({ w: nums[0] || 0, l: nums[1] || 0, h: nums[2] || 0 });
-    if (onTextChange) onTextChange('');
-  } else {
-    if (onTextChange) onTextChange(trimmed);
-  }
-};
-  
+  const handleBlur = () => { 
+    setIsEditing(false); 
+    
+    const trimmed = tempValue.trim();
+    
+    if (!trimmed) {
+      if (onTextChange) onTextChange('');
+      onChange({ w: 0, l: 0, h: 0 });
+      return;
+    }
+    
+    const normalized = trimmed.replace(/[xX*]/g, '×');
+    const parts = normalized.split('×').map(s => s.trim()).filter(s => s !== '');
+    const nums = parts.map(s => parseFloat(s));
+    
+    if (nums.length >= 2 && nums.slice(0, Math.min(nums.length, 3)).every(p => !isNaN(p) && isFinite(p))) {
+      onChange({ w: nums[0] || 0, l: nums[1] || 0, h: nums[2] || 0 });
+      if (onTextChange) onTextChange('');
+    } else {
+      if (onTextChange) onTextChange(trimmed);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => { 
     if (e.key === "Enter") handleBlur(); 
     else if (e.key === "Escape") { 
@@ -167,45 +170,44 @@ const displayText = specText !== undefined && specText !== ''
 
   if (isEditing) {
     return (
-     <input 
-  ref={inputRef} 
-  type="text"
-  inputMode="text"
-  value={tempValue} 
-  onChange={(e) => setTempValue(e.target.value)} 
-  onBlur={handleBlur} 
-  onKeyDown={handleKeyDown} 
-  onClick={(e) => e.stopPropagation()}
-  placeholder="규격 입력 (예: 3.5×6×2.6)"
-  style={{ 
-    width: "100%", 
-    padding: "2px 4px", 
-    textAlign: "center",
-    border: "none",
-    fontSize: 12, 
-    boxSizing: "border-box", 
-    outline: "none",
-    background: "transparent"
-  }} 
-/>
+      <input 
+        ref={inputRef} 
+        type="text"
+        inputMode="text"
+        value={tempValue} 
+        onChange={(e) => setTempValue(e.target.value)} 
+        onBlur={handleBlur} 
+        onKeyDown={handleKeyDown} 
+        onClick={(e) => e.stopPropagation()}
+        placeholder="규격 입력 (예: 3.5×6×2.6)"
+        style={{ 
+          width: "100%", 
+          padding: "2px 4px", 
+          textAlign: "center",
+          border: "none",
+          fontSize: 12, 
+          boxSizing: "border-box", 
+          outline: "none",
+          background: "transparent"
+        }} 
+      />
     );
   }
   
-return (
-  <span 
-    onClick={(e) => { 
-      e.stopPropagation();
-      setTempValue(displayText); 
-      setIsEditing(true); 
-    }} 
-    style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%", minHeight: 20 }} 
-    title="클릭하여 규격 수정"
-  >
-    {displayText || <span style={{ color: '#ccc' }}>-</span>}
-  </span>
-);
+  return (
+    <span 
+      onClick={(e) => { 
+        e.stopPropagation();
+        setTempValue(displayText); 
+        setIsEditing(true); 
+      }} 
+      style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%", minHeight: 20 }} 
+      title="클릭하여 규격 수정"
+    >
+      {displayText || <span style={{ color: '#ccc' }}>-</span>}
+    </span>
+  );
 }
-
 // ============ 인라인 품목 편집 셀 ============
 // ============ 인라인 품목 편집 셀 ============
 function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus, autoFocusOnMount }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void; autoFocusOnMount?: boolean }) {
