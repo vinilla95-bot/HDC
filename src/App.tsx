@@ -384,11 +384,12 @@ const handleCellClick = (e: React.MouseEvent) => {
   e.stopPropagation();
   if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
   
-  // ✅ 클릭 시 검색어를 비워서 새로 검색 가능하게
-  setSearchQuery('');
-  searchQueryRef.current = '';
+  // ✅ 기존 품목명을 input에 표시, 드롭다운은 타이핑 시 열림
+  const text = item.displayName || '';
+  setSearchQuery(text);
+  searchQueryRef.current = text;
   setIsEditing(true);
-  setShowDropdown(true);
+  setShowDropdown(false);  // 처음에는 드롭다운 안 열기
 };
 
   return (
