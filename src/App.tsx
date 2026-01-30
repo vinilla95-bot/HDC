@@ -276,23 +276,44 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     setSelectedIndex(-1);
   }, [filteredOptions]);
 
-  const commitFreeText = useCallback(() => {
-    const trimmed = (searchQueryRef.current || "").trim();
-    
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    
-    if (!trimmed || trimmed === item.displayName) {
-      return;
-    }
-    
-    // ✅ 임대 + 개월수 파싱
-    const isRentText = trimmed.includes("임대");
-    const monthMatch = trimmed.match(/(\d+)\s*개월/);
-    const months = monthMatch ? Number(monthMatch[1]) : 3;
-    
-    if (isRentText) {
+ const commitFreeText = useCallback(() => {
+  const trimmed = (searchQueryRef.current || "").trim();
+  
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  
+  if (!trimmed || trimmed === item.displayName) {
+    return;
+  }
+  
+  // ✅ 기존 품목의 displayName만 변경하는 경우 - 임대 자동 변환 안 함
+  if (item.optionId && item.optionId !== '') {
+    const customOpt = { 
+      option_id: item.optionId, 
+      option_name: trimmed,
+      unit: item.unit || 'EA',
+      unit_price: item.unitPrice || item.customerUnitPrice || 0,
+      show_spec: item.showSpec || 'n',
+      _isDisplayNameOnly: true,
+    };
+    const calculated = { 
+      qty: item.displayQty || item.qty || 1, 
+      unitPrice: item.customerUnitPrice || item.unitPrice || 0, 
+      amount: item.finalAmount || item.amount || 0, 
+      unit: item.unit || 'EA' 
+    };
+    onSelectOption(item, customOpt, calculated);
+    return;
+  }
+  
+  // ✅ 새 품목 입력 시에만 임대 자동 변환 적용
+  const isRentText = trimmed.includes("임대");
+  const monthMatch = trimmed.match(/(\d+)\s*개월/);
+  const months = monthMatch ? Number(monthMatch[1]) : 3;
+  
+  if (isRentText) {
+    // ... 기존 임대 자동 변환 로직 (그대로 유지)
       // 규격 파싱: "3x6", "3*6", "3×6" 등
       const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
       const w = specMatch ? Number(specMatch[1]) : form.w;
