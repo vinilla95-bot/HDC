@@ -108,12 +108,14 @@ function EditableSpecCell({
   spec, 
   specText,
   onChange,
-  onTextChange
+  onTextChange,
+  hidden = false  // ✅ 추가
 }: { 
   spec: { w: number; l: number; h?: number }; 
   specText?: string;
   onChange: (spec: { w: number; l: number; h?: number }) => void;
   onTextChange?: (text: string) => void;
+  hidden?: boolean;  // ✅ 추가
 }) {
   const [isEditing, setIsEditing] = useState(false);
   
@@ -122,7 +124,6 @@ function EditableSpecCell({
     : (spec.w > 0 || spec.l > 0) 
       ? `${spec.w}×${spec.l}×${spec.h || 0}` 
       : '';
-  
   const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -194,7 +195,7 @@ function EditableSpecCell({
     );
   }
   
-  return (
+return (
     <span 
       onClick={(e) => { 
         e.stopPropagation();
@@ -204,7 +205,7 @@ function EditableSpecCell({
       style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%", minHeight: 20 }} 
       title="클릭하여 규격 수정"
     >
-      {displayText || <span style={{ color: '#ccc' }}>-</span>}
+      {hidden && !displayText ? null : (displayText || <span style={{ color: '#ccc' }}>-</span>)}
     </span>
   );
 }
@@ -2592,12 +2593,19 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
   )}
 </td>
 <td className="c center">
-  {editable && onUpdateSpec && showSpec ? (
+  {editable && onUpdateSpec ? (
     <EditableSpecCell 
       spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }}
       specText={item.specText}
-      onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
+      onChange={(newSpec) => {
+        onUpdateSpec(item.key, newSpec);
+        // ✅ 규격 입력하면 showSpec도 'y'로 변경
+        if (onUpdateSpecText && (newSpec.w > 0 || newSpec.l > 0)) {
+          // showSpec 업데이트 로직이 필요하면 여기에
+        }
+      }} 
       onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
+      hidden={!showSpec && !item.specText && (!item.lineSpec?.w || item.lineSpec.w === 0)}
     />
   ) : (
     showSpec ? (item.specText || `${item.lineSpec?.w || form.w}×${item.lineSpec?.l || form.l}×${item.lineSpec?.h || form.h}`) : null
