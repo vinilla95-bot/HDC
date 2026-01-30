@@ -169,6 +169,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+  // ✅ 거래명세서용 상태
+  const [statementDate, setStatementDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paidAmount, setPaidAmount] = useState(0);
+
   const getMobileScale = () => {
     if (typeof window === 'undefined') return 0.45;
     return (window.innerWidth - 32) / 794;
@@ -896,6 +900,10 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
         site_name: current.site_name || "",
         spec: current.spec || "",
       });
+
+      // 거래명세서 입금액 초기화
+      setPaidAmount(0);
+      setStatementDate(new Date().toISOString().slice(0, 10));
     }
   }, [current]);
 
@@ -948,15 +956,8 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
   const statementPreviewHtml = useMemo(() => {
     if (!current) return null;
 
-    const items = pickItems(current);
-    const customerName = current.customer_name ?? "";
-    const customerPhone = current.customer_phone ?? "";
-    const supplyAmount = current.supply_amount ?? 0;
-    const vatAmount = current.vat_amount ?? 0;
-    const totalAmount = current.total_amount ?? 0;
-
-    const today = new Date();
-    const ymd = today.toISOString().slice(0, 10);
+    const customerName = editForm?.customer_name ?? current.customer_name ?? "";
+    const customerPhone = editForm?.customer_phone ?? current.customer_phone ?? "";
 
     const MIN_ROWS = 12;
 
@@ -993,6 +994,18 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       fontSize: 11,
       height: 24,
     };
+    const editInputStyle: React.CSSProperties = {
+      width: '100%',
+      border: 'none',
+      background: 'transparent',
+      fontSize: 11,
+      padding: '2px 4px',
+      boxSizing: 'border-box' as const,
+    };
+
+    const [yy, mm, dd] = statementDate.split('-');
+    const monthDay = `${parseInt(mm)}/${parseInt(dd)}`;
+    const unpaidAmount = total_amount - paidAmount;
 
     return (
       <div className="a4Sheet statementSheet" style={{ background: '#fff', padding: 30, width: 1100, minHeight: 500 }}>
@@ -1004,11 +1017,32 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
         <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
           <table style={{ borderCollapse: 'collapse', width: '45%' }}>
             <tbody>
-              <tr><th style={{ ...thStyle, width: '80px' }}>일자</th><td style={tdStyle}>{ymd}</td></tr>
-              <tr><th style={{ ...thStyle, width: '80px' }}>거래처</th><td style={tdStyle}>{customerName}</td></tr>
+              <tr>
+                <th style={{ ...thStyle, width: '80px' }}>일자</th>
+                <td style={tdStyle}>
+                  {editMode ? (
+                    <input type="date" value={statementDate} onChange={(e) => setStatementDate(e.target.value)} style={{ ...editInputStyle, width: 130 }} />
+                  ) : statementDate}
+                </td>
+              </tr>
+              <tr>
+                <th style={{ ...thStyle, width: '80px' }}>거래처</th>
+                <td style={tdStyle}>
+                  {editMode ? (
+                    <input value={customerName} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_name: e.target.value }))} style={editInputStyle} />
+                  ) : customerName}
+                </td>
+              </tr>
               <tr><th style={{ ...thStyle, width: '80px' }}>등록번호</th><td style={tdStyle}></td></tr>
               <tr><th style={{ ...thStyle, width: '80px' }}>주소</th><td style={tdStyle}></td></tr>
-              <tr><th style={{ ...thStyle, width: '80px' }}>전화번호</th><td style={tdStyle}>{customerPhone}</td></tr>
+              <tr>
+                <th style={{ ...thStyle, width: '80px' }}>전화번호</th>
+                <td style={tdStyle}>
+                  {editMode ? (
+                    <input value={customerPhone} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_phone: e.target.value }))} style={editInputStyle} />
+                  ) : customerPhone}
+                </td>
+              </tr>
             </tbody>
           </table>
 
@@ -1035,43 +1069,99 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
           </table>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #5b9bd5', padding: '8px 12px', marginBottom: 8 }}>
-          <span style={{ fontWeight: 900, color: '#1a5276', marginRight: 10 }}>합계금액:</span>
-          <span style={{ fontSize: 18, fontWeight: 900, marginRight: 30 }}>{money(totalAmount)}</span>
+        <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #5b9bd5', padding: '8px 12px', marginBottom: 8, gap: 20 }}>
+          <div>
+            <span style={{ fontWeight: 900, color: '#1a5276', marginRight: 10 }}>합계금액:</span>
+            <span style={{ fontSize: 18, fontWeight: 900 }}>{money(total_amount)}</span>
+          </div>
+          <div>
+            <span style={{ fontWeight: 700, color: '#059669', marginRight: 6 }}>입금:</span>
+            {editMode ? (
+              <input 
+                type="number" 
+                value={paidAmount || ''} 
+                onChange={(e) => setPaidAmount(Number(e.target.value) || 0)} 
+                style={{ width: 100, fontSize: 14, fontWeight: 700, border: '1px solid #d7dbe2', borderRadius: 4, padding: '2px 6px' }} 
+              />
+            ) : (
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>{money(paidAmount)}</span>
+            )}
+          </div>
+          <div>
+            <span style={{ fontWeight: 700, color: '#dc2626', marginRight: 6 }}>미수금:</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: '#dc2626' }}>{money(unpaidAmount)}</span>
+          </div>
           <span style={{ fontSize: 11, marginLeft: 'auto' }}>기업은행 465-096127-04-015 현대컨테이너 류창석</span>
         </div>
 
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
             <tr>
-              <th style={{ ...itemThStyle, width: '8%' }}>월일</th>
-              <th style={{ ...itemThStyle, width: '32%' }}>품목명</th>
-              <th style={{ ...itemThStyle, width: '8%' }}>수량</th>
+              <th style={{ ...itemThStyle, width: '6%' }}>월일</th>
+              <th style={{ ...itemThStyle, width: '34%' }}>품목명</th>
+              <th style={{ ...itemThStyle, width: '6%' }}>수량</th>
               <th style={{ ...itemThStyle, width: '12%' }}>단가</th>
               <th style={{ ...itemThStyle, width: '14%' }}>공급가액</th>
               <th style={{ ...itemThStyle, width: '12%' }}>세액</th>
-              <th style={{ ...itemThStyle, width: '14%' }}>비고</th>
+              <th style={{ ...itemThStyle, width: '16%' }}>비고</th>
             </tr>
           </thead>
           <tbody>
-            {items.map((raw, idx) => {
-              const it = normItem(raw);
-              const supply = it.unitPrice * it.qty;
+            {computedItems.map((item: any, idx: number) => {
+              const supply = item.unitPrice * (item.displayQty || item.qty || 1);
               const vat = Math.round(supply * 0.1);
-              const monthDay = `${today.getMonth() + 1}/${today.getDate()}`;
               return (
-                <tr key={idx}>
+                <tr key={item.key || idx}>
                   <td style={{ ...itemTdStyle, textAlign: 'center' }}>{monthDay}</td>
-                  <td style={itemTdStyle}>{it.name}</td>
-                  <td style={{ ...itemTdStyle, textAlign: 'center' }}>{it.qty}</td>
-                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(it.unitPrice)}</td>
+                  <td style={itemTdStyle}>
+                    {editMode ? (
+                      <input 
+                        value={item.displayName || item.optionName || ''} 
+                        onChange={(e) => {
+                          setEditItems(prev => prev.map((it, i) => 
+                            i === idx ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
+                          ));
+                        }}
+                        style={editInputStyle}
+                      />
+                    ) : (item.displayName || item.optionName)}
+                  </td>
+                  <td style={{ ...itemTdStyle, textAlign: 'center' }}>
+                    {editMode ? (
+                      <input 
+                        type="number"
+                        value={item.qty || ''} 
+                        onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'center', width: 50 }}
+                      />
+                    ) : (item.displayQty || item.qty || 1)}
+                  </td>
+                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>
+                    {editMode ? (
+                      <input 
+                        type="number"
+                        value={item.unitPrice || ''} 
+                        onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'right', width: 80 }}
+                      />
+                    ) : money(item.unitPrice)}
+                  </td>
                   <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(supply)}</td>
                   <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(vat)}</td>
-                  <td style={itemTdStyle}></td>
+                  <td style={itemTdStyle}>
+                    {editMode && (
+                      <button 
+                        onClick={() => handleDeleteItem(item.key)} 
+                        style={{ padding: '2px 6px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 4, background: '#fff', cursor: 'pointer' }}
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
-            {Array.from({ length: Math.max(0, MIN_ROWS - items.length) }).map((_, i) => (
+            {Array.from({ length: Math.max(0, MIN_ROWS - computedItems.length) }).map((_, i) => (
               <tr key={`blank-${i}`}>
                 <td style={{ ...itemTdStyle, textAlign: 'center' }}>&nbsp;</td>
                 <td style={itemTdStyle}></td>
@@ -1086,15 +1176,15 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
           <tfoot>
             <tr>
               <td colSpan={4} style={{ ...itemTdStyle, textAlign: 'center', fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(supplyAmount)}</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(vatAmount)}</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(supply_amount)}</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(vat_amount)}</td>
               <td style={itemTdStyle}></td>
             </tr>
           </tfoot>
         </table>
       </div>
     );
-  }, [current]);
+  }, [current, editMode, editForm, computedItems, supply_amount, vat_amount, total_amount, statementDate, paidAmount, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
 
   // ============ 임대차계약서 미리보기 ============
   const rentalPreviewHtml = useMemo(() => {
