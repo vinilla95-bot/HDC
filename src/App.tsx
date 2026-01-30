@@ -380,15 +380,16 @@ const commitFreeText = useCallback(() => {
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  const handleCellClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-    const text = displayText || '';
-    setSearchQuery(text);
-    searchQueryRef.current = text;
-    setIsEditing(true);
-    setShowDropdown(true);
-  };
+const handleCellClick = (e: React.MouseEvent) => {
+  e.stopPropagation();
+  if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+  
+  // ✅ 클릭 시 검색어를 비워서 새로 검색 가능하게
+  setSearchQuery('');
+  searchQueryRef.current = '';
+  setIsEditing(true);
+  setShowDropdown(true);
+};
 
   return (
     <div 
