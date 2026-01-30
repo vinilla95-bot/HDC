@@ -257,7 +257,28 @@ const commitFreeText = useCallback(() => {
   setShowDropdown(false);
   setSearchQuery("");
   
+  // ✅ 빈 값이거나 기존과 동일하면 아무것도 안 함 (단, 상태는 초기화됨)
   if (!trimmed || trimmed === item.displayName) {
+    return;
+  }
+  
+  // ✅ 기존 품목의 displayName만 변경하는 경우 - _isRent 유지
+  if (item.optionId && item.optionId !== '') {
+    const customOpt = { 
+      option_id: item.optionId, 
+      option_name: trimmed,
+      unit: item.unit || 'EA',
+      unit_price: item.unitPrice || item.customerUnitPrice || 0,
+      show_spec: item.showSpec || 'n',
+      _isDisplayNameOnly: true,
+    };
+    const calculated = { 
+      qty: item.displayQty || item.qty || 1, 
+      unitPrice: item.customerUnitPrice || item.unitPrice || 0, 
+      amount: item.finalAmount || item.amount || 0, 
+      unit: item.unit || 'EA' 
+    };
+    onSelectOption(item, customOpt, calculated);
     return;
   }
   
