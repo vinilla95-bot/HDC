@@ -2259,8 +2259,25 @@ type A4QuoteProps = {
 
 
 function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex }: A4QuoteProps) {
+  
+  // ✅ 규격 입력용 로컬 상태 추가
+  const [specInput, setSpecInput] = useState({ 
+    w: String(form.w), 
+    l: String(form.l), 
+    h: String(form.h) 
+  });
+  
+  // ✅ form 값이 외부에서 변경되면 동기화
+  useEffect(() => {
+    setSpecInput({ 
+      w: String(form.w), 
+      l: String(form.l), 
+      h: String(form.h) 
+    });
+  }, [form.w, form.l, form.h]);
+
   const ymd = form.quoteDate || new Date().toISOString().slice(0, 10); 
-    const spec = `${form.w}x${form.l}x${form.h}`;
+  const spec = `${form.w}x${form.l}x${form.h}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
   return (
@@ -2386,11 +2403,44 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
              <td className="v">
   {editable && setForm ? (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
-      <input type="text" inputMode="decimal" value={form.w} onChange={(e) => setForm((p: any) => ({ ...p, w: e.target.value === '' ? '' : (Number(e.target.value) || e.target.value) }))} onBlur={(e) => setForm((p: any) => ({ ...p, w: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 24, textAlign: "center", padding: 0 }} />
+      <input 
+        type="text" 
+        inputMode="decimal" 
+        value={specInput.w} 
+        onChange={(e) => setSpecInput(p => ({ ...p, w: e.target.value }))} 
+        onBlur={(e) => {
+          const val = parseFloat(e.target.value) || 0;
+          setSpecInput(p => ({ ...p, w: String(val) }));
+          setForm((p: any) => ({ ...p, w: val }));
+        }} 
+        style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} 
+      />
       <span>×</span>
-      <input type="text" inputMode="decimal" value={form.l} onChange={(e) => setForm((p: any) => ({ ...p, l: e.target.value === '' ? '' : (Number(e.target.value) || e.target.value) }))} onBlur={(e) => setForm((p: any) => ({ ...p, l: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 24, textAlign: "center", padding: 0 }} />
+      <input 
+        type="text" 
+        inputMode="decimal" 
+        value={specInput.l} 
+        onChange={(e) => setSpecInput(p => ({ ...p, l: e.target.value }))} 
+        onBlur={(e) => {
+          const val = parseFloat(e.target.value) || 0;
+          setSpecInput(p => ({ ...p, l: String(val) }));
+          setForm((p: any) => ({ ...p, l: val }));
+        }} 
+        style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} 
+      />
       <span>×</span>
-      <input type="text" inputMode="decimal" value={form.h} onChange={(e) => setForm((p: any) => ({ ...p, h: e.target.value === '' ? '' : (Number(e.target.value) || e.target.value) }))} onBlur={(e) => setForm((p: any) => ({ ...p, h: Number(e.target.value) || 0 }))} style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} />
+      <input 
+        type="text" 
+        inputMode="decimal" 
+        value={specInput.h} 
+        onChange={(e) => setSpecInput(p => ({ ...p, h: e.target.value }))} 
+        onBlur={(e) => {
+          const val = parseFloat(e.target.value) || 0;
+          setSpecInput(p => ({ ...p, h: String(val) }));
+          setForm((p: any) => ({ ...p, h: val }));
+        }} 
+        style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} 
+      />
     </div>
   ) : spec}
 </td>
