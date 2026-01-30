@@ -834,9 +834,100 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     }
   }
 
-  function handlePrint() {
+  async function handlePrint() {
     requireCurrent();
-    window.print();
+
+    const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
+    if (!sheetEl) {
+      toast("인쇄할 문서를 찾을 수 없습니다.");
+      return;
+    }
+
+    toast("인쇄 준비 중...");
+
+    try {
+      const isStatement = activeTab === 'statement';
+      const captureWidth = isStatement ? 1100 : 794;
+
+      const captureContainer = document.createElement('div');
+      captureContainer.style.cssText = `position: fixed; top: -9999px; left: -9999px; width: ${captureWidth}px; background: #fff; z-index: -1;`;
+      document.body.appendChild(captureContainer);
+
+      const styleTag = document.querySelector('#docPreview style');
+      if (styleTag) {
+        captureContainer.appendChild(styleTag.cloneNode(true));
+      }
+
+      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${isStatement ? 600 : 1123}px; background: #fff; padding: 16px; box-sizing: border-box;`;
+
+      // select를 선택된 텍스트로 교체
+      const clonedSelects = clonedSheet.querySelectorAll('select');
+      const originalSelects = sheetEl.querySelectorAll('select');
+      clonedSelects.forEach((select, idx) => {
+        const origSelect = originalSelects[idx] as HTMLSelectElement;
+        const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+        const span = document.createElement('span');
+        span.textContent = selectedText;
+        span.style.cssText = 'font-size: 13px;';
+        select.parentNode?.replaceChild(span, select);
+      });
+
+      // 버튼 숨기기
+      const buttons = clonedSheet.querySelectorAll('button');
+      buttons.forEach(btn => btn.style.display = 'none');
+
+      // input 숨기기 (a4Items 내부)
+      const inputs = clonedSheet.querySelectorAll('.a4Items input');
+      inputs.forEach(input => (input as HTMLElement).style.display = 'none');
+
+      // +품목추가 버튼 숨기기
+      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+
+      captureContainer.appendChild(clonedSheet);
+
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: true,
+        width: captureWidth,
+        windowWidth: captureWidth,
+      });
+
+      document.body.removeChild(captureContainer);
+
+      const imgData = canvas.toDataURL("image/png");
+
+      // 새 창에서 이미지 인쇄
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${getDocTitle()} 인쇄</title>
+            <style>
+              @page { size: ${isStatement ? 'landscape' : 'A4'}; margin: 0; }
+              body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; }
+              img { width: ${isStatement ? '297mm' : '210mm'}; height: auto; }
+            </style>
+          </head>
+          <body>
+            <img src="${imgData}" onload="setTimeout(() => { window.print(); window.close(); }, 100);" />
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+
+      toast("");
+    } catch (e: any) {
+      toast("인쇄 실패: " + (e?.message || String(e)));
+    }
   }
 
   async function handleDelete() {
@@ -1905,6 +1996,38 @@ button.danger { background: #fee; border-color: #f99; color: #c00; }
     background: #fff !important; 
     margin: 0 !important; 
     padding: 0 !important; 
+  }
+  
+  /* 인쇄 시 편집/선택 요소 숨기기 */
+  select, 
+  .specDropdown,
+  .optionDropdown,
+  .priceOptions,
+  [class*="dropdown"],
+  [class*="Dropdown"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  select::-ms-expand {
+    display: none !important;
+  }
+  
+  /* 단가 셀 내 여러 가격 옵션 숨기기 - 첫번째만 표시 */
+  td > div:nth-child(n+2),
+  td > span:nth-child(n+2),
+  .priceCell > div:nth-child(n+2),
+  .priceCell > span:nth-child(n+2) {
+    display: none !important;
+  }
+  
+  /* 규격 옵션 div들 숨기기 */
+  td div[style*="cursor: pointer"],
+  td div[style*="background"]:not(:first-child) {
+    display: none !important;
   }
 }
 
