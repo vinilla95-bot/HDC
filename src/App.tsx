@@ -2538,15 +2538,16 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
             </thead>
             <tbody>
               
-            {computedItems.map((item: any, idx: number) => {
+           {computedItems.map((item: any, idx: number) => {
   const unitSupply = Number(item.customerUnitPrice ?? 0);
   const qty = Number(item.displayQty ?? 0);
   const supply = unitSupply * qty;
   const vat = Math.round(supply * 0.1);
   const showSpec = String(item.showSpec || "").toLowerCase() === "y";
   
-  // ✅ 마감사양 설명용 행 (규격, 수량, 단가 숨김)
-  const displayName = String(item.displayName || "");
+  // ✅ 마감사양 설명 행
+  const dn = String(item.displayName || "");
+  const isDescRow = dn.startsWith('[') || dn.startsWith('-') || dn.startsWith('▷') || dn.startsWith('>');
   const isDescriptionRow = 
     displayName.startsWith('[') ||
     displayName.startsWith('-') ||
@@ -2624,16 +2625,18 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
     : null
   )}
 </td>
-  <td className="c center">
-  {editable && onUpdateQty ? (
-    <EditableNumberCell value={qty} onChange={(v) => onUpdateQty(item.key, v)} />
-  ) : (qty ? String(qty) : '')}
+ <td className="c center">
+  {isDescRow ? null : (
+    editable && onUpdateQty ? (
+      <EditableNumberCell value={qty} onChange={(v) => onUpdateQty(item.key, v)} />
+    ) : (qty ? String(qty) : '')
+  )}
 </td>
- <td className="c right">
-  {editable && onUpdatePrice ? (
-    <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
-  ) : (
-    unitSupply ? fmt(unitSupply) : ''
+<td className="c right">
+  {isDescRow ? null : (
+    editable && onUpdatePrice ? (
+      <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
+    ) : (unitSupply ? fmt(unitSupply) : '')
   )}
 </td>
 <td className="c right" style={{ whiteSpace: 'nowrap' }}>{supply ? fmt(supply) : ''}</td>
