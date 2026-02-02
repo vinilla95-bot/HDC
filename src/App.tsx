@@ -2606,8 +2606,13 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
       onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
     />
   ) : (
+    // 1. specText(자유입력)가 있으면 표시
     item.specText ? item.specText 
-    : showSpec ? `${item.lineSpec?.w || form.w}×${item.lineSpec?.l || form.l}×${item.lineSpec?.h || form.h}` 
+    // 2. 사용자가 직접 입력한 lineSpec이 있으면 표시
+    : (item.lineSpec?.w > 0 || item.lineSpec?.l > 0) ? `${item.lineSpec.w}×${item.lineSpec.l}×${item.lineSpec.h || 0}` 
+    // 3. showSpec='y'면 기본 규격 표시
+    : showSpec ? `${form.w}×${form.l}×${form.h}` 
+    // 4. 그 외는 빈칸
     : null
   )}
 </td>
