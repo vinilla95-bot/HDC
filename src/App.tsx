@@ -100,22 +100,18 @@ React.useEffect(() => {
  return <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }} style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }} title="클릭하여 수정">{fmtNum(value)}</span>; }
 
 
-// ============ 인라인 규격 편집 셀 ============
-// ============ 인라인 규격 편집 셀 ============
-// ============ 인라인 규격 편집 셀 ============
+
 // ============ 인라인 규격 편집 셀 ============
 function EditableSpecCell({ 
   spec, 
   specText,
   onChange,
   onTextChange,
-  hidden = false  // ✅ 추가
 }: { 
   spec: { w: number; l: number; h?: number }; 
   specText?: string;
   onChange: (spec: { w: number; l: number; h?: number }) => void;
   onTextChange?: (text: string) => void;
-  hidden?: boolean;  // ✅ 추가
 }) {
   const [isEditing, setIsEditing] = useState(false);
   
@@ -203,9 +199,9 @@ return (
         setIsEditing(true); 
       }} 
       style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%", minHeight: 20 }} 
-      title="클릭하여 규격 수정"
+      title="클릭하여 규격 입력"
     >
-      {hidden && !displayText ? null : (displayText || <span style={{ color: '#ccc' }}>-</span>)}
+      {displayText}
     </span>
   );
 }
@@ -2595,20 +2591,20 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
 <td className="c center">
   {editable && onUpdateSpec ? (
     <EditableSpecCell 
-      spec={item.lineSpec || { w: form.w, l: form.l, h: form.h }}
+      spec={
+        item.specText ? (item.lineSpec || { w: 0, l: 0, h: 0 }) 
+        : showSpec ? (item.lineSpec || { w: form.w, l: form.l, h: form.h })
+        : (item.lineSpec?.w > 0 || item.lineSpec?.l > 0) ? item.lineSpec 
+        : { w: 0, l: 0, h: 0 }
+      }
       specText={item.specText}
-      onChange={(newSpec) => {
-        onUpdateSpec(item.key, newSpec);
-        // ✅ 규격 입력하면 showSpec도 'y'로 변경
-        if (onUpdateSpecText && (newSpec.w > 0 || newSpec.l > 0)) {
-          // showSpec 업데이트 로직이 필요하면 여기에
-        }
-      }} 
+      onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
       onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
-      hidden={!showSpec && !item.specText && (!item.lineSpec?.w || item.lineSpec.w === 0)}
     />
   ) : (
-    showSpec ? (item.specText || `${item.lineSpec?.w || form.w}×${item.lineSpec?.l || form.l}×${item.lineSpec?.h || form.h}`) : null
+    item.specText ? item.specText 
+    : showSpec ? `${item.lineSpec?.w || form.w}×${item.lineSpec?.l || form.l}×${item.lineSpec?.h || form.h}` 
+    : null
   )}
 </td>
   <td className="c center">
