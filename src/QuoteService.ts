@@ -189,57 +189,52 @@ export const calculateOptionLine = (
   }
 
 if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
-  // ✅ 벽면류 (4m일 때 M당 × 1.5배)
-  const isWallItem = 
-    rawName.includes('글라스울') ||
-    rawName.includes('석고') ||
-    rawName.includes('도배') ||
-    rawName.includes('단열') ||
-    rawName.includes('노출배관');
+  const keywords = String(opt.keywords || '').toLowerCase();
+  const isFloor = keywords.includes('바닥');  // 바닥류
+  const isWall = keywords.includes('벽면');   // 벽면류
   
-  // ✅ 바닥류는 4m 넘으면 평 계산, 벽면류는 M당 × 1.5배
-  if (w >= 4 && !hasWPrice && !isWallItem) {
-    
-      const area = w * l;
-      const pyeong = area / 3.3;
-      qty = Math.round(pyeong * 10) / 10;
-      unit = '평';
-      let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
-      let amount = pyeong * finalUnitPrice;
-      amount = roundToTenThousand(amount);
-      memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
-      if (heightMultiplier > 1) memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
-      return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
-    }
-    
-    qty = l;
-    memo = `자동계산(m): 길이 ${l}m`;
-    const mMinBill = Number(opt.m_min_bill || 0);
-    const mMinUntil = Number(opt.m_min_until || 0);
-    if (mMinBill > 0 && mMinUntil > 0) {
-      if (qty > 0 && qty < mMinUntil) {
-        const before = qty;
-        qty = Math.max(qty, mMinBill);
-        memo += `\n최소청구: ${before}m → ${qty}m`;
-      }
-    }
-    
-    // ✅ 모노륨 4미터 1.5배 적용
-   // ✅ 벽면류 4미터 1.5배 적용
-let finalUnitPrice = unitPrice;
-if (isWallItem && w >= 4) {
-  finalUnitPrice = Math.round(unitPrice * 1.5);
-  memo += ` (4m 폭 1.5배)`;
-} else if (heightMultiplier > 1) {
-      finalUnitPrice = Math.round(unitPrice * heightMultiplier);
-      memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
-    }
-    
-    let amount = qty * finalUnitPrice;
+  // ✅ 바닥류: 3m 초과시 평 계산
+  if (isFloor && w > 3) {
+    const area = w * l;
+    const pyeong = area / 3.3;
+    qty = Math.round(pyeong * 10) / 10;
+    unit = '평';
+    let finalUnitPrice = Math.round(unitPrice * heightMultiplier);
+    let amount = pyeong * finalUnitPrice;
     amount = roundToTenThousand(amount);
+    memo = `평계산: ${w}×${l}=${area}㎡ ÷ 3.3 = ${pyeong.toFixed(1)}평`;
+    if (heightMultiplier > 1) memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
     return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
   }
-
+  
+  // ✅ 그 외 M 단위: 길이 × 단가
+  qty = l;
+  memo = `길이계산: ${l}m`;
+  
+  const mMinBill = Number(opt.m_min_bill || 0);
+  const mMinUntil = Number(opt.m_min_until || 0);
+  if (mMinBill > 0 && mMinUntil > 0) {
+    if (qty > 0 && qty < mMinUntil) {
+      const before = qty;
+      qty = Math.max(qty, mMinBill);
+      memo += ` (최소청구: ${before}m → ${qty}m)`;
+    }
+  }
+  
+  // ✅ 벽면류: 3m 초과시 1.5배
+  let finalUnitPrice = unitPrice;
+  if (isWall && w > 3) {
+    finalUnitPrice = Math.round(unitPrice * 1.5);
+    memo += ` (4m 폭 1.5배)`;
+  } else if (heightMultiplier > 1) {
+    finalUnitPrice = Math.round(unitPrice * heightMultiplier);
+    memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
+  }
+  
+  let amount = qty * finalUnitPrice;
+  amount = roundToTenThousand(amount);
+  return { qty, unit, unitPrice: finalUnitPrice, amount, memo };
+}
   if (overrides.unitPrice !== undefined) unitPrice = Number(overrides.unitPrice);
   
   // ✅ 컨테이너 옵션에 높이 배수 적용
