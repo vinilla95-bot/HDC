@@ -2547,8 +2547,14 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
   
  // ✅ 마감사양 설명 행
 // ✅ 마감사양 설명 행
-const itemDisplayName = String(item.displayName || "");
-const isDescRow = itemDisplayName.startsWith('[') || itemDisplayName.startsWith('-') || itemDisplayName.startsWith('▷') || itemDisplayName.startsWith('>');
+// ✅ 마감사양 설명 행
+const dn = String(item.displayName || "");
+const isDescRow = 
+  dn.startsWith('[') || 
+  dn.startsWith('-') || 
+  dn.startsWith('▷') || 
+  dn.startsWith('>') ||
+  dn.includes('임대계약시 필요정보');
 
   const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l
     ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}`
