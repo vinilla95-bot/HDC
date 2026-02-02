@@ -1150,7 +1150,7 @@ const row: any = {
   finalAmount: Math.round(displayQty * customerUnitPrice),
   months: defaultMonths,
   memo: res.memo || "",
-  lineSpec: showSpec === 'n' ? { w: 0, l: 0, h: 0 } : { w: form.w, l: form.l, h: form.h },
+ lineSpec: showSpec === 'y' ? { w: form.w, l: form.l, h: form.h } : { w: 0, l: 0, h: 0 },
   _isRent: rent,
   _isCustomFreeText: opt._isCustomFreeText || false,
   
