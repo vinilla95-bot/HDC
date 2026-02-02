@@ -2545,14 +2545,11 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
   const vat = Math.round(supply * 0.1);
   const showSpec = String(item.showSpec || "").toLowerCase() === "y";
   
-  // ✅ 마감사양 설명 행
-  const dn = String(item.displayName || "");
-  const isDescRow = dn.startsWith('[') || dn.startsWith('-') || dn.startsWith('▷') || dn.startsWith('>');
-  const isDescriptionRow = 
-    displayName.startsWith('[') ||
-    displayName.startsWith('-') ||
-    displayName.startsWith('▷') ||
-    displayName.startsWith('>');
+ // ✅ 마감사양 설명 행
+// ✅ 마감사양 설명 행
+const itemDisplayName = String(item.displayName || "");
+const isDescRow = itemDisplayName.startsWith('[') || itemDisplayName.startsWith('-') || itemDisplayName.startsWith('▷') || itemDisplayName.startsWith('>');
+
   const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l
     ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}`
     : "";
