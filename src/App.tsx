@@ -1924,23 +1924,27 @@ onSelectOption={(item, opt, calc) => {
   }
   
   const months = opt._months || 3;
-  const existingLineSpec = item.lineSpec || { w: form.w, l: form.l, h: form.h };
+  
+  // ✅ 수정: show_spec에 따라 lineSpec 결정
+  const showSpecValue = String(opt.show_spec || "n").toLowerCase();
+  const newLineSpec = showSpecValue === 'y' 
+    ? (item.lineSpec || { w: form.w, l: form.l, h: form.h })
+    : { w: 0, l: 0, h: 0 };
   
   const hasMonthInName = /\d+개월/.test(rawName);
   const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
   
   const customerUnitPrice = Number(calc.unitPrice || calc.amount || 0);
   
-  // ✅ 기존 optionName 유지 (비어있을 때만 새로 설정)
   const newOptName = item.optionName || rawName;
   
   setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
     ...i, 
     optionId: opt.option_id, 
-    optionName: newOptName,  // ✅ 기존 값 유지
+    optionName: newOptName,
     displayName,
     unit: rent ? "개월" : calc.unit || "EA", 
-    showSpec: opt.show_spec || "n",
+    showSpec: showSpecValue,  // ✅ opt.show_spec || "n" 대신 showSpecValue
     baseQty: calc.qty || 1, 
     baseUnitPrice: opt.unit_price || calc.unitPrice || 0, 
     baseAmount: calc.amount || 0,
@@ -1948,7 +1952,7 @@ onSelectOption={(item, opt, calc) => {
     customerUnitPrice, 
     finalAmount: customerUnitPrice, 
     months,
-    lineSpec: existingLineSpec,
+    lineSpec: newLineSpec,  // ✅ existingLineSpec 대신 newLineSpec
     _isRent: (item as any)._isRent ?? rent,
     _isCustomFreeText: opt._isCustomFreeText || false,
   } as any));
