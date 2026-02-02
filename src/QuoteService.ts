@@ -188,11 +188,18 @@ export const calculateOptionLine = (
     memo = `자동계산(평): ${w}×${l}=${(w * l).toFixed(2)}㎡ / 3.3 = ${p.toFixed(2)} → ${qty}평`;
   }
 
-  if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
-    // ✅ 모노륨은 평 계산 안 함 - 4미터여도 m 단위 유지하고 1.5배 적용
-    const isMonoleum = rawName.includes('모노륨');
+if (isMeterUnit && qtyMode !== 'AUTO_PYEONG') {
+  // ✅ 벽면류 (4m일 때 M당 × 1.5배)
+  const isWallItem = 
+    rawName.includes('글라스울') ||
+    rawName.includes('석고') ||
+    rawName.includes('도배') ||
+    rawName.includes('단열') ||
+    rawName.includes('노출배관');
+  
+  // ✅ 바닥류는 4m 넘으면 평 계산, 벽면류는 M당 × 1.5배
+  if (w >= 4 && !hasWPrice && !isWallItem) {
     
-    if (w >= 4 && !hasWPrice && !isMonoleum) {
       const area = w * l;
       const pyeong = area / 3.3;
       qty = Math.round(pyeong * 10) / 10;
@@ -218,11 +225,12 @@ export const calculateOptionLine = (
     }
     
     // ✅ 모노륨 4미터 1.5배 적용
-    let finalUnitPrice = unitPrice;
-    if (isMonoleum && w >= 4) {
-      finalUnitPrice = Math.round(unitPrice * 1.5);
-      memo += ` (4m 광폭 1.5배)`;
-    } else if (heightMultiplier > 1) {
+   // ✅ 벽면류 4미터 1.5배 적용
+let finalUnitPrice = unitPrice;
+if (isWallItem && w >= 4) {
+  finalUnitPrice = Math.round(unitPrice * 1.5);
+  memo += ` (4m 폭 1.5배)`;
+} else if (heightMultiplier > 1) {
       finalUnitPrice = Math.round(unitPrice * heightMultiplier);
       memo += ` (높이 ${h}m, ${heightMultiplier}배)`;
     }
