@@ -1140,19 +1140,28 @@ export default function App() {
   const [currentQuoteId, setCurrentQuoteId] = useState<string>("");
   const [currentVersion, setCurrentVersion] = useState<number>(0);
 
-  // ✅ 고객정보에서 규격 제거 - form에서 w, l, h 사용 안함 (기본값만 유지)
-  const [form, setForm] = useState({
-    quoteTitle: "",
-    name: "",
-    email: "",
-    phone: "",
-    siteQ: "",
-    sitePickedLabel: "",
-    optQ: "",
-    quoteDate: new Date().toISOString().slice(0, 10),
-    vatIncluded: true,
-  });
-
+ const [form, setForm] = useState({
+  quoteTitle: "",
+  name: "",
+  email: "",
+  phone: "",
+  siteQ: "",
+  sitePickedLabel: "",
+  optQ: "",
+  quoteDate: new Date().toISOString().slice(0, 10),
+  vatIncluded: true,
+  // ✅ 추가
+  paymentTerms: "계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고",
+  cautions: `*견적서는 견적일로 부터 2주간 유효합니다.
+1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
+2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고
+*출고 전날 오후 2시 이전 잔금 결제 조건*
+3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)`,
+  important: `1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
+2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
+한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.
+해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.`,
+});
   const [statusMsg, setStatusMsg] = useState("");
   const [sendStatus, setSendStatus] = useState("");
   const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
@@ -2355,6 +2364,9 @@ type A4QuoteProps = {
     w?: number;  // ✅ QuoteListPage 호환용 (optional)
     l?: number;
     h?: number;
+     paymentTerms?: string;
+    cautions?: string;
+    important?: string;
   };
   setForm?: React.Dispatch<React.SetStateAction<any>>;
   bizcards?: Bizcard[];
@@ -2772,37 +2784,61 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                 <td className="sumNum right"></td>
               </tr>
               <tr>
-                <th className="label">결제조건</th>
-                <td className="text" colSpan={7}>
-                  계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고
-                </td>
-              </tr>
-              <tr>
-                <th className="label">주의사항</th>
-                <td className="text" colSpan={7}>
-                  *견적서는 견적일로 부터 2주간 유효합니다.
-                  <br />
-                  1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
-                  <br />
-                  2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고
-                  <br />
-                  *출고 전날 오후 2시 이전 잔금 결제 조건*
-                  <br />
-                  3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)
-                </td>
-              </tr>
-              <tr>
-                <th className="label">중요사항</th>
-                <td className="text" colSpan={7}>
-                  1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
-                  <br />
-                  2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
-                  <br />
-                  한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.
-                  <br />
-                  해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.
-                </td>
-              </tr>
+  <th className="label">결제조건</th>
+  <td className="text" colSpan={7}>
+    {editable && setForm ? (
+      <textarea
+        value={form.paymentTerms || "계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고"}
+        onChange={(e) => setForm((p: any) => ({ ...p, paymentTerms: e.target.value }))}
+        style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, lineHeight: 1.55, resize: "none", minHeight: 20 }}
+      />
+    ) : (
+      (form.paymentTerms || "계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고").split('\n').map((line, i) => <span key={i}>{line}<br/></span>)
+    )}
+  </td>
+</tr>
+<tr>
+  <th className="label">주의사항</th>
+  <td className="text" colSpan={7}>
+    {editable && setForm ? (
+      <textarea
+        value={form.cautions || `*견적서는 견적일로 부터 2주간 유효합니다.
+1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
+2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고
+*출고 전날 오후 2시 이전 잔금 결제 조건*
+3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)`}
+        onChange={(e) => setForm((p: any) => ({ ...p, cautions: e.target.value }))}
+        style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, lineHeight: 1.55, resize: "none", minHeight: 80 }}
+      />
+    ) : (
+      (form.cautions || `*견적서는 견적일로 부터 2주간 유효합니다.
+1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
+2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고
+*출고 전날 오후 2시 이전 잔금 결제 조건*
+3. 하차, 회수시 상차 별도(당 지역 지게차 혹은 크레인 이용)`).split('\n').map((line, i) => <span key={i}>{line}<br/></span>)
+    )}
+  </td>
+</tr>
+<tr>
+  <th className="label">중요사항</th>
+  <td className="text" colSpan={7}>
+    {editable && setForm ? (
+      <textarea
+        value={form.important || `1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
+2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
+한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.
+해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.`}
+        onChange={(e) => setForm((p: any) => ({ ...p, important: e.target.value }))}
+        style={{ width: "100%", border: "none", background: "transparent", fontSize: 12, lineHeight: 1.55, resize: "none", minHeight: 60 }}
+      />
+    ) : (
+      (form.important || `1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
+2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
+한전/전기안전공사 측에서 전기연결 예정이신 경우 전선관 옵션을 추가하여 주시길 바랍니다.
+해당사항은 고지의무사항이 아니므로 상담을 통해 확인하시길 바랍니다.`).split('\n').map((line, i) => <span key={i}>{line}<br/></span>)
+    )}
+  </td>
+</tr>
             </tbody>
           </table>
         </div>
