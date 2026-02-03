@@ -65,6 +65,12 @@ type QuoteItem = {
 
 type DocTab = "quote" | "statement" | "rental";
 
+// ✅ 첨부파일 URL (Supabase Storage)
+const ATTACHMENT_URLS = {
+  bankAccount: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/bank_account.pdf",
+  bizRegistration: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/biz_registration.pdf",
+};
+
 function money(n: any) {
   const num = Number(n || 0);
   return num.toLocaleString("ko-KR");
@@ -145,6 +151,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   const [editOpen, setEditOpen] = useState(false);
   const [sendTo, setSendTo] = useState("");
   const [sendStatus, setSendStatus] = useState("");
+  const [attachments, setAttachments] = useState<{ bankAccount: boolean; bizRegistration: boolean }>({ bankAccount: false, bizRegistration: false });
   const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
   
   const [rentalForm, setRentalForm] = useState({
@@ -343,8 +350,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     ));
   }, []);
 
-  // ✅ 옵션 선택 핸들러 (A4Quote에서 호출)
-// ✅ 옵션 선택 핸들러 (App.tsx 방식 그대로)
+  // ✅ 옵션 선택 핸들러 (App.tsx 방식 그대로)
 const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
   const rawName = String(opt.option_name || "");
   const rent = rawName.includes("임대") && !opt._isCustomFreeText;
@@ -746,6 +752,15 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       const bizcardImageUrl = selectedBizcard?.image_url || "";
       const customerName = current!.customer_name || "고객";
 
+      // ✅ 첨부파일 URL 배열 생성
+      const attachmentUrls: string[] = [];
+      if (attachments.bankAccount) {
+        attachmentUrls.push(ATTACHMENT_URLS.bankAccount);
+      }
+      if (attachments.bizRegistration) {
+        attachmentUrls.push(ATTACHMENT_URLS.bizRegistration);
+      }
+
       setSendStatus("메일 전송 중...");
 
       await gasCall("sendDocEmailWithPdf", [
@@ -754,12 +769,14 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
         imgData,
         bizcardImageUrl,
         customerName,
-        getDocTitle()
+        getDocTitle(),
+        attachmentUrls  // ✅ 첨부파일 URL 배열 추가
       ]);
 
       setSendStatus("전송 완료!");
       toast(`${getDocTitle()} 메일 전송 완료`);
       setSendOpen(false);
+      setAttachments({ bankAccount: false, bizRegistration: false }); // ✅ 초기화
       loadList(q);
     } catch (e: any) {
       setSendStatus("전송 실패: " + (e?.message || String(e)));
@@ -953,6 +970,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     requireCurrent();
     setSendTo("");
     setSendStatus("");
+    setAttachments({ bankAccount: false, bizRegistration: false }); // ✅ 첨부파일 초기화
     setSendOpen(true);
   }
 
@@ -1698,7 +1716,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
             </div>
           </div>
 
-          {/* 전송 모달 */}
+          {/* ✅ 전송 모달 - 첨부파일 선택 추가 */}
           {sendOpen && (
             <div className="modal" onMouseDown={() => setSendOpen(false)}>
               <div className="modalCard" onMouseDown={(e) => e.stopPropagation()}>
@@ -1728,6 +1746,35 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
                       {bizcards.map((b: any) => (<option key={b.id} value={b.id}>{b.name}</option>))}
                     </select>
                   </div>
+                  
+                  {/* ✅ 첨부파일 선택 */}
+                  <div style={{ marginBottom: 10, padding: 12, background: '#f9fafb', borderRadius: 10, border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>📎 첨부파일 추가</div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 6 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={attachments.bankAccount} 
+                        onChange={(e) => setAttachments(prev => ({ ...prev, bankAccount: e.target.checked }))}
+                        style={{ width: 18, height: 18, cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: 13 }}>1. 통장사본 (PDF)</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={attachments.bizRegistration} 
+                        onChange={(e) => setAttachments(prev => ({ ...prev, bizRegistration: e.target.checked }))}
+                        style={{ width: 18, height: 18, cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: 13 }}>2. 사업자등록증 (PDF)</span>
+                    </label>
+                    {(attachments.bankAccount || attachments.bizRegistration) && (
+                      <div style={{ marginTop: 8, fontSize: 11, color: '#059669' }}>
+                        ✓ {[attachments.bankAccount && '통장사본', attachments.bizRegistration && '사업자등록증'].filter(Boolean).join(', ')} 첨부됨
+                      </div>
+                    )}
+                  </div>
+
                   <div className="row">
                     <span className="spacer" />
                     <button className="primary" onClick={handleSendEmail}>전송</button>
