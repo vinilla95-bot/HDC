@@ -60,28 +60,28 @@ const formatDateDisplay = (dateStr: string) => {
   const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
   const yy = year.slice(2);
-  return `${yy}/${month}/${day} ${weekDays[date.getDay()]}`;
+  return \`\${yy}/\${month}/\${day} \${weekDays[date.getDay()]}\`;
 };
 
 // GPT 홍보글 생성
 const generatePromoWithGPT = async (item: UsedInventoryItem, platform: "jungonara" | "blog"): Promise<string> => {
   const infoParts: string[] = [];
-  infoParts.push(`규격: ${item.spec}`);
-  infoParts.push(`상태: ${item.condition}`);
-  infoParts.push(`수량: ${item.quantity}대`);
-  infoParts.push(item.price ? `가격: ${item.price}만원` : "가격: 문의");
+  infoParts.push(\`규격: \${item.spec}\`);
+  infoParts.push(\`상태: \${item.condition}\`);
+  infoParts.push(\`수량: \${item.quantity}대\`);
+  infoParts.push(item.price ? \`가격: \${item.price}만원\` : "가격: 문의");
   
-  if (item.usage && item.usage.length > 0) infoParts.push(`용도: ${item.usage.join(", ")}`);
+  if (item.usage && item.usage.length > 0) infoParts.push(\`용도: \${item.usage.join(", ")}\`);
   if (item.has_interior) infoParts.push("내장: 있음");
-  if (item.floor && item.floor.length > 0) infoParts.push(`바닥: ${item.floor.join(", ")}`);
-  if (item.door && item.door.length > 0) infoParts.push(`출입문: ${item.door.join(", ")}`);
-  if (item.electric) infoParts.push(`전기: ${item.electric}`);
-  if (item.aircon) infoParts.push(`에어컨: ${item.aircon}`);
-  if (item.sink) infoParts.push(`싱크대: ${item.sink}`);
-  if (item.toilet) infoParts.push(`화장실: ${item.toilet}`);
-  if (item.note) infoParts.push(`특이사항: ${item.note}`);
+  if (item.floor && item.floor.length > 0) infoParts.push(\`바닥: \${item.floor.join(", ")}\`);
+  if (item.door && item.door.length > 0) infoParts.push(\`출입문: \${item.door.join(", ")}\`);
+  if (item.electric) infoParts.push(\`전기: \${item.electric}\`);
+  if (item.aircon) infoParts.push(\`에어컨: \${item.aircon}\`);
+  if (item.sink) infoParts.push(\`싱크대: \${item.sink}\`);
+  if (item.toilet) infoParts.push(\`화장실: \${item.toilet}\`);
+  if (item.note) infoParts.push(\`특이사항: \${item.note}\`);
 
-  const systemPrompt = `너는 중고컨테이너 판매 글 작성 전문가야.
+  const systemPrompt = \`너는 중고컨테이너 판매 글 작성 전문가야.
 아래 샘플글 스타일을 정확히 따라해. 특히 🔸컨테이너 마감사양🔸 섹션을 상세하게 작성해야 해.
 
 [샘플글]
@@ -125,20 +125,20 @@ const generatePromoWithGPT = async (item: UsedInventoryItem, platform: "jungonar
 4. 용도가 있으면 제목과 본문에 포함 (농막, 창고, 사무실, 숙소, 체류형쉼터 등)
 5. 마무리는 항상: 공장직영 + 위치 화성시 + 010-8773-7557 + 방충망 서비스/상차 안내
 6. "중고" 컨테이너임을 명시하고 상태(A급/B급/C급) 강조
-7. 옵션이 없는 항목은 생략해도 됨`;
+7. 옵션이 없는 항목은 생략해도 됨\`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
+        "Authorization": \`Bearer \${OPENAI_API_KEY}\`
       },
       body: JSON.stringify({
         model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `이 중고 컨테이너 ${platform === "jungonara" ? "중고나라" : "블로그"} 판매글 써줘:\n\n${infoParts.join("\n")}` }
+          { role: "user", content: \`이 중고 컨테이너 \${platform === "jungonara" ? "중고나라" : "블로그"} 판매글 써줘:\n\n\${infoParts.join("\n")}\` }
         ],
         temperature: 0.7,
         max_tokens: 1000
@@ -153,21 +153,21 @@ const generatePromoWithGPT = async (item: UsedInventoryItem, platform: "jungonar
   } catch (error) {
     console.error("GPT API 에러:", error);
     // 에러시 기본 템플릿 반환
-    const priceText = item.price ? `${item.price}만원` : "가격문의";
-    return `🔷중고컨테이너/${item.spec}/${item.condition}🔷
+    const priceText = item.price ? \`\${item.price}만원\` : "가격문의";
+    return \`🔷중고컨테이너/\${item.spec}/\${item.condition}🔷
 
-중고 ${item.condition} 컨테이너 판매합니다
-가격: ➡️ ${priceText} (부가세별도)
-사이즈: ${item.spec}
-수량: ${item.quantity}대
-${item.note ? `\n📝 ${item.note}` : ""}
+중고 \${item.condition} 컨테이너 판매합니다
+가격: ➡️ \${priceText} (부가세별도)
+사이즈: \${item.spec}
+수량: \${item.quantity}대
+\${item.note ? \`\n📝 \${item.note}\` : ""}
 
 컨테이너 제작 공장 직영입니다😁
 위치 화성시입니다.
 010-8773-7557
 
 방충망 서비스, 상차 해 드립니다~
-운임 및 하차 별도 (전화로 문의 주세요)`;
+운임 및 하차 별도 (전화로 문의 주세요)\`;
   }
 };
 
@@ -228,12 +228,12 @@ export default function InventoryPage({
 
   useEffect(() => { loadInventory(); }, []);
 const postToJungonara = async (item: UsedInventoryItem) => {
-    if (!confirm(`"${item.spec} ${item.condition}" 중고나라 자동 등록하시겠습니까?\n\n※ PC에서 봇 서버가 실행 중이어야 합니다.`)) {
+    if (!confirm(\`"\${item.spec} \${item.condition}" 중고나라 자동 등록하시겠습니까?\n\n※ PC에서 봇 서버가 실행 중이어야 합니다.\`)) {
       return;
     }
 
     try {
-      const response = await fetch(`${BOT_SERVER_URL}/post`, {
+      const response = await fetch(\`\${BOT_SERVER_URL}/post\`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ item_id: item.id }),
@@ -243,7 +243,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
       if (result.success) {
         alert("✅ 봇이 시작되었습니다!\n\nPC 브라우저에서 자동으로 중고나라 글쓰기가 진행됩니다.");
       } else {
-        alert(`❌ 실패: ${result.message}`);
+        alert(\`❌ 실패: \${result.message}\`);
       }
     } catch (error) {
       alert("❌ 봇 서버에 연결할 수 없습니다.\n\nPC에서 서버를 실행해주세요:\npython jungonara_server.py");
@@ -310,16 +310,16 @@ const postToJungonara = async (item: UsedInventoryItem) => {
 
   const updateField = async (quote_id: string, field: string, value: any) => {
     const { error } = await supabase.from("inventory").update({ [field]: value }).eq("quote_id", quote_id);
-    if (error) { alert(`업데이트 실패: ${error.message}`); return; }
+    if (error) { alert(\`업데이트 실패: \${error.message}\`); return; }
     setAllItems(prev => prev.map(c => c.quote_id === quote_id ? { ...c, [field]: value } : c));
   };
 
   const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
     const typeName = targetType === "order" ? "수주" : "영업소";
-    if (!confirm(`이 항목을 계약견적 "${typeName}"으로 이동하시겠습니까?`)) return;
-    const newQuoteId = `${item.quote_id}_${targetType}_${Date.now()}`;
+    if (!confirm(\`이 항목을 계약견적 "\${typeName}"으로 이동하시겠습니까?\`)) return;
+    const newQuoteId = \`\${item.quote_id}_\${targetType}_\${Date.now()}\`;
     const existingOptions = item.items?.map((i: any) => i.displayName || i.optionName || "").filter(Boolean).join(", ") || "";
-    const newItems = existingOptions ? [{ displayName: `재고, ${existingOptions}` }] : [{ displayName: "재고" }];
+    const newItems = existingOptions ? [{ displayName: \`재고, \${existingOptions}\` }] : [{ displayName: "재고" }];
     const { error: insertError } = await supabase.from("quotes").insert({
       quote_id: newQuoteId, status: "confirmed", contract_type: targetType, contract_date: item.contract_date,
       drawing_no: item.drawing_no, spec: item.spec, customer_name: item.customer_name, interior: item.interior,
@@ -328,8 +328,8 @@ const postToJungonara = async (item: UsedInventoryItem) => {
       tax_invoice: item.tax_invoice || "", depositor: item.depositor || "", source: "inventory",
     });
     if (insertError) { alert("이동 실패: " + insertError.message); return; }
-    await supabase.from("inventory").update({ inventory_status: "출고완료", interior: `${item.interior || ""} [${typeName}이동]`.trim() }).eq("quote_id", item.quote_id);
-    alert(`계약견적 "${typeName}"으로 이동 완료!`);
+    await supabase.from("inventory").update({ inventory_status: "출고완료", interior: \`\${item.interior || ""} [\${typeName}이동]\`.trim() }).eq("quote_id", item.quote_id);
+    alert(\`계약견적 "\${typeName}"으로 이동 완료!\`);
     loadInventory();
   };
 
@@ -340,7 +340,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
   const inserts = [];
   for (let i = 0; i < qty; i++) {
     inserts.push({
-      quote_id: `INV_${Date.now()}_${i}`, contract_date: newItem.contract_date, drawing_no: String(startNo + i),
+      quote_id: \`INV_\${Date.now()}_\${i}\`, contract_date: newItem.contract_date, drawing_no: String(startNo + i),
       customer_name: newItem.customer_name, spec: newItem.spec, inventory_status: newItem.inventory_status,
       container_type: newItem.container_type, total_amount: newItem.total_amount, deposit_status: newItem.deposit_status, items: [],
     });
@@ -364,7 +364,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
 };
 
   const handleDelete = async (quote_id: string, spec: string) => {
-    if (!confirm(`"${spec}" 항목을 삭제하시겠습니까?`)) return;
+    if (!confirm(\`"\${spec}" 항목을 삭제하시겠습니까?\`)) return;
     const { error } = await supabase.from("inventory").delete().eq("quote_id", quote_id);
     if (error) { alert("삭제 실패: " + error.message); return; }
     loadInventory();
@@ -550,7 +550,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                           <span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: item.condition === "A급" ? "#28a745" : item.condition === "B급" ? "#ffc107" : "#dc3545", color: item.condition === "B급" ? "#000" : "#fff" }}>{item.condition}</span>
                         </td>
-                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.price ? `${item.price}만원` : "-"}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{item.price ? \`\${item.price}만원\` : "-"}</td>
 <td 
   style={{ padding: 8, border: "1px solid #eee", fontSize: 11, cursor: "pointer", background: "#f9f9f9" }}
   onClick={() => setEditUsedItem(item)}
@@ -561,9 +561,9 @@ const postToJungonara = async (item: UsedInventoryItem) => {
     item.electric,
     item.floor?.join(","),
     item.door?.join(","),
-    item.aircon && `에어컨`,
-    item.sink && `싱크대`,
-    item.toilet && `화장실`,
+    item.aircon && \`에어컨\`,
+    item.sink && \`싱크대\`,
+    item.toilet && \`화장실\`,
   ].filter(Boolean).join(", ") || "클릭해서 추가"}
 </td>
 <td style={{ padding: 8, border: "1px solid #eee" }}>
@@ -679,6 +679,7 @@ const postToJungonara = async (item: UsedInventoryItem) => {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }} onClick={() => setShowAddModal(false)}>
           <div style={{ background: "#fff", borderRadius: 12, padding: 24, width: "90%", maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: "0 0 16px 0" }}>새 재고 추가</h3>
+            <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>내린날짜</label><input type="date" value={newItem.contract_date} onChange={(e) => setNewItem({ ...newItem, contract_date: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} /></div>
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>상태</label><select value={newItem.inventory_status} onChange={(e) => setNewItem({ ...newItem, inventory_status: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="작업지시완료">작업지시완료</option><option value="출고대기">출고대기</option><option value="찜">찜</option><option value="출고완료">출고완료</option></select></div>
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label><select value={newItem.container_type} onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option></select></div>
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
