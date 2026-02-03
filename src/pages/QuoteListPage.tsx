@@ -1200,7 +1200,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
             alt="도장" 
             style={{ 
               position: 'absolute',
-              mixBlendMode: 'screen',
+            
               top: -10, 
               left: 55, 
               width: 32, 
@@ -1525,7 +1525,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
           left: 20, 
           width: 40, 
           height: 40, 
-          mixBlendMode: 'screen'
+         
         }} 
       />
     </span>
