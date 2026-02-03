@@ -1208,7 +1208,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
   </td>
   <th style={partyThStyle}>대표:</th><td style={partyTdStyle}>{rentalForm.ceo}</td>
 </tr>
-             <tr>
+    <tr>
   <th style={thStyle}>상호</th>
   <td style={tdStyle}>
     <span style={{ position: 'relative', display: 'inline-block' }}>
