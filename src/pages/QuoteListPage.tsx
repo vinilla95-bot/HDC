@@ -1200,7 +1200,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
             alt="도장" 
             style={{ 
               position: 'absolute',
-              mixBlendMode: 'multiply'
+              mixBlendMode: 'multiply',
               top: -10, 
               left: 55, 
               width: 32, 
@@ -1511,7 +1511,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
               <th style={partyThStyle}>등록번호:</th><td style={partyTdStyle}>{rentalForm.regNo}</td>
             </tr>
             <tr>
-              <tr>
+            
   <th style={partyThStyle}>대표:</th>
   <td style={partyTdStyle}>
     <span style={{ position: 'relative', display: 'inline-block' }}>
