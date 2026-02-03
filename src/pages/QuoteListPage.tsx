@@ -1199,12 +1199,14 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
             src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
             alt="도장" 
             style={{ 
-              position: 'absolute', 
+              position: 'absolute',
+              mixBlendMode: 'multiply'
               top: -10, 
               left: 55, 
               width: 32, 
               height: 32, 
               opacity: 0.9 
+              
             }} 
           />
         </span>
@@ -1509,7 +1511,25 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
               <th style={partyThStyle}>등록번호:</th><td style={partyTdStyle}>{rentalForm.regNo}</td>
             </tr>
             <tr>
-              <th style={partyThStyle}>대표:</th><td style={partyTdStyle}>류창석&nbsp;&nbsp;&nbsp;&nbsp;(인)</td>
+              <tr>
+  <th style={partyThStyle}>대표:</th>
+  <td style={partyTdStyle}>
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      류창석
+      <img 
+        src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
+        alt="도장" 
+        style={{ 
+          position: 'absolute', 
+          top: -12, 
+          left: 20, 
+          width: 40, 
+          height: 40, 
+          mixBlendMode: 'multiply'
+        }} 
+      />
+    </span>
+  </td>
               <th style={partyThStyle}>대표:</th><td style={partyTdStyle}>{rentalForm.ceo}</td>
             </tr>
             <tr>
