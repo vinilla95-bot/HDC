@@ -1187,28 +1187,43 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
 
           <table style={{ borderCollapse: 'collapse', width: '55%' }}>
             <tbody>
-             <tr>
-  <th style={partyThStyle}>대표:</th>
-  <td style={partyTdStyle}>
-    <span style={{ position: 'relative', display: 'inline-block' }}>
-      류창석
-      <img 
-        src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
-        alt="도장" 
-        style={{ 
-          position: 'absolute', 
-          top: -12, 
-          left: 20, 
-          width: 40, 
-          height: 40, 
-          opacity: 0.9 
-        }} 
-      />
-    </span>
-  </td>
-  <th style={partyThStyle}>대표:</th><td style={partyTdStyle}>{rentalForm.ceo}</td>
-</tr>
+            <table style={{ borderCollapse: 'collapse', width: '55%' }}>
+  <tbody>
     <tr>
+      <th style={thStyle}>등록번호</th><td style={tdStyle}>130-41-38154</td>
+      <th style={thStyle}>성명</th><td style={tdStyle}>류창석</td>
+    </tr>
+    <tr>
+      <th style={thStyle}>상호</th>
+      <td style={tdStyle}>
+        <span style={{ position: 'relative', display: 'inline-block' }}>
+          현대컨테이너
+          <img 
+            src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
+            alt="도장" 
+            style={{ 
+              position: 'absolute', 
+              top: -10, 
+              left: 55, 
+              width: 32, 
+              height: 32, 
+              opacity: 0.9 
+            }} 
+          />
+        </span>
+      </td>
+      <th style={thStyle}>주소</th><td style={tdStyle}>화성시구문천안길16</td>
+    </tr>
+    <tr>
+      <th style={thStyle}>업태</th><td style={tdStyle}>컨테이너 판매 임대</td>
+      <th style={thStyle}>종목</th><td style={tdStyle}>제조업,도소매</td>
+    </tr>
+    <tr>
+      <th style={thStyle}>전화번호</th><td style={tdStyle}>010-4138-9268</td>
+      <th style={thStyle}>팩스번호</th><td style={tdStyle}>031-359-8246</td>
+    </tr>
+  </tbody>
+</table>
   <th style={thStyle}>상호</th>
   <td style={tdStyle}>
     <span style={{ position: 'relative', display: 'inline-block' }}>
