@@ -6,25 +6,6 @@ import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
 import TodayTasksPage from "./pages/TodayTasksPage";
 
-
-
-// dnd-kit 주석처리
-// import {
-//   DndContext,
-//   closestCenter,
-//   PointerSensor,
-//   useSensor,
-//   useSensors,
-//   DragEndEvent,
-// } from '@dnd-kit/core';
-// import {
-//   arrayMove,
-//   SortableContext,
-//   useSortable,
-//   verticalListSortingStrategy,
-// } from '@dnd-kit/sortable';
-// import { CSS } from '@dnd-kit/utilities';
-
 import {
   supabase,
   calculateOptionLine,
@@ -61,13 +42,11 @@ const matchKoreanLocal = (target: string, query: string): boolean => {
   const q = query.toLowerCase();
   const t = target.toLowerCase();
   
-  // 초성만 입력된 경우: 초성 매칭
   if (isChosung(q)) {
     const targetChosung = getChosung(t);
     return targetChosung.includes(q);
   }
   
-  // 일반 단어: 포함 여부 확인
   return t.includes(q);
 };
 
@@ -82,12 +61,12 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   const [tempValue, setTempValue] = useState(String(value));
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-React.useEffect(() => {
-  if (isEditing && inputRef.current) {
-    inputRef.current.focus();
-    inputRef.current.select();
-  }
-}, [isEditing]);
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
   
   React.useEffect(() => { setTempValue(String(value)); }, [value]);
 
@@ -96,12 +75,12 @@ React.useEffect(() => {
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   if (disabled) return <span>{fmtNum(value)}</span>;
- if (isEditing) return <input ref={inputRef} type="number" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown} style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />;
- return <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }} style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }} title="클릭하여 수정">{fmtNum(value)}</span>; }
+  if (isEditing) return <input ref={inputRef} type="number" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown} style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />;
+  return <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }} style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }} title="클릭하여 수정">{fmtNum(value)}</span>;
+}
 
 
-
-// ============ 인라인 규격 편집 셀 ============
+// ============ 인라인 규격 편집 셀 (품목 행용) ============
 function EditableSpecCell({ 
   spec, 
   specText,
@@ -118,7 +97,7 @@ function EditableSpecCell({
   const displayText = specText !== undefined && specText !== '' 
     ? specText 
     : (spec.w > 0 || spec.l > 0) 
-      ? `${spec.w}×${spec.l}×${spec.h || 0}` 
+      ? `${spec.w}×${spec.l}${spec.h ? '×' + spec.h : ''}` 
       : '';
   const [tempValue, setTempValue] = useState(displayText);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -176,7 +155,7 @@ function EditableSpecCell({
         onBlur={handleBlur} 
         onKeyDown={handleKeyDown} 
         onClick={(e) => e.stopPropagation()}
-        placeholder="규격 입력 (예: 3.5×6×2.6)"
+        placeholder="3×6×2.6"
         style={{ 
           width: "100%", 
           padding: "2px 4px", 
@@ -191,7 +170,7 @@ function EditableSpecCell({
     );
   }
   
-return (
+  return (
     <span 
       onClick={(e) => { 
         e.stopPropagation();
@@ -201,13 +180,13 @@ return (
       style={{ cursor: "pointer", display: "block", textAlign: "center", width: "100%", minHeight: 20 }} 
       title="클릭하여 규격 입력"
     >
-      {displayText}
+      {displayText || <span style={{ color: '#ccc' }}>-</span>}
     </span>
   );
 }
+
 // ============ 인라인 품목 편집 셀 ============
-// ============ 인라인 품목 편집 셀 ============
-function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus, autoFocusOnMount }: { item: any; options: any[]; form: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void; autoFocusOnMount?: boolean }) {
+function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex, onFocus, autoFocusOnMount }: { item: any; options: any[]; inheritedSpec: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void; autoFocusOnMount?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -218,6 +197,11 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
 
   const displayText = item.displayName || "";
   const isEmpty = !item.displayName || item.displayName === '(품목선택)' || item.optionName === '';
+  
+  // ✅ 행의 규격이 있으면 그걸 쓰고, 없으면 상속된 규격 사용
+  const effectiveSpec = (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) 
+    ? item.lineSpec 
+    : inheritedSpec;
   
   const prevKeyRef = React.useRef(item.key);
   React.useEffect(() => {
@@ -266,52 +250,47 @@ function InlineItemCell({ item, options, form, onSelectOption, rowIndex, onFocus
     setSelectedIndex(-1);
   }, [filteredOptions]);
 
-const commitFreeText = useCallback(() => {
-  const trimmed = (searchQueryRef.current || "").trim();
-  
-  setIsEditing(false);
-  setShowDropdown(false);
-  setSearchQuery("");
-  
-  // ✅ 빈 값이거나 기존과 동일하면 아무것도 안 함 (단, 상태는 초기화됨)
-  if (!trimmed || trimmed === item.displayName) {
-    return;
-  }
-  
-  // ✅ 기존 품목의 displayName만 변경하는 경우 - _isRent 유지
-  if (item.optionId && item.optionId !== '') {
-    const customOpt = { 
-      option_id: item.optionId, 
-      option_name: trimmed,
-      unit: item.unit || 'EA',
-      unit_price: item.unitPrice || item.customerUnitPrice || 0,
-      show_spec: item.showSpec || 'n',
-      _isDisplayNameOnly: true,
-    };
-    const calculated = { 
-      qty: item.displayQty || item.qty || 1, 
-      unitPrice: item.customerUnitPrice || item.unitPrice || 0, 
-      amount: item.finalAmount || item.amount || 0, 
-      unit: item.unit || 'EA' 
-    };
-    onSelectOption(item, customOpt, calculated);
-    return;
-  }
+  const commitFreeText = useCallback(() => {
+    const trimmed = (searchQueryRef.current || "").trim();
+    
+    setIsEditing(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    
+    if (!trimmed || trimmed === item.displayName) {
+      return;
+    }
+    
+    // ✅ 기존 품목의 displayName만 변경하는 경우
+    if (item.optionId && item.optionId !== '') {
+      const customOpt = { 
+        option_id: item.optionId, 
+        option_name: trimmed,
+        unit: item.unit || 'EA',
+        unit_price: item.unitPrice || item.customerUnitPrice || 0,
+        show_spec: item.showSpec || 'n',
+        _isDisplayNameOnly: true,
+      };
+      const calculated = { 
+        qty: item.displayQty || item.qty || 1, 
+        unitPrice: item.customerUnitPrice || item.unitPrice || 0, 
+        amount: item.finalAmount || item.amount || 0, 
+        unit: item.unit || 'EA' 
+      };
+      onSelectOption(item, customOpt, calculated);
+      return;
+    }
 
-  
-  // ✅ 새 품목 입력 시에만 임대 자동 변환 적용
-  const isRentText = trimmed.includes("임대");
-  const monthMatch = trimmed.match(/(\d+)\s*개월/);
-  const months = monthMatch ? Number(monthMatch[1]) : 3;
-  
-  if (isRentText) {
-    // ... 기존 임대 자동 변환 로직 (그대로 유지)
-      // 규격 파싱: "3x6", "3*6", "3×6" 등
+    // ✅ 새 품목 입력 시 임대 자동 변환 적용
+    const isRentText = trimmed.includes("임대");
+    const monthMatch = trimmed.match(/(\d+)\s*개월/);
+    const months = monthMatch ? Number(monthMatch[1]) : 3;
+    
+    if (isRentText) {
       const specMatch = trimmed.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-      const w = specMatch ? Number(specMatch[1]) : form.w;
-      const l = specMatch ? Number(specMatch[2]) : form.l;
+      const w = specMatch ? Number(specMatch[1]) : effectiveSpec.w;
+      const l = specMatch ? Number(specMatch[2]) : effectiveSpec.l;
       
-      // 규격별 월 임대료
       const rentPrices: Record<string, number> = {
         '3x3': 130000,
         '3x4': 130000,
@@ -354,12 +333,11 @@ const commitFreeText = useCallback(() => {
       _isDisplayNameOnly: true,
       _isCustomFreeText: true
     };
-    const calculated = calculateOptionLine(customOpt, form.w, form.l, form.h);
+    const calculated = calculateOptionLine(customOpt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
     onSelectOption(item, customOpt, calculated);
-  }, [item, form, onSelectOption]);
+  }, [item, effectiveSpec, onSelectOption]);
     
   const handleBlur = (e: React.FocusEvent) => {
-    // 드롭다운 내부로 포커스가 이동하는 경우 blur 무시
     if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
       return;
     }
@@ -371,23 +349,23 @@ const commitFreeText = useCallback(() => {
     setShowDropdown(false);
     setSearchQuery("");
     
-    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
+    // ✅ effectiveSpec으로 계산
+    const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
     onSelectOption(item, opt, calculated);
   };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-const handleCellClick = (e: React.MouseEvent) => {
-  e.stopPropagation();
-  if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
-  
-  // ✅ 기존 품목명을 input에 표시, 드롭다운은 타이핑 시 열림
-  const text = item.displayName || '';
-  setSearchQuery(text);
-  searchQueryRef.current = text;
-  setIsEditing(true);
-  setShowDropdown(false);  // 처음에는 드롭다운 안 열기
-};
+  const handleCellClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onFocus && rowIndex !== undefined) onFocus(rowIndex);
+    
+    const text = item.displayName || '';
+    setSearchQuery(text);
+    searchQueryRef.current = text;
+    setIsEditing(true);
+    setShowDropdown(false);
+  };
 
   return (
     <div 
@@ -420,16 +398,16 @@ const handleCellClick = (e: React.MouseEvent) => {
               } else if (e.key === "ArrowUp") {
                 e.preventDefault();
                 setSelectedIndex(prev => Math.max(prev - 1, -1));
-             } else if (e.key === "Enter") {
-  e.preventDefault();
-  e.stopPropagation();
-  if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
-    const opt = filteredOptions[selectedIndex];
-    if (String(opt.option_name || "").includes("임대")) {
-      const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-      const months = 3;
-      const totalPrice = (calculated.unitPrice || opt.unit_price || 0) * months;
-      onSelectOption(item, { ...opt, _months: months }, { ...calculated, unitPrice: totalPrice, amount: totalPrice });
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
+                  const opt = filteredOptions[selectedIndex];
+                  if (String(opt.option_name || "").includes("임대")) {
+                    const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+                    const months = 3;
+                    const totalPrice = (calculated.unitPrice || opt.unit_price || 0) * months;
+                    onSelectOption(item, { ...opt, _months: months }, { ...calculated, unitPrice: totalPrice, amount: totalPrice });
                   } else {
                     handleSelect(opt);
                   }
@@ -507,22 +485,21 @@ const handleCellClick = (e: React.MouseEvent) => {
                           style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
                         />
                         <span style={{ fontSize: 11 }}>개월</span>
-                       <button 
-  onMouseDown={(e) => e.preventDefault()}
-  onClick={(e) => {
-    e.stopPropagation();
-    const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
-    const months = Number(input?.value) || 3;
-    
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    
-    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-    // ✅ 임대는 월 단가 × 개월수로 계산
-    const totalPrice = (calculated.unitPrice || opt.unit_price || 0) * months;
-    onSelectOption(item, { ...opt, _months: months }, { ...calculated, unitPrice: totalPrice, amount: totalPrice });
-  }}
+                        <button 
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const input = document.getElementById(`rent-inline-${opt.option_id}`) as HTMLInputElement;
+                            const months = Number(input?.value) || 3;
+                            
+                            setIsEditing(false);
+                            setShowDropdown(false);
+                            setSearchQuery("");
+                            
+                            const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+                            const totalPrice = (calculated.unitPrice || opt.unit_price || 0) * months;
+                            onSelectOption(item, { ...opt, _months: months }, { ...calculated, unitPrice: totalPrice, amount: totalPrice });
+                          }}
                           style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
                         >
                           선택
@@ -564,15 +541,24 @@ const handleCellClick = (e: React.MouseEvent) => {
 }
 
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
-function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus }: { options: any[]; form: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void }) {
-  const [isEditing, setIsEditing] = useState(false);
+function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus, onSpecChange }: { options: any[]; inheritedSpec: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void; onSpecChange?: (spec: { w: number; l: number; h: number }) => void }) {
+  const [isEditingSpec, setIsEditingSpec] = useState(false);
+  const [specValue, setSpecValue] = useState("");
+  const [currentSpec, setCurrentSpec] = useState<{ w: number; l: number; h: number } | null>(null);
+  
+  const [isEditingItem, setIsEditingItem] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [sites, setSites] = useState<any[]>([]);
   const [isSearchingSite, setIsSearchingSite] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);  // ✅ 이 줄 추가
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  
+  const specInputRef = useRef<HTMLInputElement>(null);
+  const itemInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // ✅ 실제 사용할 규격 (직접 입력 > 상속)
+  const effectiveSpec = currentSpec || inheritedSpec;
 
   const searchQueryRef = useRef(searchQuery);
   useEffect(() => {
@@ -582,35 +568,65 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
   const commitFreeText = useCallback(() => {
     const trimmed = (searchQueryRef.current || "").trim();
     
-    setIsEditing(false);
+    setIsEditingItem(false);
     setShowDropdown(false);
     setSearchQuery("");
     setSites([]);
     
     if (trimmed) {
-     const customOpt = { 
-  option_id: `custom_${Date.now()}`, 
-  option_name: trimmed,
-  unit: 'EA',
-  unit_price: 0,
-  show_spec: 'n',
-  _isCustomFreeText: true
-};
-      onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }, insertIndex);
+      const customOpt = { 
+        option_id: `custom_${Date.now()}`, 
+        option_name: trimmed,
+        unit: 'EA',
+        unit_price: 0,
+        show_spec: 'n',
+        _isCustomFreeText: true
+      };
+      onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }, insertIndex, currentSpec || undefined);
+      setCurrentSpec(null);
+      setSpecValue("");
     }
-  }, [onAddItem, insertIndex]);
+  }, [onAddItem, insertIndex, currentSpec]);
 
-  const handleBlur = (e: React.FocusEvent) => {
+  const handleItemBlur = (e: React.FocusEvent) => {
     if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
       return;
     }
     commitFreeText();
   };
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
+  
+  // ✅ 규격 입력 처리
+  const handleSpecBlur = () => {
+    setIsEditingSpec(false);
+    const trimmed = specValue.trim();
+    
+    if (!trimmed) {
+      setCurrentSpec(null);
+      return;
     }
-  }, [isEditing]);
+    
+    const normalized = trimmed.replace(/[xX*]/g, '×');
+    const parts = normalized.split('×').map(s => s.trim()).filter(s => s !== '');
+    const nums = parts.map(s => parseFloat(s));
+    
+    if (nums.length >= 2 && nums.every(p => !isNaN(p) && isFinite(p))) {
+      const newSpec = { w: nums[0] || 0, l: nums[1] || 0, h: nums[2] || 2.6 };
+      setCurrentSpec(newSpec);
+      if (onSpecChange) onSpecChange(newSpec);
+    }
+  };
+
+  useEffect(() => {
+    if (isEditingSpec && specInputRef.current) {
+      specInputRef.current.focus();
+    }
+  }, [isEditingSpec]);
+  
+  useEffect(() => {
+    if (isEditingItem && itemInputRef.current) {
+      itemInputRef.current.focus();
+    }
+  }, [isEditingItem]);
 
   const filteredOptions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -620,11 +636,12 @@ function EmptyRowCell({ options, form, onAddItem, onSiteSearch, onAddDelivery, i
       return name.includes(q) || matchKoreanLocal(name, q);
     }).slice(0, 10);
   }, [searchQuery, options]);
-useEffect(() => {
-  setSelectedIndex(-1);
-}, [filteredOptions, sites]);
+
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [filteredOptions, sites]);
   
- useEffect(() => {
+  useEffect(() => {
     const searchSites = async () => {
       if (!searchQuery.trim() || !onSiteSearch) {
         setSites([]);
@@ -644,15 +661,16 @@ useEffect(() => {
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
 
-  
   const handleSelect = (opt: any) => {
-    setIsEditing(false);
+    setIsEditingItem(false);
     setShowDropdown(false);
     setSearchQuery("");
     setSites([]);
     
-    const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-    onAddItem(opt, calculated, insertIndex);
+    const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+    onAddItem(opt, calculated, insertIndex, currentSpec || undefined);
+    setCurrentSpec(null);
+    setSpecValue("");
   };
 
   const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
@@ -660,7 +678,7 @@ useEffect(() => {
     const query = searchQuery.toLowerCase();
     const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
     
-    setIsEditing(false);
+    setIsEditingItem(false);
     setShowDropdown(false);
     setSearchQuery("");
     setSites([]);
@@ -668,79 +686,123 @@ useEffect(() => {
     if (onAddDelivery) {
       onAddDelivery({ ...site, alias: matchedRegion }, type, insertIndex);
     }
+    setCurrentSpec(null);
+    setSpecValue("");
   };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  if (!isEditing) {
+  // ✅ 규격 셀 렌더링
+  const renderSpecCell = () => {
+    if (isEditingSpec) {
+      return (
+        <input
+          ref={specInputRef}
+          type="text"
+          value={specValue}
+          onChange={(e) => setSpecValue(e.target.value)}
+          onBlur={handleSpecBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSpecBlur();
+              // 규격 입력 후 품목 셀로 이동
+              setTimeout(() => setIsEditingItem(true), 50);
+            } else if (e.key === "Escape") {
+              setIsEditingSpec(false);
+              setSpecValue("");
+            }
+          }}
+          placeholder="3×6×2.6"
+          autoFocus
+          style={{ 
+            width: "100%", 
+            height: "100%",
+            padding: "6px 4px",
+            margin: 0,
+            border: "none", 
+            fontSize: 11, 
+            outline: "none", 
+            background: "transparent",
+            boxSizing: "border-box",
+            textAlign: "center"
+          }}
+        />
+      );
+    }
+    
+    const displaySpec = currentSpec 
+      ? `${currentSpec.w}×${currentSpec.l}${currentSpec.h ? '×' + currentSpec.h : ''}`
+      : '';
+    
+    return (
+      <span 
+        onClick={() => setIsEditingSpec(true)}
+        style={{ cursor: 'pointer', display: 'block', width: '100%', minHeight: 20, textAlign: 'center' }}
+      >
+        {displaySpec || <span style={{ color: '#ccc' }}>-</span>}
+      </span>
+    );
+  };
+
+  // ✅ 품목 셀 렌더링
+  const renderItemCell = () => {
+    if (!isEditingItem) {
+      return (
+        <span 
+          onClick={() => setIsEditingItem(true)}
+          style={{ cursor: 'pointer', display: 'block', width: '100%', minHeight: 20 }}
+        >
+          <span style={{ color: '#aaa' }}>품목 검색...</span>
+        </span>
+      );
+    }
+
     return (
       <>
-        <td className="c center">&nbsp;</td>
-        <td 
-          className="c" 
-          onClick={() => setIsEditing(true)}
-          style={{ cursor: 'pointer' }}
-        ></td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-        <td className="c"></td>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <td className="c center">&nbsp;</td>
-      <td className="c" style={{ position: "relative", overflow: "visible", padding: 0 }}>
-       <input
-  ref={inputRef}
-  type="text"
-  value={searchQuery}
-  onChange={(e) => {
-    setSearchQuery(e.target.value);
-    setShowDropdown(true);
-  }}
-  onFocus={() => setShowDropdown(true)}
-  onBlur={(e) => handleBlur(e)}
-         onKeyDown={(e) => {
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    const totalItems = sites.length + filteredOptions.length;
-    setSelectedIndex(prev => Math.min(prev + 1, totalItems - 1));
-  } else if (e.key === "ArrowUp") {
-    e.preventDefault();
-    setSelectedIndex(prev => Math.max(prev - 1, -1));
-  } else if (e.key === "Enter") {
-    e.preventDefault();
-    e.stopPropagation();
-    if (selectedIndex >= 0) {
-      if (selectedIndex < sites.length) {
-        // 운송비 선택
-        const site = sites[selectedIndex];
-        handleDeliverySelect(site, 'delivery');
-      } else {
-        // 품목 선택
-        const optIdx = selectedIndex - sites.length;
-        if (filteredOptions[optIdx]) {
-          handleSelect(filteredOptions[optIdx]);
-        }
-      }
-      setSelectedIndex(-1);
-    } else {
-      commitFreeText();
-    }
-  } else if (e.key === "Escape") {
-    e.preventDefault();
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    setSites([]);
-    setSelectedIndex(-1);
-  }
-}}
+        <input
+          ref={itemInputRef}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowDropdown(true);
+          }}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={(e) => handleItemBlur(e)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              const totalItems = sites.length + filteredOptions.length;
+              setSelectedIndex(prev => Math.min(prev + 1, totalItems - 1));
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setSelectedIndex(prev => Math.max(prev - 1, -1));
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              if (selectedIndex >= 0) {
+                if (selectedIndex < sites.length) {
+                  const site = sites[selectedIndex];
+                  handleDeliverySelect(site, 'delivery');
+                } else {
+                  const optIdx = selectedIndex - sites.length;
+                  if (filteredOptions[optIdx]) {
+                    handleSelect(filteredOptions[optIdx]);
+                  }
+                }
+                setSelectedIndex(-1);
+              } else {
+                commitFreeText();
+              }
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              setIsEditingItem(false);
+              setShowDropdown(false);
+              setSearchQuery("");
+              setSites([]);
+              setSelectedIndex(-1);
+            }
+          }}
           placeholder="검색..."
           autoFocus
           style={{ 
@@ -806,25 +868,24 @@ useEffect(() => {
             {filteredOptions.length > 0 && (
               <>
                 <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>품목</div>
-               {filteredOptions.map((opt: any, idx: number) => {
+                {filteredOptions.map((opt: any, idx: number) => {
                   const isRent = String(opt.option_name || "").includes("임대");
+                  const globalIdx = sites.length + idx;
                   
                   if (isRent) {
                     return (
-    <div 
-      key={opt.option_id} 
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={() => handleSelect(opt)} 
-      style={{ 
-        padding: "8px 10px", 
-        cursor: "pointer", 
-        borderBottom: "1px solid #eee", 
-        fontSize: 12,
-        background: selectedIndex === idx ? "#e3f2fd" : "#fff"  // ✅ 추가
-      }} 
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")} 
-      onMouseLeave={(e) => (e.currentTarget.style.background = selectedIndex === idx ? "#e3f2fd" : "#fff")}  // ✅ 수정
-    >
+                      <div 
+                        key={opt.option_id} 
+                        onMouseDown={(e) => e.preventDefault()}
+                        style={{ 
+                          padding: "8px 10px", 
+                          cursor: "pointer", 
+                          borderBottom: "1px solid #eee", 
+                          fontSize: 12,
+                          background: selectedIndex === globalIdx ? "#e3f2fd" : "#fff"
+                        }} 
+                        onMouseEnter={() => setSelectedIndex(globalIdx)}
+                      >
                         <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
                         <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
                         <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
@@ -845,13 +906,15 @@ useEffect(() => {
                               const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
                               const months = Number(input?.value) || 3;
                               
-                              setIsEditing(false);
+                              setIsEditingItem(false);
                               setShowDropdown(false);
                               setSearchQuery("");
                               setSites([]);
                               
-                              const calculated = calculateOptionLine(opt, form.w, form.l, form.h);
-                              onAddItem({ ...opt, _months: months }, calculated, insertIndex);
+                              const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+                              onAddItem({ ...opt, _months: months }, calculated, insertIndex, currentSpec || undefined);
+                              setCurrentSpec(null);
+                              setSpecValue("");
                             }}
                             style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
                           >
@@ -867,9 +930,14 @@ useEffect(() => {
                       key={opt.option_id}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelect(opt)}
-                      style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12 }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#e3f2fd")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                      style={{ 
+                        padding: "8px 10px", 
+                        cursor: "pointer", 
+                        borderBottom: "1px solid #eee", 
+                        fontSize: 12,
+                        background: selectedIndex === globalIdx ? "#e3f2fd" : "#fff"
+                      }}
+                      onMouseEnter={() => setSelectedIndex(globalIdx)}
                     >
                       <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
                       <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
@@ -885,8 +953,17 @@ useEffect(() => {
             {isSearchingSite && <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 중...</div>}
           </div>
         )}
+      </>
+    );
+  };
+
+  return (
+    <>
+      <td className="c center">&nbsp;</td>
+      <td className="c center">{renderSpecCell()}</td>
+      <td className="c" style={{ position: "relative", overflow: "visible", padding: 0 }}>
+        {renderItemCell()}
       </td>
-      <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
@@ -895,6 +972,7 @@ useEffect(() => {
     </>
   );
 }
+
 // GAS 호출 래퍼
 async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   const res = await gasRpcRaw(fn, args);
@@ -909,28 +987,26 @@ export default function App() {
   const [sites, setSites] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedRow[]>([]);
 
- const [view, setView] = useState<"rt" | "list" | "contract" | "calendar" | "inventory" | "tasks">(() => {
-  const params = new URLSearchParams(window.location.search);
-  const v = params.get('view');
-  if (v === 'list') return 'list';
-  if (v === 'contract') return 'contract';
-  if (v === 'calendar') return 'calendar';
-  if (v === 'inventory') return 'inventory';
-  if (v === 'tasks') return 'tasks';  // ✅ 추가
-  return 'rt';
-});
+  const [view, setView] = useState<"rt" | "list" | "contract" | "calendar" | "inventory" | "tasks">(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('view');
+    if (v === 'list') return 'list';
+    if (v === 'contract') return 'contract';
+    if (v === 'calendar') return 'calendar';
+    if (v === 'inventory') return 'inventory';
+    if (v === 'tasks') return 'tasks';
+    return 'rt';
+  });
 
-
-// ✅ 이 useEffect 추가
-useEffect(() => {
-  const url = new URL(window.location.href);
-  if (view === 'rt') {
-    url.searchParams.delete('view');
-  } else {
-    url.searchParams.set('view', view);
-  }
-  window.history.replaceState({}, '', url.toString());
-}, [view]);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (view === 'rt') {
+      url.searchParams.delete('view');
+    } else {
+      url.searchParams.set('view', view);
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, [view]);
   
   const [bizcards, setBizcards] = useState<Bizcard[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState<string>("");
@@ -938,14 +1014,12 @@ useEffect(() => {
   const [currentQuoteId, setCurrentQuoteId] = useState<string>("");
   const [currentVersion, setCurrentVersion] = useState<number>(0);
 
+  // ✅ 고객정보에서 규격 제거 - form에서 w, l, h 사용 안함 (기본값만 유지)
   const [form, setForm] = useState({
     quoteTitle: "",
     name: "",
     email: "",
     phone: "",
-    w: 3,
-    l: 6,
-    h: 2.6,
     siteQ: "",
     sitePickedLabel: "",
     optQ: "",
@@ -955,13 +1029,12 @@ useEffect(() => {
 
   const [statusMsg, setStatusMsg] = useState("");
   const [sendStatus, setSendStatus] = useState("");
-    const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
+  const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
 
   // 모바일 전체화면 미리보기
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const isMobileDevice = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // ✅ 모바일 스케일 - 화면에 꽉 차게
   const getMobileScale = () => {
     if (typeof window === 'undefined') return 0.45;
     return (window.innerWidth - 32) / 800;
@@ -973,13 +1046,25 @@ useEffect(() => {
   };
 
   const fmt = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
- const isRentRow = (row: SelectedRow) => {
-  // ✅ 명시적 플래그가 있으면 그걸 사용
-  if ((row as any)._isRent !== undefined) {
-    return (row as any)._isRent;
-  }
-  return String((row as any)?.optionName || "").includes("임대");
-};
+  
+  const isRentRow = (row: SelectedRow) => {
+    if ((row as any)._isRent !== undefined) {
+      return (row as any)._isRent;
+    }
+    return String((row as any)?.optionName || "").includes("임대");
+  };
+
+  // ✅ 상속 규격 찾기: 위쪽으로 올라가며 가장 가까운 규격 찾기
+  const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: number; h: number } => {
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const item = items[i];
+      if (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) {
+        return { w: item.lineSpec.w, l: item.lineSpec.l, h: item.lineSpec.h || 2.6 };
+      }
+    }
+    // 규격이 하나도 없으면 빈 값 (자유입력)
+    return { w: 0, l: 0, h: 0 };
+  };
 
   useEffect(() => {
     supabase
@@ -1005,67 +1090,72 @@ useEffect(() => {
   );
 
   const recomputeRow = (r: SelectedRow): SelectedRow => {
-  const rent = isRentRow(r) && !(r as any)._isCustomFreeText;
+    const rent = isRentRow(r) && !(r as any)._isCustomFreeText;
 
-  const baseQty = Number((r as any).baseQty || 1);
-  const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
-  const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
+    const baseQty = Number((r as any).baseQty || 1);
+    const baseUnitPrice = Number((r as any).baseUnitPrice || 0);
+    const baseAmount = Number((r as any).baseAmount || baseQty * baseUnitPrice);
 
-  const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
+    const displayQty = Math.max(0, Math.floor(Number((r as any).displayQty ?? 1)));
 
-  const months = Number((r as any).months ?? 1);
-  let customerUnitPrice: number;
+    const months = Number((r as any).months ?? 1);
+    let customerUnitPrice: number;
 
-  if (rent) {
-    customerUnitPrice = Math.round(baseUnitPrice * months);
-  } else {
-    customerUnitPrice = Math.round(Number((r as any).customerUnitPrice ?? 0));
-  }
+    if (rent) {
+      customerUnitPrice = Math.round(baseUnitPrice * months);
+    } else {
+      customerUnitPrice = Math.round(Number((r as any).customerUnitPrice ?? 0));
+    }
 
-  const finalAmount = Math.round(displayQty * customerUnitPrice);
+    const finalAmount = Math.round(displayQty * customerUnitPrice);
 
-  return {
-    ...(r as any),
-    baseQty,
-    baseUnitPrice,
-    baseAmount,
-    displayQty: rent ? Math.max(1, displayQty) : displayQty,
-    customerUnitPrice,
-    finalAmount,
-    months: rent ? Math.max(1, months) : months,
-    // ✅ displayName은 절대 건드리지 않음 - 이미 있으면 그대로 유지
-  } as any;
-};
+    return {
+      ...(r as any),
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty: rent ? Math.max(1, displayQty) : displayQty,
+      customerUnitPrice,
+      finalAmount,
+      months: rent ? Math.max(1, months) : months,
+    } as any;
+  };
+
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
   const filteredOptions = useMemo(() => {
-  const q = String(form.optQ || "").trim();
-  if (!q) return [];
+    const q = String(form.optQ || "").trim();
+    if (!q) return [];
 
-  const matched = options.filter((o: any) => {
-    const name = String(o.option_name || "");
-    return matchKoreanLocal(name, q);
-  });
+    const matched = options.filter((o: any) => {
+      const name = String(o.option_name || "");
+      return matchKoreanLocal(name, q);
+    });
 
-  const qLower = q.toLowerCase();
-  matched.sort((a: any, b: any) => {
-    const nameA = String(a.option_name || "").toLowerCase();
-    const nameB = String(b.option_name || "").toLowerCase();
+    const qLower = q.toLowerCase();
+    matched.sort((a: any, b: any) => {
+      const nameA = String(a.option_name || "").toLowerCase();
+      const nameB = String(b.option_name || "").toLowerCase();
 
-    const startsA = nameA.startsWith(qLower) ? 0 : 1;
-    const startsB = nameB.startsWith(qLower) ? 0 : 1;
-    if (startsA !== startsB) return startsA - startsB;
+      const startsA = nameA.startsWith(qLower) ? 0 : 1;
+      const startsB = nameB.startsWith(qLower) ? 0 : 1;
+      if (startsA !== startsB) return startsA - startsB;
 
-    const includesA = nameA.includes(qLower) ? 0 : 1;
-    const includesB = nameB.includes(qLower) ? 0 : 1;
-    return includesA - includesB;
-  });
+      const includesA = nameA.includes(qLower) ? 0 : 1;
+      const includesB = nameB.includes(qLower) ? 0 : 1;
+      return includesA - includesB;
+    });
 
-  return matched.slice(0, 12);
-}, [form.optQ, options]);
+    return matched.slice(0, 12);
+  }, [form.optQ, options]);
 
-  
-const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsParam?: number, insertIndex?: number) => {
+  // ✅ 품목 추가 - specOverride로 규격 직접 전달 가능
+  const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsParam?: number, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
+    // 상속 규격 찾기
+    const targetIndex = insertIndex !== undefined ? insertIndex : selectedItems.length - 1;
+    const inheritedSpec = getInheritedSpec(selectedItems, targetIndex + 1);
+    const effectiveSpec = specOverride || (inheritedSpec.w > 0 ? inheritedSpec : { w: 0, l: 0, h: 0 });
+
     if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
       const newRows = opt.sub_items.map((sub: any, idx: number) => {
         const qty = sub.qty || 0;
@@ -1087,11 +1177,10 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
           finalAmount: amount,
           memo: "",
           months: 1,
-          lineSpec: { w: form.w, l: form.l, h: form.h },
+          lineSpec: idx === 0 ? effectiveSpec : { w: 0, l: 0, h: 0 }, // 첫 번째만 규격 표시
         };
       });
 
-      // ✅ 수정: insertIndex 위치에 삽입
       setSelectedItems((prev: any) => {
         const mapped = newRows.map(recomputeRow);
         if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
@@ -1105,58 +1194,55 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
       setSites([]);
       return;
     }
-const res = calculateOptionLine(opt, form.w, form.l, form.h);
-const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
-const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
-const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
-const displayQty = 1;
-const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
 
-let simplifiedLabel = label;
-if (label && form.siteQ) {
-  const regions = label.split(',').map((r: string) => r.trim());
-  const searchQuery = form.siteQ.toLowerCase();
-  const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
-  simplifiedLabel = matched || regions[0];
-}
+    const res = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+    const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
+    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
+    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+    const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
+    const displayQty = 1;
+    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
 
-// ✅ 수정: _isEmptyRow면 빈 문자열
-const displayName = opt._isEmptyRow
-  ? ''
-  : isSpecial
-  ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
-  : rent
-  ? `${rawName} ${defaultMonths}개월`
-  : rawName;
+    let simplifiedLabel = label;
+    if (label && form.siteQ) {
+      const regions = label.split(',').map((r: string) => r.trim());
+      const searchQuery = form.siteQ.toLowerCase();
+      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
+      simplifiedLabel = matched || regions[0];
+    }
 
-const showSpec = isSpecial ? "y" : String(opt.show_spec || "").toLowerCase();
+    const displayName = opt._isEmptyRow
+      ? ''
+      : isSpecial
+      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
+      : rent
+      ? `${rawName} ${defaultMonths}개월`
+      : rawName;
 
-// ✅ 수정: _isEmptyRow면 optionName도 빈 문자열
-const row: any = {
-  key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-  optionId: String(opt.option_id || rawName),
-  optionName: opt._isEmptyRow ? '' : rawName,  // ✅ 여기도 수정
-  displayName,
-  unit: rent ? "개월" : res.unit || "EA",
-  showSpec,
-  baseQty,
-  baseUnitPrice,
-  baseAmount,
-  displayQty,
-  customerUnitPrice,
-  finalAmount: Math.round(displayQty * customerUnitPrice),
-  months: defaultMonths,
-  memo: res.memo || "",
- lineSpec: showSpec === 'y' ? { w: form.w, l: form.l, h: form.h } : { w: 0, l: 0, h: 0 },
-  _isRent: rent,
-  _isCustomFreeText: opt._isCustomFreeText || false,
-  
-};
+    const showSpec = specOverride ? "y" : (isSpecial ? "y" : String(opt.show_spec || "").toLowerCase());
+
+    const row: any = {
+      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+      optionId: String(opt.option_id || rawName),
+      optionName: opt._isEmptyRow ? '' : rawName,
+      displayName,
+      unit: rent ? "개월" : res.unit || "EA",
+      showSpec,
+      baseQty,
+      baseUnitPrice,
+      baseAmount,
+      displayQty,
+      customerUnitPrice,
+      finalAmount: Math.round(displayQty * customerUnitPrice),
+      months: defaultMonths,
+      memo: res.memo || "",
+      lineSpec: specOverride || (showSpec === 'y' ? effectiveSpec : { w: 0, l: 0, h: 0 }),
+      _isRent: rent,
+      _isCustomFreeText: opt._isCustomFreeText || false,
+    };
     
-    // ✅ 수정: insertIndex 위치에 삽입
     setSelectedItems((prev: any) => {
       const newRow = recomputeRow(row);
       if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
@@ -1170,98 +1256,84 @@ const row: any = {
     setSites([]);
   };
 
-   
-
-  //const sensors = useSensors(
-   // useSensor(PointerSensor, {
-   //   activationConstraint: {
-      //  distance: 8,
-    //  },
-  //  })
-//  );
-
-//const handleDragEnd = (event: DragEndEvent) => {
-  //  const { active, over } = event;
-  //  if (over && active.id !== over.id) {
-   //   setSelectedItems((items) => {
-     //   const oldIndex = items.findIndex((i: any) => i.key === active.id);
-     //   const newIndex = items.findIndex((i: any) => i.key === over.id);
-     //   return arrayMove(items, oldIndex, newIndex);
-  //    });
-//    }
-//  };
-
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
- const updateRow = (
-  key: string,
-  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
-  value: any
-) => {
-  setSelectedItems((prev: any) =>
-    prev.map((item: any) => {
-      if (item.key !== key) return item;
+  const updateRow = (
+    key: string,
+    field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
+    value: any
+  ) => {
+    setSelectedItems((prev: any) =>
+      prev.map((item: any) => {
+        if (item.key !== key) return item;
 
-      const rent = isRentRow(item);
+        const rent = isRentRow(item);
 
-      if (field === "displayName") {
-        return { ...item, displayName: String(value ?? "") };
-      }
-
-      if (field === "lineSpec") {
-        return { ...item, lineSpec: value, specText: '' };
-      }
-
-      if (field === "specText") {
-        return { ...item, specText: String(value ?? "") };
-      }
-if (field === "months" && rent) {
-  const months = Math.max(1, Math.floor(Number(value || 1)));
-  const newUnitPrice = item.baseUnitPrice * months;
-  const finalAmount = Math.round((item.displayQty || 1) * newUnitPrice);
-  
-  // ✅ recomputeRow 안 거치고 직접 반환
-  return {
-    ...item,
-    months,
-    customerUnitPrice: newUnitPrice,
-    finalAmount,
-  };
-}
-      if (field === "displayQty") {
-        const qty = Math.max(0, Math.floor(Number(value || 0)));
-        if (rent) {
-          return recomputeRow({ ...item, displayQty: Math.max(1, qty) });
+        if (field === "displayName") {
+          return { ...item, displayName: String(value ?? "") };
         }
-        return recomputeRow({ ...item, displayQty: qty });
-      }
-      
-if (field === "customerUnitPrice") {
-  const p = Number(value || 0);
-  return recomputeRow({ ...item, customerUnitPrice: p });
-}
 
-      return item;
-    })
-  );
-};
-const handleSiteSearch = async (val: string) => {
-  setForm((prev) => ({ ...prev, siteQ: val, sitePickedLabel: "" }));
-  if (!val) {
-    setSites([]);
-    setStatusMsg("");
-    return;
-  }
-  setStatusMsg("검색 중...");
-  const { list } = await searchSiteRates(val, form.w, form.l);
+        if (field === "lineSpec") {
+          return { ...item, lineSpec: value, specText: '', showSpec: value.w > 0 ? 'y' : 'n' };
+        }
 
-  const filtered = list.filter((s: any) => {
-    const alias = String(s.alias || "");
-    return matchKoreanLocal(alias, val);
-  });
+        if (field === "specText") {
+          return { ...item, specText: String(value ?? "") };
+        }
 
- 
+        if (field === "months" && rent) {
+          const months = Math.max(1, Math.floor(Number(value || 1)));
+          const newUnitPrice = item.baseUnitPrice * months;
+          const finalAmount = Math.round((item.displayQty || 1) * newUnitPrice);
+          
+          return {
+            ...item,
+            months,
+            customerUnitPrice: newUnitPrice,
+            finalAmount,
+          };
+        }
+
+        if (field === "displayQty") {
+          const qty = Math.max(0, Math.floor(Number(value || 0)));
+          if (rent) {
+            return recomputeRow({ ...item, displayQty: Math.max(1, qty) });
+          }
+          return recomputeRow({ ...item, displayQty: qty });
+        }
+        
+        if (field === "customerUnitPrice") {
+          const p = Number(value || 0);
+          return recomputeRow({ ...item, customerUnitPrice: p });
+        }
+
+        return item;
+      })
+    );
+  };
+
+  const handleSiteSearch = async (val: string) => {
+    setForm((prev) => ({ ...prev, siteQ: val, sitePickedLabel: "" }));
+    if (!val) {
+      setSites([]);
+      setStatusMsg("");
+      return;
+    }
+    setStatusMsg("검색 중...");
+    
+    // ✅ 상속 규격 사용
+    const inheritedSpec = getInheritedSpec(selectedItems, selectedItems.length);
+    const w = inheritedSpec.w || 3;
+    const l = inheritedSpec.l || 6;
+    
+    const { list } = await searchSiteRates(val, w, l);
+
+    const filtered = list.filter((s: any) => {
+      const alias = String(s.alias || "");
+      return matchKoreanLocal(alias, val);
+    });
+
     const qLower = val.toLowerCase();
     filtered.sort((a: any, b: any) => {
       const aliasA = String(a.alias || "").toLowerCase();
@@ -1287,8 +1359,18 @@ const handleSiteSearch = async (val: string) => {
   const vat_amount = Math.round(supply_amount * 0.1);
   const total_amount = supply_amount + vat_amount;
 
+  // ✅ 첫 번째 규격이 있는 행의 규격을 대표 spec으로 사용
+  const getMainSpec = () => {
+    for (const item of computedItems) {
+      if (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) {
+        return `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}`;
+      }
+    }
+    return "";
+  };
+
   const buildPayload = (quote_id: string, version: number) => {
-    const spec = `${form.w}x${form.l}x${form.h}`;
+    const spec = getMainSpec();
     const title =
       String(form.quoteTitle || "").trim() ||
       `${form.sitePickedLabel || form.siteQ || ""} ${spec}`.trim();
@@ -1303,8 +1385,8 @@ const handleSiteSearch = async (val: string) => {
       site_name: form.sitePickedLabel || form.siteQ || "",
       site_addr: "",
       spec,
-      w: form.w,
-      l: form.l,
+      w: 0,
+      l: 0,
       product: "",
       qty: 1,
       memo: "",
@@ -1315,23 +1397,23 @@ const handleSiteSearch = async (val: string) => {
       pdf_url: "",
       statement_url: "",
       bizcard_id: selectedBizcardId || null,
-    items: computedItems.map((r: any) => ({
-  optionId: r.optionId,
-  optionName: r.optionName,
-  itemName: r.displayName || r.optionName,
-  unit: r.unit || "EA",
-  qty: Number(r.displayQty || 0),
-  unitPrice: Number(r.customerUnitPrice || 0),
-  amount: Number(r.finalAmount || 0),
-  memo: r.memo || "",
-  baseQty: r.baseQty,
-  baseUnitPrice: r.baseUnitPrice,
-  baseAmount: r.baseAmount,
-  lineSpec: r.lineSpec,
-  showSpec: r.showSpec,
-  months: r.months,
-  specText: r.specText ?? "",  // ✅ 자유입력 규격 저장
-})),
+      items: computedItems.map((r: any) => ({
+        optionId: r.optionId,
+        optionName: r.optionName,
+        itemName: r.displayName || r.optionName,
+        unit: r.unit || "EA",
+        qty: Number(r.displayQty || 0),
+        unitPrice: Number(r.customerUnitPrice || 0),
+        amount: Number(r.finalAmount || 0),
+        memo: r.memo || "",
+        baseQty: r.baseQty,
+        baseUnitPrice: r.baseUnitPrice,
+        baseAmount: r.baseAmount,
+        lineSpec: r.lineSpec,
+        showSpec: r.showSpec,
+        months: r.months,
+        specText: r.specText ?? "",
+      })),
       updated_at: new Date().toISOString(),
     };
   };
@@ -1423,39 +1505,36 @@ const handleSiteSearch = async (val: string) => {
       }
 
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+      clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
 
-// ✅ select를 선택된 텍스트로 교체
-const clonedSelects = clonedSheet.querySelectorAll('select');
-const originalSelects = originalSheet.querySelectorAll('select');
-clonedSelects.forEach((select, idx) => {
-  const origSelect = originalSelects[idx] as HTMLSelectElement;
-  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
-  const span = document.createElement('span');
-  span.textContent = selectedText;
-  span.style.cssText = 'font-size: 13px;';
-  select.parentNode?.replaceChild(span, select);
-});
+      const clonedSelects = clonedSheet.querySelectorAll('select');
+      const originalSelects = originalSheet.querySelectorAll('select');
+      clonedSelects.forEach((select, idx) => {
+        const origSelect = originalSelects[idx] as HTMLSelectElement;
+        const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+        const span = document.createElement('span');
+        span.textContent = selectedText;
+        span.style.cssText = 'font-size: 13px;';
+        select.parentNode?.replaceChild(span, select);
+      });
 
-const deleteButtons = clonedSheet.querySelectorAll('button');
-deleteButtons.forEach(btn => {
-  if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
-    btn.style.display = 'none';
-  }
-});
+      const deleteButtons = clonedSheet.querySelectorAll('button');
+      deleteButtons.forEach(btn => {
+        if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
+          btn.style.display = 'none';
+        }
+      });
 
-// 검색 input 숨기기
-const inputs = clonedSheet.querySelectorAll('.a4Items input');
-inputs.forEach(input => {
-  (input as HTMLElement).style.display = 'none';
-});
+      const inputs = clonedSheet.querySelectorAll('.a4Items input');
+      inputs.forEach(input => {
+        (input as HTMLElement).style.display = 'none';
+      });
 
-const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
-if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
       
-captureContainer.appendChild(clonedSheet);
+      captureContainer.appendChild(clonedSheet);
      
-
       await new Promise(r => setTimeout(r, 300));
 
       const canvas = await html2canvas(clonedSheet, {
@@ -1519,42 +1598,36 @@ captureContainer.appendChild(clonedSheet);
         captureContainer.appendChild(styleTag.cloneNode(true));
       }
 
-    const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+      const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
 
-// ✅ select를 선택된 텍스트로 교체
-const clonedSelects = clonedSheet.querySelectorAll('select');
-const originalSelects = originalSheet.querySelectorAll('select');
-clonedSelects.forEach((select, idx) => {
-  const origSelect = originalSelects[idx] as HTMLSelectElement;
-  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
-  const span = document.createElement('span');
-  span.textContent = selectedText;
-  span.style.cssText = 'font-size: 13px;';
-  select.parentNode?.replaceChild(span, select);
-});
+      const clonedSelects = clonedSheet.querySelectorAll('select');
+      const originalSelects = originalSheet.querySelectorAll('select');
+      clonedSelects.forEach((select, idx) => {
+        const origSelect = originalSelects[idx] as HTMLSelectElement;
+        const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+        const span = document.createElement('span');
+        span.textContent = selectedText;
+        span.style.cssText = 'font-size: 13px;';
+        select.parentNode?.replaceChild(span, select);
+      });
 
-// X 버튼 숨기기
+      const deleteButtons = clonedSheet.querySelectorAll('button');
+      deleteButtons.forEach(btn => {
+        if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
+          btn.style.display = 'none';
+        }
+      });
 
-// X 버튼 숨기기
-// X 버튼 숨기기
-const deleteButtons = clonedSheet.querySelectorAll('button');
-deleteButtons.forEach(btn => {
-  if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
-    btn.style.display = 'none';
-  }
-});
-
-// 검색 input 숨기기
-const inputs = clonedSheet.querySelectorAll('.a4Items input');
-inputs.forEach(input => {
-  (input as HTMLElement).style.display = 'none';
-});
+      const inputs = clonedSheet.querySelectorAll('.a4Items input');
+      inputs.forEach(input => {
+        (input as HTMLElement).style.display = 'none';
+      });
 
       const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
-if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
       
-captureContainer.appendChild(clonedSheet);
+      captureContainer.appendChild(clonedSheet);
 
       await new Promise(r => setTimeout(r, 300));
 
@@ -1588,59 +1661,57 @@ captureContainer.appendChild(clonedSheet);
     }
   };
 
-const MIN_ROWS = 12;
-// ✅ 최소 1개의 빈 행 유지 (12개 이상이어도 추가 가능하도록)
-const blanksCount = Math.max(1, MIN_ROWS - computedItems.length);
-const blankRows = Array.from({ length: blanksCount });
+  const MIN_ROWS = 12;
+  const blanksCount = Math.max(1, MIN_ROWS - computedItems.length);
+  const blankRows = Array.from({ length: blanksCount });
 
   // ✅ 네비게이션 바 컴포넌트
-const NavBar = ({ current }: { current: string }) => (
-  <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
-    <button
-      className="btn"
-      onClick={() => setView("rt")}
-      style={current === 'rt' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      {current !== 'rt' ? '← ' : ''}실시간견적
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("list")}
-      style={current === 'list' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      전체견적
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("contract")}
-      style={current === 'contract' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      계약견적
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("inventory")}
-      style={current === 'inventory' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      재고현황
-    </button>
-    <button
-      className="btn"
-      onClick={() => setView("calendar")}
-      style={current === 'calendar' ? { background: '#2e5b86', color: '#fff' } : {}}
-    >
-      출고일정
-    </button>
-    {/* ✅ 오늘할일 버튼 추가 */}
-    <button
-      className="btn"
-      onClick={() => setView("tasks")}
-      style={current === 'tasks' ? { background: '#e53935', color: '#fff' } : { background: '#ffebee', color: '#c62828' }}
-    >
-      📋 오늘할일
-    </button>
-  </div>
-);
+  const NavBar = ({ current }: { current: string }) => (
+    <div style={{ padding: 12, borderBottom: "1px solid #eee", background: "#fff", position: "sticky", top: 0, zIndex: 10, display: "flex", gap: 8 }}>
+      <button
+        className="btn"
+        onClick={() => setView("rt")}
+        style={current === 'rt' ? { background: '#2e5b86', color: '#fff' } : {}}
+      >
+        {current !== 'rt' ? '← ' : ''}실시간견적
+      </button>
+      <button
+        className="btn"
+        onClick={() => setView("list")}
+        style={current === 'list' ? { background: '#2e5b86', color: '#fff' } : {}}
+      >
+        전체견적
+      </button>
+      <button
+        className="btn"
+        onClick={() => setView("contract")}
+        style={current === 'contract' ? { background: '#2e5b86', color: '#fff' } : {}}
+      >
+        계약견적
+      </button>
+      <button
+        className="btn"
+        onClick={() => setView("inventory")}
+        style={current === 'inventory' ? { background: '#2e5b86', color: '#fff' } : {}}
+      >
+        재고현황
+      </button>
+      <button
+        className="btn"
+        onClick={() => setView("calendar")}
+        style={current === 'calendar' ? { background: '#2e5b86', color: '#fff' } : {}}
+      >
+        출고일정
+      </button>
+      <button
+        className="btn"
+        onClick={() => setView("tasks")}
+        style={current === 'tasks' ? { background: '#e53935', color: '#fff' } : { background: '#ffebee', color: '#c62828' }}
+      >
+        📋 오늘할일
+      </button>
+    </div>
+  );
 
   // ✅ 전체견적 화면
   const listScreen = (
@@ -1669,548 +1740,478 @@ const NavBar = ({ current }: { current: string }) => (
     </div>
   );
 
-const tasksScreen = (
-  <div style={{ minHeight: "100vh" }}>
-    <NavBar current="tasks" />
-    <TodayTasksPage />
-  </div>
-);
+  const tasksScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="tasks" />
+      <TodayTasksPage />
+    </div>
+  );
 
+  const inventoryScreen = (
+    <div style={{ minHeight: "100vh" }}>
+      <NavBar current="inventory" />
+      <InventoryPage onBack={() => setView("contract")} />
+    </div>
+  );
 
-const inventoryScreen = (
-  <div style={{ minHeight: "100vh" }}>
-    <NavBar current="inventory" />
-    <InventoryPage onBack={() => setView("contract")} />
-  </div>
-);
-
-  
   const rtScreen = (
-  <>
-    <NavBar current="rt" />
-    
-    {isMobileDevice ? (
-      // ========== 모바일: 기존 레이아웃 유지 ==========
-      <div className="wrap">
-        <div className="card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <p className="title">상담 입력</p>
-              <div className="mini">※ 우측은 A4 양식 미리보기</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div className="quoteBadge">QUOTE: {currentQuoteId || "-"}</div>
-              <div className="muted" style={{ marginTop: 4 }}>VERSION: {currentVersion ? `v${currentVersion}` : "-"}</div>
-            </div>
-          </div>
-          <hr />
-          <div className="row"><label>견적제목</label><input value={form.quoteTitle} onChange={(e) => setForm({ ...form, quoteTitle: e.target.value })} placeholder="예: 강릉 3x6" /></div>
-          <div className="row"><label>견적일</label><input type="date" value={form.quoteDate} onChange={(e) => setForm({ ...form, quoteDate: e.target.value })} /></div>
-          <div className="row"><label>부가세</label><select value={form.vatIncluded ? "included" : "excluded"} onChange={(e) => setForm({ ...form, vatIncluded: e.target.value === "included" })}><option value="included">부가세 포함</option><option value="excluded">부가세 별도</option></select></div>
-          <div className="row"><label>고객명</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div className="row"><label>이메일</label><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-          <div className="row"><label>전화번호</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div className="row"><label>명함</label><select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)}>{bizcards.length === 0 && <option value="">(명함 없음)</option>}{bizcards.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}</select></div>
-          <div className="row" style={{ alignItems: "center" }}>
-            <label>규격(m)</label>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span>가로:</span><input type="number" value={form.w} onChange={(e) => setForm({ ...form, w: Number(e.target.value) })} style={{ width: 60 }} />
-              <span>세로:</span><input type="number" value={form.l} onChange={(e) => setForm({ ...form, l: Number(e.target.value) })} style={{ width: 60 }} />
-              <span>높이:</span><input type="number" step="0.1" value={form.h} onChange={(e) => setForm({ ...form, h: Number(e.target.value) })} style={{ width: 60 }} />
-            </div>
-          </div>
-          <hr />
-          <div className="row"><label>옵션 검색</label><input value={form.optQ} onChange={(e) => setForm({ ...form, optQ: e.target.value })} placeholder="예: 모노륨, 단열..." /></div>
-        {String(form.optQ || "").trim() !== "" && (
-  <div className="box">
-    {filteredOptions.length > 0 ? filteredOptions.map((o: any) => {
-      const isRent = String(o.option_name || "").includes("임대");
+    <>
+      <NavBar current="rt" />
       
-      if (isRent) {
-        return (
-          <div key={o.option_id} className="result-item" style={{ cursor: "default" }}>
-            <div style={{ fontWeight: 800 }}>{o.option_name}</div>
-            <div className="muted">{o.unit || "EA"} · {fmt(Number(o.unit_price || 0))}원</div>
-            <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-              <input
-                type="number"
-                defaultValue={3}
-                min={1}
-                id={`rent-months-${o.option_id}`}
-                onClick={(e) => e.stopPropagation()}
-                style={{ width: 50, padding: "4px 6px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center" }}
-              />
-              <span>개월</span>
-              <button 
-                className="btn" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const input = document.getElementById(`rent-months-${o.option_id}`) as HTMLInputElement;
-                  const months = Number(input?.value) || 1;
-                  addOption(o, false, 0, "", months);
-                }}
-                style={{ marginLeft: 4 }}
-              >
-                추가
-              </button>
+      {isMobileDevice ? (
+        // ========== 모바일: 간소화된 레이아웃 ==========
+        <div className="wrap">
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <p className="title">상담 입력</p>
+                <div className="mini">※ 우측은 A4 양식 미리보기</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div className="quoteBadge">QUOTE: {currentQuoteId || "-"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>VERSION: {currentVersion ? `v${currentVersion}` : "-"}</div>
+              </div>
             </div>
-          </div>
-        );
-      }
-      
-      return (
-        <div key={o.option_id} className="result-item" onClick={() => addOption(o)}>
-          <div style={{ fontWeight: 800 }}>{o.option_name}</div>
-          <div className="muted">{o.unit || "EA"} · {fmt(Number(o.unit_price || 0))}원</div>
-        </div>
-      );
-    }) : <div className="result-item" style={{ color: "#999" }}>검색 결과 없음</div>}
-  </div>
-)}
-
-          
-          <hr />
-          <div className="row"><label>현장지역</label><input value={form.siteQ} onChange={(e) => handleSiteSearch(e.target.value)} placeholder="운송비 검색" /></div>
-          {sites.length > 0 && (
-            <div className="box">
-              {sites.map((s: any, i: number) => (
-                <div key={i} className="result-item" style={{ cursor: "default" }}>
-                  <div style={{ fontWeight: 900 }}>{s.alias}</div>
-                  <div style={{ marginTop: 6, display: "flex", gap: 6 }}>
-                    <button className="btn" onClick={() => { setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: s.alias })); addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, s.delivery, s.alias); }}>일반 {fmt(s.delivery)}</button>
-                    <button className="btn" onClick={() => { setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: s.alias })); addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, s.crane, s.alias); }}>크레인 {fmt(s.crane)}</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-{/* ✅ 선택된 품목 리스트 - 여기에 추가 */}
-          {computedItems.length > 0 && (
-            <div className="box" style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 800, marginBottom: 8, fontSize: 13 }}>선택된 품목 ({computedItems.length})</div>
-              {computedItems.map((item: any) => {
-                const rent = isRentRow(item);
-                return (
-                  <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                      <input
-                        value={item.displayName || ''}
-                        onChange={(e) => updateRow(item.key, 'displayName', e.target.value)}
-                        style={{ flex: 1, fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
-                      />
-                      <button onClick={() => deleteRow(item.key)} style={{ marginLeft: 8, color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>✕</button>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ fontSize: 11, color: '#666' }}>수량:</span>
-                        <input
-                          type="number"
-                          value={item.displayQty}
-                          onChange={(e) => updateRow(item.key, 'displayQty', Number(e.target.value))}
-                          style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
-                        />
+            <hr />
+            <div className="row"><label>견적제목</label><input value={form.quoteTitle} onChange={(e) => setForm({ ...form, quoteTitle: e.target.value })} placeholder="예: 강릉 3x6" /></div>
+            <div className="row"><label>견적일</label><input type="date" value={form.quoteDate} onChange={(e) => setForm({ ...form, quoteDate: e.target.value })} /></div>
+            <div className="row"><label>부가세</label><select value={form.vatIncluded ? "included" : "excluded"} onChange={(e) => setForm({ ...form, vatIncluded: e.target.value === "included" })}><option value="included">부가세 포함</option><option value="excluded">부가세 별도</option></select></div>
+            <div className="row"><label>고객명</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div className="row"><label>이메일</label><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+            <div className="row"><label>전화번호</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+            <div className="row"><label>명함</label><select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)}>{bizcards.length === 0 && <option value="">(명함 없음)</option>}{bizcards.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}</select></div>
+            <hr />
+            
+            {/* ✅ 선택된 품목 리스트 */}
+            {computedItems.length > 0 && (
+              <div className="box" style={{ marginTop: 12 }}>
+                <div style={{ fontWeight: 800, marginBottom: 8, fontSize: 13 }}>선택된 품목 ({computedItems.length})</div>
+                {computedItems.map((item: any, idx: number) => {
+                  const rent = isRentRow(item);
+                  const inheritedSpec = getInheritedSpec(computedItems, idx);
+                  return (
+                    <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                        <div style={{ flex: 1 }}>
+                          {item.lineSpec?.w > 0 && (
+                            <div style={{ fontSize: 10, color: '#1565c0', marginBottom: 2 }}>
+                              {item.lineSpec.w}×{item.lineSpec.l}×{item.lineSpec.h || 2.6}
+                            </div>
+                          )}
+                          <input
+                            value={item.displayName || ''}
+                            onChange={(e) => updateRow(item.key, 'displayName', e.target.value)}
+                            style={{ width: '100%', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
+                          />
+                        </div>
+                        <button onClick={() => deleteRow(item.key)} style={{ marginLeft: 8, color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>✕</button>
                       </div>
-                      {rent ? (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 11, color: '#666' }}>개월:</span>
+                          <span style={{ fontSize: 11, color: '#666' }}>수량:</span>
                           <input
                             type="number"
-                            value={item.months || 1}
-                            onChange={(e) => updateRow(item.key, 'months', Number(e.target.value))}
+                            value={item.displayQty}
+                            onChange={(e) => updateRow(item.key, 'displayQty', Number(e.target.value))}
                             style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
                           />
                         </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 11, color: '#666' }}>단가:</span>
-                          <input
-                            type="number"
-                            value={item.customerUnitPrice}
-                            onChange={(e) => updateRow(item.key, 'customerUnitPrice', Number(e.target.value))}
-                            style={{ width: 80, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'right', fontSize: 12 }}
-                          />
+                        {rent ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 11, color: '#666' }}>개월:</span>
+                            <input
+                              type="number"
+                              value={item.months || 1}
+                              onChange={(e) => updateRow(item.key, 'months', Number(e.target.value))}
+                              style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+                            />
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 11, color: '#666' }}>단가:</span>
+                            <input
+                              type="number"
+                              value={item.customerUnitPrice}
+                              onChange={(e) => updateRow(item.key, 'customerUnitPrice', Number(e.target.value))}
+                              style={{ width: 80, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'right', fontSize: 12 }}
+                            />
+                          </div>
+                        )}
+                        <div style={{ fontSize: 12, fontWeight: 700, marginLeft: 'auto' }}>
+                          {fmt(item.finalAmount)}원
                         </div>
-                      )}
-                      <div style={{ fontSize: 12, fontWeight: 700, marginLeft: 'auto' }}>
-                        {fmt(item.finalAmount)}원
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="actions">
+              <button className="btn" onClick={handleSaveNew}>신규 저장</button>
+              <button className="btn" onClick={handleSaveUpdate} disabled={!currentQuoteId}>수정 저장</button>
+              <button className="btn" onClick={handleSend} disabled={!!sendStatus}>{sendStatus || "견적서 보내기"}</button>
+              <button className="btn" onClick={downloadJpg}>JPG저장</button>
+              <button className="btn" onClick={handlePreview}>인쇄</button>
+            </div>
+          </div>
+          <div id="quotePreviewApp" onClick={() => setMobilePreviewOpen(true)} style={{ cursor: 'pointer', width: Math.floor(800 * getMobileScale()), height: Math.floor(1130 * getMobileScale()), margin: '0 auto', overflow: 'hidden', background: '#f5f6f8', borderRadius: 14, border: '1px solid #e5e7eb', position: 'relative' }}>
+            <div style={{ position: 'absolute', bottom: 15, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 12px', borderRadius: 20, fontSize: 11, zIndex: 10 }}>탭하여 크게 보기</div>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${getMobileScale()})` }}>
+              <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding getInheritedSpec={getInheritedSpec} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        // ========== PC: 새 레이아웃 (버튼 + A4 인라인편집) ==========
+        <div style={{ background: "#f5f6f8", minHeight: "100vh", padding: "16px" }}>
+          {/* 버튼 바 */}
+          <div style={{ maxWidth: 832, margin: "0 auto 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 12, color: "#666" }}>
+              QUOTE: {currentQuoteId || "-"} | v{currentVersion || "-"}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input 
+                value={form.siteQ} 
+                onChange={(e) => handleSiteSearch(e.target.value)} 
+                placeholder=" 운송비 검색" 
+                style={{ padding: "10px 14px", border: "1px solid #ddd", borderRadius: 8, fontSize: 13, width: 160 }} 
+              />
+              {sites.length > 0 && sites.slice(0, 2).map((s: any, i: number) => {
+                const inheritedSpec = getInheritedSpec(selectedItems, selectedItems.length);
+                return (
+                  <div key={i} style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                    <button onClick={() => { setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: "" })); addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, s.delivery, s.alias); setSites([]); }} style={{ fontSize: 12, padding: "8px 12px", background: "#e3f2fd", border: "none", borderRadius: 6, cursor: "pointer" }}>일반 {fmt(s.delivery)}</button>
+                    <button onClick={() => { setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: "" })); addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, s.crane, s.alias); setSites([]); }} style={{ fontSize: 12, padding: "8px 12px", background: "#fff3e0", border: "none", borderRadius: 6, cursor: "pointer" }}>크레인 {fmt(s.crane)}</button>
                   </div>
                 );
               })}
+              <button className="btn" onClick={handleSaveNew} style={{ background: "#2e5b86", color: "#fff", padding: "10px 20px", fontSize: 14 }}>저장</button>
+              <button className="btn" onClick={handleSend} disabled={!!sendStatus} style={{ padding: "10px 20px", fontSize: 14 }}>{sendStatus || "전송"}</button>
+              <button className="btn" onClick={downloadJpg} style={{ padding: "10px 20px", fontSize: 14 }}>JPG</button>
+              <button className="btn" onClick={handlePreview} style={{ padding: "10px 20px", fontSize: 14 }}>인쇄</button>
             </div>
-          )}
+          </div>
 
-          <div className="actions">
-          
-        
-            <button className="btn" onClick={handleSaveNew}>신규 저장</button>
-            <button className="btn" onClick={handleSaveUpdate} disabled={!currentQuoteId}>수정 저장</button>
-            <button className="btn" onClick={handleSend} disabled={!!sendStatus}>{sendStatus || "견적서 보내기"}</button>
-            <button className="btn" onClick={downloadJpg}>JPG저장</button>
-            <button className="btn" onClick={handlePreview}>인쇄</button>
-          </div>
-        </div>
-        <div id="quotePreviewApp" onClick={() => setMobilePreviewOpen(true)} style={{ cursor: 'pointer', width: Math.floor(800 * getMobileScale()), height: Math.floor(1130 * getMobileScale()), margin: '0 auto', overflow: 'hidden', background: '#f5f6f8', borderRadius: 14, border: '1px solid #e5e7eb', position: 'relative' }}>
-          <div style={{ position: 'absolute', bottom: 15, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 12px', borderRadius: 20, fontSize: 11, zIndex: 10 }}>탭하여 크게 보기</div>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${getMobileScale()})` }}>
-            
-            <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding />
-          </div>
-        </div>
-      </div>
-    ) : (
-   
-      // ========== PC: 새 레이아웃 (버튼 + A4 인라인편집) ==========
-   
-      // ========== PC: 새 레이아웃 (버튼 + A4 인라인편집) ==========
-      <div style={{ background: "#f5f6f8", minHeight: "100vh", padding: "16px" }}>
-        {/* 버튼 바 */}
-        <div style={{ maxWidth: 832, margin: "0 auto 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 12, color: "#666" }}>
-            QUOTE: {currentQuoteId || "-"} | v{currentVersion || "-"}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input 
-              value={form.siteQ} 
-              onChange={(e) => handleSiteSearch(e.target.value)} 
-              placeholder=" 운송비 검색" 
-              style={{ padding: "10px 14px", border: "1px solid #ddd", borderRadius: 8, fontSize: 13, width: 160 }} 
-            />
-            {sites.length > 0 && sites.slice(0, 2).map((s: any, i: number) => (
-              <div key={i} style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <button onClick={() => { setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: "" })); addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, s.delivery, s.alias); setSites([]); }} style={{ fontSize: 12, padding: "8px 12px", background: "#e3f2fd", border: "none", borderRadius: 6, cursor: "pointer" }}>일반 {fmt(s.delivery)}</button>
-                <button onClick={() => { setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: "" })); addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, s.crane, s.alias); setSites([]); }} style={{ fontSize: 12, padding: "8px 12px", background: "#fff3e0", border: "none", borderRadius: 6, cursor: "pointer" }}>크레인 {fmt(s.crane)}</button>
-              </div>
-            ))}
-            <button className="btn" onClick={handleSaveNew} style={{ background: "#2e5b86", color: "#fff", padding: "10px 20px", fontSize: 14 }}>저장</button>
-            <button className="btn" onClick={handleSend} disabled={!!sendStatus} style={{ padding: "10px 20px", fontSize: 14 }}>{sendStatus || "전송"}</button>
-            <button className="btn" onClick={downloadJpg} style={{ padding: "10px 20px", fontSize: 14 }}>JPG</button>
-            <button className="btn" onClick={handlePreview} style={{ padding: "10px 20px", fontSize: 14 }}>인쇄</button>
-          </div>
-        </div>
-
-        {/* A4 견적서 (인라인 편집) */}
-        <div id="quotePreviewApp" style={{ display: "flex", justifyContent: "center" }}>
-      <A4Quote
-  form={form}
-  setForm={setForm}
-  computedItems={computedItems}
-  blankRows={blankRows}
-  fmt={fmt}
-  onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
-  onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
-  editable={true}
-  supply_amount={supply_amount}
-  vat_amount={vat_amount}
-  total_amount={total_amount}
-  bizcardName={selectedBizcard?.name || ""}
-  bizcards={bizcards}
-  selectedBizcardId={selectedBizcardId}
-  setSelectedBizcardId={setSelectedBizcardId}
-  options={options}
-onSelectOption={(item, opt, calc) => {
-  const rawName = String(opt.option_name || "");
-  const rent = rawName.includes("임대") && !opt._isCustomFreeText;
-  
-  if (opt._isDisplayNameOnly) {
-    setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-      ...i, 
-      displayName: rawName,
-      _isRent: item._isRent,
-    } as any));
-    return;
-  }
-  
-  const months = opt._months || 3;
-  
-  // ✅ 수정: show_spec에 따라 lineSpec 결정
-  const showSpecValue = String(opt.show_spec || "n").toLowerCase();
-  const newLineSpec = showSpecValue === 'y' 
-    ? (item.lineSpec || { w: form.w, l: form.l, h: form.h })
-    : { w: 0, l: 0, h: 0 };
-  
-  const hasMonthInName = /\d+개월/.test(rawName);
-  const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
-  
-  const customerUnitPrice = Number(calc.unitPrice || calc.amount || 0);
-  
-  const newOptName = item.optionName || rawName;
-  
-  setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-    ...i, 
-    optionId: opt.option_id, 
-    optionName: newOptName,
-    displayName,
-    unit: rent ? "개월" : calc.unit || "EA", 
-    showSpec: showSpecValue,  // ✅ opt.show_spec || "n" 대신 showSpecValue
-    baseQty: calc.qty || 1, 
-    baseUnitPrice: opt.unit_price || calc.unitPrice || 0, 
-    baseAmount: calc.amount || 0,
-    displayQty: 1, 
-    customerUnitPrice, 
-    finalAmount: customerUnitPrice, 
-    months,
-    lineSpec: newLineSpec,  // ✅ existingLineSpec 대신 newLineSpec
-    _isRent: (item as any)._isRent ?? rent,
-    _isCustomFreeText: opt._isCustomFreeText || false,
-  } as any));
-}}
-  onAddItem={(opt, calc, insertIdx) => addOption(opt, false, 0, "", undefined, insertIdx)}
-  onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
-  onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
-  onDeleteItem={(key) => deleteRow(key)}
-  focusedRowIndex={focusedRowIndex}
-  setFocusedRowIndex={setFocusedRowIndex}
-  onSiteSearch={async (q) => {
-    const { list } = await searchSiteRates(q, form.w, form.l);
-    return list.filter((s: any) => matchKoreanLocal(String(s.alias || ""), q));
-  }}
-  onAddDelivery={(site, type, insertIdx) => {
-    setForm((p) => ({ ...p, sitePickedLabel: site.alias, siteQ: site.alias }));
-    if (type === 'delivery') {
-      addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, site.delivery, site.alias, undefined, insertIdx);
-    } else {
-      addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, site.crane, site.alias, undefined, insertIdx);
-    }
-  }}
-/>
-      
-  
-</div>
-      </div>
-    )}
-    
-{mobilePreviewOpen && (
-  <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 10000, display: 'flex', flexDirection: 'column' }}>
-    <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
-      <button onClick={() => setMobilePreviewOpen(false)} style={{ padding: '8px 16px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700 }}>닫기</button>
-    </div>
-    <div style={{ flex: 1, overflow: 'auto', background: '#f5f6f8', padding: '10px' }}>
-      <div style={{ width: Math.floor(800 * Math.min(0.95, (window.innerWidth - 20) / 800)), margin: '0 auto', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${Math.min(0.95, (window.innerWidth - 20) / 800)})` }}>
-          <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding />
-        </div>
-      </div>
-    </div>
-    <div style={{
-      padding: '10px 16px',
-      borderTop: '1px solid #eee',
-      display: 'flex',
-      gap: 8,
-      background: '#fff',
-      position: 'relative',
-      flexShrink: 0,
-    }}>
-      <button
-        onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
-        style={{
-          flex: 1,
-          padding: '12px',
-          background: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          fontWeight: 700,
-          fontSize: 13,
-        }}
-      >
-        JPG 저장
-      </button>
-      <div style={{ flex: 1, position: 'relative' }}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const menu = document.getElementById('sendMenuApp');
-            if (menu) menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
-          }}
-          style={{
-            width: '100%',
-            padding: '12px',
-            background: '#111',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontWeight: 700,
-            fontSize: 13,
-          }}
-        >
-          전송 ▼
-        </button>
-        <div
-          id="sendMenuApp"
-          style={{
-            display: 'none',
-            position: 'absolute',
-            bottom: '100%',
-            left: 0,
-            right: 0,
-            marginBottom: 8,
-            background: '#fff',
-            borderRadius: 10,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            border: '1px solid #e5e7eb',
-          }}
-        >
-          {form.email && (
-            <button
-              onClick={() => {
-                document.getElementById('sendMenuApp')!.style.display = 'none';
-                setMobilePreviewOpen(false);
-                handleSend();
+          {/* A4 견적서 (인라인 편집) */}
+          <div id="quotePreviewApp" style={{ display: "flex", justifyContent: "center" }}>
+            <A4Quote
+              form={form}
+              setForm={setForm}
+              computedItems={computedItems}
+              blankRows={blankRows}
+              fmt={fmt}
+              onUpdateSpec={(key, spec) => updateRow(key, "lineSpec", spec)}
+              onUpdateSpecText={(key, text) => updateRow(key, "specText", text)}
+              editable={true}
+              supply_amount={supply_amount}
+              vat_amount={vat_amount}
+              total_amount={total_amount}
+              bizcardName={selectedBizcard?.name || ""}
+              bizcards={bizcards}
+              selectedBizcardId={selectedBizcardId}
+              setSelectedBizcardId={setSelectedBizcardId}
+              options={options}
+              getInheritedSpec={getInheritedSpec}
+              onSelectOption={(item, opt, calc) => {
+                const rawName = String(opt.option_name || "");
+                const rent = rawName.includes("임대") && !opt._isCustomFreeText;
+                
+                if (opt._isDisplayNameOnly) {
+                  setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
+                    ...i, 
+                    displayName: rawName,
+                    _isRent: item._isRent,
+                  } as any));
+                  return;
+                }
+                
+                const months = opt._months || 3;
+                const showSpecValue = String(opt.show_spec || "n").toLowerCase();
+                
+                // ✅ 현재 행의 규격이 있으면 유지, 없으면 상속
+                const itemIndex = computedItems.findIndex(i => i.key === item.key);
+                const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
+                const newLineSpec = item.lineSpec?.w > 0 
+                  ? item.lineSpec 
+                  : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
+                
+                const hasMonthInName = /\d+개월/.test(rawName);
+                const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
+                
+                const customerUnitPrice = Number(calc.unitPrice || calc.amount || 0);
+                const newOptName = item.optionName || rawName;
+                
+                setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
+                  ...i, 
+                  optionId: opt.option_id, 
+                  optionName: newOptName,
+                  displayName,
+                  unit: rent ? "개월" : calc.unit || "EA", 
+                  showSpec: showSpecValue,
+                  baseQty: calc.qty || 1, 
+                  baseUnitPrice: opt.unit_price || calc.unitPrice || 0, 
+                  baseAmount: calc.amount || 0,
+                  displayQty: 1, 
+                  customerUnitPrice, 
+                  finalAmount: customerUnitPrice, 
+                  months,
+                  lineSpec: newLineSpec,
+                  _isRent: (item as any)._isRent ?? rent,
+                  _isCustomFreeText: opt._isCustomFreeText || false,
+                } as any));
               }}
+              onAddItem={(opt, calc, insertIdx, specOverride) => addOption(opt, false, 0, "", undefined, insertIdx, specOverride)}
+              onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
+              onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
+              onDeleteItem={(key) => deleteRow(key)}
+              focusedRowIndex={focusedRowIndex}
+              setFocusedRowIndex={setFocusedRowIndex}
+              onSiteSearch={async (q) => {
+                const inheritedSpec = getInheritedSpec(selectedItems, selectedItems.length);
+                const { list } = await searchSiteRates(q, inheritedSpec.w || 3, inheritedSpec.l || 6);
+                return list.filter((s: any) => matchKoreanLocal(String(s.alias || ""), q));
+              }}
+              onAddDelivery={(site, type, insertIdx) => {
+                setForm((p) => ({ ...p, sitePickedLabel: site.alias, siteQ: site.alias }));
+                const inheritedSpec = getInheritedSpec(selectedItems, insertIdx !== undefined ? insertIdx + 1 : selectedItems.length);
+                if (type === 'delivery') {
+                  addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, site.delivery, site.alias, undefined, insertIdx);
+                } else {
+                  addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, site.crane, site.alias, undefined, insertIdx);
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+      
+      {mobilePreviewOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 10000, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>견적서 미리보기</div>
+            <button onClick={() => setMobilePreviewOpen(false)} style={{ padding: '8px 16px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700 }}>닫기</button>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', background: '#f5f6f8', padding: '10px' }}>
+            <div style={{ width: Math.floor(800 * Math.min(0.95, (window.innerWidth - 20) / 800)), margin: '0 auto', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${Math.min(0.95, (window.innerWidth - 20) / 800)})` }}>
+                <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding getInheritedSpec={getInheritedSpec} />
+              </div>
+            </div>
+          </div>
+          <div style={{
+            padding: '10px 16px',
+            borderTop: '1px solid #eee',
+            display: 'flex',
+            gap: 8,
+            background: '#fff',
+            position: 'relative',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
               style={{
-                padding: '14px 16px',
+                flex: 1,
+                padding: '12px',
                 background: '#fff',
-                border: 'none',
-                borderBottom: '1px solid #eee',
-                fontSize: 14,
-                fontWeight: 600,
-                textAlign: 'left',
-                cursor: 'pointer',
+                border: '1px solid #ddd',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 13,
               }}
             >
-              ✉️ 이메일 전송
-              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.email}</div>
+              JPG 저장
             </button>
-          )}
-          {form.phone && (
-  <button
-    onClick={async () => {
-      document.getElementById('sendMenuApp')!.style.display = 'none';
+            <div style={{ flex: 1, position: 'relative' }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const menu = document.getElementById('sendMenuApp');
+                  if (menu) menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#111',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 13,
+                }}
+              >
+                전송 ▼
+              </button>
+              <div
+                id="sendMenuApp"
+                style={{
+                  display: 'none',
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  right: 0,
+                  marginBottom: 8,
+                  background: '#fff',
+                  borderRadius: 10,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                {form.email && (
+                  <button
+                    onClick={() => {
+                      document.getElementById('sendMenuApp')!.style.display = 'none';
+                      setMobilePreviewOpen(false);
+                      handleSend();
+                    }}
+                    style={{
+                      padding: '14px 16px',
+                      background: '#fff',
+                      border: 'none',
+                      borderBottom: '1px solid #eee',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✉️ 이메일 전송
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.email}</div>
+                  </button>
+                )}
+                {form.phone && (
+                  <button
+                    onClick={async () => {
+                      document.getElementById('sendMenuApp')!.style.display = 'none';
 
-      const originalSheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
-      if (!originalSheet) {
-        alert('견적서를 찾을 수 없습니다.');
-        return;
-      }
+                      const originalSheet = document.querySelector('#quotePreviewApp .a4Sheet') as HTMLElement;
+                      if (!originalSheet) {
+                        alert('견적서를 찾을 수 없습니다.');
+                        return;
+                      }
 
-      try {
-        setStatusMsg('이미지 생성 중...');
+                      try {
+                        setStatusMsg('이미지 생성 중...');
 
-        const captureContainer = document.createElement('div');
-        captureContainer.id = 'captureContainerSms';
-        captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
-        document.body.appendChild(captureContainer);
+                        const captureContainer = document.createElement('div');
+                        captureContainer.id = 'captureContainerSms';
+                        captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 800px; background: #fff; z-index: -1;';
+                        document.body.appendChild(captureContainer);
 
-        const styleTag = document.querySelector('#quotePreviewApp style');
-        if (styleTag) {
-          captureContainer.appendChild(styleTag.cloneNode(true));
-        }
+                        const styleTag = document.querySelector('#quotePreviewApp style');
+                        if (styleTag) {
+                          captureContainer.appendChild(styleTag.cloneNode(true));
+                        }
 
-const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+                        const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+                        clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
 
-// ✅ select를 선택된 텍스트로 교체
-const clonedSelects = clonedSheet.querySelectorAll('select');
-const originalSelects = originalSheet.querySelectorAll('select');
-clonedSelects.forEach((select, idx) => {
-  const origSelect = originalSelects[idx] as HTMLSelectElement;
-  const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
-  const span = document.createElement('span');
-  span.textContent = selectedText;
-  span.style.cssText = 'font-size: 13px;';
-  select.parentNode?.replaceChild(span, select);
-});
+                        const clonedSelects = clonedSheet.querySelectorAll('select');
+                        const originalSelects = originalSheet.querySelectorAll('select');
+                        clonedSelects.forEach((select, idx) => {
+                          const origSelect = originalSelects[idx] as HTMLSelectElement;
+                          const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+                          const span = document.createElement('span');
+                          span.textContent = selectedText;
+                          span.style.cssText = 'font-size: 13px;';
+                          select.parentNode?.replaceChild(span, select);
+                        });
 
-        
-        // X 버튼 숨기기
-        const deleteButtons = clonedSheet.querySelectorAll('button');
-        deleteButtons.forEach(btn => {
-          if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
-            btn.style.display = 'none';
-          }
-        });
-        
-        // 검색 input 숨기기
-        const inputs = clonedSheet.querySelectorAll('.a4Items input');
-        inputs.forEach(input => {
-          (input as HTMLElement).style.display = 'none';
-        });
-const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
-if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
-        
-        captureContainer.appendChild(clonedSheet);
+                        const deleteButtons = clonedSheet.querySelectorAll('button');
+                        deleteButtons.forEach(btn => {
+                          if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
+                            btn.style.display = 'none';
+                          }
+                        });
 
-        await new Promise(r => setTimeout(r, 300));
+                        const inputs = clonedSheet.querySelectorAll('.a4Items input');
+                        inputs.forEach(input => {
+                          (input as HTMLElement).style.display = 'none';
+                        });
+                        
+                        const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+                        if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
 
-        const canvas = await html2canvas(clonedSheet, {
-          scale: 1.5,
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          allowTaint: true,
-          width: 800,
-          windowWidth: 800,
-        });
+                        captureContainer.appendChild(clonedSheet);
 
-        document.body.removeChild(captureContainer);
+                        await new Promise(r => setTimeout(r, 300));
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+                        const canvas = await html2canvas(clonedSheet, {
+                          scale: 1.5,
+                          backgroundColor: '#ffffff',
+                          useCORS: true,
+                          allowTaint: true,
+                          width: 800,
+                          windowWidth: 800,
+                        });
 
-        const msg = `안녕하세요 현대컨테이너입니다. 문의 주셔서 감사합니다. ${form.name || '고객'}님 견적서를 보내드립니다. 확인하시고 문의사항 있으시면 언제든 연락 주세요. 감사합니다~`;
-        const phone = form.phone.replace(/[^0-9]/g, '');
+                        document.body.removeChild(captureContainer);
 
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `견적서_${form.name || 'quote'}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
-        setStatusMsg('');
-        setMobilePreviewOpen(false);
+                        const msg = `안녕하세요 현대컨테이너입니다. 문의 주셔서 감사합니다. ${form.name || '고객'}님 견적서를 보내드립니다. 확인하시고 문의사항 있으시면 언제든 연락 주세요. 감사합니다~`;
+                        const phone = form.phone.replace(/[^0-9]/g, '');
 
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const separator = isIOS ? '&' : '?';
+                        const a = document.createElement('a');
+                        a.href = dataUrl;
+                        a.download = `견적서_${form.name || 'quote'}.jpg`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
 
-        setTimeout(() => {
-          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
-        }, 1500);
+                        setStatusMsg('');
+                        setMobilePreviewOpen(false);
 
-      } catch (e) {
-        console.error(e);
-        setStatusMsg('');
-        const container = document.getElementById('captureContainerSms');
-        if (container) document.body.removeChild(container);
-        alert('이미지 생성 실패: ' + (e as any)?.message);
-      }
-    }}
-    style={{
-      padding: '14px 16px',
-      background: '#fff',
-      border: 'none',
-      fontSize: 14,
-      fontWeight: 600,
-      textAlign: 'left',
-      cursor: 'pointer',
-    }}
-  >
-    📱 문자 전송
-    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
-  </button>
-)}
-          {!form.email && !form.phone && (
-            <div style={{ padding: '14px 16px', color: '#888', fontSize: 13 }}>
-              이메일 또는 전화번호를 입력해주세요
+                        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                        const separator = isIOS ? '&' : '?';
+
+                        setTimeout(() => {
+                          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(msg)}`;
+                        }, 1500);
+
+                      } catch (e) {
+                        console.error(e);
+                        setStatusMsg('');
+                        const container = document.getElementById('captureContainerSms');
+                        if (container) document.body.removeChild(container);
+                        alert('이미지 생성 실패: ' + (e as any)?.message);
+                      }
+                    }}
+                    style={{
+                      padding: '14px 16px',
+                      background: '#fff',
+                      border: 'none',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📱 문자 전송
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
+                  </button>
+                )}
+                {!form.email && !form.phone && (
+                  <div style={{ padding: '14px 16px', color: '#888', fontSize: 13 }}>
+                    이메일 또는 전화번호를 입력해주세요
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
-  </>
-);
+      )}
+    </>
+  );
 
-if (view === "list") return listScreen;
-if (view === "contract") return contractScreen;
-if (view === "calendar") return calendarScreen;
-if (view === "inventory") return inventoryScreen;
-if (view === "tasks") return tasksScreen;  // ✅ 추가
-return rtScreen;
+  if (view === "list") return listScreen;
+  if (view === "contract") return contractScreen;
+  if (view === "calendar") return calendarScreen;
+  if (view === "inventory") return inventoryScreen;
+  if (view === "tasks") return tasksScreen;
+  return rtScreen;
 }
 
 type A4QuoteProps = {
@@ -2219,9 +2220,6 @@ type A4QuoteProps = {
     name: string;
     email: string;
     phone: string;
-    w: number;
-    l: number;
-    h: number;
     siteQ: string;
     sitePickedLabel: string;
     optQ: string;
@@ -2245,7 +2243,7 @@ type A4QuoteProps = {
   quoteDate?: string;
   options?: any[];
   onSelectOption?: (item: any, opt: any, calculated: any) => void;
-  onAddItem?: (opt: any, calculated: any, insertIndex?: number) => void;  // ✅ 수정
+  onAddItem?: (opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => void;
   onUpdateQty?: (key: string, qty: number) => void;
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
@@ -2253,32 +2251,16 @@ type A4QuoteProps = {
   onUpdateSpecText?: (key: string, text: string) => void;
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
-  onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void;  // ✅ 수정
-  focusedRowIndex?: number;  // ✅ 추가
-  setFocusedRowIndex?: (index: number) => void;  // ✅ 추가
+  onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void;
+  focusedRowIndex?: number;
+  setFocusedRowIndex?: (index: number) => void;
+  getInheritedSpec: (items: any[], currentIndex: number) => { w: number; l: number; h: number };
 };
 
 
-function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex }: A4QuoteProps) {
+function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex, getInheritedSpec }: A4QuoteProps) {
   
-  // ✅ 규격 입력용 로컬 상태 추가
-  const [specInput, setSpecInput] = useState({ 
-    w: String(form.w), 
-    l: String(form.l), 
-    h: String(form.h) 
-  });
-  
-  // ✅ form 값이 외부에서 변경되면 동기화
-  useEffect(() => {
-    setSpecInput({ 
-      w: String(form.w), 
-      l: String(form.l), 
-      h: String(form.h) 
-    });
-  }, [form.w, form.l, form.h]);
-
   const ymd = form.quoteDate || new Date().toISOString().slice(0, 10); 
-  const spec = `${form.w}x${form.l}x${form.h}`;
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
   return (
@@ -2295,14 +2277,15 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
             <div className="a4HeaderRight" />
           </div>
 
+          {/* ✅ 고객정보 테이블 - 규격 행 제거 */}
           <table className="a4Info">
             <colgroup>
               <col style={{ width: "15%" }} />
               <col style={{ width: "18%" }} />
-              <col style={{ width: "12%" }} />
+              <col style={{ width: "15%" }} />
               <col style={{ width: "18%" }} />
               <col style={{ width: "15%" }} />
-              <col style={{ width: "22%" }} />
+              <col style={{ width: "19%" }} />
             </colgroup>
             <tbody>
               <tr>
@@ -2351,21 +2334,21 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
               <tr>
                 <th className="k center">이메일</th>
                 <td className="v" style={{ textAlign: "left", wordBreak: "break-all" }}>
-  <input 
-    value={form.email || ""} 
-    onChange={(e) => setForm((p: any) => ({ ...p, email: e.target.value }))}
-    placeholder="이메일 입력"
-    style={{ 
-      border: "none", 
-      background: "transparent", 
-      fontSize: 13, 
-      width: "100%",
-      textAlign: "left",
-      marginLeft: 0,
-      paddingLeft: 0
-    }}
-  />
-</td>
+                  <input 
+                    value={form.email || ""} 
+                    onChange={(e) => setForm && setForm((p: any) => ({ ...p, email: e.target.value }))}
+                    placeholder="이메일 입력"
+                    style={{ 
+                      border: "none", 
+                      background: "transparent", 
+                      fontSize: 13, 
+                      width: "100%",
+                      textAlign: "left",
+                      marginLeft: 0,
+                      paddingLeft: 0
+                    }}
+                  />
+                </td>
                 <th className="k center">전화</th>
                 <td className="v">
                   {editable && setForm ? (
@@ -2374,14 +2357,14 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                       onChange={(e) => setForm((p: any) => ({ ...p, phone: e.target.value }))}
                       placeholder="전화번호 입력"
                       style={{ 
-  border: "none", 
-  background: "transparent", 
-  fontSize: 13, 
-  width: "80%",
-  textAlign: "left",
-  marginLeft: 0,
-  paddingLeft: 0
-}}
+                        border: "none", 
+                        background: "transparent", 
+                        fontSize: 13, 
+                        width: "80%",
+                        textAlign: "left",
+                        marginLeft: 0,
+                        paddingLeft: 0
+                      }}
                     />
                   ) : (form.phone || "")}
                 </td>
@@ -2390,7 +2373,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
               </tr>
               <tr>
                 <th className="k center">현장</th>
-                <td className="v">
+                <td className="v" colSpan={3}>
                   {editable && setForm ? (
                     <input 
                       value={form.sitePickedLabel || form.siteQ || ""} 
@@ -2400,51 +2383,6 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     />
                   ) : siteText}
                 </td>
-                <th className="k center">규격</th>
-             <td className="v">
-  {editable && setForm ? (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
-      <input 
-        type="text" 
-        inputMode="decimal" 
-        value={specInput.w} 
-        onChange={(e) => setSpecInput(p => ({ ...p, w: e.target.value }))} 
-        onBlur={(e) => {
-          const val = parseFloat(e.target.value) || 0;
-          setSpecInput(p => ({ ...p, w: String(val) }));
-          setForm((p: any) => ({ ...p, w: val }));
-        }} 
-        style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} 
-      />
-      <span>×</span>
-      <input 
-        type="text" 
-        inputMode="decimal" 
-        value={specInput.l} 
-        onChange={(e) => setSpecInput(p => ({ ...p, l: e.target.value }))} 
-        onBlur={(e) => {
-          const val = parseFloat(e.target.value) || 0;
-          setSpecInput(p => ({ ...p, l: String(val) }));
-          setForm((p: any) => ({ ...p, l: val }));
-        }} 
-        style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} 
-      />
-      <span>×</span>
-      <input 
-        type="text" 
-        inputMode="decimal" 
-        value={specInput.h} 
-        onChange={(e) => setSpecInput(p => ({ ...p, h: e.target.value }))} 
-        onBlur={(e) => {
-          const val = parseFloat(e.target.value) || 0;
-          setSpecInput(p => ({ ...p, h: String(val) }));
-          setForm((p: any) => ({ ...p, h: val }));
-        }} 
-        style={{ border: "none", background: "transparent", fontSize: 13, width: 28, textAlign: "center", padding: 0 }} 
-      />
-    </div>
-  ) : spec}
-</td>
                 <th className="k center">주소</th>
                 <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
               </tr>
@@ -2455,46 +2393,45 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                 <th className="k center">대표전화</th>
                 <td className="v">1688-1447</td>
               </tr>
-     <tr>
-  <td className="sum" colSpan={6}>
-    합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)} 
-    (<select 
-      value={form.vatIncluded !== false ? "included" : "excluded"} 
-      onChange={(e) => setForm((p: any) => ({ ...p, vatIncluded: e.target.value === "included" }))}
-      style={{ 
-        border: "none", 
-        background: "transparent", 
-        fontSize: 14, 
-        fontWeight: 900, 
-        cursor: "pointer",
-        width: "auto",
-        display: "inline"
-      }}
-    >
-      <option value="included">부가세 포함</option>
-      <option value="excluded">부가세 별도</option>
-    </select>)
-  </td>
-</tr>
+              <tr>
+                <td className="sum" colSpan={6}>
+                  합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)} 
+                  (<select 
+                    value={form.vatIncluded !== false ? "included" : "excluded"} 
+                    onChange={(e) => setForm && setForm((p: any) => ({ ...p, vatIncluded: e.target.value === "included" }))}
+                    style={{ 
+                      border: "none", 
+                      background: "transparent", 
+                      fontSize: 14, 
+                      fontWeight: 900, 
+                      cursor: "pointer",
+                      width: "auto",
+                      display: "inline"
+                    }}
+                  >
+                    <option value="included">부가세 포함</option>
+                    <option value="excluded">부가세 별도</option>
+                  </select>)
+                </td>
+              </tr>
             </tbody>
           </table>
 
           {/* ✅ +품목추가 버튼 */}
-        {editable && onAddItem && (
-  <div className="add-item-btn-wrap" style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
-    <button
-      className="add-item-btn"
-      onClick={() => {
-        const insertIdx = (focusedRowIndex !== undefined && focusedRowIndex >= 0) 
-          ? focusedRowIndex 
-          : computedItems.length - 1;
-        onAddItem(
-          { option_id: `empty_${Date.now()}`, option_name: '(품목선택)', unit: 'EA', unit_price: 0, show_spec: 'n', _isEmptyRow: true },
-          { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' },
-          insertIdx
-        );
-      }}
-             
+          {editable && onAddItem && (
+            <div className="add-item-btn-wrap" style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
+              <button
+                className="add-item-btn"
+                onClick={() => {
+                  const insertIdx = (focusedRowIndex !== undefined && focusedRowIndex >= 0) 
+                    ? focusedRowIndex 
+                    : computedItems.length - 1;
+                  onAddItem(
+                    { option_id: `empty_${Date.now()}`, option_name: '(품목선택)', unit: 'EA', unit_price: 0, show_spec: 'n', _isEmptyRow: true },
+                    { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' },
+                    insertIdx
+                  );
+                }}
                 style={{
                   padding: '6px 12px',
                   background: '#e3f2fd',
@@ -2511,13 +2448,12 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
             </div>
           )}
 
+          {/* ✅ 품목 테이블 - 컬럼 순서 변경: 순번 | 규격 | 품목 | ... */}
           <table className="a4Items">
-
-       
             <colgroup>
               <col style={{ width: "7%" }} />
-              <col style={{ width: "31%" }} />
               <col style={{ width: "10%" }} />
+              <col style={{ width: "31%" }} />
               <col style={{ width: "6%" }} />
               <col style={{ width: "13%" }} />
               <col style={{ width: "13%" }} />
@@ -2527,8 +2463,8 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
             <thead>
               <tr>
                 <th className="h">순번</th>
-                <th className="h">품목</th>
                 <th className="h">규격</th>
+                <th className="h">품목</th>
                 <th className="h">수량</th>
                 <th className="h">단가</th>
                 <th className="h">공급가</th>
@@ -2537,136 +2473,138 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
               </tr>
             </thead>
             <tbody>
-              
-           {computedItems.map((item: any, idx: number) => {
-  const unitSupply = Number(item.customerUnitPrice ?? 0);
-  const qty = Number(item.displayQty ?? 0);
-  const supply = unitSupply * qty;
-  const vat = Math.round(supply * 0.1);
-  const showSpec = String(item.showSpec || "").toLowerCase() === "y";
-  
- // ✅ 마감사양 설명 행
-// ✅ 마감사양 설명 행
-// ✅ 마감사양 설명 행
-const dn = String(item.displayName || "");
-const isDescRow = 
-  dn.startsWith('[') || 
-  dn.startsWith('-') || 
-  dn.startsWith('▷') || 
-  dn.startsWith('>') ||
-  dn.includes('임대계약시 필요정보');
+              {computedItems.map((item: any, idx: number) => {
+                const unitSupply = Number(item.customerUnitPrice ?? 0);
+                const qty = Number(item.displayQty ?? 0);
+                const supply = unitSupply * qty;
+                const vat = Math.round(supply * 0.1);
+                
+                const dn = String(item.displayName || "");
+                const isDescRow = 
+                  dn.startsWith('[') || 
+                  dn.startsWith('-') || 
+                  dn.startsWith('▷') || 
+                  dn.startsWith('>') ||
+                  dn.includes('임대계약시 필요정보');
 
-  const specText = showSpec && item?.lineSpec?.w && item?.lineSpec?.l
-    ? `${item.lineSpec.w}x${item.lineSpec.l}${item.lineSpec.h ? 'x' + item.lineSpec.h : ''}`
-    : "";
- const rent = String(item.optionName || "").includes("임대") && !item._isCustomFreeText;
-<td className="c center">{idx + 1}</td>
-  return (
-  <tr 
-    key={item.key ?? idx}
-    onClick={() => setFocusedRowIndex && setFocusedRowIndex(idx)}
-    style={{ 
-      cursor: editable ? 'pointer' : undefined,
-      background: (editable && focusedRowIndex === idx) ? '#fff8e1' : undefined
-    }}
-  >
-    <td className="c center">{idx + 1}</td>
-   <td 
-  onClick={(e) => {
-    if (editable && options && onSelectOption) {
-      e.stopPropagation();
-      if (setFocusedRowIndex) setFocusedRowIndex(idx);
-    }
-  }}
-  style={{ 
-    border: '1px solid #333', 
-    padding: '6px 8px', 
-    textAlign: 'left', 
-    position: 'relative',
-    overflow: 'visible',
-    verticalAlign: 'middle',
-    fontSize: 11,
-    background: '#fff',
-    cursor: editable ? 'text' : 'default'
-  }}
->
-  {editable && options && onSelectOption ? (
-    <InlineItemCell 
-      item={item} 
-      options={options} 
-      form={form} 
-      onSelectOption={onSelectOption}
-      rowIndex={idx}
-      onFocus={setFocusedRowIndex}
-      autoFocusOnMount={false}
-    />
-  ) : (
-    String(item.displayName || "")
-  )}
-</td>
-<td className="c center">
-  {isDescRow ? null : (
-    editable && onUpdateSpec ? (
-      <EditableSpecCell 
-        spec={
-          item.specText ? (item.lineSpec || { w: 0, l: 0, h: 0 }) 
-          : showSpec ? (item.lineSpec || { w: form.w, l: form.l, h: form.h })
-          : (item.lineSpec?.w > 0 || item.lineSpec?.l > 0) ? item.lineSpec 
-          : { w: 0, l: 0, h: 0 }
-        }
-        specText={item.specText}
-        onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
-        onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
-      />
-    ) : (
-      item.specText ? item.specText 
-      : showSpec ? `${item.lineSpec?.w || form.w}×${item.lineSpec?.l || form.l}×${item.lineSpec?.h || form.h}` 
-      : null
-    )
-  )}
-</td>
- <td className="c center">
-  {isDescRow ? null : (
-    editable && onUpdateQty ? (
-      <EditableNumberCell value={qty} onChange={(v) => onUpdateQty(item.key, v)} />
-    ) : (qty ? String(qty) : '')
-  )}
-</td>
-<td className="c right">
-  {isDescRow ? null : (
-    editable && onUpdatePrice ? (
-      <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
-    ) : (unitSupply ? fmt(unitSupply) : '')
-  )}
-</td>
-<td className="c right" style={{ whiteSpace: 'nowrap' }}>{supply ? fmt(supply) : ''}</td>
-<td className="c right" style={{ whiteSpace: 'nowrap' }}>{vat ? fmt(vat) : ''}</td>
-  <td className="c center">
-    {editable && onDeleteItem ? (
-      <button onClick={() => onDeleteItem(item.key)} style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 14 }}>✕</button>
-    ) : null}
-  </td>
-</tr>
-  );
-})}
-{blankRows.map((_, i) => (
-  // ✅ computedItems.length를 더해주어, 아이템이 추가될 때마다 완전히 새로운 컴포넌트로 리셋시킴
-  <tr key={`blank-${computedItems.length + i}`}> 
-    {i === 0 && editable && options && onAddItem ? (
-     <EmptyRowCell 
-  options={options} 
-  form={form} 
-  onAddItem={onAddItem} 
-  onSiteSearch={onSiteSearch} 
-  onAddDelivery={onAddDelivery}
-  insertIndex={undefined}  // ✅ 빈 행에서 추가하면 항상 맨 아래에
-  onFocus={setFocusedRowIndex}
-/>
-    ) : (
-      <><td className="c">&nbsp;</td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td><td className="c"></td></>
-    )}
-  </tr>
-))}
+                const hasSpec = item.lineSpec?.w > 0 && item.lineSpec?.l > 0;
+                const specDisplay = hasSpec 
+                  ? `${item.lineSpec.w}×${item.lineSpec.l}${item.lineSpec.h ? '×' + item.lineSpec.h : ''}`
+                  : (item.specText || '');
+                
+                const inheritedSpec = getInheritedSpec(computedItems, idx);
+                
+                return (
+                  <tr 
+                    key={item.key ?? idx}
+                    onClick={() => setFocusedRowIndex && setFocusedRowIndex(idx)}
+                    style={{ 
+                      cursor: editable ? 'pointer' : undefined,
+                      background: (editable && focusedRowIndex === idx) ? '#fff8e1' : undefined
+                    }}
+                  >
+                    <td className="c center">{idx + 1}</td>
+                    
+                    {/* ✅ 규격 셀 */}
+                    <td className="c center">
+                      {isDescRow ? null : (
+                        editable && onUpdateSpec ? (
+                          <EditableSpecCell 
+                            spec={item.lineSpec || { w: 0, l: 0, h: 0 }}
+                            specText={item.specText}
+                            onChange={(newSpec) => onUpdateSpec(item.key, newSpec)} 
+                            onTextChange={onUpdateSpecText ? (text) => onUpdateSpecText(item.key, text) : undefined}
+                          />
+                        ) : specDisplay
+                      )}
+                    </td>
+                    
+                    {/* ✅ 품목 셀 */}
+                    <td 
+                      onClick={(e) => {
+                        if (editable && options && onSelectOption) {
+                          e.stopPropagation();
+                          if (setFocusedRowIndex) setFocusedRowIndex(idx);
+                        }
+                      }}
+                      style={{ 
+                        border: '1px solid #333', 
+                        padding: '6px 8px', 
+                        textAlign: 'left', 
+                        position: 'relative',
+                        overflow: 'visible',
+                        verticalAlign: 'middle',
+                        fontSize: 11,
+                        background: '#fff',
+                        cursor: editable ? 'text' : 'default'
+                      }}
+                    >
+                      {editable && options && onSelectOption ? (
+                        <InlineItemCell 
+                          item={item} 
+                          options={options} 
+                          inheritedSpec={inheritedSpec.w > 0 ? inheritedSpec : { w: 0, l: 0, h: 0 }}
+                          onSelectOption={onSelectOption}
+                          rowIndex={idx}
+                          onFocus={setFocusedRowIndex}
+                          autoFocusOnMount={false}
+                        />
+                      ) : (
+                        String(item.displayName || "")
+                      )}
+                    </td>
+                    
+                    <td className="c center">
+                      {isDescRow ? null : (
+                        editable && onUpdateQty ? (
+                          <EditableNumberCell value={qty} onChange={(v) => onUpdateQty(item.key, v)} />
+                        ) : (qty ? String(qty) : '')
+                      )}
+                    </td>
+                    <td className="c right">
+                      {isDescRow ? null : (
+                        editable && onUpdatePrice ? (
+                          <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
+                        ) : (unitSupply ? fmt(unitSupply) : '')
+                      )}
+                    </td>
+                    <td className="c right" style={{ whiteSpace: 'nowrap' }}>{supply ? fmt(supply) : ''}</td>
+                    <td className="c right" style={{ whiteSpace: 'nowrap' }}>{vat ? fmt(vat) : ''}</td>
+                    <td className="c center">
+                      {editable && onDeleteItem ? (
+                        <button onClick={() => onDeleteItem(item.key)} style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 14 }}>✕</button>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+              
+              {blankRows.map((_, i) => (
+                <tr key={`blank-${computedItems.length + i}`}> 
+                  {i === 0 && editable && options && onAddItem ? (
+                    <EmptyRowCell 
+                      options={options} 
+                      inheritedSpec={getInheritedSpec(computedItems, computedItems.length)}
+                      onAddItem={onAddItem} 
+                      onSiteSearch={onSiteSearch} 
+                      onAddDelivery={onAddDelivery}
+                      insertIndex={undefined}
+                      onFocus={setFocusedRowIndex}
+                    />
+                  ) : (
+                    <>
+                      <td className="c">&nbsp;</td>
+                      <td className="c"></td>
+                      <td className="c"></td>
+                      <td className="c"></td>
+                      <td className="c"></td>
+                      <td className="c"></td>
+                      <td className="c"></td>
+                      <td className="c"></td>
+                    </>
+                  )}
+                </tr>
+              ))}
             </tbody>
           </table>
 
@@ -2713,8 +2651,6 @@ const isDescRow =
               <tr>
                 <th className="label">중요사항</th>
                 <td className="text" colSpan={7}>
-                 
-               
                   1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
                   <br />
                   2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
@@ -2742,7 +2678,6 @@ const a4css = `
 .a4Bottom td, .a4Bottom th {
   display: table-cell !important;
 }
-/* number input 화살표 제거 */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -2751,7 +2686,7 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
-  *, *:focus, *:focus-visible, *:focus-within, *:active { 
+*, *:focus, *:focus-visible, *:focus-within, *:active { 
   outline: none !important; 
   box-shadow: none !important; 
   -webkit-tap-highlight-color: transparent !important;
@@ -2761,7 +2696,6 @@ td input, td input:focus, td input:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
-
 
 .a4Items tbody tr td {
   outline: none !important;
@@ -2773,65 +2707,64 @@ td input, td input:focus, td input:focus-visible {
   box-shadow: none !important;
 }
 
- 
-  .a4Wrap{
-    display:flex;
-    justify-content:center;
-    padding: 14px 0;
-    background:#f5f6f8;
-  }
-  .a4Sheet {
-    width: 800px;
-    min-height: 1123px;
-    background: #fff;
-    border: 1px solid #cfd3d8;
-    padding: 16px;
-    box-sizing: border-box;
-  }
-  .a4Header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding: 6px 2px 10px;
-    border-bottom: 2px solid #2e5b86;
-    margin-bottom: 10px;
-  }
-  .a4HeaderLeft{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-  }
-  .a4Logo {
-    width: 160px;
-    height: 140px;
-    display: block;
-  }
-  .a4Info {
-    margin-top: 0;
-  }
-  .a4HeaderCenter{
-    flex:1;
-    text-align:center;
-    font-size: 34px;
-    font-weight: 900;
-    letter-spacing: 6px;
-  }
-  .a4HeaderRight{ width: 140px; }
+.a4Wrap{
+  display:flex;
+  justify-content:center;
+  padding: 14px 0;
+  background:#f5f6f8;
+}
+.a4Sheet {
+  width: 800px;
+  min-height: 1123px;
+  background: #fff;
+  border: 1px solid #cfd3d8;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.a4Header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 6px 2px 10px;
+  border-bottom: 2px solid #2e5b86;
+  margin-bottom: 10px;
+}
+.a4HeaderLeft{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.a4Logo {
+  width: 160px;
+  height: 140px;
+  display: block;
+}
+.a4Info {
+  margin-top: 0;
+}
+.a4HeaderCenter{
+  flex:1;
+  text-align:center;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 6px;
+}
+.a4HeaderRight{ width: 140px; }
 
-  table{ 
-    width: 100% !important; 
-    max-width: 100% !important;
-    border-collapse: collapse; 
-    table-layout: fixed;
-  }
-  .a4Info, .a4Items{
-    width: 100% !important;
-    max-width: 100% !important;
-    table-layout: fixed;
-    border: 1px solid #333;
-    margin-top: 8px;
-  }
-  .a4Bottom{
+table{ 
+  width: 100% !important; 
+  max-width: 100% !important;
+  border-collapse: collapse; 
+  table-layout: fixed;
+}
+.a4Info, .a4Items{
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
+  border: 1px solid #333;
+  margin-top: 8px;
+}
+.a4Bottom{
   width: 100% !important;
   max-width: 100% !important;
   table-layout: fixed;
@@ -2839,63 +2772,63 @@ td input, td input:focus, td input:focus-visible {
   margin-top: 10px;
 }
 
-  .a4Info th, .a4Info td,
+.a4Info th, .a4Info td,
 .a4Items th, .a4Items td,
 .a4Bottom th, .a4Bottom td{
   border: 1px solid #333;
   padding: 6px 8px;
   font-size: 13px;
   vertical-align: middle;
-  line-height: 1.4;  /* 추가 */
-  min-height: 28px;  /* 추가 */
+  line-height: 1.4;
+  min-height: 28px;
 }
 
- .k{ background:#fff; font-weight: 900; }
+.k{ background:#fff; font-weight: 900; }
 .v{ background:#fff; text-align: left !important; }
 .center{ text-align:center; }
 .right{ text-align:right; }
-  .msg{
-    font-size: 13px;
-    font-weight: 700;
-    text-align:center;
-    background:#fff;
-  }
-  .sum{
-    font-size: 14px;
-    font-weight: 900;
-    background:#fff;
-  }
+.msg{
+  font-size: 13px;
+  font-weight: 700;
+  text-align:center;
+  background:#fff;
+}
+.sum{
+  font-size: 14px;
+  font-weight: 900;
+  background:#fff;
+}
 
-  .a4Items thead th{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-  }
-  
-  .h{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-  }
+.a4Items thead th{
+  background:#e6e6e6;
+  font-weight:900;
+  text-align:center;
+}
 
-  .a4Items tbody td.c{ 
+.h{
+  background:#e6e6e6;
+  font-weight:900;
+  text-align:center;
+}
+
+.a4Items tbody td.c{ 
   background:#fff;
   padding: 4px 8px;
-  vertical-align: middle;  /* top → middle */
+  vertical-align: middle;
 }
-  .a4Items .wrap{
-    display: block;
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.3;
-    font-size: 11px;
-    max-height: 65px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.a4Items .wrap{
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+  font-size: 11px;
+  max-height: 65px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
- .a4Items tbody tr {
+.a4Items tbody tr {
   display: table-row !important;
 }
 .a4Items tbody td{
@@ -2905,9 +2838,9 @@ td input, td input:focus, td input:focus-visible {
   min-height: 28px;
   max-height: 70px;
 }
-  
-  .a4Items tbody td.wrap{
-  vertical-align: middle;  /* top → middle */
+
+.a4Items tbody td.wrap{
+  vertical-align: middle;
   line-height: 1.3;
 }
 
@@ -2923,30 +2856,30 @@ td input, td input:focus, td input:focus-visible {
   vertical-align: middle;
 }
 
-  .a4Bottom .sumRow td{
-    background:#e6e6e6;
-    font-weight:900;
-  }
-  .a4Bottom .sumLeft{
-    text-align:left;
-  }
-  .a4Bottom .sumNum{
-    text-align:right;
-    white-space: nowrap;
-  }
-  .a4Bottom .label{
-    background:#e6e6e6;
-    font-weight:900;
-    text-align:center;
-    white-space: nowrap;
-  }
-  .a4Bottom .text{
-    font-size: 12px;
-    line-height:1.55;
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap:anywhere;
-  }
+.a4Bottom .sumRow td{
+  background:#e6e6e6;
+  font-weight:900;
+}
+.a4Bottom .sumLeft{
+  text-align:left;
+}
+.a4Bottom .sumNum{
+  text-align:right;
+  white-space: nowrap;
+}
+.a4Bottom .label{
+  background:#e6e6e6;
+  font-weight:900;
+  text-align:center;
+  white-space: nowrap;
+}
+.a4Bottom .text{
+  font-size: 12px;
+  line-height:1.55;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap:anywhere;
+}
 .a4Items td input[type="text"] {
   border: none !important;
   outline: none !important;
@@ -2956,108 +2889,97 @@ td input, td input:focus, td input:focus-visible {
   font-size: inherit;
 }
 
+@media print{
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  *, *::before, *::after {
+    background-color: #fff !important;
+    box-shadow: none !important;
+  }
 
-  @media print{
-    @page {
-      size: A4;
-      margin: 0;
-    }
-      *, *::before, *::after {
-  background-color: #fff !important;
-  box-shadow: none !important;
-}
-
-.a4Sheet {
-  background: #fff !important;
-}
-    html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: #fff !important;
-}
+  .a4Sheet {
+    background: #fff !important;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #fff !important;
+  }
   .card {
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-}
-      div[style*="max-width: 832px"] {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  div[style*="max-width: 832px"] {
     display: none !important;
   }
-     .a4Items td:last-child button {
-      display: none !important;
-    }
-/* ✅ 여기에 추가 */
-    .add-item-btn {
-      display: none !important;
-    }
-    
-    /* 검색 input 숨기기 */
-    .a4Items input {
-      display: none !important;
-    }
-
-    .wrap > .card:first-child { display: none !important; }
-    .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
-    .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
-    .btn, .actions { display: none !important; }
-    .a4Wrap{ 
-      background:#fff; 
-      padding:0;
-      margin: 0;
-      zoom: 1;
-      overflow: hidden;
-      transform: none;
-    }
-    .a4Sheet{ 
-      border:none; 
-      width: 200mm;
-      min-height: auto;
-      height: auto;
-      padding: 0mm;
-      margin: 0;
-      box-shadow: none;
-      overflow: hidden;
-      transform: none;
-    }
-     /* 기본 셀 */
-.a4Items td {
-  vertical-align: middle !important;
-}
-
-/* 품목 셀 - 중앙 정렬 */
-.a4Items td.wrap {
-  text-align: left !important;
-  vertical-align: middle !important;
-  line-height: 28px !important;
-  padding-left: 8px !important;
-   padding: 6px 8px !important;
-   position: relative;
-  
-}
-.a4Items td.wrap > div {
-  margin: -6px -8px;
-  padding: 6px 8px;
-}
-/* 숫자 셀 - 오른쪽 정렬 */
-.a4Items td.right {
-  text-align: right !important;
-}
-
-/* span 정렬 */
-.a4Items td.wrap span {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  height: 100% !important;
-  min-height: 28px !important;
-}
-
-* {
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-  
+  .a4Items td:last-child button {
+    display: none !important;
   }
+  .add-item-btn {
+    display: none !important;
+  }
+  .a4Items input {
+    display: none !important;
+  }
+
+  .wrap > .card:first-child { display: none !important; }
+  .wrap { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .wrap > .card:last-child { margin: 0 !important; padding: 0 !important; }
+  .btn, .actions { display: none !important; }
+  .a4Wrap{ 
+    background:#fff; 
+    padding:0;
+    margin: 0;
+    zoom: 1;
+    overflow: hidden;
+    transform: none;
+  }
+  .a4Sheet{ 
+    border:none; 
+    width: 200mm;
+    min-height: auto;
+    height: auto;
+    padding: 0mm;
+    margin: 0;
+    box-shadow: none;
+    overflow: hidden;
+    transform: none;
+  }
+  .a4Items td {
+    vertical-align: middle !important;
+  }
+  .a4Items td.wrap {
+    text-align: left !important;
+    vertical-align: middle !important;
+    line-height: 28px !important;
+    padding-left: 8px !important;
+    padding: 6px 8px !important;
+    position: relative;
+  }
+  .a4Items td.wrap > div {
+    margin: -6px -8px;
+    padding: 6px 8px;
+  }
+  .a4Items td.right {
+    text-align: right !important;
+  }
+  .a4Items td.wrap span {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    height: 100% !important;
+    min-height: 28px !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 `;
+
 export { A4Quote };
