@@ -67,8 +67,8 @@ type DocTab = "quote" | "statement" | "rental";
 
 // ✅ 첨부파일 URL (Supabase Storage)
 const ATTACHMENT_URLS = {
-  bankAccount: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/bank_account.pdf",
-  bizRegistration: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/biz_registration.pdf",
+  bankAccount: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/bank_account.jpg",
+  bizRegistration: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/biz_registration.jpg",
 };
 
 function money(n: any) {
@@ -1757,7 +1757,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
                         onChange={(e) => setAttachments(prev => ({ ...prev, bankAccount: e.target.checked }))}
                         style={{ width: 18, height: 18, cursor: 'pointer' }}
                       />
-                      <span style={{ fontSize: 13 }}>1. 통장사본 (PDF)</span>
+                      <span style={{ fontSize: 13 }}>1. 통장사본 (JPG)</span>
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                       <input 
@@ -1766,7 +1766,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
                         onChange={(e) => setAttachments(prev => ({ ...prev, bizRegistration: e.target.checked }))}
                         style={{ width: 18, height: 18, cursor: 'pointer' }}
                       />
-                      <span style={{ fontSize: 13 }}>2. 사업자등록증 (PDF)</span>
+                      <span style={{ fontSize: 13 }}>2. 사업자등록증 (JPG)</span>
                     </label>
                     {(attachments.bankAccount || attachments.bizRegistration) && (
                       <div style={{ marginTop: 8, fontSize: 11, color: '#059669' }}>
