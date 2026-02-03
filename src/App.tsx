@@ -1363,7 +1363,8 @@ export default function App() {
   const getMainSpec = () => {
     for (const item of computedItems) {
       if (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) {
-        return `${item.lineSpec.w}x${item.lineSpec.l}x${item.lineSpec.h || 2.6}`;
+        const spec = item.lineSpec as { w: number; l: number; h?: number };
+        return `${spec.w}x${spec.l}x${spec.h || 2.6}`;
       }
     }
     return "";
@@ -2225,6 +2226,9 @@ type A4QuoteProps = {
     optQ: string;
     quoteDate?: string;
     vatIncluded?: boolean;
+    w?: number;  // ✅ QuoteListPage 호환용 (optional)
+    l?: number;
+    h?: number;
   };
   setForm?: React.Dispatch<React.SetStateAction<any>>;
   bizcards?: Bizcard[];
@@ -2254,12 +2258,23 @@ type A4QuoteProps = {
   onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void;
   focusedRowIndex?: number;
   setFocusedRowIndex?: (index: number) => void;
-  getInheritedSpec: (items: any[], currentIndex: number) => { w: number; l: number; h: number };
+  getInheritedSpec?: (items: any[], currentIndex: number) => { w: number; l: number; h: number };
 };
 
 
-function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex, getInheritedSpec }: A4QuoteProps) {
+function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex, getInheritedSpec: getInheritedSpecProp }: A4QuoteProps) {
   
+  // ✅ getInheritedSpec 기본값 제공
+  const getInheritedSpec = getInheritedSpecProp || ((items: any[], currentIndex: number) => {
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const item = items[i];
+      if (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) {
+        return { w: item.lineSpec.w, l: item.lineSpec.l, h: item.lineSpec.h || 2.6 };
+      }
+    }
+    return { w: 0, l: 0, h: 0 };
+  });
+
   const ymd = form.quoteDate || new Date().toISOString().slice(0, 10); 
   const siteText = String(form.sitePickedLabel || form.siteQ || "").trim();
 
