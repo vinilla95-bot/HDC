@@ -1221,6 +1221,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     </tr>
   </tbody>
 </table>
+          </div>
 
         <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #5b9bd5', padding: '8px 12px', marginBottom: 8, gap: 20 }}>
           <div>
