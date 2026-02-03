@@ -1187,15 +1187,48 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
 
           <table style={{ borderCollapse: 'collapse', width: '55%' }}>
             <tbody>
-              <tr>
-                <th style={thStyle}>등록번호</th><td style={tdStyle}>130-41-38154</td>
-                <th style={thStyle}>성명</th><td style={tdStyle}>류창석</td>
-              </tr>
-              <tr>
-                <th style={thStyle}>상호</th>
-                <td style={tdStyle}>현대컨테이너 <span style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid #c0392b', borderRadius: '50%', color: '#c0392b', fontSize: 9, textAlign: 'center', lineHeight: '16px', marginLeft: 5 }}>印</span></td>
-                <th style={thStyle}>주소</th><td style={tdStyle}>화성시구문천안길16</td>
-              </tr>
+             <tr>
+  <th style={partyThStyle}>대표:</th>
+  <td style={partyTdStyle}>
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      류창석
+      <img 
+        src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
+        alt="도장" 
+        style={{ 
+          position: 'absolute', 
+          top: -12, 
+          left: 20, 
+          width: 40, 
+          height: 40, 
+          opacity: 0.9 
+        }} 
+      />
+    </span>
+  </td>
+  <th style={partyThStyle}>대표:</th><td style={partyTdStyle}>{rentalForm.ceo}</td>
+</tr>
+             <tr>
+  <th style={thStyle}>상호</th>
+  <td style={tdStyle}>
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      현대컨테이너
+      <img 
+        src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
+        alt="도장" 
+        style={{ 
+          position: 'absolute', 
+          top: -10, 
+          left: 55, 
+          width: 32, 
+          height: 32, 
+          opacity: 0.9 
+        }} 
+      />
+    </span>
+  </td>
+  <th style={thStyle}>주소</th><td style={tdStyle}>화성시구문천안길16</td>
+</tr>
               <tr>
                 <th style={thStyle}>업태</th><td style={tdStyle}>컨테이너 판매 임대</td>
                 <th style={thStyle}>종목</th><td style={tdStyle}>제조업,도소매</td>
