@@ -1196,7 +1196,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
         <span style={{ position: 'relative', display: 'inline-block' }}>
           현대컨테이너
           <img 
-            src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
+            src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" 
             alt="도장" 
             style={{ 
               position: 'absolute',
@@ -1517,7 +1517,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     <span style={{ position: 'relative', display: 'inline-block' }}>
       류창석
       <img 
-        src="https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/stamp.png" 
+        src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" 
         alt="도장" 
         style={{ 
           position: 'absolute', 
