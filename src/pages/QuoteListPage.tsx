@@ -67,8 +67,8 @@ type DocTab = "quote" | "statement" | "rental";
 
 // ✅ 첨부파일 URL (Supabase Storage)
 const ATTACHMENT_URLS = {
-  bankAccount: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/bank_account.jpg",
-  bizRegistration: "https://wketqvblzpotyinuedhs.supabase.co/storage/v1/object/public/attachments/biz_registration.jpg",
+  bankAccount: " https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/bank_account.jpg",
+  bizRegistration: "https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/biz_registration.png",
 };
 
 function money(n: any) {
