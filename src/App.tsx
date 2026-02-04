@@ -1151,6 +1151,8 @@ export default function App() {
     optQ: "",
     quoteDate: new Date().toISOString().slice(0, 10),
     vatIncluded: true,
+    defaultW: 3,   // ← 추가
+  defaultL: 6, 
   });
 
   const [statusMsg, setStatusMsg] = useState("");
@@ -1181,16 +1183,18 @@ export default function App() {
   };
 
   // ✅ 상속 규격 찾기: 위쪽으로 올라가며 가장 가까운 규격 찾기
-  const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: number; h: number } => {
-    for (let i = currentIndex - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) {
-        return { w: item.lineSpec.w, l: item.lineSpec.l, h: item.lineSpec.h || 2.6 };
-      }
+const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: number; h: number } => {
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    const item = items[i];
+    if (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) {
+      return { w: item.lineSpec.w, l: item.lineSpec.l, h: item.lineSpec.h || 2.6 };
     }
-    // 규격이 하나도 없으면 빈 값 (자유입력)
-    return { w: 0, l: 0, h: 0 };
-  };
+  }
+  // ✅ 규격이 하나도 없으면 기본 규격 사용
+  const defaultW = (form as any).defaultW || 3;
+  const defaultL = (form as any).defaultL || 6;
+  return { w: defaultW, l: defaultL, h: 2.6 };
+};
 
   useEffect(() => {
     supabase
@@ -1885,164 +1889,302 @@ export default function App() {
     <>
       <NavBar current="rt" />
       
-      {isMobileDevice ? (
-        // ========== 모바일: 간소화된 레이아웃 ==========
-        <div className="wrap">
-          <div className="card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <p className="title">상담 입력</p>
-                <div className="mini">※ 우측은 A4 양식 미리보기</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div className="quoteBadge">QUOTE: {currentQuoteId || "-"}</div>
-                <div className="muted" style={{ marginTop: 4 }}>VERSION: {currentVersion ? `v${currentVersion}` : "-"}</div>
-              </div>
-            </div>
-            <hr />
-            <div className="row"><label>견적제목</label><input value={form.quoteTitle} onChange={(e) => setForm({ ...form, quoteTitle: e.target.value })} placeholder="예: 강릉 3x6" /></div>
-            <div className="row"><label>견적일</label><input type="date" value={form.quoteDate} onChange={(e) => setForm({ ...form, quoteDate: e.target.value })} /></div>
-            <div className="row"><label>부가세</label><select value={form.vatIncluded ? "included" : "excluded"} onChange={(e) => setForm({ ...form, vatIncluded: e.target.value === "included" })}><option value="included">부가세 포함</option><option value="excluded">부가세 별도</option></select></div>
-            <div className="row"><label>고객명</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-            <div className="row"><label>이메일</label><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-            <div className="row"><label>전화번호</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-            <div className="row"><label>명함</label><select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)}>{bizcards.length === 0 && <option value="">(명함 없음)</option>}{bizcards.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}</select></div>
-            <hr />
-            
-           {/* ✅ 선택된 품목 리스트 */}
-{computedItems.length > 0 && (
-  <div className="box" style={{ marginTop: 12 }}>
-    <div style={{ fontWeight: 800, marginBottom: 8, fontSize: 13 }}>선택된 품목 ({computedItems.length})</div>
-    {computedItems.map((item: any, idx: number) => {
-      const rent = isRentRow(item);
-      const inheritedSpec = getInheritedSpec(computedItems, idx);
-      return (
-        <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-            <div style={{ flex: 1 }}>
-              {/* ✅ 규격 수정 UI */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <select
-                  value={item.lineSpec?.w || 0}
-                  onChange={(e) => {
-                    const newW = Number(e.target.value);
-                    updateRow(item.key, 'lineSpec', { 
-                      w: newW, 
-                      l: item.lineSpec?.l || 6, 
-                      h: item.lineSpec?.h || 2.6 
-                    });
-                  }}
-                  style={{ 
-                    padding: '4px 8px', 
-                    border: '1px solid #90caf9', 
-                    borderRadius: 4, 
-                    fontSize: 11, 
-                    background: '#e3f2fd',
-                    color: '#1565c0',
-                    fontWeight: 700
-                  }}
-                >
-                  <option value={0}>-</option>
-                  <option value={3}>3m</option>
-                  <option value={4}>4m</option>
-                </select>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#666' }}>×</span>
-                <select
-                  value={item.lineSpec?.l || 0}
-                  onChange={(e) => {
-                    const newL = Number(e.target.value);
-                    updateRow(item.key, 'lineSpec', { 
-                      w: item.lineSpec?.w || 3, 
-                      l: newL, 
-                      h: item.lineSpec?.h || 2.6 
-                    });
-                  }}
-                  style={{ 
-                    padding: '4px 8px', 
-                    border: '1px solid #90caf9', 
-                    borderRadius: 4, 
-                    fontSize: 11, 
-                    background: '#e3f2fd',
-                    color: '#1565c0',
-                    fontWeight: 700
-                  }}
-                >
-                  <option value={0}>-</option>
-                  <option value={3}>3m</option>
-                  <option value={6}>6m</option>
-                  <option value={9}>9m</option>
-                  <option value={12}>12m</option>
-                </select>
-                {item.lineSpec?.w > 0 && item.lineSpec?.l > 0 && (
-                  <span style={{ fontSize: 10, color: '#888', marginLeft: 4 }}>
-                    (높이 2.6m)
-                  </span>
-                )}
-              </div>
-              <input
-                value={item.displayName || ''}
-                onChange={(e) => updateRow(item.key, 'displayName', e.target.value)}
-                style={{ width: '100%', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
-              />
-            </div>
-            <button onClick={() => deleteRow(item.key)} style={{ marginLeft: 8, color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>✕</button>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 11, color: '#666' }}>수량:</span>
-              <input
-                type="number"
-                value={item.displayQty}
-                onChange={(e) => updateRow(item.key, 'displayQty', Number(e.target.value))}
-                style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
-              />
-            </div>
-            {rent ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontSize: 11, color: '#666' }}>개월:</span>
-                <input
-                  type="number"
-                  value={item.months || 1}
-                  onChange={(e) => updateRow(item.key, 'months', Number(e.target.value))}
-                  style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
-                />
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontSize: 11, color: '#666' }}>단가:</span>
-                <input
-                  type="number"
-                  value={item.customerUnitPrice}
-                  onChange={(e) => updateRow(item.key, 'customerUnitPrice', Number(e.target.value))}
-                  style={{ width: 80, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'right', fontSize: 12 }}
-                />
-              </div>
-            )}
-            <div style={{ fontSize: 12, fontWeight: 700, marginLeft: 'auto' }}>
-              {fmt(item.finalAmount)}원
-            </div>
-          </div>
+     {isMobileDevice ? (
+  // ========== 모바일: 간소화된 레이아웃 ==========
+  <div className="wrap">
+    <div className="card">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <p className="title">상담 입력</p>
+          <div className="mini">※ 우측은 A4 양식 미리보기</div>
         </div>
-      );
-    })}
+        <div style={{ textAlign: "right" }}>
+          <div className="quoteBadge">QUOTE: {currentQuoteId || "-"}</div>
+          <div className="muted" style={{ marginTop: 4 }}>VERSION: {currentVersion ? `v${currentVersion}` : "-"}</div>
+        </div>
+      </div>
+      <hr />
+      <div className="row"><label>견적제목</label><input value={form.quoteTitle} onChange={(e) => setForm({ ...form, quoteTitle: e.target.value })} placeholder="예: 강릉 3x6" /></div>
+      <div className="row"><label>견적일</label><input type="date" value={form.quoteDate} onChange={(e) => setForm({ ...form, quoteDate: e.target.value })} /></div>
+      <div className="row"><label>부가세</label><select value={form.vatIncluded ? "included" : "excluded"} onChange={(e) => setForm({ ...form, vatIncluded: e.target.value === "included" })}><option value="included">부가세 포함</option><option value="excluded">부가세 별도</option></select></div>
+      <div className="row"><label>고객명</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+      <div className="row"><label>이메일</label><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+      <div className="row"><label>전화번호</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+      <div className="row"><label>명함</label><select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)}>{bizcards.length === 0 && <option value="">(명함 없음)</option>}{bizcards.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}</select></div>
+      
+      {/* ✅ 기본 규격 선택 */}
+      <div className="row">
+        <label>기본규격</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+          <select
+            value={(form as any).defaultW || 3}
+            onChange={(e) => setForm((p: any) => ({ ...p, defaultW: Number(e.target.value) }))}
+            style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13 }}
+          >
+            <option value={3}>3m</option>
+            <option value={4}>4m</option>
+          </select>
+          <span style={{ fontWeight: 700 }}>×</span>
+          <select
+            value={(form as any).defaultL || 6}
+            onChange={(e) => setForm((p: any) => ({ ...p, defaultL: Number(e.target.value) }))}
+            style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13 }}
+          >
+            <option value={3}>3m</option>
+            <option value={6}>6m</option>
+            <option value={9}>9m</option>
+            <option value={12}>12m</option>
+          </select>
+        </div>
+      </div>
+      
+      <hr />
+      
+      {/* ✅ 품목 검색 */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>품목 검색</div>
+        <input
+          value={form.optQ}
+          onChange={(e) => setForm({ ...form, optQ: e.target.value })}
+          placeholder="품목명 검색 (예: 단열, 창문, 도어)"
+          style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, fontSize: 13, boxSizing: 'border-box' }}
+        />
+        {filteredOptions.length > 0 && (
+          <div style={{ marginTop: 8, background: '#f9f9f9', borderRadius: 8, border: '1px solid #eee', maxHeight: 200, overflowY: 'auto' }}>
+            {filteredOptions.map((opt: any) => {
+              const isRent = String(opt.option_name || "").includes("임대");
+              return (
+                <div
+                  key={opt.option_id}
+                  style={{ padding: '10px 12px', borderBottom: '1px solid #eee', cursor: 'pointer' }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{opt.option_name}</div>
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{opt.unit || "EA"} · {fmt(Number(opt.unit_price || 0))}원</div>
+                  {isRent ? (
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="number"
+                        defaultValue={3}
+                        min={1}
+                        id={`rent-mobile-${opt.option_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: 50, padding: '6px', border: '1px solid #ccc', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+                      />
+                      <span style={{ fontSize: 12 }}>개월</span>
+                      <button
+                        onClick={() => {
+                          const input = document.getElementById(`rent-mobile-${opt.option_id}`) as HTMLInputElement;
+                          const months = Number(input?.value) || 3;
+                          const defaultW = (form as any).defaultW || 3;
+                          const defaultL = (form as any).defaultL || 6;
+                          addOption(opt, false, 0, "", months, undefined, { w: defaultW, l: defaultL, h: 2.6 });
+                        }}
+                        style={{ padding: '6px 12px', background: '#1565c0', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700 }}
+                      >
+                        추가
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const defaultW = (form as any).defaultW || 3;
+                        const defaultL = (form as any).defaultL || 6;
+                        addOption(opt, false, 0, "", undefined, undefined, { w: defaultW, l: defaultL, h: 2.6 });
+                      }}
+                      style={{ marginTop: 6, padding: '6px 12px', background: '#1565c0', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700 }}
+                    >
+                      추가
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
+      {/* ✅ 현장/운송비 검색 */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>현장/운송비 검색</div>
+        <input
+          value={form.siteQ}
+          onChange={(e) => handleSiteSearch(e.target.value)}
+          placeholder="현장 지역명 검색 (예: 강릉, 부산)"
+          style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd', borderRadius: 8, fontSize: 13, boxSizing: 'border-box' }}
+        />
+        {statusMsg && <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>{statusMsg}</div>}
+        {sites.length > 0 && (
+          <div style={{ marginTop: 8, background: '#f9f9f9', borderRadius: 8, border: '1px solid #eee', maxHeight: 200, overflowY: 'auto' }}>
+            {sites.slice(0, 5).map((s: any, idx: number) => (
+              <div key={idx} style={{ padding: '10px 12px', borderBottom: '1px solid #eee' }}>
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{s.alias}</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: "" }));
+                      addOption({ option_id: "DELIVERY", option_name: "5톤 일반트럭 운송비(하차별도)", show_spec: "y" }, true, s.delivery, s.alias);
+                      setSites([]);
+                      setStatusMsg("");
+                    }}
+                    style={{ flex: 1, padding: '8px 12px', background: '#e3f2fd', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, color: '#1565c0' }}
+                  >
+                    일반 {fmt(s.delivery)}원
+                  </button>
+                  <button
+                    onClick={() => {
+                      setForm((p) => ({ ...p, sitePickedLabel: s.alias, siteQ: "" }));
+                      addOption({ option_id: "CRANE", option_name: "크레인 운송비", show_spec: "y" }, true, s.crane, s.alias);
+                      setSites([]);
+                      setStatusMsg("");
+                    }}
+                    style={{ flex: 1, padding: '8px 12px', background: '#fff3e0', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, color: '#e65100' }}
+                  >
+                    크레인 {fmt(s.crane)}원
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      <hr />
+      
+      {/* ✅ 선택된 품목 리스트 */}
+      {computedItems.length > 0 && (
+        <div className="box" style={{ marginTop: 12 }}>
+          <div style={{ fontWeight: 800, marginBottom: 8, fontSize: 13 }}>선택된 품목 ({computedItems.length})</div>
+          {computedItems.map((item: any, idx: number) => {
+            const rent = isRentRow(item);
+            const inheritedSpec = getInheritedSpec(computedItems, idx);
+            return (
+              <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <div style={{ flex: 1 }}>
+                    {/* ✅ 규격 수정 UI */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <select
+                        value={item.lineSpec?.w || 0}
+                        onChange={(e) => {
+                          const newW = Number(e.target.value);
+                          updateRow(item.key, 'lineSpec', { 
+                            w: newW, 
+                            l: item.lineSpec?.l || 6, 
+                            h: item.lineSpec?.h || 2.6 
+                          });
+                        }}
+                        style={{ 
+                          padding: '4px 8px', 
+                          border: '1px solid #90caf9', 
+                          borderRadius: 4, 
+                          fontSize: 11, 
+                          background: '#e3f2fd',
+                          color: '#1565c0',
+                          fontWeight: 700
+                        }}
+                      >
+                        <option value={0}>-</option>
+                        <option value={3}>3m</option>
+                        <option value={4}>4m</option>
+                      </select>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#666' }}>×</span>
+                      <select
+                        value={item.lineSpec?.l || 0}
+                        onChange={(e) => {
+                          const newL = Number(e.target.value);
+                          updateRow(item.key, 'lineSpec', { 
+                            w: item.lineSpec?.w || 3, 
+                            l: newL, 
+                            h: item.lineSpec?.h || 2.6 
+                          });
+                        }}
+                        style={{ 
+                          padding: '4px 8px', 
+                          border: '1px solid #90caf9', 
+                          borderRadius: 4, 
+                          fontSize: 11, 
+                          background: '#e3f2fd',
+                          color: '#1565c0',
+                          fontWeight: 700
+                        }}
+                      >
+                        <option value={0}>-</option>
+                        <option value={3}>3m</option>
+                        <option value={6}>6m</option>
+                        <option value={9}>9m</option>
+                        <option value={12}>12m</option>
+                      </select>
+                      {item.lineSpec?.w > 0 && item.lineSpec?.l > 0 && (
+                        <span style={{ fontSize: 10, color: '#888', marginLeft: 4 }}>
+                          ×2.6m
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      value={item.displayName || ''}
+                      onChange={(e) => updateRow(item.key, 'displayName', e.target.value)}
+                      style={{ width: '100%', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
+                    />
+                  </div>
+                  <button onClick={() => deleteRow(item.key)} style={{ marginLeft: 8, color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>✕</button>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: '#666' }}>수량:</span>
+                    <input
+                      type="number"
+                      value={item.displayQty}
+                      onChange={(e) => updateRow(item.key, 'displayQty', Number(e.target.value))}
+                      style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+                    />
+                  </div>
+                  {rent ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 11, color: '#666' }}>개월:</span>
+                      <input
+                        type="number"
+                        value={item.months || 1}
+                        onChange={(e) => updateRow(item.key, 'months', Number(e.target.value))}
+                        style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 11, color: '#666' }}>단가:</span>
+                      <input
+                        type="number"
+                        value={item.customerUnitPrice}
+                        onChange={(e) => updateRow(item.key, 'customerUnitPrice', Number(e.target.value))}
+                        style={{ width: 80, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'right', fontSize: 12 }}
+                      />
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, fontWeight: 700, marginLeft: 'auto' }}>
+                    {fmt(item.finalAmount)}원
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="actions">
+        <button className="btn" onClick={handleSaveNew}>신규 저장</button>
+        <button className="btn" onClick={handleSaveUpdate} disabled={!currentQuoteId}>수정 저장</button>
+        <button className="btn" onClick={handleSend} disabled={!!sendStatus}>{sendStatus || "견적서 보내기"}</button>
+        <button className="btn" onClick={downloadJpg}>JPG저장</button>
+        <button className="btn" onClick={handlePreview}>인쇄</button>
+      </div>
+    </div>
+    <div id="quotePreviewApp" onClick={() => setMobilePreviewOpen(true)} style={{ cursor: 'pointer', width: Math.floor(800 * getMobileScale()), height: Math.floor(1130 * getMobileScale()), margin: '0 auto', overflow: 'hidden', background: '#f5f6f8', borderRadius: 14, border: '1px solid #e5e7eb', position: 'relative' }}>
+      <div style={{ position: 'absolute', bottom: 15, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 12px', borderRadius: 20, fontSize: 11, zIndex: 10 }}>탭하여 크게 보기</div>
+      <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${getMobileScale()})` }}>
+        <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding getInheritedSpec={getInheritedSpec} />
+      </div>
+    </div>
   </div>
-)}
-            <div className="actions">
-              <button className="btn" onClick={handleSaveNew}>신규 저장</button>
-              <button className="btn" onClick={handleSaveUpdate} disabled={!currentQuoteId}>수정 저장</button>
-              <button className="btn" onClick={handleSend} disabled={!!sendStatus}>{sendStatus || "견적서 보내기"}</button>
-              <button className="btn" onClick={downloadJpg}>JPG저장</button>
-              <button className="btn" onClick={handlePreview}>인쇄</button>
-            </div>
-          </div>
-          <div id="quotePreviewApp" onClick={() => setMobilePreviewOpen(true)} style={{ cursor: 'pointer', width: Math.floor(800 * getMobileScale()), height: Math.floor(1130 * getMobileScale()), margin: '0 auto', overflow: 'hidden', background: '#f5f6f8', borderRadius: 14, border: '1px solid #e5e7eb', position: 'relative' }}>
-            <div style={{ position: 'absolute', bottom: 15, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 12px', borderRadius: 20, fontSize: 11, zIndex: 10 }}>탭하여 크게 보기</div>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: 800, transformOrigin: 'top left', transform: `scale(${getMobileScale()})` }}>
-              <A4Quote form={form} computedItems={computedItems} blankRows={blankRows} fmt={fmt} supply_amount={supply_amount} vat_amount={vat_amount} total_amount={total_amount} bizcardName={selectedBizcard?.name || ""} noTransform noPadding getInheritedSpec={getInheritedSpec} />
-            </div>
-          </div>
-        </div>
-      ) : (
+) : (
         // ========== PC: 새 레이아웃 (버튼 + A4 인라인편집) ==========
         <div style={{ background: "#f5f6f8", minHeight: "100vh", padding: "16px" }}>
           {/* 버튼 바 */}
