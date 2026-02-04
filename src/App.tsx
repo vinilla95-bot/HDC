@@ -1909,71 +1909,124 @@ export default function App() {
             <div className="row"><label>명함</label><select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)}>{bizcards.length === 0 && <option value="">(명함 없음)</option>}{bizcards.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}</select></div>
             <hr />
             
-            {/* ✅ 선택된 품목 리스트 */}
-            {computedItems.length > 0 && (
-              <div className="box" style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 800, marginBottom: 8, fontSize: 13 }}>선택된 품목 ({computedItems.length})</div>
-                {computedItems.map((item: any, idx: number) => {
-                  const rent = isRentRow(item);
-                  const inheritedSpec = getInheritedSpec(computedItems, idx);
-                  return (
-                    <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                        <div style={{ flex: 1 }}>
-                          {item.lineSpec?.w > 0 && (
-                            <div style={{ fontSize: 10, color: '#1565c0', marginBottom: 2 }}>
-                              {item.lineSpec.w}×{item.lineSpec.l}×{item.lineSpec.h || 2.6}
-                            </div>
-                          )}
-                          <input
-                            value={item.displayName || ''}
-                            onChange={(e) => updateRow(item.key, 'displayName', e.target.value)}
-                            style={{ width: '100%', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
-                          />
-                        </div>
-                        <button onClick={() => deleteRow(item.key)} style={{ marginLeft: 8, color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>✕</button>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 11, color: '#666' }}>수량:</span>
-                          <input
-                            type="number"
-                            value={item.displayQty}
-                            onChange={(e) => updateRow(item.key, 'displayQty', Number(e.target.value))}
-                            style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
-                          />
-                        </div>
-                        {rent ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ fontSize: 11, color: '#666' }}>개월:</span>
-                            <input
-                              type="number"
-                              value={item.months || 1}
-                              onChange={(e) => updateRow(item.key, 'months', Number(e.target.value))}
-                              style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
-                            />
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ fontSize: 11, color: '#666' }}>단가:</span>
-                            <input
-                              type="number"
-                              value={item.customerUnitPrice}
-                              onChange={(e) => updateRow(item.key, 'customerUnitPrice', Number(e.target.value))}
-                              style={{ width: 80, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'right', fontSize: 12 }}
-                            />
-                          </div>
-                        )}
-                        <div style={{ fontSize: 12, fontWeight: 700, marginLeft: 'auto' }}>
-                          {fmt(item.finalAmount)}원
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+           {/* ✅ 선택된 품목 리스트 */}
+{computedItems.length > 0 && (
+  <div className="box" style={{ marginTop: 12 }}>
+    <div style={{ fontWeight: 800, marginBottom: 8, fontSize: 13 }}>선택된 품목 ({computedItems.length})</div>
+    {computedItems.map((item: any, idx: number) => {
+      const rent = isRentRow(item);
+      const inheritedSpec = getInheritedSpec(computedItems, idx);
+      return (
+        <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <div style={{ flex: 1 }}>
+              {/* ✅ 규격 수정 UI */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <select
+                  value={item.lineSpec?.w || 0}
+                  onChange={(e) => {
+                    const newW = Number(e.target.value);
+                    updateRow(item.key, 'lineSpec', { 
+                      w: newW, 
+                      l: item.lineSpec?.l || 6, 
+                      h: item.lineSpec?.h || 2.6 
+                    });
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    border: '1px solid #90caf9', 
+                    borderRadius: 4, 
+                    fontSize: 11, 
+                    background: '#e3f2fd',
+                    color: '#1565c0',
+                    fontWeight: 700
+                  }}
+                >
+                  <option value={0}>-</option>
+                  <option value={3}>3m</option>
+                  <option value={4}>4m</option>
+                </select>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#666' }}>×</span>
+                <select
+                  value={item.lineSpec?.l || 0}
+                  onChange={(e) => {
+                    const newL = Number(e.target.value);
+                    updateRow(item.key, 'lineSpec', { 
+                      w: item.lineSpec?.w || 3, 
+                      l: newL, 
+                      h: item.lineSpec?.h || 2.6 
+                    });
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    border: '1px solid #90caf9', 
+                    borderRadius: 4, 
+                    fontSize: 11, 
+                    background: '#e3f2fd',
+                    color: '#1565c0',
+                    fontWeight: 700
+                  }}
+                >
+                  <option value={0}>-</option>
+                  <option value={3}>3m</option>
+                  <option value={6}>6m</option>
+                  <option value={9}>9m</option>
+                  <option value={12}>12m</option>
+                </select>
+                {item.lineSpec?.w > 0 && item.lineSpec?.l > 0 && (
+                  <span style={{ fontSize: 10, color: '#888', marginLeft: 4 }}>
+                    (높이 2.6m)
+                  </span>
+                )}
+              </div>
+              <input
+                value={item.displayName || ''}
+                onChange={(e) => updateRow(item.key, 'displayName', e.target.value)}
+                style={{ width: '100%', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
+              />
+            </div>
+            <button onClick={() => deleteRow(item.key)} style={{ marginLeft: 8, color: '#e53935', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>✕</button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, color: '#666' }}>수량:</span>
+              <input
+                type="number"
+                value={item.displayQty}
+                onChange={(e) => updateRow(item.key, 'displayQty', Number(e.target.value))}
+                style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+              />
+            </div>
+            {rent ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11, color: '#666' }}>개월:</span>
+                <input
+                  type="number"
+                  value={item.months || 1}
+                  onChange={(e) => updateRow(item.key, 'months', Number(e.target.value))}
+                  style={{ width: 50, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'center', fontSize: 12 }}
+                />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11, color: '#666' }}>단가:</span>
+                <input
+                  type="number"
+                  value={item.customerUnitPrice}
+                  onChange={(e) => updateRow(item.key, 'customerUnitPrice', Number(e.target.value))}
+                  style={{ width: 80, padding: '4px', border: '1px solid #ddd', borderRadius: 4, textAlign: 'right', fontSize: 12 }}
+                />
               </div>
             )}
-
+            <div style={{ fontSize: 12, fontWeight: 700, marginLeft: 'auto' }}>
+              {fmt(item.finalAmount)}원
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
             <div className="actions">
               <button className="btn" onClick={handleSaveNew}>신규 저장</button>
               <button className="btn" onClick={handleSaveUpdate} disabled={!currentQuoteId}>수정 저장</button>
