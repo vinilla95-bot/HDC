@@ -555,6 +555,24 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       const vat = Math.round(supply * 0.1);
       const total = supply + vat;
 
+      // ✅ 임대차 관련 데이터를 memo에 JSON으로 저장
+      const rentalMeta = {
+        rentalForm,
+        rentalConditions,
+        statementDate,
+        paidAmount,
+      };
+      const memoJson = JSON.stringify(rentalMeta);
+
+      // ✅ contract_start 변환 (YY/MM/DD → YYYY-MM-DD)
+      let contractStartISO = current.contract_start;
+      if (rentalForm.contractStart && rentalForm.contractStart.includes('/')) {
+        try {
+          const [y, mo, d] = rentalForm.contractStart.split('/').map(Number);
+          contractStartISO = `${2000 + y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        } catch (e) {}
+      }
+
       const { error, data } = await supabase
         .from("quotes")
         .update({
@@ -567,7 +585,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
           customer_email: editForm?.customer_email ?? current.customer_email,
           customer_phone: editForm?.customer_phone ?? current.customer_phone,
           site_name: editForm?.site_name ?? current.site_name,
+          site_addr: rentalForm.siteAddr || current.site_addr,
           spec: editForm?.spec ?? current.spec,
+          memo: memoJson,
+          contract_start: contractStartISO,
         })
         .eq("quote_id", current.quote_id)
         .select();
@@ -1064,10 +1085,42 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         spec: current.spec || "",
       });
 
-      // 거래명세서 입금액 초기화
-      setPaidAmount(0);
-      setStatementDate(new Date().toISOString().slice(0, 10));
-      setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
+      // ✅ memo에서 임대차/거래명세서 데이터 복원
+      let restoredRental = false;
+      if (current.memo) {
+        try {
+          const meta = JSON.parse(current.memo);
+          if (meta && meta.rentalForm) {
+            setRentalForm(prev => ({ ...prev, ...meta.rentalForm }));
+            restoredRental = true;
+          }
+          if (meta && Array.isArray(meta.rentalConditions)) {
+            setRentalConditions(meta.rentalConditions);
+          } else {
+            setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
+          }
+          if (meta && typeof meta.paidAmount === 'number') {
+            setPaidAmount(meta.paidAmount);
+          } else {
+            setPaidAmount(0);
+          }
+          if (meta && meta.statementDate) {
+            setStatementDate(meta.statementDate);
+          } else {
+            setStatementDate(new Date().toISOString().slice(0, 10));
+          }
+        } catch (e) {
+          // memo가 JSON이 아니면 기본값 사용
+          setPaidAmount(0);
+          setStatementDate(new Date().toISOString().slice(0, 10));
+          setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
+        }
+      } else {
+        // memo가 없으면 기본값
+        setPaidAmount(0);
+        setStatementDate(new Date().toISOString().slice(0, 10));
+        setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
+      }
     }
   }, [current]);
 
