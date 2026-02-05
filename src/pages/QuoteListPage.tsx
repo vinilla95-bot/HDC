@@ -168,6 +168,19 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     email: "",
   });
 
+  // ✅ 임대 조건 약관 문구 상태
+  const DEFAULT_RENTAL_CONDITIONS = [
+    "※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.",
+    "※ 계약기간의 연장 시 임차인은 만료 5일 전까지 통보해야 하며, 재 계약서를 작성하지 않고 연장하였을 시 본 계약서로서 대체한다.",
+    "※ 임대 계약기간 만료 전에 컨테이너를 회수하여도 임대료는 환불되지 않는다.",
+    "※ 임대기간 중 컨테이너를 임의대로 매매, 임대할 수 없다.",
+    "※ 냉난방기/에어컨 임대 사용시, 6개월 이후 냉난방기/에어컨 사용료 매월 5만원 청구됩니다.",
+    '"※ 계약서에 명시된 임대차 기간이 만료되면, 임차인과 연락이 안 될 경우 임대인이 임의대로 컨테이너를 회수하여도 무방하다. 컨테이너에 있는 내용물은 운반 도중 내용물이 파손되거나, 7일 이내 임의대로 처리하여도 민, 형사상 책임을 지지 않는다."',
+    "※ 임차인의 귀책사유로 컨테이너에 파손 및 훼손의 피해가 있을 경우 손해배상 청구할 수 있다.",
+    "※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.",
+  ];
+  const [rentalConditions, setRentalConditions] = useState<string[]>(DEFAULT_RENTAL_CONDITIONS);
+
   const [editForm, setEditForm] = useState<any>(null);
   const [options, setOptions] = useState<SupabaseOptionRow[]>([]);
   const [optQ, setOptQ] = useState("");
@@ -206,6 +219,18 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     }
   }
 
+  // ✅ 상속 규격 찾기: 위쪽으로 올라가며 가장 가까운 규격 찾기 (App.tsx와 동일)
+  const getInheritedSpec = useCallback((items: any[], currentIndex: number): { w: number; l: number; h: number } => {
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const item = items[i];
+      if (item.lineSpec?.w > 0 && item.lineSpec?.l > 0) {
+        return { w: item.lineSpec.w, l: item.lineSpec.l, h: item.lineSpec.h || 2.6 };
+      }
+    }
+    // 규격이 없으면 current의 w, l 사용
+    return { w: current?.w || 3, l: current?.l || 6, h: 2.6 };
+  }, [current]);
+
   // ✅ A4Quote용 form 객체 생성
   const quoteForm = useMemo(() => ({
     quoteTitle: current?.quote_title || "",
@@ -220,6 +245,8 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     optQ: "",
     quoteDate: current?.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
     vatIncluded: current?.vat_included !== false,
+    defaultW: current?.w || 3,
+    defaultL: current?.l || 6,
   }), [current, editForm]);
 
   // ✅ A4Quote용 setForm 함수
@@ -350,65 +377,82 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     ));
   }, []);
 
-  // ✅ 옵션 선택 핸들러 (App.tsx 방식 그대로)
-const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
-  const rawName = String(opt.option_name || "");
-  const rent = rawName.includes("임대") && !opt._isCustomFreeText;
-  
-  // displayName만 변경하는 경우
-  if (opt._isDisplayNameOnly) {
+  // ✅ 옵션 선택 핸들러 - customerUnitPrice 계산 수정 (App.tsx와 동일 로직)
+  const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
+    const rawName = String(opt.option_name || "");
+    const rent = rawName.includes("임대") && !opt._isCustomFreeText;
+    
+    // displayName만 변경하는 경우
+    if (opt._isDisplayNameOnly) {
+      setEditItems(prev => prev.map(item => 
+        item.key === targetItem.key 
+          ? { ...item, displayName: rawName, _isRent: targetItem._isRent }
+          : item
+      ));
+      return;
+    }
+    
+    const months = opt._months || 3;
+    const showSpecValue = String(opt.show_spec || "n").toLowerCase();
+    
+    // ✅ 현재 행의 규격이 있으면 유지, 없으면 상속
+    const itemIndex = computedItems.findIndex((i: any) => i.key === targetItem.key);
+    const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
+    const existingLineSpec = (targetItem.lineSpec?.w > 0 && targetItem.lineSpec?.l > 0)
+      ? targetItem.lineSpec 
+      : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
+    
+    const hasMonthInName = /\d+개월/.test(rawName);
+    const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
+    
+    // ✅ 핵심 수정: App.tsx addOption과 동일한 로직
+    const customerUnitPrice = rent 
+      ? Number(opt.unit_price || calculated.unitPrice || 0) * months 
+      : Number(calculated.amount || calculated.unitPrice || 0);
+    
+    // 기존 optionName 유지 (비어있을 때만 새로 설정)
+    const newOptName = targetItem.optionName || rawName;
+    
     setEditItems(prev => prev.map(item => 
       item.key === targetItem.key 
-        ? { ...item, displayName: rawName, _isRent: targetItem._isRent }
+        ? {
+            ...item,
+            optionId: opt.option_id,
+            optionName: newOptName,
+            displayName,
+            unit: rent ? "개월" : (calculated.unit || "EA"),
+            qty: 1,
+            unitPrice: customerUnitPrice,
+            amount: customerUnitPrice,
+            showSpec: showSpecValue,
+            baseQty: calculated.qty || 1,
+            baseUnitPrice: opt.unit_price || calculated.unitPrice || 0,
+            baseAmount: calculated.amount || 0,
+            months,
+            lineSpec: existingLineSpec,
+            _isRent: (targetItem as any)._isRent ?? rent,
+            _isCustomFreeText: opt._isCustomFreeText || false,
+          }
         : item
     ));
-    return;
-  }
-  
-  const months = opt._months || 3;
-  const existingLineSpec = targetItem.lineSpec || { w: current?.w || 3, l: current?.l || 6, h: 2.6 };
-  
-  const hasMonthInName = /\d+개월/.test(rawName);
-  const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
-  
-  const customerUnitPrice = Number(calculated.unitPrice || calculated.amount || 0);
-  
-  // 기존 optionName 유지 (비어있을 때만 새로 설정)
-  const newOptName = targetItem.optionName || rawName;
-  
-  setEditItems(prev => prev.map(item => 
-    item.key === targetItem.key 
-      ? {
-          ...item,
-          optionId: opt.option_id,
-          optionName: newOptName,
-          displayName,
-          unit: rent ? "개월" : (calculated.unit || "EA"),
-          qty: 1,
-          unitPrice: customerUnitPrice,
-          amount: customerUnitPrice,
-          showSpec: opt.show_spec || "n",
-          baseQty: calculated.qty || 1,
-          baseUnitPrice: opt.unit_price || calculated.unitPrice || 0,
-          baseAmount: calculated.amount || 0,
-          months,
-          lineSpec: existingLineSpec,
-          _isRent: targetItem._isRent ?? rent,
-          _isCustomFreeText: opt._isCustomFreeText || false,
-        }
-      : item
-  ));
-}, [current]);
+  }, [current, computedItems, getInheritedSpec]);
 
-  // ✅ 품목 추가 핸들러 (A4Quote에서 호출)
-  const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number) => {
+  // ✅ 품목 추가 핸들러 - specOverride 지원 추가 (App.tsx와 동일)
+  const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
     const rawName = String(opt.option_name || "");
     const rent = rawName.includes("임대") && !opt._isCustomFreeText && !opt._isEmptyRow;
     const months = opt._months || 3;
     
+    // ✅ 상속 규격 사용
+    const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
+    const inheritedSpec = getInheritedSpec(editItems, targetIdx);
+    const effectiveSpec = specOverride || inheritedSpec;
+    
+    const showSpecValue = String(opt.show_spec || "n").toLowerCase();
+    
     const customerUnitPrice = rent 
       ? Number(calculated.unitPrice || 0) * months 
-      : Number(calculated.amount || 0);
+      : Number(calculated.amount || calculated.unitPrice || 0);
     
     const displayName = opt._isEmptyRow ? '' : (rent ? `${rawName} ${months}개월` : rawName);
     
@@ -421,11 +465,11 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       qty: 1,
       unitPrice: customerUnitPrice,
       amount: customerUnitPrice,
-      showSpec: opt.show_spec || "n",
-      lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
+      showSpec: showSpecValue,
+      lineSpec: specOverride || (showSpecValue === 'y' ? effectiveSpec : { w: 0, l: 0, h: 0 }),
       specText: "",
       months,
-      baseUnitPrice: Number(calculated.unitPrice || 0),
+      baseUnitPrice: Number(opt.unit_price || calculated.unitPrice || 0),
       _isRent: rent,
       _isCustomFreeText: opt._isCustomFreeText || false,
     };
@@ -438,7 +482,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       }
       return [...prev, newItem];
     });
-  }, [current]);
+  }, [current, editItems, getInheritedSpec]);
 
   // ✅ 운송비 추가 핸들러
   const handleAddDelivery = useCallback((site: any, type: 'delivery' | 'crane', insertIndex?: number) => {
@@ -446,6 +490,10 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     const name = type === 'delivery' 
       ? `5톤 일반트럭 운송비(하차별도)-${site.alias}` 
       : `크레인 운송비-${site.alias}`;
+    
+    // ✅ 상속 규격 사용
+    const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
+    const inheritedSpec = getInheritedSpec(editItems, targetIdx);
     
     const newItem = {
       key: `item_${Date.now()}`,
@@ -457,7 +505,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       unitPrice: price,
       amount: price,
       showSpec: "y",
-      lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
+      lineSpec: inheritedSpec,
       specText: "",
     };
     
@@ -469,7 +517,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       }
       return [...prev, newItem];
     });
-  }, [current]);
+  }, [current, editItems, getInheritedSpec]);
 
   // ✅ 지역 검색 핸들러
   const handleSiteSearch = useCallback(async (query: string) => {
@@ -1019,6 +1067,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
       // 거래명세서 입금액 초기화
       setPaidAmount(0);
       setStatementDate(new Date().toISOString().slice(0, 10));
+      setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
     }
   }, [current]);
 
@@ -1351,11 +1400,14 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     const customerName = current.customer_name ?? "";
     const customerPhone = current.customer_phone ?? "";
     const customerEmail = current.customer_email ?? "";
-    // 규격에서 차원(예: 3x9)만 추출
-const rawSpec = current.spec ?? "3*6";
-const specMatch = rawSpec.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && current.l ? `${current.w}x${current.l}` : rawSpec);
     const siteName = current.site_name ?? "";
+
+    // ✅ 규격에서 차원(예: 3x9)만 추출
+    const rawSpec = current.spec ?? "3*6";
+    const specMatch = rawSpec.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+    const spec = specMatch 
+      ? `${specMatch[1]}x${specMatch[2]}` 
+      : (current.w && current.l ? `${current.w}x${current.l}` : rawSpec);
 
     const today = new Date();
     const ymd = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
@@ -1372,6 +1424,16 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
     }, 0);
 
     const MIN_ROWS = 8;
+
+    const editInputStyle: React.CSSProperties = {
+      width: '100%',
+      border: '1px solid #ccc',
+      background: '#fffff0',
+      fontSize: 11,
+      padding: '2px 4px',
+      boxSizing: 'border-box' as const,
+      borderRadius: 3,
+    };
 
     const thStyle: React.CSSProperties = {
       border: '1px solid #999', padding: '6px 4px', background: '#fff', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
@@ -1408,6 +1470,7 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
 
         <div style={{ borderTop: '2px solid #2e86de', marginBottom: 15 }}></div>
 
+        {/* ✅ 품목 테이블 - 인라인 수정 지원 */}
         <table style={{ borderCollapse: 'collapse', width: '90%', margin: '0 auto', marginBottom: 5 }}>
           <thead>
             <tr>
@@ -1417,24 +1480,82 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
               <th style={{ ...thStyle, width: '15%' }}>단가</th>
               <th style={{ ...thStyle, width: '8%' }}>수량</th>
               <th style={{ ...thStyle, width: '15%' }}>금액</th>
+              {editMode && <th style={{ ...thStyle, width: '6%' }}></th>}
             </tr>
           </thead>
           <tbody>
             {rentalItems.length > 0 ? rentalItems.map((item: any, idx: number) => {
               const name = item.displayName || item.optionName || "";
-              const isContainerRental = String(name).includes("컨테이너 임대");
-              const isDelivery = String(name).includes("5톤 일반 트럭 운송비") || String(name).includes("크레인 운송비");
+              const isContainerRental = String(name).includes("컨테이너 임대") || String(name).includes("임대");
+              const isDelivery = String(name).includes("5톤 일반 트럭 운송비") || String(name).includes("크레인 운송비") || String(name).includes("운송비");
               const showSpec = isContainerRental || isDelivery;
               const months = isContainerRental ? (item.months || rentalForm.months) : "";
               
               return (
                 <tr key={item.key || idx}>
-                  <td style={tdStyle}>{name}</td>
+                  <td style={tdStyle}>
+                    {editMode ? (
+                      <input 
+                        value={name} 
+                        onChange={(e) => {
+                          const itemKey = item.key;
+                          setEditItems(prev => prev.map(it => 
+                            it.key === itemKey ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
+                          ));
+                        }}
+                        style={editInputStyle}
+                      />
+                    ) : name}
+                  </td>
                   <td style={{ ...tdStyle, textAlign: 'center' }}>{showSpec ? spec : ""}</td>
-                  <td style={{ ...tdStyle, textAlign: 'center' }}>{months}</td>
-                  <td style={{ ...tdStyle, textAlign: 'right' }}>{money(item.unitPrice)}</td>
-                  <td style={{ ...tdStyle, textAlign: 'center' }}>{item.qty}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    {editMode && isContainerRental ? (
+                      <input 
+                        type="number"
+                        value={item.months || rentalForm.months || ''} 
+                        onChange={(e) => {
+                          const newMonths = Number(e.target.value) || 1;
+                          const itemKey = item.key;
+                          setEditItems(prev => prev.map(it => {
+                            if (it.key !== itemKey) return it;
+                            const basePrice = it.baseUnitPrice || Math.round(it.unitPrice / (it.months || 3));
+                            const newUnitPrice = basePrice * newMonths;
+                            return { ...it, months: newMonths, unitPrice: newUnitPrice, amount: (it.qty || 1) * newUnitPrice };
+                          }));
+                        }}
+                        style={{ ...editInputStyle, textAlign: 'center', width: 40 }}
+                      />
+                    ) : months}
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                    {editMode ? (
+                      <input 
+                        type="number"
+                        value={item.unitPrice || ''} 
+                        onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'right', width: 80 }}
+                      />
+                    ) : money(item.unitPrice)}
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    {editMode ? (
+                      <input 
+                        type="number"
+                        value={item.qty || ''} 
+                        onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'center', width: 40 }}
+                      />
+                    ) : item.qty}
+                  </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>{money(item.qty * item.unitPrice)}</td>
+                  {editMode && (
+                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                      <button 
+                        onClick={() => handleDeleteItem(item.key)} 
+                        style={{ padding: '1px 5px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 3, background: '#fff', cursor: 'pointer' }}
+                      >✕</button>
+                    </td>
+                  )}
                 </tr>
               );
             }) : (
@@ -1445,9 +1566,47 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
                 <td style={{ ...tdStyle, textAlign: 'right' }}>450,000</td>
                 <td style={{ ...tdStyle, textAlign: 'center' }}>1</td>
                 <td style={{ ...tdStyle, textAlign: 'right' }}>450,000</td>
+                {editMode && <td style={tdStyle}></td>}
               </tr>
             )}
-            {Array.from({ length: Math.max(0, MIN_ROWS - rentalItems.length) }).map((_, i) => (
+            {/* ✅ 편집모드일 때 품목 추가 행 */}
+            {editMode && (
+              <tr>
+                <td colSpan={editMode ? 7 : 6} style={{ ...tdStyle, textAlign: 'center' }}>
+                  <button 
+                    onClick={() => {
+                      const newItem = {
+                        key: `item_${Date.now()}`,
+                        optionId: '',
+                        optionName: '',
+                        displayName: '',
+                        unit: 'EA',
+                        qty: 1,
+                        unitPrice: 0,
+                        amount: 0,
+                        showSpec: 'n',
+                        lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
+                        specText: '',
+                        months: rentalForm.months || 3,
+                      };
+                      // cutoff 위치 앞에 삽입
+                      setEditItems(prev => {
+                        const ci = prev.findIndex((it: any) => {
+                          const n = it.displayName || it.optionName || "";
+                          return String(n).includes("임대 계약시 필요한 정보");
+                        });
+                        if (ci === -1) return [...prev, newItem];
+                        const arr = [...prev];
+                        arr.splice(ci, 0, newItem);
+                        return arr;
+                      });
+                    }}
+                    style={{ padding: '4px 12px', fontSize: 11, color: '#2e86de', border: '1px solid #2e86de', borderRadius: 4, background: '#fff', cursor: 'pointer', fontWeight: 700 }}
+                  >+ 품목 추가</button>
+                </td>
+              </tr>
+            )}
+            {Array.from({ length: Math.max(0, MIN_ROWS - rentalItems.length - (editMode ? 1 : 0)) }).map((_, i) => (
               <tr key={`blank-${i}`}>
                 <td style={tdStyle}>&nbsp;</td>
                 <td style={tdStyle}></td>
@@ -1455,6 +1614,7 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
                 <td style={tdStyle}></td>
                 <td style={tdStyle}></td>
                 <td style={tdStyle}></td>
+                {editMode && <td style={tdStyle}></td>}
               </tr>
             ))}
           </tbody>
@@ -1464,33 +1624,129 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
           합계(VAT별도) {money(totalAmount)}원
         </div>
 
+        {/* ✅ 임대 조건 - 인라인 수정 지원 */}
         <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 900, marginBottom: 8 }}>임대 조건</div>
         <table style={{ borderCollapse: 'collapse', width: '70%', margin: '0 auto 12px auto' }}>
           <tbody>
             <tr>
               <th style={{ ...conditionThStyle, width: '10%' }}>임대기간</th>
-              <td style={{ ...conditionTdStyle, width: '20%' }}>{rentalForm.contractStart}~{rentalForm.contractEnd}</td>
-              <td style={{ ...conditionTdStyle, width: '10%' }}>{rentalForm.contractStart?.slice(3, 8)}</td>
+              <td style={{ ...conditionTdStyle, width: '20%' }}>
+                {editMode ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <input 
+                      value={rentalForm.contractStart} 
+                      onChange={(e) => {
+                        const start = e.target.value;
+                        let endDate = "";
+                        if (start && start.includes('/')) {
+                          try {
+                            const [y, mo, d] = start.split('/').map(Number);
+                            const dt = new Date(2000 + y, mo - 1 + rentalForm.months, d);
+                            endDate = `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
+                          } catch (e) {}
+                        }
+                        setRentalForm(prev => ({ ...prev, contractStart: start, contractEnd: endDate }));
+                      }}
+                      placeholder="26/01/15"
+                      style={{ ...editInputStyle, width: 65, textAlign: 'center' }}
+                    />
+                    <span>~</span>
+                    <input 
+                      value={rentalForm.contractEnd}
+                      onChange={(e) => setRentalForm(prev => ({ ...prev, contractEnd: e.target.value }))}
+                      placeholder="26/04/15"
+                      style={{ ...editInputStyle, width: 65, textAlign: 'center' }}
+                    />
+                  </div>
+                ) : `${rentalForm.contractStart}~${rentalForm.contractEnd}`}
+              </td>
+              <td style={{ ...conditionTdStyle, width: '10%' }}>
+                {editMode ? (
+                  <input 
+                    value={rentalForm.contractStart?.slice(3, 8) || ''} 
+                    readOnly
+                    style={{ ...editInputStyle, width: 40, textAlign: 'center', background: '#f0f0f0' }}
+                  />
+                ) : rentalForm.contractStart?.slice(3, 8)}
+              </td>
               <th style={{ ...conditionThStyle, width: '8%' }}>로부터</th>
-              <td style={{ ...conditionTdStyle, width: '10%' }}>{rentalForm.months}</td>
+              <td style={{ ...conditionTdStyle, width: '10%' }}>
+                {editMode ? (
+                  <input 
+                    type="number"
+                    value={rentalForm.months || ''} 
+                    onChange={(e) => {
+                      const m = Number(e.target.value) || 1;
+                      const start = rentalForm.contractStart;
+                      let endDate = "";
+                      if (start && start.includes('/')) {
+                        try {
+                          const [y, mo, d] = start.split('/').map(Number);
+                          const dt = new Date(2000 + y, mo - 1 + m, d);
+                          endDate = `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
+                        } catch (e) {}
+                      }
+                      setRentalForm(prev => ({ ...prev, months: m, contractEnd: endDate }));
+                    }}
+                    style={{ ...editInputStyle, width: 35, textAlign: 'center' }}
+                  />
+                ) : rentalForm.months}
+              </td>
               <th style={{ ...conditionThStyle, width: '8%' }}>개월</th>
             </tr>
           </tbody>
         </table>
 
+        {/* ✅ 임대 조건 약관 - 인라인 수정 지원 */}
         <div style={{ fontSize: 11, lineHeight: 1.7, marginBottom: 15, textAlign: 'left' }}>
-          <p style={{ margin: '2px 0' }}>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
-          <p style={{ margin: '2px 0' }}>※ 계약기간의 연장 시 임차인은 만료 5일 전까지 통보해야 하며, 재 계약서를 작성하지 않고 연장하였을 시 본 계약서로서 대체한다.</p>
-          <p style={{ margin: '2px 0' }}>※ 임대 계약기간 만료 전에 컨테이너를 회수하여도 임대료는 환불되지 않는다.</p>
-          <p style={{ margin: '2px 0' }}>※ 임대기간 중 컨테이너를 임의대로 매매, 임대할 수 없다.</p>
-          <p style={{ margin: '2px 0' }}>※ 냉난방기/에어컨 임대 사용시, 6개월 이후 냉난방기/에어컨 사용료 매월 5만원 청구됩니다.</p>
-          <p style={{ margin: '2px 0' }}>"※ 계약서에 명시된 임대차 기간이 만료되면, 임차인과 연락이 안 될 경우 임대인이 임의대로 컨테이너를 회수하여도 무방하다. 컨테이너에 있는 내용물은 운반 도중 내용물이 파손되거나, 7일 이내 임의대로 처리하여도 민, 형사상 책임을 지지 않는다."</p>
-          <p style={{ margin: '2px 0' }}>※ 임차인의 귀책사유로 컨테이너에 파손 및 훼손의 피해가 있을 경우 손해배상 청구할 수 있다.</p>
-          <p style={{ margin: '2px 0' }}>※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.</p>
+          {rentalConditions.map((text, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, margin: '2px 0' }}>
+              {editMode ? (
+                <>
+                  <textarea
+                    value={text}
+                    onChange={(e) => {
+                      setRentalConditions(prev => {
+                        const next = [...prev];
+                        next[idx] = e.target.value;
+                        return next;
+                      });
+                    }}
+                    style={{
+                      flex: 1,
+                      fontSize: 11,
+                      lineHeight: '1.7',
+                      border: '1px solid #ccc',
+                      background: '#fffff0',
+                      borderRadius: 3,
+                      padding: '2px 6px',
+                      resize: 'vertical',
+                      minHeight: 22,
+                      fontFamily: 'inherit',
+                    }}
+                    rows={text.length > 80 ? 2 : 1}
+                  />
+                  <button
+                    onClick={() => setRentalConditions(prev => prev.filter((_, i) => i !== idx))}
+                    style={{ padding: '1px 5px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 3, background: '#fff', cursor: 'pointer', flexShrink: 0, marginTop: 1 }}
+                  >✕</button>
+                </>
+              ) : (
+                <p style={{ margin: 0 }}>{text}</p>
+              )}
+            </div>
+          ))}
+          {editMode && (
+            <button
+              onClick={() => setRentalConditions(prev => [...prev, "※ "])}
+              style={{ marginTop: 4, padding: '3px 10px', fontSize: 10, color: '#2e86de', border: '1px solid #2e86de', borderRadius: 4, background: '#fff', cursor: 'pointer', fontWeight: 700 }}
+            >+ 조항 추가</button>
+          )}
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, marginBottom: 15 }}>{ymd}</div>
 
+        {/* ✅ 임대인/임차인 테이블 - 임차인 인라인 수정 지원 */}
         <table style={{ borderCollapse: 'collapse', width: '80%', margin: '0 auto 15px auto' }}>
           <colgroup>
             <col style={{ width: '12%' }} />
@@ -1507,53 +1763,91 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
           <tbody>
             <tr>
               <th style={partyThStyle}>상호:</th><td style={partyTdStyle}>현대 컨테이너</td>
-              <th style={partyThStyle}>상호:</th><td style={partyTdStyle}>{rentalForm.companyName}</td>
+              <th style={partyThStyle}>상호:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.companyName} onChange={(e) => setRentalForm(prev => ({ ...prev, companyName: e.target.value }))} style={editInputStyle} />
+                ) : rentalForm.companyName}
+              </td>
             </tr>
             <tr>
               <th style={partyThStyle}>등록번호:</th><td style={partyTdStyle}>130-41-38154</td>
-              <th style={partyThStyle}>등록번호:</th><td style={partyTdStyle}>{rentalForm.regNo}</td>
+              <th style={partyThStyle}>등록번호:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.regNo} onChange={(e) => setRentalForm(prev => ({ ...prev, regNo: e.target.value }))} style={editInputStyle} />
+                ) : rentalForm.regNo}
+              </td>
             </tr>
             <tr>
-            
-  <th style={partyThStyle}>대표:</th>
-  <td style={partyTdStyle}>
-    <span style={{ position: 'relative', display: 'inline-block' }}>
-      류창석
-      <img 
-        src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" 
-        alt="도장" 
-        style={{ 
-          position: 'absolute', 
-          top: -12, 
-          left: 20, 
-          width: 40, 
-          height: 40, 
-         
-        }} 
-      />
-    </span>
-  </td>
-              <th style={partyThStyle}>대표:</th><td style={partyTdStyle}>{rentalForm.ceo}</td>
+              <th style={partyThStyle}>대표:</th>
+              <td style={partyTdStyle}>
+                <span style={{ position: 'relative', display: 'inline-block' }}>
+                  류창석
+                  <img 
+                    src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" 
+                    alt="도장" 
+                    style={{ 
+                      position: 'absolute', 
+                      top: -12, 
+                      left: 20, 
+                      width: 40, 
+                      height: 40, 
+                    }} 
+                  />
+                </span>
+              </td>
+              <th style={partyThStyle}>대표:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.ceo} onChange={(e) => setRentalForm(prev => ({ ...prev, ceo: e.target.value }))} style={editInputStyle} />
+                ) : rentalForm.ceo}
+              </td>
             </tr>
             <tr>
               <th style={partyThStyle}>주소:</th><td style={partyTdStyle}>화성시 향남읍 구문천안길16</td>
-              <th style={partyThStyle}>현장주소:</th><td style={partyTdStyle}>{rentalForm.siteAddr || siteName}</td>
+              <th style={partyThStyle}>현장주소:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.siteAddr} onChange={(e) => setRentalForm(prev => ({ ...prev, siteAddr: e.target.value }))} style={editInputStyle} />
+                ) : (rentalForm.siteAddr || siteName)}
+              </td>
             </tr>
             <tr>
               <th style={partyThStyle}>연락처:</th><td style={partyTdStyle}>010-4775-7557</td>
-              <th style={partyThStyle}>연락처:</th><td style={partyTdStyle}>{customerPhone}</td>
+              <th style={partyThStyle}>연락처:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.phone} onChange={(e) => setRentalForm(prev => ({ ...prev, phone: e.target.value }))} style={editInputStyle} />
+                ) : rentalForm.phone}
+              </td>
             </tr>
             <tr>
               <th style={partyThStyle}>연락처:</th><td style={partyTdStyle}>010-4138-9268</td>
-              <th style={partyThStyle}>사무실:</th><td style={partyTdStyle}>{rentalForm.officePhone}</td>
+              <th style={partyThStyle}>사무실:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.officePhone} onChange={(e) => setRentalForm(prev => ({ ...prev, officePhone: e.target.value }))} style={editInputStyle} />
+                ) : rentalForm.officePhone}
+              </td>
             </tr>
             <tr>
               <th style={partyThStyle}>팩스:</th><td style={partyTdStyle}>0504-392-4298</td>
-              <th style={partyThStyle}>팩스:</th><td style={partyTdStyle}>{rentalForm.fax}</td>
+              <th style={partyThStyle}>팩스:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.fax} onChange={(e) => setRentalForm(prev => ({ ...prev, fax: e.target.value }))} style={editInputStyle} />
+                ) : rentalForm.fax}
+              </td>
             </tr>
             <tr>
               <th style={partyThStyle}>메일:</th><td style={partyTdStyle}><a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a></td>
-              <th style={partyThStyle}>메일:</th><td style={partyTdStyle}>{rentalForm.email || customerEmail}</td>
+              <th style={partyThStyle}>메일:</th>
+              <td style={partyTdStyle}>
+                {editMode ? (
+                  <input value={rentalForm.email} onChange={(e) => setRentalForm(prev => ({ ...prev, email: e.target.value }))} style={editInputStyle} />
+                ) : (rentalForm.email || customerEmail)}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -1563,7 +1857,7 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
         </div>
       </div>
     );
-  }, [current, rentalForm, editItems]);
+  }, [current, rentalForm, editItems, editMode, rentalConditions, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
 
   return (
     <div className="quoteListPage">
@@ -1642,8 +1936,8 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
             <button className="danger" onClick={handleDelete}>삭제</button>
           </div>
 
-          {/* 임대차 폼 (임대차 탭일 때만) */}
-          {activeTab === 'rental' && current && (
+          {/* 임대차 폼 (임대차 탭 + 편집모드가 아닐 때만 표시 - 이제 인라인에서 수정 가능) */}
+          {activeTab === 'rental' && current && !editMode && (
             <div className="rentalFormBox">
               <div className="formRow">
                 <label>계약시작</label>
@@ -1740,6 +2034,7 @@ const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && curre
                   onAddDelivery={handleAddDelivery}
                   focusedRowIndex={focusedRowIndex}
                   setFocusedRowIndex={setFocusedRowIndex}
+                  getInheritedSpec={getInheritedSpec}
                   noPadding
                 />
               ) : activeTab === 'statement' ? (
