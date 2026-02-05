@@ -1351,7 +1351,10 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     const customerName = current.customer_name ?? "";
     const customerPhone = current.customer_phone ?? "";
     const customerEmail = current.customer_email ?? "";
-    const spec = current.spec ?? "3*6";
+    // 규격에서 차원(예: 3x9)만 추출
+const rawSpec = current.spec ?? "3*6";
+const specMatch = rawSpec.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+const spec = specMatch ? `${specMatch[1]}x${specMatch[2]}` : (current.w && current.l ? `${current.w}x${current.l}` : rawSpec);
     const siteName = current.site_name ?? "";
 
     const today = new Date();
