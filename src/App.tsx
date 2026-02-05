@@ -2261,7 +2261,9 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
                 const hasMonthInName = /\d+개월/.test(rawName);
                 const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
                 
-                const customerUnitPrice = Number(calc.unitPrice || calc.amount || 0);
+               const customerUnitPrice = rent 
+  ? Number(opt.unit_price || calc.unitPrice || 0) * months 
+  : Number(calc.amount || calc.unitPrice || 0);
                 const newOptName = item.optionName || rawName;
                 
                 setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
