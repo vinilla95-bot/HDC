@@ -1438,7 +1438,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     const siteName = current.site_name ?? "";
 
     // ✅ 규격에서 차원(예: 3x9)만 추출 - editForm 반영
-    const rawSpec = editForm?.spec || current.spec ?? "3*6";
+    const rawSpec = editForm?.spec || (current.spec ?? "3*6");
     const specMatch = rawSpec.match(/(\d+)\s*[x×*]\s*(\d+)/i);
     const spec = specMatch 
       ? `${specMatch[1]}x${specMatch[2]}` 
