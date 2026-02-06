@@ -82,6 +82,9 @@ export default function TodayTasksPage() {
   const [editMessage, setEditMessage] = useState("");
   const [dispatchMessages, setDispatchMessages] = useState<Record<string, string>>({});
 
+  // ✅ 주문별 출고일정 날짜 선택 상태
+  const [scheduleDates, setScheduleDates] = useState<Record<number, string>>({});
+
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
@@ -117,7 +120,6 @@ export default function TodayTasksPage() {
 
     await generatePendingOrders();
 
-    // ✅ 모든 대기중인 주문 표시 (견적 확정 즉시)
     const { data: orders } = await supabase
       .from("pending_orders")
       .select("*")
@@ -125,7 +127,15 @@ export default function TodayTasksPage() {
       .order("order_date", { ascending: true })
       .order("created_at", { ascending: true });
 
-    if (orders) setPendingOrders(orders);
+    if (orders) {
+      setPendingOrders(orders);
+      // ✅ 출고일을 기본 날짜로 설정
+      const dates: Record<number, string> = {};
+      orders.forEach((o: PendingOrder) => {
+        if (o.delivery_date) dates[o.id] = o.delivery_date;
+      });
+      setScheduleDates(prev => ({ ...dates, ...prev }));
+    }
 
     const { data: deliveries } = await supabase
       .from("quotes")
@@ -162,14 +172,12 @@ export default function TodayTasksPage() {
 
     if (!quotes || quotes.length === 0) return;
 
-   const { data: existingOrders } = await supabase
-  .from("pending_orders")
-  .select("quote_id, rule_id, status");
-     // ✅ 이 줄 추가!
-  const existingSet = new Set(
-    (existingOrders || []).map((o: any) => `${o.quote_id}_${o.rule_id}`)
-  );
-
+    const { data: existingOrders } = await supabase
+      .from("pending_orders")
+      .select("quote_id, rule_id, status");
+    const existingSet = new Set(
+      (existingOrders || []).map((o: any) => `${o.quote_id}_${o.rule_id}`)
+    );
 
     for (const quote of quotes) {
       if (!quote.items || quote.items.length === 0) continue;
@@ -188,10 +196,10 @@ export default function TodayTasksPage() {
             const deliveryDate = new Date(quote.delivery_date);
             const orderDate = new Date(deliveryDate);
             orderDate.setDate(orderDate.getDate() - rule.lead_days);
-// 수정
-const itemName = item.optionName || item.displayName || item.itemName || "";
-const itemQty = item.qty || 1;
-const message = `사장님 ${itemName}-${itemQty}개 주문합니다! ${quote.customer_name || ""}`;
+
+            const itemName = item.optionName || item.displayName || item.itemName || "";
+            const itemQty = item.qty || 1;
+            const message = `사장님 ${itemName}-${itemQty}개 주문합니다! ${quote.customer_name || ""}`;
 
             await supabase.from("pending_orders").insert({
               quote_id: quote.quote_id,
@@ -229,64 +237,90 @@ const message = `사장님 ${itemName}-${itemQty}개 주문합니다! ${quote.cu
     return null;
   };
 
-const generateDispatchMessage = (task: DeliveryTask) => {
-  const [, month, day] = task.delivery_date.split("-").map(Number);
-  
-  const date = new Date(task.delivery_date);
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-  const dayOfWeek = dayNames[date.getDay()];
-  
-  const timeMatch = task.site_addr?.match(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})/);
-  const timeStr = timeMatch ? timeMatch[0].trim() : "";
-  
-  const addrWithoutTime = task.site_addr?.replace(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})\s*/, "").trim() || "";
-  
-  const dateStr = `${month}/${day}(${dayOfWeek})${timeStr ? " " + timeStr : ""}`;
-  
-  // ✅ 컨테이너 수량
-  const containerItem = task.items?.find((i: any) => {
-    const name = (i.optionName || i.displayName || "").toLowerCase();
-    return name.includes("컨테이너") || name.includes("신품") || name.includes("중고");
-  });
-  const qty = containerItem?.qty || 1;
+  const generateDispatchMessage = (task: DeliveryTask) => {
+    const [, month, day] = task.delivery_date.split("-").map(Number);
+    
+    const date = new Date(task.delivery_date);
+    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+    const dayOfWeek = dayNames[date.getDay()];
+    
+    const timeMatch = task.site_addr?.match(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})/);
+    const timeStr = timeMatch ? timeMatch[0].trim() : "";
+    
+    const addrWithoutTime = task.site_addr?.replace(/^(오전|오후)?\s*(\d{1,2}시반?|\d{1,2}:\d{2})\s*/, "").trim() || "";
+    
+    const dateStr = `${month}/${day}(${dayOfWeek})${timeStr ? " " + timeStr : ""}`;
+    
+    const containerItem = task.items?.find((i: any) => {
+      const name = (i.optionName || i.displayName || "").toLowerCase();
+      return name.includes("컨테이너") || name.includes("신품") || name.includes("중고");
+    });
+    const qty = containerItem?.qty || 1;
 
-  // ✅ 창문 관련 옵션만 필터링
-  const windowKeywords = ["미닫이", "여닫이", "이중창", "중창", "샷시", "샤시", "창문", "창짝"];
-  const windowOptions = task.items?.filter((i: any) => {
-    const name = (i.optionName || i.displayName || i.itemName || "").toLowerCase();
-    return windowKeywords.some(kw => name.includes(kw));
-  }) || [];
+    const windowKeywords = ["미닫이", "여닫이", "이중창", "중창", "샷시", "샤시", "창문", "창짝"];
+    const windowOptions = task.items?.filter((i: any) => {
+      const name = (i.optionName || i.displayName || i.itemName || "").toLowerCase();
+      return windowKeywords.some(kw => name.includes(kw));
+    }) || [];
 
-  // ✅ 창문 옵션 텍스트 (이름-수량 형식)
-  let optionNames = "기본형";
-  if (windowOptions.length > 0) {
-    optionNames = windowOptions.map((i: any) => {
-      const name = i.optionName || i.displayName || i.itemName || "";
-      const itemQty = i.qty || 1;
-      return `${name}-${itemQty}개`;
-    }).join(", ");
-  }
+    let optionNames = "기본형";
+    if (windowOptions.length > 0) {
+      optionNames = windowOptions.map((i: any) => {
+        const name = i.optionName || i.displayName || i.itemName || "";
+        const itemQty = i.qty || 1;
+        return `${name}-${itemQty}개`;
+      }).join(", ");
+    }
 
-  let saleType = "신품판매";
-  if (task.contract_type === "used") saleType = "중고판매";
-  else if (task.contract_type === "rental") saleType = "임대";
+    let saleType = "신품판매";
+    if (task.contract_type === "used") saleType = "중고판매";
+    else if (task.contract_type === "rental") saleType = "임대";
 
-  let text = `사장님 ${dateStr} ${saleType} (${task.spec || ""})${qty}동(${optionNames}) 상차 현대 하차 ${addrWithoutTime}`;
-  text += ` ${task.customer_name || ""}`;
-  text += ` 인수자 ${task.customer_phone || ""} 입니다~`;
+    let text = `사장님 ${dateStr} ${saleType} (${task.spec || ""})${qty}동(${optionNames}) 상차 현대 하차 ${addrWithoutTime}`;
+    text += ` ${task.customer_name || ""}`;
+    text += ` 인수자 ${task.customer_phone || ""} 입니다~`;
 
-  return text;
-};
+    return text;
+  };
+
+  // ✅ 출고일정 메모 생성 함수
+  const createScheduleMemo = async (order: PendingOrder, selectedDate: string) => {
+    if (!selectedDate) return;
+
+    // 메시지에서 자재 정보 추출: "사장님 {itemName}-{qty}개 주문합니다! {customerName}"
+    const msgMatch = order.message.match(/사장님\s+(.+?)\s+주문합니다!\s*(.*)/);
+    const itemInfo = msgMatch ? msgMatch[1].trim() : order.message;
+    const customerName = msgMatch ? msgMatch[2].trim() : "";
+
+    // 메모 형식: "발주처 (고객명) 자재옵션이름"  예: "이천특수중 (홍길동) 스탠드냉난방기-2개"
+    const memoText = `${order.chat_room}${customerName ? ` (${customerName})` : ""} ${itemInfo}`;
+
+    try {
+      await supabase.from("quotes").insert({
+        quote_id: `SCHEDULE_${Date.now()}_${order.id}`,
+        delivery_date: selectedDate,
+        contract_type: "memo",
+        memo: memoText,
+        customer_name: customerName || null,
+        status: "confirmed",
+        created_at: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      console.error("출고일정 메모 생성 실패:", e);
+    }
+  };
+
   const updateOrderStatus = async (id: number, status: string) => {
     await supabase.from("pending_orders").update({ status }).eq("id", id);
     setPendingOrders(prev => prev.map(o => (o.id === id ? { ...o, status } : o)));
   };
-const deleteOrder = async (id: number) => {
-  if (!confirm("정말 삭제하시겠습니까?")) return;
-  
-  await supabase.from("pending_orders").update({ status: "deleted" }).eq("id", id);
-  setPendingOrders(prev => prev.filter(o => o.id !== id));
-};
+
+  const deleteOrder = async (id: number) => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    await supabase.from("pending_orders").update({ status: "deleted" }).eq("id", id);
+    setPendingOrders(prev => prev.filter(o => o.id !== id));
+  };
+
   const updateDispatchStatus = async (quoteId: string, status: string) => {
     await supabase.from("quotes").update({ dispatch_status: status }).eq("quote_id", quoteId);
     setDeliveryTasks(prev => prev.map(d => (d.quote_id === quoteId ? { ...d, dispatch_status: status } : d)));
@@ -309,8 +343,17 @@ const deleteOrder = async (id: number) => {
     try {
       await navigator.clipboard.writeText(message);
       alert(`복사됨!\n\n"${chatRoom}" 채팅방에 붙여넣기 하세요.`);
-      if (type === "order") await updateOrderStatus(id as number, "sent");
-      else await updateDispatchStatus(id as string, "완료");
+      if (type === "order") {
+        // ✅ 복사 시에도 날짜가 있으면 출고일정 메모 생성
+        const order = pendingOrders.find(o => o.id === id);
+        const selectedDate = scheduleDates[id as number];
+        if (order && selectedDate) {
+          await createScheduleMemo(order, selectedDate);
+        }
+        await updateOrderStatus(id as number, "sent");
+      } else {
+        await updateDispatchStatus(id as string, "완료");
+      }
     } catch {
       const textarea = document.createElement("textarea");
       textarea.value = message;
@@ -323,11 +366,16 @@ const deleteOrder = async (id: number) => {
   };
 
   const sendOrder = async (id: number) => {
+    // ✅ 전송 시에도 날짜가 있으면 출고일정 메모 생성
+    const order = pendingOrders.find(o => o.id === id);
+    const selectedDate = scheduleDates[id];
+    if (order && selectedDate) {
+      await createScheduleMemo(order, selectedDate);
+    }
     await supabase.from("pending_orders").update({ status: "ready" }).eq("id", id);
     setPendingOrders(prev => prev.map(o => (o.id === id ? { ...o, status: "ready" } : o)));
   };
 
-  // ✅ 주문일 기준 긴급도 표시
   const getUrgencyBadge = (orderDate: string) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -389,7 +437,7 @@ const deleteOrder = async (id: number) => {
 
       {/* 안내 */}
       <div style={{ background: "#e3f2fd", borderRadius: 8, padding: "12px 16px", marginBottom: 20, fontSize: 14, color: "#1565c0" }}>
-        Python 봇 실행 중 → "전송" 누르면 카카오톡 자동 전송 | 🔥오늘/내일 = 주문 마감일
+        Python 봇 실행 중 → "전송" 누르면 카카오톡 자동 전송 | 🔥오늘/내일 = 주문 마감일 | 📅 날짜 선택 후 전송/복사 → 출고일정에 메모 자동 등록
       </div>
 
       {/* 자재 주문 */}
@@ -412,12 +460,13 @@ const deleteOrder = async (id: number) => {
                 <th style={{ padding: "14px 12px", textAlign: "left", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800 }}>메시지 (클릭하여 수정)</th>
                 <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 70 }}>출고일</th>
                 <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 70 }}>상태</th>
-                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 120 }}>액션</th>
+                <th style={{ padding: "14px 12px", textAlign: "center", borderBottom: "2px solid #ddd", fontSize: 14, fontWeight: 800, width: 200 }}>액션</th>
               </tr>
             </thead>
             <tbody>
               {pendingOrders.map(order => {
                 const urgency = getUrgencyBadge(order.order_date);
+                const selectedDate = scheduleDates[order.id] || "";
                 return (
                   <tr key={order.id} style={{ background: order.status === "sent" ? "#fafafa" : order.status === "failed" ? "#fff5f5" : urgency.text === "⚠️ 지남" || urgency.text === "🔥 오늘" ? "#fffde7" : "#fff" }}>
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>
@@ -461,20 +510,51 @@ const deleteOrder = async (id: number) => {
                     </td>
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center", fontSize: 13 }}>{order.delivery_date?.slice(5)}</td>
                     <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>{renderStatusBadge(order.status)}</td>
-                    <td style={{ padding: "14px 12px", borderBottom: "1px solid #eee", textAlign: "center" }}>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #eee", textAlign: "center" }}>
                       {order.status === "pending" && String(editingId) !== String(order.id) && (
-  <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-    <button onClick={() => sendOrder(order.id)} style={{ padding: "8px 14px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-       전송
-    </button>
-    <button onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} style={{ padding: "8px 14px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-      복사
-    </button>
-    <button onClick={() => deleteOrder(order.id)} style={{ padding: "8px 14px", background: "#ffebee", color: "#c62828", border: "1px solid #f44336", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-      삭제
-    </button>
-  </div>
-)}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
+                          {/* ✅ 출고일정 날짜 선택 */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, width: "100%" }}>
+                            <span style={{ fontSize: 11, color: "#888", whiteSpace: "nowrap" }}>📅</span>
+                            <input
+                              type="date"
+                              value={selectedDate}
+                              onChange={(e) => setScheduleDates(prev => ({ ...prev, [order.id]: e.target.value }))}
+                              style={{
+                                flex: 1,
+                                padding: "4px 6px",
+                                border: selectedDate ? "2px solid #f9a825" : "1px solid #ddd",
+                                borderRadius: 6,
+                                fontSize: 12,
+                                background: selectedDate ? "#fffde7" : "#fff",
+                                minWidth: 0,
+                                width: "100%",
+                              }}
+                            />
+                          </div>
+                          {/* ✅ 전송/복사/삭제 버튼 */}
+                          <div style={{ display: "flex", gap: 4, justifyContent: "center", width: "100%" }}>
+                            <button 
+                              onClick={() => sendOrder(order.id)} 
+                              style={{ padding: "6px 10px", background: "#4caf50", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer", flex: 1 }}
+                            >
+                              전송
+                            </button>
+                            <button 
+                              onClick={() => handleManualCopy(order.message, order.id, "order", order.chat_room)} 
+                              style={{ padding: "6px 10px", background: "#2e5b86", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer", flex: 1 }}
+                            >
+                              복사
+                            </button>
+                            <button 
+                              onClick={() => deleteOrder(order.id)} 
+                              style={{ padding: "6px 10px", background: "#ffebee", color: "#c62828", border: "1px solid #f44336", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer", flex: 1 }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {order.status === "ready" && (
                         <button onClick={() => updateOrderStatus(order.id, "pending")} style={{ padding: "8px 14px", background: "#fff3e0", border: "1px solid #ff9800", color: "#e65100", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                           ❌ 취소
