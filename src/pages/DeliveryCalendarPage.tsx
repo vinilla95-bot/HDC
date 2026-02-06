@@ -17,8 +17,8 @@ type DeliveryItem = {
   deposit_status?: string;
   delivery_color?: string;
   dispatch_status?: string;
-  source?: "quote" | "inventory";  // ✅ 추가: 데이터 출처
-  inventory_id?: string;  // ✅ 추가: inventory용 ID
+  source?: "quote" | "inventory";
+  inventory_id?: string;
 };
 
 type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto" | "purple" | "navy";
@@ -80,7 +80,7 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
     site_addr: "",
     memo: "",
     delivery_color: "auto" as ColorType,
-    deposit_status: "완료",  // ✅ 입금상태 추가 (기본값: 완료)
+    deposit_status: "완료",
   });
 
   const loadDeliveries = async () => {
@@ -108,29 +108,27 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
         source: "quote" as const,
       }));
     
-    // ✅ inventory 데이터 변환
-  // inventory 데이터 변환
-const inventoryData = (inventoryRes.data || [])
-  .filter((d: any) => d.delivery_date)
-  .map((inv: any) => ({
-    quote_id: `inv_${inv.id}`,  // ✅ 구분을 위해 prefix 추가
-    inventory_id: inv.id,       // ✅ 실제 inventory id
-    contract_type: "inventory",
-    customer_name: inv.customer_name || "",
-    customer_phone: inv.customer_phone || "",
-    spec: inv.spec || "",
-    items: inv.items || [],
-    delivery_date: inv.delivery_date,
-    site_addr: inv.interior || "",
-    memo: inv.memo || "",
-    total_amount: inv.total_amount || 0,
-    deposit_status: inv.deposit_status,
-    delivery_color: inv.delivery_color,
-    dispatch_status: inv.dispatch_status,  // ✅ 배차상태 포함!
-    container_type: inv.container_type,
-    drawing_no: inv.drawing_no,
-    source: "inventory" as const,
-  }));
+    const inventoryData = (inventoryRes.data || [])
+      .filter((d: any) => d.delivery_date)
+      .map((inv: any) => ({
+        quote_id: `inv_${inv.id}`,
+        inventory_id: inv.id,
+        contract_type: "inventory",
+        customer_name: inv.customer_name || "",
+        customer_phone: inv.customer_phone || "",
+        spec: inv.spec || "",
+        items: inv.items || [],
+        delivery_date: inv.delivery_date,
+        site_addr: inv.interior || "",
+        memo: inv.memo || "",
+        total_amount: inv.total_amount || 0,
+        deposit_status: inv.deposit_status,
+        delivery_color: inv.delivery_color,
+        dispatch_status: inv.dispatch_status,
+        container_type: inv.container_type,
+        drawing_no: inv.drawing_no,
+        source: "inventory" as const,
+      }));
 
     setDeliveries([...quotesData, ...inventoryData] as DeliveryItem[]);
     setLoading(false);
@@ -142,7 +140,6 @@ const inventoryData = (inventoryRes.data || [])
 
   // ✅ 색상 결정 로직
   const getItemColor = useCallback((item: DeliveryItem): ColorType => {
-    // 1. 수동 색상이 설정되어 있으면 사용
     if (item.delivery_color && item.delivery_color !== "auto") {
       return item.delivery_color as ColorType;
     }
@@ -157,22 +154,18 @@ const inventoryData = (inventoryRes.data || [])
     const isDepositComplete = item.deposit_status === "완료";
     const isDispatchComplete = item.dispatch_status === "완료";
     
-    // 2. 미입금 → 빨강 (최우선!)
     if (!isDepositComplete) {
       return "red";
     }
     
-    // 3. 입금완료 + 배차완료 + 출고일 지남 → 회색
     if (isDispatchComplete && isPast) {
       return "gray";
     }
     
-    // 4. 입금완료 + 배차완료 → 주황
     if (isDispatchComplete) {
       return "orange";
     }
     
-    // 5. 입금완료 + 배차미완료 → 재고는 보라, 나머지는 파랑
     if (item.source === "inventory" || item.contract_type === "inventory") {
       return "purple";
     }
@@ -191,6 +184,16 @@ const inventoryData = (inventoryRes.data || [])
     purple: { bg: "#f3e5f5", border: "#9c27b0", text: "#6a1b9a" },
     navy: { bg: "#e8eaf6", border: "#3f51b5", text: "#283593" },
     auto: { bg: "#e3f2fd", border: "#2196f3", text: "#1565c0" },
+  };
+
+  // ✅ 메모에서 rentalForm JSON 제거 (계약서 데이터 숨김)
+  const getDisplayMemo = (memo: string | undefined): string => {
+    if (!memo) return "";
+    const trimmed = memo.trim();
+    if (trimmed.startsWith("{") && trimmed.includes("rentalForm")) {
+      return "";
+    }
+    return memo;
   };
 
   // ✅ 옵션 요약
@@ -261,7 +264,7 @@ const inventoryData = (inventoryRes.data || [])
     const customer = item.customer_name || "";
     const qty = getQty(item);
     const transportType = getTransportType(item);
-    const memo = item.memo || "";
+    const memo = getDisplayMemo(item.memo) || "";  // ✅ rentalForm JSON 숨김
 
     const isMemoOnly = !spec && (!item.items || item.items.length === 0);
     if (isMemoOnly) {
@@ -318,8 +321,9 @@ const inventoryData = (inventoryRes.data || [])
     if (item.site_addr) {
       unloadInfo = item.site_addr;
     }
-    if (item.memo) {
-      unloadInfo = unloadInfo ? `${unloadInfo} ${item.memo}` : item.memo;
+    const dispatchMemo = getDisplayMemo(item.memo);  // ✅ rentalForm JSON 숨김
+    if (dispatchMemo) {
+      unloadInfo = unloadInfo ? `${unloadInfo} ${dispatchMemo}` : dispatchMemo;
     }
     const customer = item.customer_name || "";
     const phone = item.customer_phone || "";
@@ -380,7 +384,7 @@ const inventoryData = (inventoryRes.data || [])
     setDragOverDate(null);
   };
 
-  // ✅ 드롭 (날짜 변경) - quotes/inventory 구분
+  // ✅ 드롭 (날짜 변경)
   const handleDrop = async (e: React.DragEvent, newDate: string) => {
     e.preventDefault();
     setDragOverDate(null);
@@ -390,7 +394,6 @@ const inventoryData = (inventoryRes.data || [])
       return;
     }
 
-    // ✅ inventory인 경우 inventory 테이블 업데이트
     if (draggedItem.source === "inventory") {
       const { error } = await supabase
         .from("inventory")
@@ -405,7 +408,6 @@ const inventoryData = (inventoryRes.data || [])
         ));
       }
     } else {
-      // quotes 테이블 업데이트
       const { error } = await supabase
         .from("quotes")
         .update({ delivery_date: newDate })
@@ -423,60 +425,56 @@ const inventoryData = (inventoryRes.data || [])
     setDraggedItem(null);
   };
 
-  // ✅ 수정 저장 - quotes/inventory 구분
-const handleSaveEdit = async () => {
-  if (!selectedDelivery) return;
+  // ✅ 수정 저장
+  const handleSaveEdit = async () => {
+    if (!selectedDelivery) return;
 
-  // ✅ inventory인 경우
-  if (selectedDelivery.source === "inventory") {
-    const { error } = await supabase
-      .from("inventory")
-      .update({
-        delivery_date: editForm.delivery_date,
-        customer_name: editForm.customer_name,
-        customer_phone: editForm.customer_phone,
-        spec: editForm.spec,
-        interior: editForm.site_addr,
-        memo: editForm.memo,
-        delivery_color: editForm.delivery_color,
-        dispatch_status: editForm.dispatch_status,
-        deposit_status: editForm.deposit_status,  // ✅ 입금상태 추가
-      })
-      .eq("id", selectedDelivery.inventory_id);
+    if (selectedDelivery.source === "inventory") {
+      const { error } = await supabase
+        .from("inventory")
+        .update({
+          delivery_date: editForm.delivery_date,
+          customer_name: editForm.customer_name,
+          customer_phone: editForm.customer_phone,
+          spec: editForm.spec,
+          interior: editForm.site_addr,
+          memo: editForm.memo,
+          delivery_color: editForm.delivery_color,
+          dispatch_status: editForm.dispatch_status,
+          deposit_status: editForm.deposit_status,
+        })
+        .eq("id", selectedDelivery.inventory_id);
 
-    if (error) {
-      alert("저장 실패: " + error.message);
-      return;
+      if (error) {
+        alert("저장 실패: " + error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("quotes")
+        .update({
+          delivery_date: editForm.delivery_date,
+          customer_name: editForm.customer_name,
+          customer_phone: editForm.customer_phone,
+          spec: editForm.spec,
+          site_addr: editForm.site_addr,
+          memo: editForm.memo,
+          delivery_color: editForm.delivery_color,
+          dispatch_status: editForm.dispatch_status,
+          deposit_status: editForm.deposit_status,
+        })
+        .eq("quote_id", selectedDelivery.quote_id);
+
+      if (error) {
+        alert("저장 실패: " + error.message);
+        return;
+      }
     }
-  } else {
-    // quotes 테이블 업데이트
-    const { error } = await supabase
-      .from("quotes")
-      .update({
-        delivery_date: editForm.delivery_date,
-        customer_name: editForm.customer_name,
-        customer_phone: editForm.customer_phone,
-        spec: editForm.spec,
-        site_addr: editForm.site_addr,
-        memo: editForm.memo,
-        delivery_color: editForm.delivery_color,
-        dispatch_status: editForm.dispatch_status,
-        deposit_status: editForm.deposit_status,  // ✅ 입금상태 추가
-      })
-      .eq("quote_id", selectedDelivery.quote_id);
 
-    if (error) {
-      alert("저장 실패: " + error.message);
-      return;
-    }
-  }
-
-  // ✅ DB에서 다시 불러오기 (색상 등 확실히 반영)
-  await loadDeliveries();
-
-  setShowEditModal(false);
-  setSelectedDelivery(null);
-};
+    await loadDeliveries();
+    setShowEditModal(false);
+    setSelectedDelivery(null);
+  };
 
   // ✅ 새 일정 추가
   const handleAddSchedule = async () => {
@@ -500,7 +498,7 @@ const handleSaveEdit = async () => {
         site_addr: newSchedule.site_addr,
         memo: newSchedule.memo,
         delivery_color: newSchedule.delivery_color,
-        deposit_status: newSchedule.deposit_status,  // ✅ 입금상태 추가
+        deposit_status: newSchedule.deposit_status,
         total_amount: 0,
         items: [],
       });
@@ -520,7 +518,7 @@ const handleSaveEdit = async () => {
       site_addr: newSchedule.site_addr,
       memo: newSchedule.memo,
       delivery_color: newSchedule.delivery_color,
-      deposit_status: newSchedule.deposit_status,  // ✅ 입금상태 추가
+      deposit_status: newSchedule.deposit_status,
       total_amount: 0,
       items: [],
       source: "quote",
@@ -537,11 +535,11 @@ const handleSaveEdit = async () => {
       site_addr: "",
       memo: "",
       delivery_color: "auto",
-      deposit_status: "완료",  // ✅ 입금상태 초기화
+      deposit_status: "완료",
     });
   };
 
-  // ✅ 색상 변경 - quotes/inventory 구분
+  // ✅ 색상 변경
   const handleColorChange = async (item: DeliveryItem, color: ColorType) => {
     if (item.source === "inventory") {
       const { error } = await supabase
@@ -575,12 +573,11 @@ const handleSaveEdit = async () => {
     }
   };
 
-  // ✅ 삭제 - quotes는 캘린더에서만 제거(status→draft), inventory는 실제 삭제
+  // ✅ 삭제
   const handleDelete = async () => {
     if (!selectedDelivery) return;
     
     if (selectedDelivery.source === "inventory") {
-      // inventory는 실제 삭제
       if (!confirm("정말 삭제하시겠습니까?")) return;
       
       const { error } = await supabase
@@ -593,8 +590,6 @@ const handleSaveEdit = async () => {
         return;
       }
     } else {
-      // ✅ quotes는 삭제하지 않고 delivery_date만 null로 변경
-      // → 캘린더에서는 안 보이지만 견적목록/계약관리에는 남아있음
       if (!confirm("출고일정에서 제거하시겠습니까?\n(견적/계약 목록에는 그대로 유지됩니다)")) return;
       
       const { error } = await supabase
@@ -1268,7 +1263,6 @@ const handleSaveEdit = async () => {
                         🏗️ 크레인
                       </span>
                     )}
-                    {/* ✅ 배차완료 표시 */}
                     {selectedDelivery.dispatch_status === "완료" && (
                       <span style={{
                         padding: "4px 12px",
@@ -1364,11 +1358,12 @@ const handleSaveEdit = async () => {
                   {summarizeOptions(selectedDelivery.items, false) || "-"}
                 </span>
               </div>
-              {selectedDelivery.memo && (
+              {/* ✅ rentalForm JSON이면 메모 숨김 */}
+              {getDisplayMemo(selectedDelivery.memo) && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
                   <span style={{ color: "#666", fontSize: 13 }}>메모</span>
                   <span style={{ fontSize: 13, background: "#f9f9f9", padding: 8, borderRadius: 6 }}>
-                    {selectedDelivery.memo}
+                    {getDisplayMemo(selectedDelivery.memo)}
                   </span>
                 </div>
               )}
@@ -1501,7 +1496,6 @@ const handleSaveEdit = async () => {
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                 />
               </div>
-              {/* 재고가 아닐 때만 구분 선택 표시 */}
               {selectedDelivery.source !== "inventory" && (
                 <div>
                   <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>구분</label>
