@@ -1574,12 +1574,12 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                       />
                     ) : name}
                   </td>
-                <td style={{ ...tdStyle, textAlign: 'center' }}>
+               <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                     {editMode && showSpec ? (
                       <input 
                         value={editForm?.spec || spec} 
-                        onChange={(e) => setEditForm((p: any) => ({ ...p, spec: e.target.value }))}
-                        style={{ ...editInputStyle, textAlign: 'center', width: 50 }}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm((p: any) => ({ ...p, spec: e.target.value }))}
+                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }}
                       />
                     ) : (showSpec ? spec : "")}
                   </td>
