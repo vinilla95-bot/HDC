@@ -127,6 +127,18 @@ function normItem(it: QuoteItem) {
   return { category, name, unit, qty, unitPrice, amount, note, months };
 }
 
+
+// ✅ 임대 종료일 계산 (시작일 + N개월 - 1일, 월세 계약 방식)
+function calcRentalEndDate(startStr: string, months: number): string {
+  if (!startStr || !startStr.includes('/')) return "";
+  try {
+    const [y, mo, d] = startStr.split('/').map(Number);
+    const dt = new Date(2000 + y, mo - 1 + months, d);
+    dt.setDate(dt.getDate() - 1);  // ✅ 1일 마이너스
+    return `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
+  } catch (e) { return ""; }
+}
+
 async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   const res: any = await gasRpcRaw(fn, args);
   if (res && res.ok === false) {
@@ -1059,8 +1071,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     if (current.contract_start) {
       contractStart = current.contract_start.replace(/-/g, '/').slice(2);
       const endDate = new Date(current.contract_start);
-      endDate.setMonth(endDate.getMonth() + months);
+    endDate.setMonth(endDate.getMonth() + months);
+      endDate.setDate(endDate.getDate() - 1);  // ✅ 1일 마이너스
       contractEnd = endDate.toISOString().slice(2, 10).replace(/-/g, '/');
+    
     }
 
     setRentalForm({
@@ -1456,7 +1470,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     const siteName = current.site_name ?? "";
 
     // ✅ 규격에서 차원(예: 3x9)만 추출
-    const rawSpec = current.spec ?? "3*6";
+const rawSpec = editForm?.spec || current.spec ?? "3*6";
     const specMatch = rawSpec.match(/(\d+)\s*[x×*]\s*(\d+)/i);
     const spec = specMatch 
       ? `${specMatch[1]}x${specMatch[2]}` 
@@ -1560,7 +1574,15 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                       />
                     ) : name}
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'center' }}>{showSpec ? spec : ""}</td>
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    {editMode && showSpec ? (
+                      <input 
+                        value={editForm?.spec || spec} 
+                        onChange={(e) => setEditForm((p: any) => ({ ...p, spec: e.target.value }))}
+                        style={{ ...editInputStyle, textAlign: 'center', width: 50 }}
+                      />
+                    ) : (showSpec ? spec : "")}
+                  </td>
                   <td style={{ ...tdStyle, textAlign: 'center' }}>
                     {editMode && isContainerRental ? (
                       <input 
@@ -1688,16 +1710,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <input 
                       value={rentalForm.contractStart} 
-                      onChange={(e) => {
+                     onChange={(e) => {
                         const start = e.target.value;
-                        let endDate = "";
-                        if (start && start.includes('/')) {
-                          try {
-                            const [y, mo, d] = start.split('/').map(Number);
-                            const dt = new Date(2000 + y, mo - 1 + rentalForm.months, d);
-                            endDate = `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
-                          } catch (e) {}
-                        }
+                         onChange={(e) => {
+                        const start = e.target.value;
+                        const endDate = calcRentalEndDate(start, rentalForm.months);
                         setRentalForm(prev => ({ ...prev, contractStart: start, contractEnd: endDate }));
                       }}
                       placeholder="26/01/15"
@@ -1730,15 +1747,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                     value={rentalForm.months || ''} 
                     onChange={(e) => {
                       const m = Number(e.target.value) || 1;
-                      const start = rentalForm.contractStart;
-                      let endDate = "";
-                      if (start && start.includes('/')) {
-                        try {
-                          const [y, mo, d] = start.split('/').map(Number);
-                          const dt = new Date(2000 + y, mo - 1 + m, d);
-                          endDate = `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
-                        } catch (e) {}
-                      }
+                      const endDate = calcRentalEndDate(rentalForm.contractStart, m);
                       setRentalForm(prev => ({ ...prev, months: m, contractEnd: endDate }));
                     }}
                     style={{ ...editInputStyle, width: 35, textAlign: 'center' }}
@@ -1996,20 +2005,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                 <label>계약시작</label>
                <input 
   value={rentalForm.contractStart} 
-  onChange={(e) => {
+ onChange={(e) => {
     const start = e.target.value;
-    let endDate = "";
-    
-    if (start && start.includes('/')) {
-      try {
-        const [y, mo, d] = start.split('/').map(Number);
-        const dt = new Date(2000 + y, mo - 1 + rentalForm.months, d);
-        endDate = `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
-      } catch (e) {}
-    }
-    
+    const endDate = calcRentalEndDate(start, rentalForm.months);
     setRentalForm({ ...rentalForm, contractStart: start, contractEnd: endDate });
-  }} 
+  }}
   placeholder="26/01/15" 
 />
                 <label>개월</label>
@@ -2018,15 +2018,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                   value={rentalForm.months}
                   onChange={(e) => {
                     const m = Number(e.target.value) || 1;
-                    const start = rentalForm.contractStart;
-                    let endDate = "";
-                    if (start) {
-                      try {
-                        const [y, mo, d] = start.split('/').map(Number);
-                        const dt = new Date(2000 + y, mo - 1 + m, d);
-                        endDate = `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
-                      } catch (e) {}
-                    }
+                    const endDate = calcRentalEndDate(rentalForm.contractStart, m);
                     setRentalForm({ ...rentalForm, months: m, contractEnd: endDate });
                   }}
                   style={{ width: 60 }}
