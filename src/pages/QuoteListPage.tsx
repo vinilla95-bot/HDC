@@ -127,14 +127,13 @@ function normItem(it: QuoteItem) {
   return { category, name, unit, qty, unitPrice, amount, note, months };
 }
 
-
 // ✅ 임대 종료일 계산 (시작일 + N개월 - 1일, 월세 계약 방식)
 function calcRentalEndDate(startStr: string, months: number): string {
   if (!startStr || !startStr.includes('/')) return "";
   try {
     const [y, mo, d] = startStr.split('/').map(Number);
     const dt = new Date(2000 + y, mo - 1 + months, d);
-    dt.setDate(dt.getDate() - 1);  // ✅ 1일 마이너스
+    dt.setDate(dt.getDate() - 1);
     return `${String(dt.getFullYear()).slice(2)}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
   } catch (e) { return ""; }
 }
@@ -239,7 +238,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         return { w: item.lineSpec.w, l: item.lineSpec.l, h: item.lineSpec.h || 2.6 };
       }
     }
-    // 규격이 없으면 current의 w, l 사용
     return { w: current?.w || 3, l: current?.l || 6, h: 2.6 };
   }, [current]);
 
@@ -272,7 +270,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       site_name: newForm.sitePickedLabel || newForm.siteQ,
     }));
     
-    // vatIncluded 변경 시 DB 업데이트
     if (newForm.vatIncluded !== quoteForm.vatIncluded && current) {
       supabase.from("quotes").update({ vat_included: newForm.vatIncluded }).eq("quote_id", current.quote_id);
       setCurrent({ ...current, vat_included: newForm.vatIncluded });
@@ -343,7 +340,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       const isRent = item.unit === "개월" || String(item.optionName || "").includes("임대");
       
       if (isRent) {
-        // 규격별 월 임대료
         const rentPrices: Record<string, number> = {
           '3x3': 140000,
           '3x4': 130000,
@@ -364,7 +360,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         };
       }
       
-      // 일반 품목은 옵션에서 재계산
       const opt = options.find((o: any) => o.option_id === item.optionId);
       if (opt) {
         const calculated = calculateOptionLine(opt as any, spec.w, spec.l);
@@ -389,12 +384,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     ));
   }, []);
 
-  // ✅ 옵션 선택 핸들러 - customerUnitPrice 계산 수정 (App.tsx와 동일 로직)
   const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
     const rawName = String(opt.option_name || "");
     const rent = rawName.includes("임대") && !opt._isCustomFreeText;
     
-    // displayName만 변경하는 경우
     if (opt._isDisplayNameOnly) {
       setEditItems(prev => prev.map(item => 
         item.key === targetItem.key 
@@ -407,7 +400,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     const months = opt._months || 3;
     const showSpecValue = String(opt.show_spec || "n").toLowerCase();
     
-    // ✅ 현재 행의 규격이 있으면 유지, 없으면 상속
     const itemIndex = computedItems.findIndex((i: any) => i.key === targetItem.key);
     const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
     const existingLineSpec = (targetItem.lineSpec?.w > 0 && targetItem.lineSpec?.l > 0)
@@ -417,12 +409,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     const hasMonthInName = /\d+개월/.test(rawName);
     const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
     
-    // ✅ 핵심 수정: App.tsx addOption과 동일한 로직
     const customerUnitPrice = rent 
       ? Number(opt.unit_price || calculated.unitPrice || 0) * months 
       : Number(calculated.amount || calculated.unitPrice || 0);
     
-    // 기존 optionName 유지 (비어있을 때만 새로 설정)
     const newOptName = targetItem.optionName || rawName;
     
     setEditItems(prev => prev.map(item => 
@@ -449,13 +439,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     ));
   }, [current, computedItems, getInheritedSpec]);
 
-  // ✅ 품목 추가 핸들러 - specOverride 지원 추가 (App.tsx와 동일)
   const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
     const rawName = String(opt.option_name || "");
     const rent = rawName.includes("임대") && !opt._isCustomFreeText && !opt._isEmptyRow;
     const months = opt._months || 3;
     
-    // ✅ 상속 규격 사용
     const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
     const inheritedSpec = getInheritedSpec(editItems, targetIdx);
     const effectiveSpec = specOverride || inheritedSpec;
@@ -496,14 +484,12 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     });
   }, [current, editItems, getInheritedSpec]);
 
-  // ✅ 운송비 추가 핸들러
   const handleAddDelivery = useCallback((site: any, type: 'delivery' | 'crane', insertIndex?: number) => {
     const price = type === 'delivery' ? site.delivery : site.crane;
     const name = type === 'delivery' 
       ? `5톤 일반트럭 운송비(하차별도)-${site.alias}` 
       : `크레인 운송비-${site.alias}`;
     
-    // ✅ 상속 규격 사용
     const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
     const inheritedSpec = getInheritedSpec(editItems, targetIdx);
     
@@ -531,7 +517,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     });
   }, [current, editItems, getInheritedSpec]);
 
-  // ✅ 지역 검색 핸들러
   const handleSiteSearch = useCallback(async (query: string) => {
     if (!query.trim()) return [];
     const { list } = await searchSiteRates(query.trim(), current?.w || 3, current?.l || 6);
@@ -567,7 +552,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       const vat = Math.round(supply * 0.1);
       const total = supply + vat;
 
-      // ✅ 임대차 관련 데이터를 memo에 JSON으로 저장
       const rentalMeta = {
         rentalForm,
         rentalConditions,
@@ -576,7 +560,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       };
       const memoJson = JSON.stringify(rentalMeta);
 
-      // ✅ contract_start 변환 (YY/MM/DD → YYYY-MM-DD)
       let contractStartISO = current.contract_start;
       if (rentalForm.contractStart && rentalForm.contractStart.includes('/')) {
         try {
@@ -833,7 +816,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       const bizcardImageUrl = selectedBizcard?.image_url || "";
       const customerName = current!.customer_name || "고객";
 
-      // ✅ 첨부파일 URL 배열 생성
       const attachmentUrls: string[] = [];
       if (attachments.bankAccount) {
         attachmentUrls.push(ATTACHMENT_URLS.bankAccount);
@@ -851,13 +833,13 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         bizcardImageUrl,
         customerName,
         getDocTitle(),
-        attachmentUrls  // ✅ 첨부파일 URL 배열 추가
+        attachmentUrls
       ]);
 
       setSendStatus("전송 완료!");
       toast(`${getDocTitle()} 메일 전송 완료`);
       setSendOpen(false);
-      setAttachments({ bankAccount: false, bizRegistration: false }); // ✅ 초기화
+      setAttachments({ bankAccount: false, bizRegistration: false });
       loadList(q);
     } catch (e: any) {
       setSendStatus("전송 실패: " + (e?.message || String(e)));
@@ -959,7 +941,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${isStatement ? 600 : 1123}px; background: #fff; padding: 16px; box-sizing: border-box;`;
 
-      // select를 선택된 텍스트로 교체
       const clonedSelects = clonedSheet.querySelectorAll('select');
       const originalSelects = sheetEl.querySelectorAll('select');
       clonedSelects.forEach((select, idx) => {
@@ -971,15 +952,12 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         select.parentNode?.replaceChild(span, select);
       });
 
-      // 버튼 숨기기
       const buttons = clonedSheet.querySelectorAll('button');
       buttons.forEach(btn => btn.style.display = 'none');
 
-      // input 숨기기 (a4Items 내부)
       const inputs = clonedSheet.querySelectorAll('.a4Items input');
       inputs.forEach(input => (input as HTMLElement).style.display = 'none');
 
-      // +품목추가 버튼 숨기기
       const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
       if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
 
@@ -1000,7 +978,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
       const imgData = canvas.toDataURL("image/png");
 
-      // 새 창에서 이미지 인쇄
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
@@ -1051,7 +1028,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     requireCurrent();
     setSendTo("");
     setSendStatus("");
-    setAttachments({ bankAccount: false, bizRegistration: false }); // ✅ 첨부파일 초기화
+    setAttachments({ bankAccount: false, bizRegistration: false });
     setSendOpen(true);
   }
 
@@ -1071,10 +1048,9 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     if (current.contract_start) {
       contractStart = current.contract_start.replace(/-/g, '/').slice(2);
       const endDate = new Date(current.contract_start);
-    endDate.setMonth(endDate.getMonth() + months);
-      endDate.setDate(endDate.getDate() - 1);  // ✅ 1일 마이너스
+      endDate.setMonth(endDate.getMonth() + months);
+      endDate.setDate(endDate.getDate() - 1);  // ✅ 1일 마이너스 (월세 계약 방식)
       contractEnd = endDate.toISOString().slice(2, 10).replace(/-/g, '/');
-    
     }
 
     setRentalForm({
@@ -1124,13 +1100,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
             setStatementDate(new Date().toISOString().slice(0, 10));
           }
         } catch (e) {
-          // memo가 JSON이 아니면 기본값 사용
           setPaidAmount(0);
           setStatementDate(new Date().toISOString().slice(0, 10));
           setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
         }
       } else {
-        // memo가 없으면 기본값
         setPaidAmount(0);
         setStatementDate(new Date().toISOString().slice(0, 10));
         setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
@@ -1237,10 +1211,8 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     const [yy, mm, dd] = statementDate.split('-');
     const monthDay = `${parseInt(mm)}/${parseInt(dd)}`;
     
-    // 마감사양 관련 항목 필터링
     const filteredItems = computedItems.filter((item: any) => {
       const name = String(item.displayName || item.optionName || "");
-      // 마감사양 관련 키워드 체크
       if (name.includes("마감 사양") || name.includes("마감사양")) return false;
       if (name.startsWith("-기본 구성") || name.startsWith("-기본구성")) return false;
       if (name.startsWith("-내벽") || name.startsWith("-바닥") || name.startsWith("-지붕") || name.startsWith("-도장")) return false;
@@ -1250,13 +1222,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       if (name.includes("테크 마감") || name.includes("테크마감")) return false;
       if (name.includes("도료 회색 마감") || name.includes("도료회색마감")) return false;
       if (name.includes("옵션 사항 문의") || name.includes("부가 옵션")) return false;
-      // 임대계약 필요정보 필터링
       if (name.includes("임대 계약") || name.includes("임대계약")) return false;
       if (name.includes("필요한 정보") || name.includes("필요정보")) return false;
       return true;
     });
     
-    // 필터링된 항목으로 금액 재계산
     const filteredSupply = filteredItems.reduce((acc: number, item: any) => acc + (item.finalAmount || 0), 0);
     const filteredVat = Math.round(filteredSupply * 0.1);
     const filteredTotal = filteredSupply + filteredVat;
@@ -1316,13 +1286,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
             alt="도장" 
             style={{ 
               position: 'absolute',
-            
               top: -10, 
               left: 55, 
               width: 32, 
               height: 32, 
               opacity: 0.9 
-              
             }} 
           />
         </span>
@@ -1384,7 +1352,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
               const vat = Math.round(supply * 0.1);
               return (
                 <tr key={item.key || idx}>
-                  <td style={{ ...itemTdStyle, textAlign: 'center' }}>{monthDay}</td>
+                  <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>{monthDay}</td>
                   <td style={itemTdStyle}>
                     {editMode ? (
                       <input 
@@ -1399,28 +1367,28 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                       />
                     ) : (item.displayName || item.optionName)}
                   </td>
-                  <td style={{ ...itemTdStyle, textAlign: 'center' }}>
+                  <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>
                     {editMode ? (
                       <input 
                         type="number"
                         value={item.qty || ''} 
                         onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'center', width: 50 }}
+                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }}
                       />
                     ) : (item.displayQty || item.qty || 1)}
                   </td>
-                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>
+                  <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>
                     {editMode ? (
                       <input 
                         type="number"
                         value={item.unitPrice || ''} 
                         onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'right', width: 80 }}
+                        style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }}
                       />
                     ) : money(item.unitPrice)}
                   </td>
-                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(supply)}</td>
-                  <td style={{ ...itemTdStyle, textAlign: 'right' }}>{money(vat)}</td>
+                  <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(supply)}</td>
+                  <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(vat)}</td>
                   <td style={itemTdStyle}>
                     {editMode && (
                       <button 
@@ -1436,7 +1404,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
             })}
             {Array.from({ length: Math.max(0, MIN_ROWS - filteredItems.length) }).map((_, i) => (
               <tr key={`blank-${i}`}>
-                <td style={{ ...itemTdStyle, textAlign: 'center' }}>&nbsp;</td>
+                <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>&nbsp;</td>
                 <td style={itemTdStyle}></td>
                 <td style={itemTdStyle}></td>
                 <td style={itemTdStyle}></td>
@@ -1448,9 +1416,9 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={4} style={{ ...itemTdStyle, textAlign: 'center', fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(filteredSupply)}</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right', fontWeight: 900 }}>{money(filteredVat)}</td>
+              <td colSpan={4} style={{ ...itemTdStyle, textAlign: 'center' as const, fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right' as const, fontWeight: 900 }}>{money(filteredSupply)}</td>
+              <td style={{ ...itemTdStyle, textAlign: 'right' as const, fontWeight: 900 }}>{money(filteredVat)}</td>
               <td style={itemTdStyle}></td>
             </tr>
           </tfoot>
@@ -1469,8 +1437,8 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     const customerEmail = current.customer_email ?? "";
     const siteName = current.site_name ?? "";
 
-    // ✅ 규격에서 차원(예: 3x9)만 추출
-const rawSpec = editForm?.spec || current.spec ?? "3*6";
+    // ✅ 규격에서 차원(예: 3x9)만 추출 - editForm 반영
+    const rawSpec = editForm?.spec || current.spec ?? "3*6";
     const specMatch = rawSpec.match(/(\d+)\s*[x×*]\s*(\d+)/i);
     const spec = specMatch 
       ? `${specMatch[1]}x${specMatch[2]}` 
@@ -1574,16 +1542,17 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                       />
                     ) : name}
                   </td>
-               <td style={{ ...tdStyle, textAlign: 'center' as const }}>
+                  {/* ✅ 규격 셀 - 편집모드에서 수정 가능 */}
+                  <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                     {editMode && showSpec ? (
                       <input 
                         value={editForm?.spec || spec} 
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm((p: any) => ({ ...p, spec: e.target.value }))}
+                        onChange={(e) => setEditForm((p: any) => ({ ...p, spec: e.target.value }))}
                         style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }}
                       />
                     ) : (showSpec ? spec : "")}
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'center' }}>
+                  <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                     {editMode && isContainerRental ? (
                       <input 
                         type="number"
@@ -1598,33 +1567,33 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                             return { ...it, months: newMonths, unitPrice: newUnitPrice, amount: (it.qty || 1) * newUnitPrice };
                           }));
                         }}
-                        style={{ ...editInputStyle, textAlign: 'center', width: 40 }}
+                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 40 }}
                       />
                     ) : months}
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>
                     {editMode ? (
                       <input 
                         type="number"
                         value={item.unitPrice || ''} 
                         onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'right', width: 80 }}
+                        style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }}
                       />
                     ) : money(item.unitPrice)}
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'center' }}>
+                  <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                     {editMode ? (
                       <input 
                         type="number"
                         value={item.qty || ''} 
                         onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'center', width: 40 }}
+                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 40 }}
                       />
                     ) : item.qty}
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' }}>{money(item.qty * item.unitPrice)}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right' as const }}>{money(item.qty * item.unitPrice)}</td>
                   {editMode && (
-                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                       <button 
                         onClick={() => handleDeleteItem(item.key)} 
                         style={{ padding: '1px 5px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 3, background: '#fff', cursor: 'pointer' }}
@@ -1636,18 +1605,17 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
             }) : (
               <tr>
                 <td style={tdStyle}>컨테이너 임대</td>
-                <td style={{ ...tdStyle, textAlign: 'center' }}>{spec}</td>
-                <td style={{ ...tdStyle, textAlign: 'center' }}>{rentalForm.months}</td>
-                <td style={{ ...tdStyle, textAlign: 'right' }}>450,000</td>
-                <td style={{ ...tdStyle, textAlign: 'center' }}>1</td>
-                <td style={{ ...tdStyle, textAlign: 'right' }}>450,000</td>
+                <td style={{ ...tdStyle, textAlign: 'center' as const }}>{spec}</td>
+                <td style={{ ...tdStyle, textAlign: 'center' as const }}>{rentalForm.months}</td>
+                <td style={{ ...tdStyle, textAlign: 'right' as const }}>450,000</td>
+                <td style={{ ...tdStyle, textAlign: 'center' as const }}>1</td>
+                <td style={{ ...tdStyle, textAlign: 'right' as const }}>450,000</td>
                 {editMode && <td style={tdStyle}></td>}
               </tr>
             )}
-            {/* ✅ 편집모드일 때 품목 추가 행 */}
             {editMode && (
               <tr>
-                <td colSpan={editMode ? 7 : 6} style={{ ...tdStyle, textAlign: 'center' }}>
+                <td colSpan={editMode ? 7 : 6} style={{ ...tdStyle, textAlign: 'center' as const }}>
                   <button 
                     onClick={() => {
                       const newItem = {
@@ -1664,7 +1632,6 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                         specText: '',
                         months: rentalForm.months || 3,
                       };
-                      // cutoff 위치 앞에 삽입
                       setEditItems(prev => {
                         const ci = prev.findIndex((it: any) => {
                           const n = it.displayName || it.optionName || "";
@@ -1699,7 +1666,7 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
           합계(VAT별도) {money(totalAmount)}원
         </div>
 
-        {/* ✅ 임대 조건 - 인라인 수정 지원 */}
+        {/* ✅ 임대 조건 - calcRentalEndDate 사용 */}
         <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 900, marginBottom: 8 }}>임대 조건</div>
         <table style={{ borderCollapse: 'collapse', width: '70%', margin: '0 auto 12px auto' }}>
           <tbody>
@@ -1710,22 +1677,20 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <input 
                       value={rentalForm.contractStart} 
-                     onChange={(e) => {
-                        const start = e.target.value;
-                         onChange={(e) => {
+                      onChange={(e) => {
                         const start = e.target.value;
                         const endDate = calcRentalEndDate(start, rentalForm.months);
                         setRentalForm(prev => ({ ...prev, contractStart: start, contractEnd: endDate }));
                       }}
                       placeholder="26/01/15"
-                      style={{ ...editInputStyle, width: 65, textAlign: 'center' }}
+                      style={{ ...editInputStyle, width: 65, textAlign: 'center' as const }}
                     />
                     <span>~</span>
                     <input 
                       value={rentalForm.contractEnd}
                       onChange={(e) => setRentalForm(prev => ({ ...prev, contractEnd: e.target.value }))}
-                      placeholder="26/04/15"
-                      style={{ ...editInputStyle, width: 65, textAlign: 'center' }}
+                      placeholder="26/04/14"
+                      style={{ ...editInputStyle, width: 65, textAlign: 'center' as const }}
                     />
                   </div>
                 ) : `${rentalForm.contractStart}~${rentalForm.contractEnd}`}
@@ -1735,7 +1700,7 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                   <input 
                     value={rentalForm.contractStart?.slice(3, 8) || ''} 
                     readOnly
-                    style={{ ...editInputStyle, width: 40, textAlign: 'center', background: '#f0f0f0' }}
+                    style={{ ...editInputStyle, width: 40, textAlign: 'center' as const, background: '#f0f0f0' }}
                   />
                 ) : rentalForm.contractStart?.slice(3, 8)}
               </td>
@@ -1750,7 +1715,7 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                       const endDate = calcRentalEndDate(rentalForm.contractStart, m);
                       setRentalForm(prev => ({ ...prev, months: m, contractEnd: endDate }));
                     }}
-                    style={{ ...editInputStyle, width: 35, textAlign: 'center' }}
+                    style={{ ...editInputStyle, width: 35, textAlign: 'center' as const }}
                   />
                 ) : rentalForm.months}
               </td>
@@ -1808,7 +1773,7 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
 
         <div style={{ textAlign: 'center', fontSize: 12, marginBottom: 15 }}>{ymd}</div>
 
-        {/* ✅ 임대인/임차인 테이블 - 임차인 인라인 수정 지원 */}
+        {/* ✅ 임대인/임차인 테이블 */}
         <table style={{ borderCollapse: 'collapse', width: '80%', margin: '0 auto 15px auto' }}>
           <colgroup>
             <col style={{ width: '12%' }} />
@@ -1919,7 +1884,7 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
         </div>
       </div>
     );
-  }, [current, rentalForm, editItems, editMode, rentalConditions, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
+  }, [current, rentalForm, editItems, editMode, editForm, rentalConditions, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
 
   return (
     <div className="quoteListPage">
@@ -1971,14 +1936,12 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
 
         {/* RIGHT - 미리보기 */}
         <div className="right">
-          {/* 탭 버튼 */}
           <div className="tabBar">
             <button className={`tabBtn ${activeTab === 'quote' ? 'active' : ''}`} onClick={() => setActiveTab('quote')}>견적서</button>
             <button className={`tabBtn ${activeTab === 'statement' ? 'active' : ''}`} onClick={() => setActiveTab('statement')}>거래명세서</button>
             <button className={`tabBtn ${activeTab === 'rental' ? 'active' : ''}`} onClick={() => setActiveTab('rental')}>임대차계약서</button>
           </div>
 
-          {/* 액션 버튼 */}
           <div className="actions">
             <button onClick={() => (window.location.href = "/?view=rt")}>실시간견적</button>
             <button className="primary" onClick={openSendModal}>{getDocTitle()} 보내기</button>
@@ -1998,20 +1961,20 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
             <button className="danger" onClick={handleDelete}>삭제</button>
           </div>
 
-          {/* 임대차 폼 (임대차 탭 + 편집모드가 아닐 때만 표시 - 이제 인라인에서 수정 가능) */}
+          {/* 임대차 폼 - calcRentalEndDate 사용 */}
           {activeTab === 'rental' && current && !editMode && (
             <div className="rentalFormBox">
               <div className="formRow">
                 <label>계약시작</label>
-               <input 
-  value={rentalForm.contractStart} 
- onChange={(e) => {
-    const start = e.target.value;
-    const endDate = calcRentalEndDate(start, rentalForm.months);
-    setRentalForm({ ...rentalForm, contractStart: start, contractEnd: endDate });
-  }}
-  placeholder="26/01/15" 
-/>
+                <input 
+                  value={rentalForm.contractStart} 
+                  onChange={(e) => {
+                    const start = e.target.value;
+                    const endDate = calcRentalEndDate(start, rentalForm.months);
+                    setRentalForm({ ...rentalForm, contractStart: start, contractEnd: endDate });
+                  }} 
+                  placeholder="26/01/15" 
+                />
                 <label>개월</label>
                 <input
                   type="number"
@@ -2094,7 +2057,7 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
             </div>
           </div>
 
-          {/* ✅ 전송 모달 - 첨부파일 선택 추가 */}
+          {/* ✅ 전송 모달 */}
           {sendOpen && (
             <div className="modal" onMouseDown={() => setSendOpen(false)}>
               <div className="modalCard" onMouseDown={(e) => e.stopPropagation()}>
@@ -2125,7 +2088,6 @@ const rawSpec = editForm?.spec || current.spec ?? "3*6";
                     </select>
                   </div>
                   
-                  {/* ✅ 첨부파일 선택 */}
                   <div style={{ marginBottom: 10, padding: 12, background: '#f9fafb', borderRadius: 10, border: '1px solid #e5e7eb' }}>
                     <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>📎 첨부파일 추가</div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 6 }}>
@@ -2446,7 +2408,6 @@ button.danger { background: #fee; border-color: #f99; color: #c00; }
     padding: 0 !important; 
   }
   
-  /* 인쇄 시 편집/선택 요소 숨기기 */
   select, 
   .specDropdown,
   .optionDropdown,
@@ -2464,7 +2425,6 @@ button.danger { background: #fee; border-color: #f99; color: #c00; }
     display: none !important;
   }
   
-  /* 단가 셀 내 여러 가격 옵션 숨기기 - 첫번째만 표시 */
   td > div:nth-child(n+2),
   td > span:nth-child(n+2),
   .priceCell > div:nth-child(n+2),
@@ -2472,7 +2432,6 @@ button.danger { background: #fee; border-color: #f99; color: #c00; }
     display: none !important;
   }
   
-  /* 규격 옵션 div들 숨기기 */
   td div[style*="cursor: pointer"],
   td div[style*="background"]:not(:first-child) {
     display: none !important;
