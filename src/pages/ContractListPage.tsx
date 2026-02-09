@@ -555,23 +555,36 @@ filtered.sort((a, b) => {
                       )}
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", fontSize: 11 }}>
-                      <input
-                        key={c.quote_id}
-                        defaultValue={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
-                        onBlur={(e) => {
-                          const newItems = [{ displayName: e.target.value }];
-                          updateField(c.quote_id, "items", newItems);
-                        }}
-                        style={{ 
-                          width: "100%", 
-                          padding: 4, 
-                          border: "1px solid #ddd", 
-                          borderRadius: 4, 
-                          fontSize: 11,
-                          boxSizing: "border-box"
-                        }}
-                        placeholder="옵션 입력"
-                      />
+                     <input
+  key={c.quote_id}
+  defaultValue={c.items && c.items.length > 0 ? (c.items[0]?.displayName || c.items[0]?.optionName || "") : ""}
+  onBlur={(e) => {
+    const oldValue = c.items && c.items.length > 0 
+      ? (c.items[0]?.displayName || c.items[0]?.optionName || "") 
+      : "";
+    
+    // ✅ 변경이 없으면 저장하지 않음
+    if (e.target.value === oldValue) return;
+    
+    // ✅ 첫 번째 아이템의 displayName만 변경하고 나머지 유지
+    const existingItems = Array.isArray(c.items) ? [...c.items] : [];
+    if (existingItems.length > 0) {
+      existingItems[0] = { ...existingItems[0], displayName: e.target.value };
+    } else {
+      existingItems.push({ displayName: e.target.value });
+    }
+    updateField(c.quote_id, "items", existingItems);
+  }}
+  style={{ 
+    width: "100%", 
+    padding: 4, 
+    border: "1px solid #ddd", 
+    borderRadius: 4, 
+    fontSize: 11,
+    boxSizing: "border-box"
+  }}
+  placeholder="옵션 입력"
+/>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                       <input
