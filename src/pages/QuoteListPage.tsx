@@ -642,7 +642,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     }
   }
 
-  async function handleConfirmContract() {
+ async function handleConfirmContract() {
     requireCurrent();
     const confirmed = window.confirm(
       `이 견적을 계약 확정하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n금액: ${money(current!.total_amount)}원`
@@ -665,13 +665,34 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
           break;
         }
       }
+
+      // ✅ 현재 editItems도 함께 저장 (편집 중 내용 손실 방지)
+      const itemsToSave = editItems.map((it: any, idx: number) => ({
+        optionId: it.optionId || `ITEM_${idx + 1}`,
+        optionName: it.optionName || it.displayName || "",
+        displayName: it.displayName || "",
+        itemName: it.displayName || "",
+        unit: it.unit || "EA",
+        qty: Number(it.qty) || 0,
+        unitPrice: Number(it.unitPrice) || 0,
+        amount: Number(it.qty * it.unitPrice) || 0,
+        showSpec: it.showSpec || "n",
+        lineSpec: it.lineSpec,
+        specText: it.specText ?? "",
+        months: it.months,
+      }));
       
       const { error, data } = await supabase
         .from("quotes")
         .update({ 
           status: "confirmed",
           contract_type: contractType,
-          contract_date: new Date().toISOString().slice(0, 10)
+          contract_date: new Date().toISOString().slice(0, 10),
+          items: itemsToSave,  // ✅ items도 함께 저장
+          customer_name: editForm?.customer_name ?? current!.customer_name,
+          customer_phone: editForm?.customer_phone ?? current!.customer_phone,
+          customer_email: editForm?.customer_email ?? current!.customer_email,
+          site_name: editForm?.site_name ?? current!.site_name,
         })
         .eq("quote_id", current!.quote_id)
         .select();
