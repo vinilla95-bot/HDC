@@ -140,9 +140,16 @@ export default function DeliveryCalendarPage({ onBack }: { onBack: () => void })
 
   // ✅ 색상 결정 로직
   const getItemColor = useCallback((item: DeliveryItem): ColorType => {
-    if (item.delivery_color && item.delivery_color !== "auto") {
-      return item.delivery_color as ColorType;
-    }
+   // getItemColor 함수 안, "auto" 체크 바로 아래에 추가
+if (item.delivery_color && item.delivery_color !== "auto") {
+  return item.delivery_color as ColorType;
+}
+
+// ✅ 이 3줄 추가
+if (item.contract_type === "memo") {
+  return "yellow";
+}
+
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
