@@ -553,11 +553,15 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       const total = supply + vat;
 
       const rentalMeta = {
-        rentalForm,
-        rentalConditions,
-        statementDate,
-        paidAmount,
-      };
+  rentalForm,
+  rentalConditions,
+  statementDate,
+  paidAmount,
+  statementCustomer: {
+    customer_reg_no: editForm?.customer_reg_no || "",
+    customer_addr: editForm?.customer_addr || "",
+  },
+};
       const memoJson = JSON.stringify(rentalMeta);
 
       let contractStartISO = current.contract_start;
@@ -1089,12 +1093,14 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     });
 
       setEditForm({
-        customer_name: current.customer_name || "",
-        customer_email: current.customer_email || "",
-        customer_phone: current.customer_phone || "",
-        site_name: current.site_name || "",
-        spec: current.spec || "",
-      });
+  customer_name: current.customer_name || "",
+  customer_email: current.customer_email || "",
+  customer_phone: current.customer_phone || "",
+  site_name: current.site_name || "",
+  spec: current.spec || "",
+  customer_reg_no: "",
+  customer_addr: "",
+});
 
       // ✅ memo에서 임대차/거래명세서 데이터 복원
       let restoredRental = false;
@@ -1105,6 +1111,9 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
             setRentalForm(prev => ({ ...prev, ...meta.rentalForm }));
             restoredRental = true;
           }
+          if (meta && meta.statementCustomer) {
+  setEditForm(prev => ({ ...prev, ...meta.statementCustomer }));
+}
           if (meta && Array.isArray(meta.rentalConditions)) {
             setRentalConditions(meta.rentalConditions);
           } else {
@@ -1279,8 +1288,22 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                   ) : customerName}
                 </td>
               </tr>
-              <tr><th style={{ ...thStyle, width: '80px' }}>등록번호</th><td style={tdStyle}></td></tr>
-              <tr><th style={{ ...thStyle, width: '80px' }}>주소</th><td style={tdStyle}></td></tr>
+              <tr>
+  <th style={{ ...thStyle, width: '80px' }}>등록번호</th>
+  <td style={tdStyle}>
+    {editMode ? (
+      <input value={editForm?.customer_reg_no || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_reg_no: e.target.value }))} style={editInputStyle} />
+    ) : (editForm?.customer_reg_no || "")}
+  </td>
+</tr>
+<tr>
+  <th style={{ ...thStyle, width: '80px' }}>주소</th>
+  <td style={tdStyle}>
+    {editMode ? (
+      <input value={editForm?.customer_addr || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_addr: e.target.value }))} style={editInputStyle} />
+    ) : (editForm?.customer_addr || "")}
+  </td>
+</tr>
               <tr>
                 <th style={{ ...thStyle, width: '80px' }}>전화번호</th>
                 <td style={tdStyle}>
