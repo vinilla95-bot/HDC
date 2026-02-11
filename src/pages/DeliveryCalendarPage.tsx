@@ -265,39 +265,44 @@ if (item.contract_type === "memo") {
   };
 
   // ✅ 출고 라벨 생성
-  const getDeliveryLabel = (item: DeliveryItem) => {
+ const getDeliveryLabel = (item: DeliveryItem) => {
     const type = item.contract_type || "order";
     const spec = item.spec || "";
     const options = summarizeOptions(item.items, true);
     const customer = item.customer_name || "";
     const qty = getQty(item);
     const transportType = getTransportType(item);
-    const memo = getDisplayMemo(item.memo) || "";  // ✅ rentalForm JSON 숨김
+    const memo = getDisplayMemo(item.memo) || "";
+
+    // ✅ 검수 진행률
+    const checks = item.inspection_checks || {};
+    const totalItems = (item.items || []).length;
+    const checkedCount = Object.values(checks).filter(Boolean).length;
+    const inspectionTag = totalItems > 0 && checkedCount > 0 
+      ? ` (${checkedCount}/${totalItems})` 
+      : "";
 
     const isMemoOnly = !spec && (!item.items || item.items.length === 0);
     if (isMemoOnly) {
       return `${customer ? customer + " " : ""}${memo}`.trim() || "메모";
     }
-
     let prefix = "";
     if (transportType === "crane") {
       prefix = "크";
     }
-
     const qtyText = `-${qty}동`;
-
     if (type === "memo") {
       return customer || "메모";
     } else if (type === "inventory") {
       const containerType = (item as any).container_type || "신품";
       const drawingNo = (item as any).drawing_no ? `#${(item as any).drawing_no}` : "";
-      return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}`.trim();
+      return `${prefix}[재고${containerType}]${drawingNo} ${spec} ${customer}${inspectionTag}`.trim();
     } else if (type === "rental") {
-      return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}`.trim();
+      return `${prefix}[임대]${spec}${qtyText} ${options} ${customer}${inspectionTag}`.trim();
     } else if (type === "used") {
-      return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}`.trim();
+      return `${prefix}[중고]${spec}${qtyText} ${options} ${customer}${inspectionTag}`.trim();
     } else {
-      return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}`.trim();
+      return `${prefix}[신품]${spec}${qtyText} ${options} ${customer}${inspectionTag}`.trim();
     }
   };
 
