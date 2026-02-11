@@ -19,6 +19,7 @@ type DeliveryItem = {
   dispatch_status?: string;
   source?: "quote" | "inventory";
   inventory_id?: string;
+  inspection_checks?: Record<string, boolean>; 
 };
 
 type ColorType = "red" | "orange" | "blue" | "yellow" | "gray" | "green" | "auto" | "purple" | "navy";
@@ -546,6 +547,31 @@ if (item.contract_type === "memo") {
     });
   };
 
+
+// ✅ 검수 체크 토글
+  const handleInspectionToggle = async (item: DeliveryItem, itemIndex: number) => {
+    const checks = { ...(item.inspection_checks || {}) };
+    const key = String(itemIndex);
+    checks[key] = !checks[key];
+
+    if (item.source === "inventory") {
+      await supabase
+        .from("inventory")
+        .update({ inspection_checks: checks })
+        .eq("id", item.inventory_id);
+    } else {
+      await supabase
+        .from("quotes")
+        .update({ inspection_checks: checks })
+        .eq("quote_id", item.quote_id);
+    }
+
+    setDeliveries(prev => prev.map(d =>
+      d.quote_id === item.quote_id ? { ...d, inspection_checks: checks } : d
+    ));
+    setSelectedDelivery(prev => prev ? { ...prev, inspection_checks: checks } : prev);
+  };
+  
   // ✅ 색상 변경
   const handleColorChange = async (item: DeliveryItem, color: ColorType) => {
     if (item.source === "inventory") {
@@ -1376,6 +1402,98 @@ if (item.contract_type === "memo") {
               )}
             </div>
 
+
+{/* ✅ 검수체크 섹션 */}
+              {selectedDelivery.items && selectedDelivery.items.length > 0 && (
+                <div style={{ marginTop: 16, padding: 12, background: "#f0f7ff", borderRadius: 8, border: "1px solid #bbdefb" }}>
+                  <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 10, color: "#1565c0" }}>
+                    🔍 검수체크
+                    <span style={{ fontSize: 11, fontWeight: 400, color: "#666", marginLeft: 8 }}>
+                      ({Object.values(selectedDelivery.inspection_checks || {}).filter(Boolean).length}/{selectedDelivery.items.length})
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {selectedDelivery.items.map((it: any, idx: number) => {
+                      const name = it.displayName || it.optionName || it.itemName || it.item_name || `품목 ${idx + 1}`;
+                      const spec = it.lineSpec ? `${it.lineSpec.w}x${it.lineSpec.l}` : "";
+                      const checked = !!(selectedDelivery.inspection_checks || {})[String(idx)];
+                      return (
+                        <label
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "8px 10px",
+                            background: checked ? "#e8f5e9" : "#fff",
+                            border: checked ? "1px solid #a5d6a7" : "1px solid #e0e0e0",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleInspectionToggle(selectedDelivery, idx)}
+                            style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#4caf50" }}
+                          />
+                          <span style={{
+                            fontSize: 13,
+                            fontWeight: checked ? 400 : 600,
+                            color: checked ? "#888" : "#333",
+                            textDecoration: checked ? "line-through" : "none",
+                            flex: 1,
+                          }}>
+                            {name}
+                          </span>
+                          {spec && spec !== "0x0" && (
+                            <span style={{ fontSize: 11, color: "#999", flexShrink: 0 }}>{spec}</span>
+                          )}
+                          {checked && (
+                            <span style={{ fontSize: 11, color: "#4caf50", fontWeight: 700 }}>✓</span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {/* 전체 체크/해제 버튼 */}
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button
+                      onClick={async () => {
+                        const allChecks: Record<string, boolean> = {};
+                        selectedDelivery.items.forEach((_: any, idx: number) => { allChecks[String(idx)] = true; });
+                        if (selectedDelivery.source === "inventory") {
+                          await supabase.from("inventory").update({ inspection_checks: allChecks }).eq("id", selectedDelivery.inventory_id);
+                        } else {
+                          await supabase.from("quotes").update({ inspection_checks: allChecks }).eq("quote_id", selectedDelivery.quote_id);
+                        }
+                        setDeliveries(prev => prev.map(d => d.quote_id === selectedDelivery.quote_id ? { ...d, inspection_checks: allChecks } : d));
+                        setSelectedDelivery({ ...selectedDelivery, inspection_checks: allChecks });
+                      }}
+                      style={{ padding: "6px 12px", fontSize: 11, borderRadius: 6, border: "1px solid #a5d6a7", background: "#e8f5e9", color: "#2e7d32", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      전체 완료
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const emptyChecks: Record<string, boolean> = {};
+                        if (selectedDelivery.source === "inventory") {
+                          await supabase.from("inventory").update({ inspection_checks: emptyChecks }).eq("id", selectedDelivery.inventory_id);
+                        } else {
+                          await supabase.from("quotes").update({ inspection_checks: emptyChecks }).eq("quote_id", selectedDelivery.quote_id);
+                        }
+                        setDeliveries(prev => prev.map(d => d.quote_id === selectedDelivery.quote_id ? { ...d, inspection_checks: emptyChecks } : d));
+                        setSelectedDelivery({ ...selectedDelivery, inspection_checks: emptyChecks });
+                      }}
+                      style={{ padding: "6px 12px", fontSize: 11, borderRadius: 6, border: "1px solid #e0e0e0", background: "#f5f5f5", color: "#666", cursor: "pointer", fontWeight: 700 }}
+                    >
+                      전체 해제
+                    </button>
+                  </div>
+                </div>
+              )}
+            
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
               <button
