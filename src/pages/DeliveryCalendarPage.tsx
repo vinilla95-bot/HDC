@@ -455,6 +455,7 @@ if (item.contract_type === "memo") {
           delivery_color: editForm.delivery_color,
           dispatch_status: editForm.dispatch_status,
           deposit_status: editForm.deposit_status,
+          inspection_checks: editForm.inspection_checks, 
         })
         .eq("id", selectedDelivery.inventory_id);
 
@@ -475,6 +476,7 @@ if (item.contract_type === "memo") {
           delivery_color: editForm.delivery_color,
           dispatch_status: editForm.dispatch_status,
           deposit_status: editForm.deposit_status,
+          inspection_checks: editForm.inspection_checks, 
         })
         .eq("quote_id", selectedDelivery.quote_id);
 
