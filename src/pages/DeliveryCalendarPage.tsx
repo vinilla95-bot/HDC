@@ -1414,7 +1414,7 @@ if (item.contract_type === "memo") {
               {selectedDelivery.items && selectedDelivery.items.length > 0 && (
                 <div style={{ marginTop: 16, padding: 12, background: "#f0f7ff", borderRadius: 8, border: "1px solid #bbdefb" }}>
                   <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 10, color: "#1565c0" }}>
-                    🔍 검수체크
+                    검수체크
                     <span style={{ fontSize: 11, fontWeight: 400, color: "#666", marginLeft: 8 }}>
                       ({Object.values(selectedDelivery.inspection_checks || {}).filter(Boolean).length}/{selectedDelivery.items.length})
                     </span>
@@ -1530,7 +1530,7 @@ if (item.contract_type === "memo") {
                   cursor: "pointer",
                 }}
               >
-                🗑️ 삭제
+                삭제
               </button>
               <button
                 onClick={(e) => {
@@ -1549,7 +1549,7 @@ if (item.contract_type === "memo") {
                   cursor: "pointer",
                 }}
               >
-                ✏️ 수정
+                 수정
               </button>
               <button
                 onClick={(e) => {
@@ -1567,7 +1567,7 @@ if (item.contract_type === "memo") {
                   cursor: "pointer",
                 }}
               >
-                🚚 배차
+                배차
               </button>
             </div>
           </div>
