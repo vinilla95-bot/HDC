@@ -1965,10 +1965,26 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                   if (it.bizcard_id) setSelectedBizcardId(it.bizcard_id);
                 }}
               >
-                <div className="top">
-                  <span className="badge">{it.quote_title || ""}</span>
-                  <span className="muted">{formatKoDate(it.created_at || "")}</span>
-                </div>
+              <div className="top">
+  <span className="muted">{formatKoDate(it.created_at || "")}</span>
+  {(it as any).status === "confirmed" && (
+    <span style={{ 
+      background: "#059669", 
+      color: "#fff", 
+      fontSize: 10, 
+      fontWeight: 700,
+      padding: "1px 6px", 
+      borderRadius: 4,
+    }}>✓확정</span>
+  )}
+</div>
+<div className="mid">
+  {it.customer_name || it.quote_title || it.quote_id || ""}
+</div>
+<div className="bot">
+  <span>{it.spec ? "· " + it.spec : ""}</span>
+  <span><b>{money(it.total_amount)}</b>원</span>
+</div>
                
               </div>
             ))}
