@@ -721,11 +721,12 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   async function loadList(keyword = ""): Promise<void> {
     setLoading(true);
     try {
-      const selectCols = [
+    const selectCols = [
         "quote_id", "version", "quote_title", "customer_name", "customer_phone",
         "customer_email", "site_name", "site_addr", "spec", "w", "l", "product",
         "qty", "memo", "contract_start", "supply_amount", "vat_amount", "total_amount",
         "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id","vat_included",
+        "status",  // ← 추가
       ].join(",");
 
       let query = supabase
@@ -1968,11 +1969,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
                   <span className="badge">{it.quote_title || ""}</span>
                   <span className="muted">{formatKoDate(it.created_at || "")}</span>
                 </div>
-                <div className="mid">{it.customer_name || it.quote_id || ""}</div>
-                <div className="bot">
-                  <span>{it.spec ? "· " + it.spec : ""}</span>
-                  <span><b>{money(it.total_amount)}</b>원</span>
-                </div>
+               
               </div>
             ))}
           </div>
