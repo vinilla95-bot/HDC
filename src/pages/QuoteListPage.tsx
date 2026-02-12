@@ -729,15 +729,18 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         "status",  // ← 추가
       ].join(",");
 
+     const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      
       let query = supabase
         .from("quotes")
         .select(selectCols)
         .or("source.is.null,source.eq.통화녹음")
         .not("quote_id", "like", "SCHEDULE_%")
         .not("quote_id", "like", "KAKAO_%")
+        .gte("created_at", oneMonthAgo.toISOString())
         .order("created_at", { ascending: false })
         .limit(200);
-
       const kw = (keyword || "").trim();
       if (kw) {
         const like = `%${kw}%`;
@@ -768,6 +771,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     }
   }
 
+const confirmedCount = useMemo(() => 
+    list.filter((it: any) => (it as any).status === "confirmed").length
+  , [list]);
+  
   const getDocTitle = () => {
     switch (activeTab) {
       case "quote": return "견적서";
@@ -1939,10 +1946,13 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         {/* LEFT - 목록 */}
         <div className="panel">
           <div className="hdr">
-            <h1>견적 목록</h1>
-            <span className="spacer" />
-            <span className="badge">{loading ? "..." : String(list.length)}</span>
-          </div>
+  <h1>견적 목록</h1>
+  <span className="spacer" />
+  <span className="badge">{loading ? "..." : String(list.length)}</span>
+  <span className="badge" style={{ background: "#059669", color: "#fff", borderColor: "#059669" }}>
+    확정 {confirmedCount}
+  </span>
+</div>
 
           <div className="search">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="견적 검색 (견적번호/고객/규격/제목/현장)" />
