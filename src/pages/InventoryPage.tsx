@@ -434,29 +434,16 @@ const filteredItems = useMemo(() => {
 
       {mainTab === "new" && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 20 }}>
+         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 20 }}>
             <div style={{ background: "#fff", borderRadius: 12, padding: 20, border: "1px solid #e5e7eb" }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#28a745", marginBottom: 12 }}>✅ 작업지시완료</div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-               {["3x3", "3x4", "3x6", "3x9"].map(spec => (
-  <div
-    key={spec}
-    onClick={() => setSpecFilter(specFilter === spec ? null : spec)}
-    style={{
-      background: specFilter === spec ? "#ffc107" : "#fffbeb",
-      padding: "10px 16px",
-      borderRadius: 8,
-      textAlign: "center",
-      minWidth: 60,
-      cursor: "pointer",
-      border: specFilter === spec ? "2px solid #e65100" : "2px solid transparent",
-      transition: "all 0.2s",
-    }}
-  >
-    <div style={{ fontSize: 20, fontWeight: 900, color: specFilter === spec ? "#000" : "#f59e0b" }}>{waitingBySpec[spec] || 0}</div>
-    <div style={{ fontSize: 11, color: specFilter === spec ? "#000" : "#666", fontWeight: specFilter === spec ? 700 : 400 }}>{spec}</div>
-  </div>
-))}
+                {["3x3", "3x4", "3x6", "3x9"].map(spec => (
+                  <div key={spec} style={{ background: "#f0f9f0", padding: "10px 16px", borderRadius: 8, textAlign: "center", minWidth: 60 }}>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#28a745" }}>{completedCounts[spec] || 0}</div>
+                    <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
+                  </div>
+                ))}
               </div>
             </div>
             <div style={{ background: "#fff", borderRadius: 12, padding: 20, border: "1px solid #e5e7eb" }}>
