@@ -184,7 +184,7 @@ export default function InventoryPage({
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [depositTab, setDepositTab] = useState<DepositTabType>("all");
-  const [specFilter, setSpecFilter] = useState<string | null>(null);
+const [specFilter, setSpecFilter] = useState<string | null>(null);  // ← 이 줄 추가
   const [mainTab, setMainTab] = useState<MainTabType>("new");
   const [showPhotoModal, setShowPhotoModal] = useState<string[] | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -262,18 +262,16 @@ export default function InventoryPage({
     return null;
   };
 
- const filteredItems = useMemo(() => {
-  let items = allItems;
-  
-  if (specFilter) {
-    items = items.filter(item => normalizeSpec(item.spec) === specFilter && item.inventory_status === "출고대기");
-  }
-  
-  if (depositTab === "all") return items;
-  if (depositTab === "paid") return items.filter(item => item.deposit_status === "완료");
-  if (depositTab === "unpaid") return items.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기");
-  return items;
-}, [allItems, depositTab, specFilter]);
+const filteredItems = useMemo(() => {
+    let items = allItems;
+    if (specFilter) {
+      items = items.filter(item => normalizeSpec(item.spec) === specFilter && item.inventory_status === "출고대기");
+    }
+    if (depositTab === "all") return items;
+    if (depositTab === "paid") return items.filter(item => item.deposit_status === "완료");
+    if (depositTab === "unpaid") return items.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기");
+    return items;
+  }, [allItems, depositTab, specFilter]);
 
   const paidCount = useMemo(() => allItems.filter(item => item.deposit_status === "완료").length, [allItems]);
   const unpaidCount = useMemo(() => allItems.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기").length, [allItems]);
@@ -465,12 +463,13 @@ export default function InventoryPage({
               <div style={{ fontSize: 14, fontWeight: 800, color: "#ffc107", marginBottom: 12 }}>출고대기 <span style={{ background: "#ffc107", color: "#000", padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>{waitingItems.length}대</span></div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 {["3x3", "3x4", "3x6", "3x9"].map(spec => (
-                  <div key={spec} style={{ background: "#fffbeb", padding: "10px 16px", borderRadius: 8, textAlign: "center", minWidth: 60 }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: "#f59e0b" }}>{waitingBySpec[spec] || 0}</div>
-                    <div style={{ fontSize: 11, color: "#666" }}>{spec}</div>
+                  <div key={spec} onClick={() => setSpecFilter(specFilter === spec ? null : spec)} style={{ background: specFilter === spec ? "#ffc107" : "#fffbeb", padding: "10px 16px", borderRadius: 8, textAlign: "center", minWidth: 60, cursor: "pointer", border: specFilter === spec ? "2px solid #e65100" : "2px solid transparent" }}>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: specFilter === spec ? "#000" : "#f59e0b" }}>{waitingBySpec[spec] || 0}</div>
+                    <div style={{ fontSize: 11, color: specFilter === spec ? "#000" : "#666", fontWeight: specFilter === spec ? 700 : 400 }}>{spec}</div>
                   </div>
                 ))}
               </div>
+            
             </div>
           </div>
 
