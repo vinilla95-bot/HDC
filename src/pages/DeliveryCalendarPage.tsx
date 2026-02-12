@@ -439,8 +439,13 @@ if (item.contract_type === "memo") {
   };
 
   // ✅ 수정 저장
-  const handleSaveEdit = async () => {
+ const handleSaveEdit = async () => {
     if (!selectedDelivery) return;
+
+    // ✅ rentalForm JSON 보존
+    const originalMemo = selectedDelivery.memo || "";
+    const isRentalForm = originalMemo.trim().startsWith("{") && originalMemo.includes("rentalForm");
+    const finalMemo = isRentalForm && !editForm.memo ? originalMemo : (editForm.memo || originalMemo);
 
     if (selectedDelivery.source === "inventory") {
       const { error } = await supabase
@@ -451,14 +456,13 @@ if (item.contract_type === "memo") {
           customer_phone: editForm.customer_phone,
           spec: editForm.spec,
           interior: editForm.site_addr,
-          memo: editForm.memo,
+          memo: finalMemo,
           delivery_color: editForm.delivery_color,
           dispatch_status: editForm.dispatch_status,
           deposit_status: editForm.deposit_status,
           inspection_checks: editForm.inspection_checks, 
         })
         .eq("id", selectedDelivery.inventory_id);
-
       if (error) {
         alert("저장 실패: " + error.message);
         return;
@@ -472,20 +476,18 @@ if (item.contract_type === "memo") {
           customer_phone: editForm.customer_phone,
           spec: editForm.spec,
           site_addr: editForm.site_addr,
-          memo: editForm.memo,
+          memo: finalMemo,
           delivery_color: editForm.delivery_color,
           dispatch_status: editForm.dispatch_status,
           deposit_status: editForm.deposit_status,
           inspection_checks: editForm.inspection_checks, 
         })
         .eq("quote_id", selectedDelivery.quote_id);
-
       if (error) {
         alert("저장 실패: " + error.message);
         return;
       }
     }
-
     await loadDeliveries();
     setShowEditModal(false);
     setSelectedDelivery(null);
@@ -1681,7 +1683,7 @@ if (item.contract_type === "memo") {
               <div>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>메모</label>
                 <textarea
-                  value={editForm.memo || ""}
+                 value={getDisplayMemo(editForm.memo) || ""}
                   onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
                   style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box", minHeight: 60, resize: "vertical" }}
                 />
