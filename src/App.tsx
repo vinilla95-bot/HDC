@@ -50,6 +50,31 @@ const matchKoreanLocal = (target: string, query: string): boolean => {
   return t.includes(q);
 };
 
+
+const matchesSpecKeyword = (opt: any, spec: { w: number; l: number }): boolean => {
+  const keyword = String(opt.keyword || "").trim();
+  if (!keyword) return true;
+
+  const normalized = keyword.toUpperCase().replace(/[×*]/g, 'X');
+  const parts = normalized.split('X').map(s => parseFloat(s.trim()));
+  if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return true;
+
+  const kwW = parts[0];
+  const kwL = parts[1];
+
+  // ✅ 현재 규격의 면적
+  const specArea = spec.w * spec.l;
+  // ✅ 3×6 이하 → "3X6" 키워드 표시, 초과 → "3X9" 키워드 표시
+  const isSmall = specArea <= 3 * 6; // ≤ 18㎡
+  const kwArea = kwW * kwL;
+
+  if (isSmall) {
+    return kwArea <= 18; // 3X6 이하 키워드만
+  } else {
+    return kwArea > 18;  // 3X9 이상 키워드만
+  }
+};
+
 // ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
   return "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
@@ -264,11 +289,16 @@ function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
 
-  const filteredOptions = React.useMemo(() => {
-    const q = searchQuery.trim();
-    if (!q) return [];
-    return options.filter((o: any) => matchKoreanLocal(String(o.option_name || ""), q)).slice(0, 15);
-  }, [searchQuery, options]);
+ const filteredOptions = React.useMemo(() => {
+  const q = searchQuery.trim();
+  if (!q) return [];
+  return options
+    .filter((o: any) =>
+      matchKoreanLocal(String(o.option_name || ""), q) &&
+      matchesSpecKeyword(o, effectiveSpec)  // ← 추가
+    )
+    .slice(0, 15);
+}, [searchQuery, options, effectiveSpec]);
 
   // ✅ filteredOptions 변경 시 selectedIndex 리셋
   React.useEffect(() => {
@@ -754,14 +784,17 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
     }
   }, [isEditingItem]);
 
-  const filteredOptions = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return options.filter((o: any) => {
+ const filteredOptions = useMemo(() => {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return [];
+  return options
+    .filter((o: any) => {
       const name = String(o.option_name || "").toLowerCase();
-      return name.includes(q) || matchKoreanLocal(name, q);
-    }).slice(0, 10);
-  }, [searchQuery, options]);
+      return (name.includes(q) || matchKoreanLocal(name, q)) &&
+        matchesSpecKeyword(o, effectiveSpec);  // ← 추가
+    })
+    .slice(0, 10);
+}, [searchQuery, options, effectiveSpec]);
 
   useEffect(() => {
     setSelectedIndex(-1);
@@ -1253,15 +1286,16 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
 
   const computedItems = useMemo(() => selectedItems.map(recomputeRow), [selectedItems]);
 
-  const filteredOptions = useMemo(() => {
-    const q = String(form.optQ || "").trim();
-    if (!q) return [];
-
-    const matched = options.filter((o: any) => {
-      const name = String(o.option_name || "");
-      return matchKoreanLocal(name, q);
-    });
-
+ const filteredOptions = useMemo(() => {
+  const q = String(form.optQ || "").trim();
+  if (!q) return [];
+  const currentSpec = getInheritedSpec(selectedItems, selectedItems.length);  // ← 추가
+  
+  const matched = options.filter((o: any) => {
+    const name = String(o.option_name || "");
+    return matchKoreanLocal(name, q) && matchesSpecKeyword(o, currentSpec);  // ← 추가
+  });
+   
     const qLower = q.toLowerCase();
     matched.sort((a: any, b: any) => {
       const nameA = String(a.option_name || "").toLowerCase();
@@ -1276,8 +1310,8 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
       return includesA - includesB;
     });
 
-    return matched.slice(0, 12);
-  }, [form.optQ, options]);
+   return matched.slice(0, 12);
+}, [form.optQ, options, selectedItems]);
 
   // ✅ 품목 추가 - specOverride로 규격 직접 전달 가능
   const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsParam?: number, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
