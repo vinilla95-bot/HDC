@@ -36,11 +36,10 @@ const getChosung = (str: string): string => {
 const isChosung = (str: string): boolean => {
   return str.split('').every(char => CHOSUNG_LIST.includes(char));
 };
-
 const matchKoreanLocal = (target: string, query: string): boolean => {
   if (!query) return true;
-  const q = query.toLowerCase();
-  const t = target.toLowerCase();
+  const q = query.toLowerCase().replace(/\*/g, 'x');  // ← * → x 변환 추가
+  const t = target.toLowerCase().replace(/\*/g, 'x'); // ← target도 통일
   
   if (isChosung(q)) {
     const targetChosung = getChosung(t);
@@ -49,7 +48,6 @@ const matchKoreanLocal = (target: string, query: string): boolean => {
   
   return t.includes(q);
 };
-
 
 const matchesSpecKeyword = (opt: any, spec: { w: number; l: number }): boolean => {
   const keyword = String(opt.keywords || "").trim();  // ← keywords
