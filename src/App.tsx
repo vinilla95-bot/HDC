@@ -59,20 +59,11 @@ const matchesSpecKeyword = (opt: any, spec: { w: number; l: number }): boolean =
   const parts = normalized.split('X').map(s => parseFloat(s.trim()));
   if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return true;
 
-  const kwW = parts[0];
-  const kwL = parts[1];
-
-  // ✅ 현재 규격의 면적
   const specArea = spec.w * spec.l;
-  // ✅ 3×6 이하 → "3X6" 키워드 표시, 초과 → "3X9" 키워드 표시
-  const isSmall = specArea <= 3 * 6; // ≤ 18㎡
-  const kwArea = kwW * kwL;
+  const kwArea = parts[0] * parts[1];
+  const isSmall = specArea <= 18;
 
-  if (isSmall) {
-    return kwArea <= 18; // 3X6 이하 키워드만
-  } else {
-    return kwArea > 18;  // 3X9 이상 키워드만
-  }
+  return isSmall ? kwArea <= 18 : kwArea > 18;
 };
 
 // ✅ GAS WebApp URL
@@ -289,13 +280,13 @@ function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
 
- const filteredOptions = React.useMemo(() => {
+const filteredOptions = React.useMemo(() => {
   const q = searchQuery.trim();
   if (!q) return [];
   return options
     .filter((o: any) =>
       matchKoreanLocal(String(o.option_name || ""), q) &&
-      matchesSpecKeyword(o, effectiveSpec)  // ← 추가
+      matchesSpecKeyword(o, effectiveSpec)
     )
     .slice(0, 15);
 }, [searchQuery, options, effectiveSpec]);
@@ -784,18 +775,18 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
     }
   }, [isEditingItem]);
 
- const filteredOptions = useMemo(() => {
+const filteredOptions = useMemo(() => {
   const q = searchQuery.trim().toLowerCase();
   if (!q) return [];
   return options
     .filter((o: any) => {
       const name = String(o.option_name || "").toLowerCase();
       return (name.includes(q) || matchKoreanLocal(name, q)) &&
-        matchesSpecKeyword(o, effectiveSpec);  // ← 추가
+        matchesSpecKeyword(o, effectiveSpec);
     })
     .slice(0, 10);
 }, [searchQuery, options, effectiveSpec]);
-
+  
   useEffect(() => {
     setSelectedIndex(-1);
   }, [filteredOptions, sites]);
@@ -1289,28 +1280,24 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
  const filteredOptions = useMemo(() => {
   const q = String(form.optQ || "").trim();
   if (!q) return [];
-  const currentSpec = getInheritedSpec(selectedItems, selectedItems.length);  // ← 추가
-  
+  const currentSpec = getInheritedSpec(selectedItems, selectedItems.length);
+
   const matched = options.filter((o: any) => {
     const name = String(o.option_name || "");
-    return matchKoreanLocal(name, q) && matchesSpecKeyword(o, currentSpec);  // ← 추가
+    return matchKoreanLocal(name, q) && matchesSpecKeyword(o, currentSpec);
   });
-   
-    const qLower = q.toLowerCase();
-    matched.sort((a: any, b: any) => {
-      const nameA = String(a.option_name || "").toLowerCase();
-      const nameB = String(b.option_name || "").toLowerCase();
 
-      const startsA = nameA.startsWith(qLower) ? 0 : 1;
-      const startsB = nameB.startsWith(qLower) ? 0 : 1;
-      if (startsA !== startsB) return startsA - startsB;
+  const qLower = q.toLowerCase();
+  matched.sort((a: any, b: any) => {
+    const nameA = String(a.option_name || "").toLowerCase();
+    const nameB = String(b.option_name || "").toLowerCase();
+    const startsA = nameA.startsWith(qLower) ? 0 : 1;
+    const startsB = nameB.startsWith(qLower) ? 0 : 1;
+    if (startsA !== startsB) return startsA - startsB;
+    return nameA.includes(qLower) ? -1 : 1;
+  });
 
-      const includesA = nameA.includes(qLower) ? 0 : 1;
-      const includesB = nameB.includes(qLower) ? 0 : 1;
-      return includesA - includesB;
-    });
-
-   return matched.slice(0, 12);
+  return matched.slice(0, 12);
 }, [form.optQ, options, selectedItems]);
 
   // ✅ 품목 추가 - specOverride로 규격 직접 전달 가능
