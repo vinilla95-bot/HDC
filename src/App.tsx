@@ -52,7 +52,7 @@ const matchKoreanLocal = (target: string, query: string): boolean => {
 
 
 const matchesSpecKeyword = (opt: any, spec: { w: number; l: number }): boolean => {
-  const keyword = String(opt.keyword || "").trim();
+  const keyword = String(opt.keywords || "").trim();  // ← keywords
   if (!keyword) return true;
 
   const normalized = keyword.toUpperCase().replace(/[×*]/g, 'X');
