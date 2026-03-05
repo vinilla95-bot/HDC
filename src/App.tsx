@@ -1526,13 +1526,16 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
       `${form.sitePickedLabel || form.siteQ || ""} ${spec}`.trim();
 
     return {
-      quote_id,
-      version,
-      quote_title: title,
-      customer_name: form.name,
-      customer_phone: form.phone,
-      customer_email: form.email,
-      site_name: form.sitePickedLabel || form.siteQ || "",
+      // 수정 - quote_date 추가
+return {
+  quote_id,
+  version,
+  quote_title: title,
+  quote_date: form.quoteDate || new Date().toISOString().slice(0, 10),  // ← 이 줄 추가
+  customer_name: form.name,
+  customer_phone: form.phone,
+  customer_email: form.email,
+  site_name: form.sitePickedLabel || form.siteQ || "",
       site_addr: "",
       spec,
       w: 0,
