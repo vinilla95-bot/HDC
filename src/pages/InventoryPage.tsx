@@ -285,23 +285,28 @@ const filteredItems = useMemo(() => {
     return counts;
   }, [allItems]);
 
-  const nextDrawingNo = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    const inventoryNumbers = allItems.filter(item => {
-      if (!item.contract_date) return false;
-      const d = new Date(item.contract_date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    }).map(item => parseInt(item.drawing_no) || 0);
-    const quotesNumbers = allQuotes.filter(item => {
-      if (!item.contract_date) return false;
-      const d = new Date(item.contract_date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    }).map(item => parseInt(item.drawing_no) || 0);
-    const allNumbers = [...inventoryNumbers, ...quotesNumbers].filter(n => n > 0);
-    return allNumbers.length > 0 ? Math.max(...allNumbers) + 1 : 1;
-  }, [allItems, allQuotes]);
+ const nextDrawingNo = useMemo(() => {
+  const now = new Date();
+  const currentYearStr = String(now.getFullYear());
+  const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
+
+  const filterByCurrentMonth = (item: any) => {
+    if (!item.contract_date) return false;
+    const parts = item.contract_date.split("-");
+    return parts[0] === currentYearStr && parts[1] === currentMonthStr;
+  };
+
+  const inventoryNumbers = allItems
+    .filter(filterByCurrentMonth)
+    .map(item => parseInt(item.drawing_no) || 0);
+
+  const quotesNumbers = allQuotes
+    .filter(filterByCurrentMonth)
+    .map(item => parseInt(item.drawing_no) || 0);
+
+  const allNumbers = [...inventoryNumbers, ...quotesNumbers].filter(n => n > 0);
+  return allNumbers.length > 0 ? Math.max(...allNumbers) + 1 : 1;
+}, [allItems, allQuotes]);
 
   const waitingItems = useMemo(() => allItems.filter(item => item.inventory_status === "출고대기"), [allItems]);
   const waitingBySpec = useMemo(() => {
