@@ -279,10 +279,10 @@ function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex
   }, [searchQuery, onSiteSearch]);
 
 const filteredOptions = React.useMemo(() => {
-  const q = searchQuery.trim();
+  const q = searchQuery.trim() options
+    .filter((o: any) =>;
   if (!q) return [];
-  return options
-    .filter((o: any) =>
+  return
       matchKoreanLocal(String(o.option_name || ""), q) &&
       matchesSpecKeyword(o, effectiveSpec)
     )
@@ -690,43 +690,30 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
   const [isEditingSpec, setIsEditingSpec] = useState(false);
   const [specValue, setSpecValue] = useState("");
   const [currentSpec, setCurrentSpec] = useState<{ w: number; l: number; h: number } | null>(null);
-  
   const [isEditingItem, setIsEditingItem] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [sites, setSites] = useState<any[]>([]);
   const [isSearchingSite, setIsSearchingSite] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  
+
   const specInputRef = useRef<HTMLInputElement>(null);
   const itemInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ✅ 실제 사용할 규격 (직접 입력 > 상속)
   const effectiveSpec = currentSpec || inheritedSpec;
 
   const searchQueryRef = useRef(searchQuery);
-  useEffect(() => {
-    searchQueryRef.current = searchQuery;
-  }, [searchQuery]);
+  useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
 
   const commitFreeText = useCallback(() => {
     const trimmed = (searchQueryRef.current || "").trim();
-    
     setIsEditingItem(false);
     setShowDropdown(false);
     setSearchQuery("");
     setSites([]);
-    
     if (trimmed) {
-      const customOpt = { 
-        option_id: `custom_${Date.now()}`, 
-        option_name: trimmed,
-        unit: 'EA',
-        unit_price: 0,
-        show_spec: 'n',
-        _isCustomFreeText: true
-      };
+      const customOpt = { option_id: `custom_${Date.now()}`, option_name: trimmed, unit: 'EA', unit_price: 0, show_spec: 'n', _isCustomFreeText: true };
       onAddItem(customOpt, { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }, insertIndex, currentSpec || undefined);
       setCurrentSpec(null);
       setSpecValue("");
@@ -734,26 +721,17 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
   }, [onAddItem, insertIndex, currentSpec]);
 
   const handleItemBlur = (e: React.FocusEvent) => {
-    if (dropdownRef.current?.contains(e.relatedTarget as Node)) {
-      return;
-    }
+    if (dropdownRef.current?.contains(e.relatedTarget as Node)) return;
     commitFreeText();
   };
-  
-  // ✅ 규격 입력 처리
+
   const handleSpecBlur = () => {
     setIsEditingSpec(false);
     const trimmed = specValue.trim();
-    
-    if (!trimmed) {
-      setCurrentSpec(null);
-      return;
-    }
-    
+    if (!trimmed) { setCurrentSpec(null); return; }
     const normalized = trimmed.replace(/[xX*]/g, '×');
     const parts = normalized.split('×').map(s => s.trim()).filter(s => s !== '');
     const nums = parts.map(s => parseFloat(s));
-    
     if (nums.length >= 2 && nums.every(p => !isNaN(p) && isFinite(p))) {
       const newSpec = { w: nums[0] || 0, l: nums[1] || 0, h: nums[2] || 2.6 };
       setCurrentSpec(newSpec);
@@ -761,50 +739,32 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
     }
   };
 
-  useEffect(() => {
-    if (isEditingSpec && specInputRef.current) {
-      specInputRef.current.focus();
-    }
-  }, [isEditingSpec]);
-  
-  useEffect(() => {
-    if (isEditingItem && itemInputRef.current) {
-      itemInputRef.current.focus();
-    }
-  }, [isEditingItem]);
+  useEffect(() => { if (isEditingSpec && specInputRef.current) specInputRef.current.focus(); }, [isEditingSpec]);
+  useEffect(() => { if (isEditingItem && itemInputRef.current) itemInputRef.current.focus(); }, [isEditingItem]);
 
-const filteredOptions = useMemo(() => {
-  const q = searchQuery.trim().toLowerCase();
-  if (!q) return [];
-  return options
-    .filter((o: any) => {
-      const name = String(o.option_name || "").toLowerCase();
-      return (name.includes(q) || matchKoreanLocal(name, q)) &&
-        matchesSpecKeyword(o, effectiveSpec);
-    })
-    .slice(0, 10);
-}, [searchQuery, options, effectiveSpec]);
-  
-  useEffect(() => {
-    setSelectedIndex(-1);
-  }, [filteredOptions, sites]);
-  
+  const filteredOptions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return options
+      .filter((o: any) => {
+        const name = String(o.option_name || "").toLowerCase();
+        return (name.includes(q) || matchKoreanLocal(name, q)) && matchesSpecKeyword(o, effectiveSpec);
+      })
+      .slice(0, 10);
+  }, [searchQuery, options, effectiveSpec]);
+
+  useEffect(() => { setSelectedIndex(-1); }, [filteredOptions, sites]);
+
   useEffect(() => {
     const searchSites = async () => {
-      if (!searchQuery.trim() || !onSiteSearch) {
-        setSites([]);
-        return;
-      }
+      if (!searchQuery.trim() || !onSiteSearch) { setSites([]); return; }
       setIsSearchingSite(true);
       try {
         const results = await onSiteSearch(searchQuery.trim());
         setSites(results.slice(0, 5));
-      } catch (e) {
-        setSites([]);
-      }
+      } catch (e) { setSites([]); }
       setIsSearchingSite(false);
     };
-
     const timer = setTimeout(searchSites, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
@@ -814,9 +774,19 @@ const filteredOptions = useMemo(() => {
     setShowDropdown(false);
     setSearchQuery("");
     setSites([]);
-    
     const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
     onAddItem(opt, calculated, insertIndex, currentSpec || undefined);
+    setCurrentSpec(null);
+    setSpecValue("");
+  };
+
+  const handleRentSelect = (opt: any, months: number) => {
+    setIsEditingItem(false);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setSites([]);
+    const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+    onAddItem({ ...opt, _months: months }, calculated, insertIndex, currentSpec || undefined);
     setCurrentSpec(null);
     setSpecValue("");
   };
@@ -825,96 +795,52 @@ const filteredOptions = useMemo(() => {
     const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
     const query = searchQuery.toLowerCase();
     const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
-    
     setIsEditingItem(false);
     setShowDropdown(false);
     setSearchQuery("");
     setSites([]);
-    
-    if (onAddDelivery) {
-      onAddDelivery({ ...site, alias: matchedRegion }, type, insertIndex);
-    }
+    if (onAddDelivery) onAddDelivery({ ...site, alias: matchedRegion }, type, insertIndex);
     setCurrentSpec(null);
     setSpecValue("");
   };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
-  // ✅ 규격 셀 렌더링
   const renderSpecCell = () => {
     if (isEditingSpec) {
       return (
-        <input
-          ref={specInputRef}
-          type="text"
-          value={specValue}
-          onChange={(e) => setSpecValue(e.target.value)}
+        <input ref={specInputRef} type="text" value={specValue} onChange={(e) => setSpecValue(e.target.value)}
           onBlur={handleSpecBlur}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSpecBlur();
-              // 규격 입력 후 품목 셀로 이동
-              setTimeout(() => setIsEditingItem(true), 50);
-            } else if (e.key === "Escape") {
-              setIsEditingSpec(false);
-              setSpecValue("");
-            }
+            if (e.key === "Enter") { handleSpecBlur(); setTimeout(() => setIsEditingItem(true), 50); }
+            else if (e.key === "Escape") { setIsEditingSpec(false); setSpecValue(""); }
           }}
-          placeholder="3×6×2.6"
-          autoFocus
-          style={{ 
-            width: "100%", 
-            height: "100%",
-            padding: "6px 4px",
-            margin: 0,
-            border: "none", 
-            fontSize: 11, 
-            outline: "none", 
-            background: "transparent",
-            boxSizing: "border-box",
-            textAlign: "center"
-          }}
+          placeholder="3×6×2.6" autoFocus
+          style={{ width: "100%", height: "100%", padding: "6px 4px", margin: 0, border: "none", fontSize: 11, outline: "none", background: "transparent", boxSizing: "border-box", textAlign: "center" }}
         />
       );
     }
-    
-    const displaySpec = currentSpec 
-      ? `${currentSpec.w}×${currentSpec.l}${currentSpec.h ? '×' + currentSpec.h : ''}`
-      : '';
-    
+    const displaySpec = currentSpec ? `${currentSpec.w}×${currentSpec.l}${currentSpec.h ? '×' + currentSpec.h : ''}` : '';
     return (
-      <span 
-        onClick={() => setIsEditingSpec(true)}
-        style={{ cursor: 'pointer', display: 'block', width: '100%', minHeight: 20, textAlign: 'center' }}
-      >
+      <span onClick={() => setIsEditingSpec(true)} style={{ cursor: 'pointer', display: 'block', width: '100%', minHeight: 20, textAlign: 'center' }}>
         {displaySpec || <span style={{ color: '#ccc' }}>-</span>}
       </span>
     );
   };
 
-  // ✅ 품목 셀 렌더링
   const renderItemCell = () => {
     if (!isEditingItem) {
       return (
-        <span 
-          onClick={() => setIsEditingItem(true)}
-          style={{ cursor: 'pointer', display: 'block', width: '100%', minHeight: 20 }}
-        >
+        <span onClick={() => setIsEditingItem(true)} style={{ cursor: 'pointer', display: 'block', width: '100%', minHeight: 20 }}>
           <span style={{ color: '#aaa' }}>품목 검색...</span>
         </span>
       );
     }
-
     return (
       <>
         <input
-          ref={itemInputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setShowDropdown(true);
-          }}
+          ref={itemInputRef} type="text" value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
           onFocus={() => setShowDropdown(true)}
           onBlur={(e) => handleItemBlur(e)}
           onKeyDown={(e) => {
@@ -930,13 +856,10 @@ const filteredOptions = useMemo(() => {
               e.stopPropagation();
               if (selectedIndex >= 0) {
                 if (selectedIndex < sites.length) {
-                  const site = sites[selectedIndex];
-                  handleDeliverySelect(site, 'delivery');
+                  handleDeliverySelect(sites[selectedIndex], 'delivery');
                 } else {
                   const optIdx = selectedIndex - sites.length;
-                  if (filteredOptions[optIdx]) {
-                    handleSelect(filteredOptions[optIdx]);
-                  }
+                  if (filteredOptions[optIdx]) handleRentSelect(filteredOptions[optIdx], 3);
                 }
                 setSelectedIndex(-1);
               } else {
@@ -951,118 +874,58 @@ const filteredOptions = useMemo(() => {
               setSelectedIndex(-1);
             }
           }}
-          placeholder="검색..."
-          autoFocus
-          style={{ 
-            width: "100%", 
-            height: "100%",
-            padding: "6px 8px",
-            margin: 0,
-            border: "none", 
-            fontSize: 11, 
-            outline: "none", 
-            background: "transparent",
-            boxSizing: "border-box",
-          }}
+          placeholder="검색..." autoFocus
+          style={{ width: "100%", height: "100%", padding: "6px 8px", margin: 0, border: "none", fontSize: 11, outline: "none", background: "transparent", boxSizing: "border-box" }}
         />
         {showDropdown && searchQuery.trim() && (
-          <div 
-            ref={dropdownRef} 
-            style={{ 
-              position: "absolute", 
-              top: "100%", 
-              left: 0, 
-              width: "320px",
-              maxHeight: 350, 
-              overflowY: "auto", 
-              background: "#fff", 
-              border: "1px solid #ccc", 
-              borderRadius: 6,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
-              zIndex: 9999 
-            }}
-          >
+          <div ref={dropdownRef} style={{ position: "absolute", top: "100%", left: 0, width: "320px", maxHeight: 350, overflowY: "auto", background: "#fff", border: "1px solid #ccc", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 9999 }}>
             {sites.length > 0 && (
               <>
                 <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>운송비</div>
                 {sites.map((site: any, idx: number) => (
-                  <div 
-                    key={`site-${idx}`} 
-                    style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }}
-                    onMouseDown={(e) => e.preventDefault()}
-                  >
+                  <div key={`site-${idx}`} style={{ padding: "8px 10px", borderBottom: "1px solid #eee" }} onMouseDown={(e) => e.preventDefault()}>
                     <div style={{ fontWeight: 700, marginBottom: 6 }}>{site.alias}</div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button 
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleDeliverySelect(site, 'delivery')} 
-                        style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
-                      >
-                        일반 {fmtNum(site.delivery)}원
-                      </button>
-                      <button 
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleDeliverySelect(site, 'crane')} 
-                        style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}
-                      >
-                        크레인 {fmtNum(site.crane)}원
-                      </button>
+                      <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleDeliverySelect(site, 'delivery')} style={{ flex: 1, padding: "6px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>일반 {fmtNum(site.delivery)}원</button>
+                      <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleDeliverySelect(site, 'crane')} style={{ flex: 1, padding: "6px 8px", background: "#fff3e0", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11 }}>크레인 {fmtNum(site.crane)}원</button>
                     </div>
                   </div>
                 ))}
               </>
             )}
-            
             {filteredOptions.length > 0 && (
               <>
                 <div style={{ padding: "6px 10px", background: "#f5f5f5", fontSize: 11, fontWeight: 700, color: "#666" }}>품목</div>
                 {filteredOptions.map((opt: any, idx: number) => {
                   const isRent = String(opt.option_name || "").includes("임대");
                   const globalIdx = sites.length + idx;
-                  
                   if (isRent) {
                     return (
-                      <div 
-                        key={opt.option_id} 
+                      <div
+                        key={opt.option_id}
+                        onClick={() => handleRentSelect(opt, 3)}
                         onMouseDown={(e) => e.preventDefault()}
-                        style={{ 
-                          padding: "8px 10px", 
-                          cursor: "pointer", 
-                          borderBottom: "1px solid #eee", 
-                          fontSize: 12,
-                          background: selectedIndex === globalIdx ? "#e3f2fd" : "#fff"
-                        }} 
+                        style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12, background: selectedIndex === globalIdx ? "#e3f2fd" : "#fff" }}
                         onMouseEnter={() => setSelectedIndex(globalIdx)}
                       >
                         <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
                         <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{opt.unit || "EA"} · {fmtNum(Number(opt.unit_price || 0))}원</div>
-                        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }} onClick={(e) => e.stopPropagation()}>
                           <input
-                            type="number"
-                            defaultValue={3}
-                            min={1}
+                            type="number" defaultValue={3} min={1}
                             id={`rent-empty-${opt.option_id}`}
                             onClick={(e) => e.stopPropagation()}
                             onMouseDown={(e) => e.stopPropagation()}
                             style={{ width: 40, padding: "4px", border: "1px solid #ccc", borderRadius: 4, textAlign: "center", fontSize: 11 }}
                           />
                           <span style={{ fontSize: 11 }}>개월</span>
-                          <button 
+                          <button
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={(e) => {
                               e.stopPropagation();
                               const input = document.getElementById(`rent-empty-${opt.option_id}`) as HTMLInputElement;
                               const months = Number(input?.value) || 3;
-                              
-                              setIsEditingItem(false);
-                              setShowDropdown(false);
-                              setSearchQuery("");
-                              setSites([]);
-                              
-                              const calculated = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
-                              onAddItem({ ...opt, _months: months }, calculated, insertIndex, currentSpec || undefined);
-                              setCurrentSpec(null);
-                              setSpecValue("");
+                              handleRentSelect(opt, months);
                             }}
                             style={{ padding: "4px 8px", background: "#e3f2fd", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700 }}
                           >
@@ -1072,19 +935,12 @@ const filteredOptions = useMemo(() => {
                       </div>
                     );
                   }
-                  
                   return (
                     <div
                       key={opt.option_id}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelect(opt)}
-                      style={{ 
-                        padding: "8px 10px", 
-                        cursor: "pointer", 
-                        borderBottom: "1px solid #eee", 
-                        fontSize: 12,
-                        background: selectedIndex === globalIdx ? "#e3f2fd" : "#fff"
-                      }}
+                      style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #eee", fontSize: 12, background: selectedIndex === globalIdx ? "#e3f2fd" : "#fff" }}
                       onMouseEnter={() => setSelectedIndex(globalIdx)}
                     >
                       <div style={{ fontWeight: 700 }}>{opt.option_name}</div>
@@ -1094,7 +950,6 @@ const filteredOptions = useMemo(() => {
                 })}
               </>
             )}
-            
             {filteredOptions.length === 0 && sites.length === 0 && !isSearchingSite && (
               <div style={{ padding: "10px", color: "#999", fontSize: 12 }}>검색 결과 없음 (Enter로 자유입력)</div>
             )}
@@ -1109,9 +964,7 @@ const filteredOptions = useMemo(() => {
     <>
       <td className="c center">&nbsp;</td>
       <td className="c center">{renderSpecCell()}</td>
-      <td className="c" style={{ position: "relative", overflow: "visible", padding: 0 }}>
-        {renderItemCell()}
-      </td>
+      <td className="c" style={{ position: "relative", overflow: "visible", padding: 0 }}>{renderItemCell()}</td>
       <td className="c"></td>
       <td className="c"></td>
       <td className="c"></td>
@@ -1298,51 +1151,110 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
   return matched.slice(0, 12);
 }, [form.optQ, options, selectedItems]);
 
-  // ✅ 품목 추가 - specOverride로 규격 직접 전달 가능
-  const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsParam?: number, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
-    // 상속 규격 찾기
-    const targetIndex = insertIndex !== undefined ? insertIndex : selectedItems.length - 1;
-    const inheritedSpec = getInheritedSpec(selectedItems, targetIndex + 1);
-    const effectiveSpec = specOverride || (inheritedSpec.w > 0 ? inheritedSpec : { w: 0, l: 0, h: 0 });
+const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsParam?: number, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
+  const targetIndex = insertIndex !== undefined ? insertIndex : selectedItems.length - 1;
+  const inheritedSpec = getInheritedSpec(selectedItems, targetIndex + 1);
+  const effectiveSpec = specOverride || (inheritedSpec.w > 0 ? inheritedSpec : { w: 0, l: 0, h: 0 });
 
-    if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
-      const newRows = opt.sub_items.map((sub: any, idx: number) => {
-        const qty = sub.qty || 0;
-        const unitPrice = sub.unitPrice || 0;
-        const amount = qty * unitPrice;
+  if (opt.sub_items && Array.isArray(opt.sub_items) && opt.sub_items.length > 0) {
+    const newRows = opt.sub_items.map((sub: any, idx: number) => {
+      const qty = sub.qty || 0;
+      const unitPrice = sub.unitPrice || 0;
+      const amount = qty * unitPrice;
+      return {
+        key: `${opt.option_id}_${Date.now()}_${idx}`,
+        optionId: `${opt.option_id}_${idx}`,
+        optionName: sub.name,
+        displayName: sub.name,
+        unit: sub.unit || "EA",
+        showSpec: "n",
+        baseQty: qty,
+        baseUnitPrice: unitPrice,
+        baseAmount: amount,
+        displayQty: qty,
+        customerUnitPrice: unitPrice,
+        finalAmount: amount,
+        memo: "",
+        months: 1,
+        lineSpec: idx === 0 ? effectiveSpec : { w: 0, l: 0, h: 0 },
+      };
+    });
 
-        return {
-          key: `${opt.option_id}_${Date.now()}_${idx}`,
-          optionId: `${opt.option_id}_${idx}`,
-          optionName: sub.name,
-          displayName: sub.name,
-          unit: sub.unit || "EA",
-          showSpec: "n",
-          baseQty: qty,
-          baseUnitPrice: unitPrice,
-          baseAmount: amount,
-          displayQty: qty,
-          customerUnitPrice: unitPrice,
-          finalAmount: amount,
-          memo: "",
-          months: 1,
-          lineSpec: idx === 0 ? effectiveSpec : { w: 0, l: 0, h: 0 }, // 첫 번째만 규격 표시
-        };
-      });
+    setSelectedItems((prev: any) => {
+      const mapped = newRows.map(recomputeRow);
+      if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+        const newArr = [...prev];
+        newArr.splice(insertIndex + 1, 0, ...mapped);
+        return newArr;
+      }
+      return [...prev, ...mapped];
+    });
+    setForm((prev) => ({ ...prev, optQ: "" }));
+    setSites([]);
+    return;
+  }
 
-      setSelectedItems((prev: any) => {
-        const mapped = newRows.map(recomputeRow);
-        if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
-          const newArr = [...prev];
-          newArr.splice(insertIndex + 1, 0, ...mapped);
-          return newArr;
-        }
-        return [...prev, ...mapped];
-      });
-      setForm((prev) => ({ ...prev, optQ: "" }));
-      setSites([]);
-      return;
+  const res = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+  const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+  const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
+  const isAircon = rawName.includes("냉난방");
+  const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+  const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
+  const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+  const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
+  const displayQty = 1;
+  const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
+
+  let simplifiedLabel = label;
+  if (label && form.siteQ) {
+    const regions = label.split(',').map((r: string) => r.trim());
+    const searchQuery = form.siteQ.toLowerCase();
+    const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
+    simplifiedLabel = matched || regions[0];
+  }
+
+  const displayName = opt._isEmptyRow
+    ? ''
+    : isSpecial
+    ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
+    : (rent && !isAircon)
+    ? `${rawName} ${defaultMonths}개월`
+    : rawName;
+
+  const showSpec = specOverride ? "y" : (isSpecial ? "y" : String(opt.show_spec || "").toLowerCase());
+
+  const row: any = {
+    key: `${String(opt.option_id || rawName)}_${Date.now()}`,
+    optionId: String(opt.option_id || rawName),
+    optionName: opt._isEmptyRow ? '' : rawName,
+    displayName,
+    unit: rent ? "개월" : res.unit || "EA",
+    showSpec,
+    baseQty,
+    baseUnitPrice,
+    baseAmount,
+    displayQty,
+    customerUnitPrice,
+    finalAmount: Math.round(displayQty * customerUnitPrice),
+    months: defaultMonths,
+    memo: res.memo || "",
+    lineSpec: specOverride || (showSpec === 'y' ? effectiveSpec : { w: 0, l: 0, h: 0 }),
+    _isRent: rent,
+    _isCustomFreeText: opt._isCustomFreeText || false,
+  };
+
+  setSelectedItems((prev: any) => {
+    const newRow = recomputeRow(row);
+    if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+      const newArr = [...prev];
+      newArr.splice(insertIndex + 1, 0, newRow);
+      return newArr;
     }
+    return [...prev, newRow];
+  });
+  setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
+  setSites([]);
+};
 
     const res = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
     const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
@@ -1408,67 +1320,63 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 
-  const updateRow = (
-    key: string,
-    field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
-    value: any
-  ) => {
-    setSelectedItems((prev: any) =>
-      prev.map((item: any) => {
-        if (item.key !== key) return item;
+ const updateRow = (
+  key: string,
+  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
+  value: any
+) => {
+  setSelectedItems((prev: any) =>
+    prev.map((item: any) => {
+      if (item.key !== key) return item;
 
-        const rent = isRentRow(item);
+      const rent = isRentRow(item);
 
-        if (field === "displayName") {
-          return { ...item, displayName: String(value ?? "") };
+      if (field === "displayName") {
+        return { ...item, displayName: String(value ?? "") };
+      }
+
+      if (field === "lineSpec") {
+        return { ...item, lineSpec: value, specText: '', showSpec: value.w > 0 ? 'y' : 'n' };
+      }
+
+      if (field === "specText") {
+        return { ...item, specText: String(value ?? "") };
+      }
+
+      if (field === "months" && rent) {
+        const months = Math.max(1, Math.floor(Number(value || 1)));
+        const newUnitPrice = item.baseUnitPrice * months;
+        const finalAmount = Math.round((item.displayQty || 1) * newUnitPrice);
+        return {
+          ...item,
+          months,
+          customerUnitPrice: newUnitPrice,
+          finalAmount,
+        };
+      }
+
+      if (field === "displayQty") {
+        const qty = Math.max(0, Math.floor(Number(value || 0)));
+        if (rent) {
+          return recomputeRow({ ...item, displayQty: Math.max(1, qty) });
         }
+        return recomputeRow({ ...item, displayQty: qty });
+      }
 
-        if (field === "lineSpec") {
-          return { ...item, lineSpec: value, specText: '', showSpec: value.w > 0 ? 'y' : 'n' };
-        }
-
-        if (field === "specText") {
-          return { ...item, specText: String(value ?? "") };
-        }
-
-        if (field === "months" && rent) {
-          const months = Math.max(1, Math.floor(Number(value || 1)));
-          const newUnitPrice = item.baseUnitPrice * months;
-          const finalAmount = Math.round((item.displayQty || 1) * newUnitPrice);
-          
-          return {
-            ...item,
-            months,
-            customerUnitPrice: newUnitPrice,
-            finalAmount,
-          };
-        }
-
-        if (field === "displayQty") {
-          const qty = Math.max(0, Math.floor(Number(value || 0)));
-          if (rent) {
-            return recomputeRow({ ...item, displayQty: Math.max(1, qty) });
-          }
-          return recomputeRow({ ...item, displayQty: qty });
-        }
-        
       if (field === "customerUnitPrice") {
-  const p = Number(value || 0);
-  const rent = isRentRow(item);
-  if (rent) {
-    // 임대행: 입력한 단가로 baseUnitPrice도 역산해서 함께 업데이트
-    const months = Math.max(1, item.months || 1);
-    const newBaseUnitPrice = Math.round(p / months);
-    return recomputeRow({ ...item, customerUnitPrice: p, baseUnitPrice: newBaseUnitPrice });
-  }
-  return recomputeRow({ ...item, customerUnitPrice: p });
-}
+        const p = Number(value || 0);
+        if (rent) {
+          const months = Math.max(1, item.months || 1);
+          const newBaseUnitPrice = Math.round(p / months);
+          return recomputeRow({ ...item, customerUnitPrice: p, baseUnitPrice: newBaseUnitPrice });
+        }
+        return recomputeRow({ ...item, customerUnitPrice: p });
+      }
 
-        return item;
-      })
-    );
-  };
-
+      return item;
+    })
+  );
+};
   const handleSiteSearch = async (val: string) => {
     setForm((prev) => ({ ...prev, siteQ: val, sitePickedLabel: "" }));
     if (!val) {
@@ -2262,56 +2170,59 @@ const buildPayload = (quote_id: string, version: number) => {
               setSelectedBizcardId={setSelectedBizcardId}
               options={options}
               getInheritedSpec={getInheritedSpec}
-              onSelectOption={(item, opt, calc) => {
-                const rawName = String(opt.option_name || "");
-                const rent = rawName.includes("임대") && !opt._isCustomFreeText;
-                
-                if (opt._isDisplayNameOnly) {
-                  setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-                    ...i, 
-                    displayName: rawName,
-                    _isRent: item._isRent,
-                  } as any));
-                  return;
-                }
-                
-                const months = opt._months || 3;
-                const showSpecValue = String(opt.show_spec || "n").toLowerCase();
-                
-                // ✅ 현재 행의 규격이 있으면 유지, 없으면 상속
-                const itemIndex = computedItems.findIndex(i => i.key === item.key);
-                const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
-                const newLineSpec = item.lineSpec?.w > 0 
-                  ? item.lineSpec 
-                  : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
-                
-                const hasMonthInName = /\d+개월/.test(rawName);
-                const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
-                
-               const customerUnitPrice = rent 
-  ? Number(opt.unit_price || calc.unitPrice || 0) * months 
-  : Number(calc.amount || calc.unitPrice || 0);
-                const newOptName = item.optionName || rawName;
-                
-                setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
-                  ...i, 
-                  optionId: opt.option_id, 
-                  optionName: newOptName,
-                  displayName,
-                  unit: rent ? "개월" : calc.unit || "EA", 
-                  showSpec: showSpecValue,
-                  baseQty: calc.qty || 1, 
-                  baseUnitPrice: opt.unit_price || calc.unitPrice || 0, 
-                  baseAmount: calc.amount || 0,
-                  displayQty: 1, 
-                  customerUnitPrice, 
-                  finalAmount: customerUnitPrice, 
-                  months,
-                  lineSpec: newLineSpec,
-                  _isRent: (item as any)._isRent ?? rent,
-                  _isCustomFreeText: opt._isCustomFreeText || false,
-                } as any));
-              }}
+            onSelectOption={(item, opt, calc) => {
+  const rawName = String(opt.option_name || "");
+  const rent = rawName.includes("임대") && !opt._isCustomFreeText;
+  const isAircon = rawName.includes("냉난방");
+
+  if (opt._isDisplayNameOnly) {
+    setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
+      ...i,
+      displayName: rawName,
+      _isRent: item._isRent,
+    } as any));
+    return;
+  }
+
+  const months = opt._months || 3;
+  const showSpecValue = String(opt.show_spec || "n").toLowerCase();
+
+  const itemIndex = computedItems.findIndex(i => i.key === item.key);
+  const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
+  const newLineSpec = item.lineSpec?.w > 0
+    ? item.lineSpec
+    : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
+
+  const hasMonthInName = /\d+개월/.test(rawName);
+  const displayName = hasMonthInName
+    ? rawName
+    : (rent && !isAircon ? `${rawName} ${months}개월` : rawName);
+
+  const customerUnitPrice = rent
+    ? Number(opt.unit_price || calc.unitPrice || 0) * months
+    : Number(calc.amount || calc.unitPrice || 0);
+
+  const newOptName = item.optionName || rawName;
+
+  setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
+    ...i,
+    optionId: opt.option_id,
+    optionName: newOptName,
+    displayName,
+    unit: rent ? "개월" : calc.unit || "EA",
+    showSpec: showSpecValue,
+    baseQty: calc.qty || 1,
+    baseUnitPrice: opt.unit_price || calc.unitPrice || 0,
+    baseAmount: calc.amount || 0,
+    displayQty: 1,
+    customerUnitPrice,
+    finalAmount: customerUnitPrice,
+    months,
+    lineSpec: newLineSpec,
+    _isRent: (item as any)._isRent ?? rent,
+    _isCustomFreeText: opt._isCustomFreeText || false,
+  } as any));
+}}
               onAddItem={(opt, calc, insertIdx, specOverride) => addOption(opt, false, 0, "", undefined, insertIdx, specOverride)}
               onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
               onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
