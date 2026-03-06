@@ -1519,57 +1519,55 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
     return "";
   };
 
-  const buildPayload = (quote_id: string, version: number) => {
-    const spec = getMainSpec();
-    const title =
-      String(form.quoteTitle || "").trim() ||
-      `${form.sitePickedLabel || form.siteQ || ""} ${spec}`.trim();
+const buildPayload = (quote_id: string, version: number) => {
+  const spec = getMainSpec();
+  const title =
+    String(form.quoteTitle || "").trim() ||
+    `${form.sitePickedLabel || form.siteQ || ""} ${spec}`.trim();
 
-    return {
-      // 수정 - quote_date 추가
-return {
-  quote_id,
-  version,
-  quote_title: title,
-  quote_date: form.quoteDate || new Date().toISOString().slice(0, 10),  // ← 이 줄 추가
-  customer_name: form.name,
-  customer_phone: form.phone,
-  customer_email: form.email,
-  site_name: form.sitePickedLabel || form.siteQ || "",
-      site_addr: "",
-      spec,
-      w: 0,
-      l: 0,
-      product: "",
-      qty: 1,
-      memo: "",
-      contract_start: "",
-      supply_amount,
-      vat_amount,
-      total_amount,
-      pdf_url: "",
-      statement_url: "",
-      bizcard_id: selectedBizcardId || null,
-      items: computedItems.map((r: any) => ({
-        optionId: r.optionId,
-        optionName: r.optionName,
-        itemName: r.displayName || r.optionName,
-        unit: r.unit || "EA",
-        qty: Number(r.displayQty || 0),
-        unitPrice: Number(r.customerUnitPrice || 0),
-        amount: Number(r.finalAmount || 0),
-        memo: r.memo || "",
-        baseQty: r.baseQty,
-        baseUnitPrice: r.baseUnitPrice,
-        baseAmount: r.baseAmount,
-        lineSpec: r.lineSpec,
-        showSpec: r.showSpec,
-        months: r.months,
-        specText: r.specText ?? "",
-      })),
-      updated_at: new Date().toISOString(),
-    };
+  return {
+    quote_id,
+    version,
+    quote_title: title,
+    quote_date: form.quoteDate || new Date().toISOString().slice(0, 10),
+    customer_name: form.name,
+    customer_phone: form.phone,
+    customer_email: form.email,
+    site_name: form.sitePickedLabel || form.siteQ || "",
+    site_addr: "",
+    spec,
+    w: 0,
+    l: 0,
+    product: "",
+    qty: 1,
+    memo: "",
+    contract_start: "",
+    supply_amount,
+    vat_amount,
+    total_amount,
+    pdf_url: "",
+    statement_url: "",
+    bizcard_id: selectedBizcardId || null,
+    items: computedItems.map((r: any) => ({
+      optionId: r.optionId,
+      optionName: r.optionName,
+      itemName: r.displayName || r.optionName,
+      unit: r.unit || "EA",
+      qty: Number(r.displayQty || 0),
+      unitPrice: Number(r.customerUnitPrice || 0),
+      amount: Number(r.finalAmount || 0),
+      memo: r.memo || "",
+      baseQty: r.baseQty,
+      baseUnitPrice: r.baseUnitPrice,
+      baseAmount: r.baseAmount,
+      lineSpec: r.lineSpec,
+      showSpec: r.showSpec,
+      months: r.months,
+      specText: r.specText ?? "",
+    })),
+    updated_at: new Date().toISOString(),
   };
+};
 
   const handlePreview = () => window.print();
 
