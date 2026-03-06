@@ -1255,66 +1255,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
   setSites([]);
 };
 
-    const res = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
-    const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-    const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
-    const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-    const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-    const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
-    const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
-    const displayQty = 1;
-    const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
-
-    let simplifiedLabel = label;
-    if (label && form.siteQ) {
-      const regions = label.split(',').map((r: string) => r.trim());
-      const searchQuery = form.siteQ.toLowerCase();
-      const matched = regions.find((r: string) => r.toLowerCase().includes(searchQuery));
-      simplifiedLabel = matched || regions[0];
-    }
-
-    const displayName = opt._isEmptyRow
-      ? ''
-      : isSpecial
-      ? `${rawName}-${simplifiedLabel}`.replace(/-+$/, "")
-      : rent
-      ? `${rawName} ${defaultMonths}개월`
-      : rawName;
-
-    const showSpec = specOverride ? "y" : (isSpecial ? "y" : String(opt.show_spec || "").toLowerCase());
-
-    const row: any = {
-      key: `${String(opt.option_id || rawName)}_${Date.now()}`,
-      optionId: String(opt.option_id || rawName),
-      optionName: opt._isEmptyRow ? '' : rawName,
-      displayName,
-      unit: rent ? "개월" : res.unit || "EA",
-      showSpec,
-      baseQty,
-      baseUnitPrice,
-      baseAmount,
-      displayQty,
-      customerUnitPrice,
-      finalAmount: Math.round(displayQty * customerUnitPrice),
-      months: defaultMonths,
-      memo: res.memo || "",
-      lineSpec: specOverride || (showSpec === 'y' ? effectiveSpec : { w: 0, l: 0, h: 0 }),
-      _isRent: rent,
-      _isCustomFreeText: opt._isCustomFreeText || false,
-    };
-    
-    setSelectedItems((prev: any) => {
-      const newRow = recomputeRow(row);
-      if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
-        const newArr = [...prev];
-        newArr.splice(insertIndex + 1, 0, newRow);
-        return newArr;
-      }
-      return [...prev, newRow];
-    });
-    setForm((prev) => ({ ...prev, optQ: "", siteQ: prev.sitePickedLabel || prev.siteQ }));
-    setSites([]);
-  };
 
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
