@@ -277,12 +277,11 @@ function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex
     const timer = setTimeout(searchSites, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, onSiteSearch]);
-
 const filteredOptions = React.useMemo(() => {
-  const q = searchQuery.trim() options
-    .filter((o: any) =>;
+  const q = searchQuery.trim();
   if (!q) return [];
-  return
+  return options
+    .filter((o: any) =>
       matchKoreanLocal(String(o.option_name || ""), q) &&
       matchesSpecKeyword(o, effectiveSpec)
     )
