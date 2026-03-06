@@ -55,33 +55,30 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     qty: 1,
   });
 
-  const nextDrawingNo = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+ const nextDrawingNo = useMemo(() => {
+  const now = new Date();
+  const currentYearStr = String(now.getFullYear());
+  const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
 
-    const quotesNumbers = allContracts
-      .filter(c => {
-        if (!c.contract_date) return false;
-        const d = new Date(c.contract_date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      })
-      .map(c => parseInt(c.drawing_no) || 0);
+  const filterByCurrentMonth = (item: any) => {
+    if (!item.contract_date) return false;
+    const parts = item.contract_date.split("-");
+    return parts[0] === currentYearStr && parts[1] === currentMonthStr;
+  };
 
-    const inventoryNumbers = allInventory
-      .filter(c => {
-        if (!c.contract_date) return false;
-        const d = new Date(c.contract_date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      })
-      .map(c => parseInt(c.drawing_no) || 0);
+  const quotesNumbers = allContracts
+    .filter(filterByCurrentMonth)
+    .map(c => parseInt(c.drawing_no) || 0);
 
-    const allNumbers = [...quotesNumbers, ...inventoryNumbers].filter(n => n > 0);
-    const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
-    
-    return maxNo + 1;
-  }, [allContracts, allInventory]);
+  const inventoryNumbers = allInventory
+    .filter(filterByCurrentMonth)
+    .map(c => parseInt(c.drawing_no) || 0);
 
+  const allNumbers = [...quotesNumbers, ...inventoryNumbers].filter(n => n > 0);
+  const maxNo = allNumbers.length > 0 ? Math.max(...allNumbers) : 0;
+
+  return maxNo + 1;
+}, [allContracts, allInventory]);
   const loadContracts = async () => {
     setLoading(true);
     
