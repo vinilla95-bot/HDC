@@ -1383,7 +1383,7 @@ const buildPayload = (quote_id: string, version: number) => {
     quote_id,
     version,
     quote_title: title,
-    quote_date: form.quoteDate || new Date().toISOString().slice(0, 10),
+   created_at: form.quoteDate || new Date().toISOString().slice(0, 10),
     customer_name: form.name,
     customer_phone: form.phone,
     customer_email: form.email,
