@@ -1452,10 +1452,17 @@ const getInheritedSpec = (items: any[], currentIndex: number): { w: number; l: n
           return recomputeRow({ ...item, displayQty: qty });
         }
         
-        if (field === "customerUnitPrice") {
-          const p = Number(value || 0);
-          return recomputeRow({ ...item, customerUnitPrice: p });
-        }
+      if (field === "customerUnitPrice") {
+  const p = Number(value || 0);
+  const rent = isRentRow(item);
+  if (rent) {
+    // 임대행: 입력한 단가로 baseUnitPrice도 역산해서 함께 업데이트
+    const months = Math.max(1, item.months || 1);
+    const newBaseUnitPrice = Math.round(p / months);
+    return recomputeRow({ ...item, customerUnitPrice: p, baseUnitPrice: newBaseUnitPrice });
+  }
+  return recomputeRow({ ...item, customerUnitPrice: p });
+}
 
         return item;
       })
