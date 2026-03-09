@@ -831,7 +831,7 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
     if (!isEditingItem) {
       return (
         <span onClick={() => setIsEditingItem(true)} style={{ cursor: 'pointer', display: 'block', width: '100%', minHeight: 20 }}>
-          <span style={{ color: '#aaa' }}>품목 검색...</span>
+          <span style={{ color: '#aaa' }}> </span>
         </span>
       );
     }
@@ -2628,7 +2628,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                       <input 
                         value={form.name || ""} 
                         onChange={(e) => setForm((p: any) => ({ ...p, name: e.target.value }))}
-                        placeholder="고객명 입력"
+                        placeholder=" "
                         style={{ border: "none", background: "transparent", fontSize: 13, flex: 1 }}
                       />
                     ) : <span>{form.name || ""}</span>}
@@ -2644,7 +2644,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                   <input 
                     value={form.email || ""} 
                     onChange={(e) => setForm && setForm((p: any) => ({ ...p, email: e.target.value }))}
-                    placeholder="이메일 입력"
+                    placeholder=" "
                     style={{ 
                       border: "none", 
                       background: "transparent", 
@@ -2662,7 +2662,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     <input 
                       value={form.phone || ""} 
                       onChange={(e) => setForm((p: any) => ({ ...p, phone: e.target.value }))}
-                      placeholder="전화번호 입력"
+                      placeholder=" "
                       style={{ 
                         border: "none", 
                         background: "transparent", 
@@ -2685,7 +2685,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     <input 
                       value={form.sitePickedLabel || form.siteQ || ""} 
                       onChange={(e) => setForm((p: any) => ({ ...p, sitePickedLabel: e.target.value, siteQ: e.target.value }))}
-                      placeholder="현장 입력"
+                      placeholder=" "
                       style={{ border: "none", background: "transparent", fontSize: 13, width: "100%" }}
                     />
                   ) : siteText}
