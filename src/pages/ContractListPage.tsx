@@ -886,7 +886,7 @@ const allCount = useMemo(() => {
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
                   도면번호 
-                  <span style={{ color: "#888", fontWeight: 400 }}>(비우면 자동: {nextDrawingNo})</span>
+                 <span style={{ color: "#2e5b86", fontWeight: 600 }}>이번달 시작번호: {nextDrawingNo}번 (매월 1번부터 시작)</span>
                 </label>
                 <input
                   value={newItem.drawing_no}
