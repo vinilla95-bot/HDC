@@ -3195,8 +3195,17 @@ table{
   .add-item-btn {
     display: none !important;
   }
-  .a4Items input {
+ .a4Items input {
     display: none !important;
+  }
+  input::placeholder {
+    color: transparent !important;
+  }
+  input::-webkit-input-placeholder {
+    color: transparent !important;
+  }
+  input:placeholder-shown {
+    color: transparent !important;
   }
 
   .wrap > .card:first-child { display: none !important; }
