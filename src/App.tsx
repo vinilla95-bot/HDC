@@ -94,7 +94,7 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
       setTimeout(() => {
         const td = (e.target as HTMLElement).closest('td');
         const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
-        const next = tds[tds.indexOf(td as HTMLElement) + 1] as HTMLElement;
+       const next = tds[tds.indexOf(td as any) + 1] as HTMLElement;
         if (next) next.click();
       }, 50);
     } else if (e.key === "Escape") {
@@ -534,7 +534,7 @@ const filteredOptions = React.useMemo(() => {
                 setTimeout(() => {
                   const td = (e.target as HTMLElement).closest('td');
                   const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
-                  const next = tds[tds.indexOf(td as HTMLElement) + 1] as HTMLElement;
+                 const next = tds[tds.indexOf(td as any) + 1] as HTMLElement;
                   if (next) next.click();
                 }, 50);
               } else if (e.key === "Escape") {
