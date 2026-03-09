@@ -2378,33 +2378,42 @@ onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
                         const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
                         clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
 
-                        const clonedSelects = clonedSheet.querySelectorAll('select');
-                        const originalSelects = originalSheet.querySelectorAll('select');
-                        clonedSelects.forEach((select, idx) => {
-                          const origSelect = originalSelects[idx] as HTMLSelectElement;
-                          const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
-                          const span = document.createElement('span');
-                          span.textContent = selectedText;
-                          span.style.cssText = 'font-size: 13px;';
-                          select.parentNode?.replaceChild(span, select);
-                        });
+                    // 기존 코드 순서 유지
+      const clonedSelects = clonedSheet.querySelectorAll('select');
+      const originalSelects = originalSheet.querySelectorAll('select');
+      clonedSelects.forEach((select, idx) => { ... });
 
-                        const deleteButtons = clonedSheet.querySelectorAll('button');
-                        deleteButtons.forEach(btn => {
-                          if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
-                            btn.style.display = 'none';
-                          }
-                        });
+      const deleteButtons = clonedSheet.querySelectorAll('button');
+      deleteButtons.forEach(btn => { ... });
 
-                        const inputs = clonedSheet.querySelectorAll('.a4Items input');
-                        inputs.forEach(input => {
-                          (input as HTMLElement).style.display = 'none';
-                        });
-                        
-                        const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
-                        if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+      const inputs = clonedSheet.querySelectorAll('.a4Items input');
+      inputs.forEach(input => { ... });
 
-                        captureContainer.appendChild(clonedSheet);
+      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+
+      // ← 여기에 새 placeholder 코드
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        const input = el as HTMLInputElement;
+        input.removeAttribute('placeholder');
+        if (!input.value) {
+          input.style.color = 'transparent';
+          input.style.caretColor = 'transparent';
+        }
+      });
+      clonedSheet.querySelectorAll('span').forEach((el) => {
+        const span = el as HTMLSpanElement;
+        const text = span.textContent || '';
+        if (text.includes('품목 검색') || text.includes('품목 선택') || text.includes('검색...')) {
+          span.style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+        const input = el as HTMLInputElement;
+        if (!input.value) input.style.display = 'none';
+      });
+
+      captureContainer.appendChild(clonedSheet);  // ← 마지막
 
                         await new Promise(r => setTimeout(r, 300));
 
