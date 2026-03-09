@@ -85,7 +85,23 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   React.useEffect(() => { setTempValue(String(value)); }, [value]);
 
   const handleBlur = () => { setIsEditing(false); onChange(Number(tempValue) || 0); };
-  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter") handleBlur(); else if (e.key === "Escape") { setTempValue(String(value)); setIsEditing(false); } };
+ const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleBlur();
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      handleBlur();
+      setTimeout(() => {
+        const td = (e.target as HTMLElement).closest('td');
+        const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
+        const next = tds[tds.indexOf(td as HTMLElement) + 1] as HTMLElement;
+        if (next) next.click();
+      }, 50);
+    } else if (e.key === "Escape") {
+      setTempValue(String(value));
+      setIsEditing(false);
+    }
+  };
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   if (disabled) return <span>{fmtNum(value)}</span>;
@@ -512,6 +528,15 @@ const filteredOptions = React.useMemo(() => {
                 } else {
                   commitFreeText();
                 }
+       } else if (e.key === "Tab" && !e.shiftKey) {
+                e.preventDefault();
+                commitFreeText();
+                setTimeout(() => {
+                  const td = (e.target as HTMLElement).closest('td');
+                  const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
+                  const next = tds[tds.indexOf(td as HTMLElement) + 1] as HTMLElement;
+                  if (next) next.click();
+                }, 50);
               } else if (e.key === "Escape") {
                 e.preventDefault();
                 e.stopPropagation();
