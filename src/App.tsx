@@ -2802,7 +2802,16 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                         ) : (qty ? String(qty) : '')
                       )}
                     </td>
-                  {/* 공급가 */}
+                {/* 단가 */}
+                    <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
+                      {isDescRow ? '' : (
+                        editable && onUpdatePrice
+                          ? <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
+                          : (unitSupply ? fmt(unitSupply) : '')
+                      )}
+                    </td>
+
+                    {/* 공급가 */}
                     <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
                       {isDescRow ? (supply ? fmt(supply) : '') : (
                         editable && onUpdateSupply
@@ -2824,7 +2833,20 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
 
                     {/* 비고 */}
                     <td className="c center" style={{ padding: '4px 6px' }}>
-                       </td>
+                      {editable ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <input
+                            value={item.memo || ''}
+                            onChange={(e) => onUpdateMemo && onUpdateMemo(item.key, e.target.value)}
+                            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 11, outline: 'none', minWidth: 0 }}
+                          />
+                          <button
+                            onClick={() => onDeleteItem && onDeleteItem(item.key)}
+                            style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 13, flexShrink: 0, padding: 0 }}
+                          >✕</button>
+                        </div>
+                      ) : (item.memo || '')}
+                    </td>
 
                   </tr>
                 );
