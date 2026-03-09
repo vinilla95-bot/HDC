@@ -260,7 +260,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   }), [current, editForm]);
 
   // ✅ A4Quote용 setForm 함수
-  const setQuoteForm = useCallback((fn: any) => {
+const setQuoteForm = useCallback((fn: any) => {
     const newForm = typeof fn === 'function' ? fn(quoteForm) : fn;
     setEditForm((prev: any) => ({
       ...prev,
@@ -268,6 +268,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       customer_email: newForm.email,
       customer_phone: newForm.phone,
       site_name: newForm.sitePickedLabel || newForm.siteQ,
+      quoteDate: newForm.quoteDate,
     }));
     
     if (newForm.vatIncluded !== quoteForm.vatIncluded && current) {
@@ -579,7 +580,8 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
           supply_amount: supply,
           vat_amount: vat,
           total_amount: total,
-          updated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : current.created_at,
           customer_name: editForm?.customer_name ?? current.customer_name,
           customer_email: editForm?.customer_email ?? current.customer_email,
           customer_phone: editForm?.customer_phone ?? current.customer_phone,
@@ -1100,7 +1102,7 @@ const confirmedCount = useMemo(() =>
       email: current.customer_email || "",
     });
 
-      setEditForm({
+    setEditForm({
   customer_name: current.customer_name || "",
   customer_email: current.customer_email || "",
   customer_phone: current.customer_phone || "",
@@ -1108,8 +1110,8 @@ const confirmedCount = useMemo(() =>
   spec: current.spec || "",
   customer_reg_no: "",
   customer_addr: "",
+  quoteDate: current.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
 });
-
       // ✅ memo에서 임대차/거래명세서 데이터 복원
       let restoredRental = false;
       if (current.memo) {
