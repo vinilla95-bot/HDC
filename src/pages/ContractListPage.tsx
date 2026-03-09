@@ -205,9 +205,10 @@ filtered.sort((a, b) => {
 
   const currentCounts = getTabCounts(activeTab);
 
-  const updateField = async (quote_id: string, field: string, value: any) => {
+ const updateField = async (quote_id: string, field: string, value: any, isInventory = false) => {
+    const table = isInventory ? "inventory" : "quotes";
     const { error } = await supabase
-      .from("quotes")
+      .from(table)
       .update({ [field]: value })
       .eq("quote_id", quote_id);
 
@@ -217,9 +218,15 @@ filtered.sort((a, b) => {
       return;
     }
 
-    setAllContracts(prev => prev.map(c =>
-      c.quote_id === quote_id ? { ...c, [field]: value } : c
-    ));
+    if (isInventory) {
+      setAllInventory(prev => prev.map(c =>
+        c.quote_id === quote_id ? { ...c, [field]: value } : c
+      ));
+    } else {
+      setAllContracts(prev => prev.map(c =>
+        c.quote_id === quote_id ? { ...c, [field]: value } : c
+      ));
+    }
   };
 
   const uploadDrawingImage = async (quote_id: string, file: File) => {
@@ -440,7 +447,7 @@ drawing_no: newItem.drawing_no || String(baseNo + i),
   ) : (
     <select
       value={c.contract_type || "order"}
-      onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
+     onChange={(e) => updateField(c.quote_id, "contract_date", e.target.value, c.contract_type === "inventory")}
       style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
     >
       <option value="order">수주</option>
@@ -454,7 +461,7 @@ drawing_no: newItem.drawing_no || String(baseNo + i),
                       <input
                         type="date"
                         value={c.contract_date || ""}
-                        onChange={(e) => updateField(c.quote_id, "contract_date", e.target.value)}
+                       onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value, c.contract_type === "inventory")}
                         style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
                       />
                     </td>
