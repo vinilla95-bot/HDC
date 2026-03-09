@@ -1258,10 +1258,9 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
 
   const deleteRow = (key: string) =>
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
-
- const updateRow = (
+const updateRow = (
   key: string,
-  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText",
+  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText" | "supply" | "vatOverride",
   value: any
 ) => {
   setSelectedItems((prev: any) =>
@@ -1309,7 +1308,18 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
           const newBaseUnitPrice = Math.round(p / months);
           return recomputeRow({ ...item, customerUnitPrice: p, baseUnitPrice: newBaseUnitPrice });
         }
-        return recomputeRow({ ...item, customerUnitPrice: p });
+       return recomputeRow({ ...item, customerUnitPrice: p });
+      }
+
+      if (field === "supply") {
+        const supply = Number(value || 0);
+        const qty = Math.max(1, Number(item.displayQty || 1));
+        const newUnitPrice = qty > 0 ? Math.round(supply / qty) : 0;
+        return recomputeRow({ ...item, customerUnitPrice: newUnitPrice });
+      }
+
+      if (field === "vatOverride") {
+        return { ...item, vatOverride: Number(value) };
       }
 
       return item;
@@ -1417,7 +1427,9 @@ const buildPayload = (quote_id: string, version: number) => {
       lineSpec: r.lineSpec,
       showSpec: r.showSpec,
       months: r.months,
-      specText: r.specText ?? "",
+     specText: r.specText ?? "",
+      vatOverride: typeof r.vatOverride === 'number' ? r.vatOverride : undefined,
+  
     })),
     updated_at: new Date().toISOString(),
   };
@@ -2164,7 +2176,9 @@ const buildPayload = (quote_id: string, version: number) => {
 }}
               onAddItem={(opt, calc, insertIdx, specOverride) => addOption(opt, false, 0, "", undefined, insertIdx, specOverride)}
               onUpdateQty={(key, qty) => updateRow(key, "displayQty", qty)}
-              onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
+onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
+              onUpdateSupply={(key, supply) => updateRow(key, "supply", supply)}
+              onUpdateVat={(key, vat) => updateRow(key, "vatOverride", vat)}
               onDeleteItem={(key) => deleteRow(key)}
               focusedRowIndex={focusedRowIndex}
               setFocusedRowIndex={setFocusedRowIndex}
@@ -2452,7 +2466,9 @@ type A4QuoteProps = {
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
   onUpdateSpec?: (key: string, spec: { w: number; l: number; h?: number }) => void;
-  onUpdateSpecText?: (key: string, text: string) => void;
+ onUpdateSpecText?: (key: string, text: string) => void;
+  onUpdateSupply?: (key: string, supply: number) => void;
+  onUpdateVat?: (key: string, vat: number) => void;
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void;
@@ -2462,7 +2478,7 @@ type A4QuoteProps = {
 };
 
 
-function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex, getInheritedSpec: getInheritedSpecProp }: A4QuoteProps) {
+function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, onUpdateSupply, onUpdateVat, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex, getInheritedSpec: getInheritedSpecProp }: A4QuoteProps) {
   
   // ✅ getInheritedSpec 기본값 제공
   const getInheritedSpec = getInheritedSpecProp || ((items: any[], currentIndex: number) => {
@@ -2778,12 +2794,22 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                         ) : (qty ? String(qty) : '')
                       )}
                     </td>
-                    <td className="c right">
-                      {isDescRow ? null : (
-                        editable && onUpdatePrice ? (
-                          <EditableNumberCell value={unitSupply} onChange={(v) => onUpdatePrice(item.key, v)} />
-                        ) : (unitSupply ? fmt(unitSupply) : '')
+                   <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
+                      {isDescRow ? (supply ? fmt(supply) : '') : (
+                        editable && onUpdateSupply
+                          ? <EditableNumberCell value={supply} onChange={(v) => onUpdateSupply(item.key, v)} />
+                          : (supply ? fmt(supply) : '')
                       )}
+                    </td>
+                    <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
+                      {(() => {
+                        const vatDisplay = typeof item.vatOverride === 'number' ? item.vatOverride : vat;
+                        return isDescRow ? (vatDisplay ? fmt(vatDisplay) : '') : (
+                          editable && onUpdateVat
+                            ? <EditableNumberCell value={vatDisplay} onChange={(v) => onUpdateVat(item.key, v)} />
+                            : (vatDisplay ? fmt(vatDisplay) : '')
+                        );
+                      })()}
                     </td>
                     <td className="c right" style={{ whiteSpace: 'nowrap' }}>{supply ? fmt(supply) : ''}</td>
                     <td className="c right" style={{ whiteSpace: 'nowrap' }}>{vat ? fmt(vat) : ''}</td>
