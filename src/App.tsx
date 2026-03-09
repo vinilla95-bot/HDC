@@ -1555,8 +1555,20 @@ const buildPayload = (quote_id: string, version: number) => {
       const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
       if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
       
+     // placeholder 숨김
+      const allInputs = clonedSheet.querySelectorAll('input, textarea');
+      allInputs.forEach((input) => {
+        const el = input as HTMLInputElement;
+        if (!el.value) {
+          el.setAttribute('placeholder', '');
+          el.style.display = 'none';
+        } else {
+          el.setAttribute('placeholder', '');
+        }
+      });
+
       captureContainer.appendChild(clonedSheet);
-     
+
       await new Promise(r => setTimeout(r, 300));
 
       const canvas = await html2canvas(clonedSheet, {
