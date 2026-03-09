@@ -67,18 +67,16 @@ const nextDrawingNo = useMemo(() => {
     return iy === y && im === m;
   };
 
-  // 계약관리에서 직접 추가한 것 + 재고만 집계
   const nums = [
-    ...allContracts.filter(c => thisMonth(c) && c.source === "contract").map(c => parseInt(c.drawing_no) || 0),
+    ...allContracts.filter(thisMonth).map(c => parseInt(c.drawing_no) || 0),
     ...allInventory.filter(thisMonth).map(c => parseInt(c.drawing_no) || 0),
   ].filter(n => n > 0);
-  
-const set = new Set(nums);
+
+  const set = new Set(nums);
   let candidate = 1;
   while (set.has(candidate)) candidate++;
   return candidate;
 }, [allContracts, allInventory]);
-  
   const loadContracts = async () => {
     setLoading(true);
     
@@ -289,7 +287,7 @@ while (numberSet.has(baseNo)) baseNo++;
         contract_type: newItem.contract_type,
         contract_date: newItem.contract_date,
      // 교체
-drawing_no: newItem.drawing_no || String(baseNo + i),
+drawing_no: newItem.drawing_no ? String(parseInt(newItem.drawing_no) + i) : String(baseNo + i),
         spec: newItem.spec,
         bank_account: newItem.bank_account,
         tax_invoice: newItem.tax_invoice,
