@@ -209,7 +209,7 @@ const [specFilter, setSpecFilter] = useState<string | null>(null);  // ← 이 �
     setLoading(true);
     const [inventoryRes, quotesRes, usedRes] = await Promise.all([
       supabase.from("inventory").select("*"),
-      supabase.from("quotes").select("quote_id, contract_date, drawing_no").eq("status", "confirmed"),
+     supabase.from("quotes").select("quote_id, contract_date, drawing_no, source").eq("status", "confirmed"),
       supabase.from("used_inventory").select("*").order("created_at", { ascending: false })
     ]);
     
@@ -300,6 +300,8 @@ const nextDrawingNo = useMemo(() => {
     ...allItems.filter(thisMonth).map(i => parseInt(i.drawing_no) || 0),
     ...allQuotes.filter(thisMonth).map(i => parseInt(i.drawing_no) || 0),
   ].filter(n => n > 0);
+
+  console.log("이번달 도면번호들:", nums); // 확인용
 
   const set = new Set(nums);
   let candidate = 1;
