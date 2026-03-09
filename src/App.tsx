@@ -1236,7 +1236,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
     customerUnitPrice,
     finalAmount: Math.round(displayQty * customerUnitPrice),
     months: defaultMonths,
-    memo: res.memo || "",
+   memo: "",
     lineSpec: specOverride || (showSpec === 'y' ? effectiveSpec : { w: 0, l: 0, h: 0 }),
     _isRent: rent,
     _isCustomFreeText: opt._isCustomFreeText || false,
