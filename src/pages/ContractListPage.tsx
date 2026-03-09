@@ -278,7 +278,8 @@ while (numberSet.has(baseNo)) baseNo++;
         status: "confirmed",
         contract_type: newItem.contract_type,
         contract_date: newItem.contract_date,
-        drawing_no: newItem.drawing_no || String(maxNo + 1 + i),
+     // 교체
+drawing_no: newItem.drawing_no || String(baseNo + i),
         spec: newItem.spec,
         bank_account: newItem.bank_account,
         tax_invoice: newItem.tax_invoice,
