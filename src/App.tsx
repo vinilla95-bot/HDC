@@ -1260,7 +1260,8 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 const updateRow = (
   key: string,
-field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText" | "supply" | "vatOverride" | "memo",
+  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText" | "supply" | "vatOverride" | "memo",
+  value: any
 ) => {
   setSelectedItems((prev: any) =>
     prev.map((item: any) => {
@@ -1317,12 +1318,6 @@ field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec
         return recomputeRow({ ...item, customerUnitPrice: newUnitPrice });
       }
 
- if (field === "supply") {
-        const supply = Number(value || 0);
-        const qty = Math.max(1, Number(item.displayQty || 1));
-        const newUnitPrice = qty > 0 ? Math.round(supply / qty) : 0;
-        return recomputeRow({ ...item, customerUnitPrice: newUnitPrice });
-      }
 
       if (field === "vatOverride") {
         // recomputeRow 호출하지 않음 — vatOverride는 독립 보존
@@ -2489,7 +2484,9 @@ onUpdateSpecText?: (key: string, text: string) => void;
   getInheritedSpec?: (items: any[], currentIndex: number) => { w: number; l: number; h: number };
 };
 
-function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, onUpdateSupply, onUpdateVat, onUpdateMemo, editable,
+function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, onUpdateSupply, onUpdateVat, onUpdateMemo, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex, getInheritedSpec: getInheritedSpecProp }: A4QuoteProps) {
+
+  // ✅ getInheritedSpec 기본값 제공
   
   // ✅ getInheritedSpec 기본값 제공
   const getInheritedSpec = getInheritedSpecProp || ((items: any[], currentIndex: number) => {
@@ -2805,23 +2802,6 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                         ) : (qty ? String(qty) : '')
                       )}
                     </td>
-                   <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
-                      {isDescRow ? (supply ? fmt(supply) : '') : (
-                        editable && onUpdateSupply
-                          ? <EditableNumberCell value={supply} onChange={(v) => onUpdateSupply(item.key, v)} />
-                          : (supply ? fmt(supply) : '')
-                      )}
-                    </td>
-                    <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
-                      {(() => {
-                        const vatDisplay = typeof item.vatOverride === 'number' ? item.vatOverride : vat;
-                        return isDescRow ? (vatDisplay ? fmt(vatDisplay) : '') : (
-                          editable && onUpdateVat
-                            ? <EditableNumberCell value={vatDisplay} onChange={(v) => onUpdateVat(item.key, v)} />
-                            : (vatDisplay ? fmt(vatDisplay) : '')
-                        );
-                      })()}
-                    </td>
                   {/* 공급가 */}
                     <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
                       {isDescRow ? (supply ? fmt(supply) : '') : (
@@ -2842,22 +2822,10 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                       })()}
                     </td>
 
-                    {/* 비고 — memo 편집 가능 */}
-                 <td className="c center" style={{ padding: '4px 6px' }}>
-                      {editable ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <input
-                            value={item.memo || ''}
-                            onChange={(e) => onUpdateMemo && onUpdateMemo(item.key, e.target.value)}
-                            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 11, outline: 'none', minWidth: 0 }}
-                          />
-                          <button
-                            onClick={() => onDeleteItem && onDeleteItem(item.key)}
-                            style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 13, flexShrink: 0, padding: 0 }}
-                          >✕</button>
-                        </div>
-                      ) : (item.memo || '')}
-                    </td>
+                    {/* 비고 */}
+                    <td className="c center" style={{ padding: '4px 6px' }}>
+                       </td>
+
                   </tr>
                 );
               })}
