@@ -72,10 +72,9 @@ const nextDrawingNo = useMemo(() => {
     ...allContracts.filter(c => thisMonth(c) && c.source === "contract").map(c => parseInt(c.drawing_no) || 0),
     ...allInventory.filter(thisMonth).map(c => parseInt(c.drawing_no) || 0),
   ].filter(n => n > 0);
-
-  if (nums.length === 0) return 1;
-  const set = new Set(nums);
-  let candidate = Math.max(...set) + 1;
+  
+const set = new Set(nums);
+  let candidate = 1;
   while (set.has(candidate)) candidate++;
   return candidate;
 }, [allContracts, allInventory]);
