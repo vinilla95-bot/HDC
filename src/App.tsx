@@ -2843,30 +2843,18 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     </td>
 
                     {/* 비고 — memo 편집 가능 */}
-                    <td className="c center" style={{ padding: '4px 6px' }}>
+                 <td className="c center" style={{ padding: '4px 6px' }}>
                       {editable ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          {onUpdateMemo && (
-                            <input
-                              value={item.memo || ''}
-                              onChange={(e) => onUpdateMemo(item.key, e.target.value)}
-                              placeholder=""
-                              style={{
-                                width: '100%',
-                                border: 'none',
-                                background: 'transparent',
-                                fontSize: 11,
-                                outline: 'none',
-                                minWidth: 0,
-                              }}
-                            />
-                          )}
-                          {onDeleteItem && (
-                            <button
-                              onClick={() => onDeleteItem(item.key)}
-                              style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 13, flexShrink: 0, padding: 0 }}
-                            >✕</button>
-                          )}
+                          <input
+                            value={item.memo || ''}
+                            onChange={(e) => onUpdateMemo && onUpdateMemo(item.key, e.target.value)}
+                            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 11, outline: 'none', minWidth: 0 }}
+                          />
+                          <button
+                            onClick={() => onDeleteItem && onDeleteItem(item.key)}
+                            style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 13, flexShrink: 0, padding: 0 }}
+                          >✕</button>
                         </div>
                       ) : (item.memo || '')}
                     </td>
