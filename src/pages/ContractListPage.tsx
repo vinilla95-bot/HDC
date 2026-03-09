@@ -275,9 +275,8 @@ const updateField = async (quote_id: string, field: string, value: any, isInvent
       ...quotesMonthItems.map(item => Number(item.drawing_no) || 0),
       ...inventoryMonthItems.map(item => Number(item.drawing_no) || 0)
     ];
-    
-   const numberSet = new Set(allMonthNumbers.filter(n => n > 0));
-let baseNo = numberSet.size > 0 ? Math.max(...numberSet) + 1 : 1;
+const numberSet = new Set(allMonthNumbers.filter(n => n > 0));
+let baseNo = 1;
 while (numberSet.has(baseNo)) baseNo++;
     const inserts = [];
     for (let i = 0; i < qty; i++) {
