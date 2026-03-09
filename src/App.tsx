@@ -3164,9 +3164,6 @@ table{
   overflow-wrap: break-word;
   line-height: 1.3;
   font-size: 11px;
-  max-height: 65px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .a4Items tbody tr {
@@ -3177,9 +3174,7 @@ table{
   padding: 6px 8px;
   vertical-align: middle;
   min-height: 28px;
-  max-height: 70px;
 }
-
 .a4Items tbody td.wrap{
   vertical-align: middle;
   line-height: 1.3;
