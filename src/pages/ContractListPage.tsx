@@ -5,6 +5,7 @@ import { supabase } from "../QuoteService";
 type ContractQuote = {
   id?: string;
   quote_id: string;
+  source?: string;
   contract_date: string;
   drawing_no: string;
   spec: string;
