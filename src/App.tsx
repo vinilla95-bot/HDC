@@ -1260,8 +1260,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 const updateRow = (
   key: string,
- field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText" | "supply" | "vatOverride" | "memo",
-  value: any
+field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText" | "supply" | "vatOverride" | "memo",
 ) => {
   setSelectedItems((prev: any) =>
     prev.map((item: any) => {
@@ -2478,9 +2477,10 @@ type A4QuoteProps = {
   onUpdatePrice?: (key: string, price: number) => void;
   onDeleteItem?: (key: string) => void;
   onUpdateSpec?: (key: string, spec: { w: number; l: number; h?: number }) => void;
- onUpdateSpecText?: (key: string, text: string) => void;
+onUpdateSpecText?: (key: string, text: string) => void;
   onUpdateSupply?: (key: string, supply: number) => void;
   onUpdateVat?: (key: string, vat: number) => void;
+  onUpdateMemo?: (key: string, memo: string) => void;
   editable?: boolean;
   onSiteSearch?: (query: string) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void;
@@ -2489,8 +2489,7 @@ type A4QuoteProps = {
   getInheritedSpec?: (items: any[], currentIndex: number) => { w: number; l: number; h: number };
 };
 
-
-function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, onUpdateSupply, onUpdateVat, editable, onSiteSearch, onAddDelivery, focusedRowIndex, setFocusedRowIndex, getInheritedSpec: getInheritedSpecProp }: A4QuoteProps) {
+function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, vat_amount, total_amount, bizcardName, bizcards, selectedBizcardId, setSelectedBizcardId, noTransform, noPadding, quoteDate, options, onSelectOption, onAddItem, onUpdateQty, onUpdatePrice, onDeleteItem, onUpdateSpec, onUpdateSpecText, onUpdateSupply, onUpdateVat, onUpdateMemo, editable,
   
   // ✅ getInheritedSpec 기본값 제공
   const getInheritedSpec = getInheritedSpecProp || ((items: any[], currentIndex: number) => {
