@@ -55,7 +55,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     qty: 1,
   });
 
- const nextDrawingNo = useMemo(() => {
+const nextDrawingNo = useMemo(() => {
   const now = new Date();
   const currentYearStr = String(now.getFullYear());
   const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
@@ -73,7 +73,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const inventoryNumbers = allInventory
     .filter(filterByCurrentMonth)
     .map(c => parseInt(c.drawing_no) || 0);
-// 교체
+
   const numberSet = new Set([...quotesNumbers, ...inventoryNumbers].filter(n => n > 0));
   if (numberSet.size === 0) return 1;
   let candidate = Math.max(...numberSet) + 1;
