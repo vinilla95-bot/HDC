@@ -57,27 +57,25 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
 
 const nextDrawingNo = useMemo(() => {
   const now = new Date();
-  const currentYearStr = String(now.getFullYear());
-  const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
+  const y = String(now.getFullYear());
+  const m = String(now.getMonth() + 1).padStart(2, '0');
 
-  const filterByCurrentMonth = (item: any) => {
+  const thisMonth = (item: any) => {
     if (!item.contract_date) return false;
-    const parts = item.contract_date.split("-");
-    return parts[0] === currentYearStr && parts[1] === currentMonthStr;
+    const [iy, im] = item.contract_date.split("-");
+    return iy === y && im === m;
   };
 
-  const quotesNumbers = allContracts
-    .filter(filterByCurrentMonth)
-    .map(c => parseInt(c.drawing_no) || 0);
+  // 계약관리에서 직접 추가한 것 + 재고만 집계
+  const nums = [
+    ...allContracts.filter(c => thisMonth(c) && c.source === "contract").map(c => parseInt(c.drawing_no) || 0),
+    ...allInventory.filter(thisMonth).map(c => parseInt(c.drawing_no) || 0),
+  ].filter(n => n > 0);
 
-  const inventoryNumbers = allInventory
-    .filter(filterByCurrentMonth)
-    .map(c => parseInt(c.drawing_no) || 0);
-
-  const numberSet = new Set([...quotesNumbers, ...inventoryNumbers].filter(n => n > 0));
-  if (numberSet.size === 0) return 1;
-  let candidate = Math.max(...numberSet) + 1;
-  while (numberSet.has(candidate)) candidate++;
+  if (nums.length === 0) return 1;
+  const set = new Set(nums);
+  let candidate = Math.max(...set) + 1;
+  while (set.has(candidate)) candidate++;
   return candidate;
 }, [allContracts, allInventory]);
   
