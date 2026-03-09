@@ -298,10 +298,10 @@ const nextDrawingNo = useMemo(() => {
 
   const nums = [
     ...allItems.filter(thisMonth).map(i => parseInt(i.drawing_no) || 0),
-    ...allQuotes.filter(c => thisMonth(c) && (c as any).source === "contract").map(i => parseInt(i.drawing_no) || 0),
+    ...allQuotes.filter(thisMonth).map(i => parseInt(i.drawing_no) || 0),
   ].filter(n => n > 0);
-  
-const set = new Set(nums);
+
+  const set = new Set(nums);
   let candidate = 1;
   while (set.has(candidate)) candidate++;
   return candidate;
