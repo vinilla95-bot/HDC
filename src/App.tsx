@@ -452,25 +452,32 @@ const filteredOptions = React.useMemo(() => {
       onClick={!isEditing ? handleCellClick : undefined}
     >
       {!isEditing ? (
-        <span
-          style={{ cursor: "text", display: "block", width: "100%", minHeight: 20 }}
+       <span
+          style={{ cursor: "text", display: "block", width: "100%", minHeight: 20, whiteSpace: "pre-wrap" }}
           title="클릭하여 품목 변경"
         >
           {displayText || <span style={{ color: '#aaa' }}>품목 선택</span>}
         </span>
       ) : (
         <>
-          <input
-            ref={inputRef}
-            type="text"
+          <textarea
+            ref={inputRef as any}
             value={searchQuery}
+            rows={1}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setShowDropdown(true);
+              // 자동 높이 조절
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
             }}
             onFocus={() => setShowDropdown(true)}
-            onBlur={(e) => handleBlur(e)}
+            onBlur={(e) => handleBlur(e as any)}
             onKeyDown={(e) => {
+              if (e.key === "Enter" && e.shiftKey) {
+                // Shift+Enter: 줄바꿈 허용 (기본동작 유지)
+                return;
+              }
               if (e.key === "ArrowDown") {
                 e.preventDefault();
                 const totalItems = sites.length + filteredOptions.length;
@@ -515,7 +522,7 @@ const filteredOptions = React.useMemo(() => {
                 setSelectedIndex(-1);
               }
             }}
-            placeholder="품목 검색"
+          placeholder="품목 검색"
             autoFocus
             style={{ 
               width: "100%", 
@@ -525,7 +532,11 @@ const filteredOptions = React.useMemo(() => {
               border: "none",
               fontSize: 12, 
               outline: "none",
-              background: "transparent"
+              background: "transparent",
+              resize: "none",
+              overflow: "hidden",
+              lineHeight: "1.4",
+              fontFamily: "inherit",
             }} 
           />
     
