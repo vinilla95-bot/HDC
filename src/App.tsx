@@ -2942,6 +2942,11 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                           <input
                             value={item.memo || ''}
                             onChange={(e) => onUpdateMemo && onUpdateMemo(item.key, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Tab') {
+                                e.preventDefault();
+                              }
+                            }}
                             style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 11, outline: 'none', minWidth: 0 }}
                           />
                           <button
