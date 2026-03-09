@@ -304,11 +304,13 @@ const filteredItems = useMemo(() => {
     .filter(filterByCurrentMonth)
     .map(item => parseInt(item.drawing_no) || 0);
 
- const numberSet = new Set([...inventoryNumbers, ...quotesNumbers].filter(n => n > 0));
-if (numberSet.size === 0) return 1;
-let candidate = Math.max(...numberSet) + 1;
-while (numberSet.has(candidate)) candidate++;
-return candidate;
+  const numberSet = new Set([...inventoryNumbers, ...quotesNumbers].filter(n => n > 0));
+  if (numberSet.size === 0) return 1;
+  let candidate = Math.max(...numberSet) + 1;
+  while (numberSet.has(candidate)) candidate++;
+  return candidate;
+}, [allItems, allQuotes]);  // ← 이 줄이 빠져 있었어요
+
 
   const waitingItems = useMemo(() => allItems.filter(item => item.inventory_status === "출고대기"), [allItems]);
   const waitingBySpec = useMemo(() => {
