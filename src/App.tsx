@@ -1567,6 +1567,11 @@ const buildPayload = (quote_id: string, version: number) => {
         }
       });
 
+   // placeholder 속성 제거 (html2canvas는 CSS ::placeholder 무시)
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        el.removeAttribute('placeholder');
+      });
+
       captureContainer.appendChild(clonedSheet);
 
       await new Promise(r => setTimeout(r, 300));
@@ -3178,6 +3183,21 @@ table{
   @page {
     size: A4;
     margin: 0;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+  }
+  input::-webkit-input-placeholder,
+  textarea::-webkit-input-placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+  }
+  input::-moz-placeholder,
+  textarea::-moz-placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
   }
   *, *::before, *::after {
     background-color: #fff !important;
