@@ -253,7 +253,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     siteQ: editForm?.site_name ?? current?.site_name ?? "",
     sitePickedLabel: editForm?.site_name ?? current?.site_name ?? "",
     optQ: "",
-    quoteDate: current?.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    quoteDate: editForm?.quoteDate || current?.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
     vatIncluded: current?.vat_included !== false,
     defaultW: current?.w || 3,
     defaultL: current?.l || 6,
