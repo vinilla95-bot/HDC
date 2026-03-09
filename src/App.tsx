@@ -1529,7 +1529,39 @@ const buildPayload = (quote_id: string, version: number) => {
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
 
-      const clonedSelects = clonedSheet.querySelectorAll('select');
+    // 1. input placeholder 완전 제거 + 빈 input 숨김
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        const input = el as HTMLInputElement;
+        input.removeAttribute('placeholder');
+        // 값 없는 info 섹션 input은 투명하게
+        if (!input.value) {
+          input.style.color = 'transparent';
+          input.style.caretColor = 'transparent';
+        }
+      });
+
+      // 2. "품목 검색..." 등 placeholder 역할 span 숨김
+      clonedSheet.querySelectorAll('span').forEach((el) => {
+        const span = el as HTMLSpanElement;
+        const text = span.textContent || '';
+        if (
+          text.includes('품목 검색') ||
+          text.includes('품목 선택') ||
+          text.includes('검색...')
+        ) {
+          span.style.display = 'none';
+        }
+      });
+
+      // 3. a4Info 테이블 내 빈 input의 부모 td도 텍스트 숨김
+      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+        const input = el as HTMLInputElement;
+        if (!input.value) {
+          input.style.display = 'none';
+        }
+      });
+
+      captureContainer.appendChild(clonedSheet);
       const originalSelects = originalSheet.querySelectorAll('select');
       clonedSelects.forEach((select, idx) => {
         const origSelect = originalSelects[idx] as HTMLSelectElement;
