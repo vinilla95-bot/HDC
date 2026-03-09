@@ -460,11 +460,11 @@ drawing_no: newItem.drawing_no || String(baseNo + i),
 </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                       <input
-                        type="date"
-                        value={c.contract_date || ""}
-                       onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value, c.contract_type === "inventory")}
-                        style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
-                      />
+  type="date"
+  defaultValue={c.contract_date || ""}
+  onBlur={(e) => updateField(c.quote_id, "contract_date", e.target.value, c.contract_type === "inventory")}
+  style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+/>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee" }}>
                       <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
