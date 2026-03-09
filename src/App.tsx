@@ -1260,7 +1260,7 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
     setSelectedItems((prev: any) => prev.filter((i: any) => i.key !== key));
 const updateRow = (
   key: string,
-  field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText" | "supply" | "vatOverride",
+ field: "displayName" | "displayQty" | "customerUnitPrice" | "months" | "lineSpec" | "specText" | "supply" | "vatOverride" | "memo",
   value: any
 ) => {
   setSelectedItems((prev: any) =>
@@ -1318,8 +1318,20 @@ const updateRow = (
         return recomputeRow({ ...item, customerUnitPrice: newUnitPrice });
       }
 
+ if (field === "supply") {
+        const supply = Number(value || 0);
+        const qty = Math.max(1, Number(item.displayQty || 1));
+        const newUnitPrice = qty > 0 ? Math.round(supply / qty) : 0;
+        return recomputeRow({ ...item, customerUnitPrice: newUnitPrice });
+      }
+
       if (field === "vatOverride") {
+        // recomputeRow 호출하지 않음 — vatOverride는 독립 보존
         return { ...item, vatOverride: Number(value) };
+      }
+
+      if (field === "memo") {
+        return { ...item, memo: String(value ?? '') };
       }
 
       return item;
@@ -1427,9 +1439,8 @@ const buildPayload = (quote_id: string, version: number) => {
       lineSpec: r.lineSpec,
       showSpec: r.showSpec,
       months: r.months,
-     specText: r.specText ?? "",
+   specText: r.specText ?? "",
       vatOverride: typeof r.vatOverride === 'number' ? r.vatOverride : undefined,
-  
     })),
     updated_at: new Date().toISOString(),
   };
@@ -2179,6 +2190,7 @@ const buildPayload = (quote_id: string, version: number) => {
 onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
               onUpdateSupply={(key, supply) => updateRow(key, "supply", supply)}
               onUpdateVat={(key, vat) => updateRow(key, "vatOverride", vat)}
+              onUpdateMemo={(key, memo) => updateRow(key, "memo", memo)}
               onDeleteItem={(key) => deleteRow(key)}
               focusedRowIndex={focusedRowIndex}
               setFocusedRowIndex={setFocusedRowIndex}
@@ -2811,12 +2823,53 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                         );
                       })()}
                     </td>
-                    <td className="c right" style={{ whiteSpace: 'nowrap' }}>{supply ? fmt(supply) : ''}</td>
-                    <td className="c right" style={{ whiteSpace: 'nowrap' }}>{vat ? fmt(vat) : ''}</td>
-                    <td className="c center">
-                      {editable && onDeleteItem ? (
-                        <button onClick={() => onDeleteItem(item.key)} style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 14 }}>✕</button>
-                      ) : null}
+                  {/* 공급가 */}
+                    <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
+                      {isDescRow ? (supply ? fmt(supply) : '') : (
+                        editable && onUpdateSupply
+                          ? <EditableNumberCell value={supply} onChange={(v) => onUpdateSupply(item.key, v)} />
+                          : (supply ? fmt(supply) : '')
+                      )}
+                    </td>
+
+                    {/* 세액 */}
+                    <td className="c right" style={{ whiteSpace: 'nowrap', padding: '4px 8px' }}>
+                      {isDescRow ? (vat ? fmt(vat) : '') : (() => {
+                        const vatVal = typeof item.vatOverride === 'number' ? item.vatOverride : vat;
+                        if (editable && onUpdateVat) {
+                          return <EditableNumberCell value={vatVal} onChange={(v) => onUpdateVat(item.key, v)} />;
+                        }
+                        return vatVal ? fmt(vatVal) : '';
+                      })()}
+                    </td>
+
+                    {/* 비고 — memo 편집 가능 */}
+                    <td className="c center" style={{ padding: '4px 6px' }}>
+                      {editable ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          {onUpdateMemo && (
+                            <input
+                              value={item.memo || ''}
+                              onChange={(e) => onUpdateMemo(item.key, e.target.value)}
+                              placeholder=""
+                              style={{
+                                width: '100%',
+                                border: 'none',
+                                background: 'transparent',
+                                fontSize: 11,
+                                outline: 'none',
+                                minWidth: 0,
+                              }}
+                            />
+                          )}
+                          {onDeleteItem && (
+                            <button
+                              onClick={() => onDeleteItem(item.key)}
+                              style={{ color: "#e53935", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontSize: 13, flexShrink: 0, padding: 0 }}
+                            >✕</button>
+                          )}
+                        </div>
+                      ) : (item.memo || '')}
                     </td>
                   </tr>
                 );
