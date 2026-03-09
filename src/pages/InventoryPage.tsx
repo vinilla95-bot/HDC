@@ -304,9 +304,11 @@ const filteredItems = useMemo(() => {
     .filter(filterByCurrentMonth)
     .map(item => parseInt(item.drawing_no) || 0);
 
-  const allNumbers = [...inventoryNumbers, ...quotesNumbers].filter(n => n > 0);
-  return allNumbers.length > 0 ? Math.max(...allNumbers) + 1 : 1;
-}, [allItems, allQuotes]);
+ const numberSet = new Set([...inventoryNumbers, ...quotesNumbers].filter(n => n > 0));
+if (numberSet.size === 0) return 1;
+let candidate = Math.max(...numberSet) + 1;
+while (numberSet.has(candidate)) candidate++;
+return candidate;
 
   const waitingItems = useMemo(() => allItems.filter(item => item.inventory_status === "출고대기"), [allItems]);
   const waitingBySpec = useMemo(() => {
