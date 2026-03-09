@@ -285,32 +285,28 @@ const filteredItems = useMemo(() => {
     return counts;
   }, [allItems]);
 
- const nextDrawingNo = useMemo(() => {
+const nextDrawingNo = useMemo(() => {
   const now = new Date();
-  const currentYearStr = String(now.getFullYear());
-  const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
+  const y = String(now.getFullYear());
+  const m = String(now.getMonth() + 1).padStart(2, '0');
 
-  const filterByCurrentMonth = (item: any) => {
+  const thisMonth = (item: any) => {
     if (!item.contract_date) return false;
-    const parts = item.contract_date.split("-");
-    return parts[0] === currentYearStr && parts[1] === currentMonthStr;
+    const [iy, im] = item.contract_date.split("-");
+    return iy === y && im === m;
   };
 
-  const inventoryNumbers = allItems
-    .filter(filterByCurrentMonth)
-    .map(item => parseInt(item.drawing_no) || 0);
+  const nums = [
+    ...allItems.filter(thisMonth).map(i => parseInt(i.drawing_no) || 0),
+    ...allQuotes.filter(c => thisMonth(c) && (c as any).source === "contract").map(i => parseInt(i.drawing_no) || 0),
+  ].filter(n => n > 0);
 
-  const quotesNumbers = allQuotes
-    .filter(filterByCurrentMonth)
-    .map(item => parseInt(item.drawing_no) || 0);
-
-  const numberSet = new Set([...inventoryNumbers, ...quotesNumbers].filter(n => n > 0));
-  if (numberSet.size === 0) return 1;
-  let candidate = Math.max(...numberSet) + 1;
-  while (numberSet.has(candidate)) candidate++;
+  if (nums.length === 0) return 1;
+  const set = new Set(nums);
+  let candidate = Math.max(...set) + 1;
+  while (set.has(candidate)) candidate++;
   return candidate;
-}, [allItems, allQuotes]);  // ← 이 줄이 빠져 있었어요
-
+}, [allItems, allQuotes]);
 
   const waitingItems = useMemo(() => allItems.filter(item => item.inventory_status === "출고대기"), [allItems]);
   const waitingBySpec = useMemo(() => {
