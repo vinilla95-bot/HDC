@@ -205,7 +205,11 @@ filtered.sort((a, b) => {
 
   const currentCounts = getTabCounts(activeTab);
 
- const updateField = async (quote_id: string, field: string, value: any, isInventory = false) => {
+const updateField = async (quote_id: string, field: string, value: any, isInventory = false) => {
+    // inventory 테이블에 없는 컬럼은 무시
+    const inventoryOnlyFields = ["contract_type", "tax_invoice", "bank_account", "depositor", "special_order", "items"];
+    if (isInventory && inventoryOnlyFields.includes(field)) return;
+    const table = isInventory ? "inventory" : "quotes";
     const table = isInventory ? "inventory" : "quotes";
     const { error } = await supabase
       .from(table)
