@@ -501,7 +501,14 @@ const filteredItems = useMemo(() => {
                               <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option>
                             </select>
                           </td>
-                          <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>{formatDateDisplay(item.contract_date)}</td>
+                        <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
+  <input
+    type="date"
+    value={item.contract_date || ""}
+    onChange={(e) => updateField(item.quote_id, "contract_date", e.target.value)}
+    style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
+  />
+</td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={normalizeSpec(item.spec) || "3x6"} onChange={(e) => updateField(item.quote_id, "spec", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontWeight: 700 }}>
                               {SPEC_OPTIONS.map(spec => <option key={spec} value={spec}>{spec}</option>)}
