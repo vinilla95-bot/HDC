@@ -1526,42 +1526,11 @@ const buildPayload = (quote_id: string, version: number) => {
         captureContainer.appendChild(styleTag.cloneNode(true));
       }
 
-      const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
 
-    // 1. input placeholder 완전 제거 + 빈 input 숨김
-      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
-        const input = el as HTMLInputElement;
-        input.removeAttribute('placeholder');
-        // 값 없는 info 섹션 input은 투명하게
-        if (!input.value) {
-          input.style.color = 'transparent';
-          input.style.caretColor = 'transparent';
-        }
-      });
-
-      // 2. "품목 검색..." 등 placeholder 역할 span 숨김
-      clonedSheet.querySelectorAll('span').forEach((el) => {
-        const span = el as HTMLSpanElement;
-        const text = span.textContent || '';
-        if (
-          text.includes('품목 검색') ||
-          text.includes('품목 선택') ||
-          text.includes('검색...')
-        ) {
-          span.style.display = 'none';
-        }
-      });
-
-      // 3. a4Info 테이블 내 빈 input의 부모 td도 텍스트 숨김
-      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
-        const input = el as HTMLInputElement;
-        if (!input.value) {
-          input.style.display = 'none';
-        }
-      });
-
-      captureContainer.appendChild(clonedSheet);
+      // select → span 변환
+      const clonedSelects = clonedSheet.querySelectorAll('select');
       const originalSelects = originalSheet.querySelectorAll('select');
       clonedSelects.forEach((select, idx) => {
         const origSelect = originalSelects[idx] as HTMLSelectElement;
@@ -1572,36 +1541,41 @@ const buildPayload = (quote_id: string, version: number) => {
         select.parentNode?.replaceChild(span, select);
       });
 
-      const deleteButtons = clonedSheet.querySelectorAll('button');
-      deleteButtons.forEach(btn => {
+      // ✕ 버튼 숨김
+      clonedSheet.querySelectorAll('button').forEach(btn => {
         if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
           btn.style.display = 'none';
         }
       });
 
-      const inputs = clonedSheet.querySelectorAll('.a4Items input');
-      inputs.forEach(input => {
+      // 품목 테이블 내 input 숨김
+      clonedSheet.querySelectorAll('.a4Items input').forEach(input => {
         (input as HTMLElement).style.display = 'none';
       });
 
+      // + 품목추가 버튼 숨김
       const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
       if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
-      
-     // placeholder 숨김
-      const allInputs = clonedSheet.querySelectorAll('input, textarea');
-      allInputs.forEach((input) => {
-        const el = input as HTMLInputElement;
-        if (!el.value) {
-          el.setAttribute('placeholder', '');
-          el.style.display = 'none';
-        } else {
-          el.setAttribute('placeholder', '');
+
+      // placeholder 텍스트 제거
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        const input = el as HTMLInputElement;
+        input.removeAttribute('placeholder');
+        if (!input.value) {
+          input.style.color = 'transparent';
+          input.style.caretColor = 'transparent';
         }
       });
-
-   // placeholder 속성 제거 (html2canvas는 CSS ::placeholder 무시)
-      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
-        el.removeAttribute('placeholder');
+      clonedSheet.querySelectorAll('span').forEach((el) => {
+        const span = el as HTMLSpanElement;
+        const text = span.textContent || '';
+        if (text.includes('품목 검색') || text.includes('품목 선택') || text.includes('검색...')) {
+          span.style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+        const input = el as HTMLInputElement;
+        if (!input.value) input.style.display = 'none';
       });
 
       captureContainer.appendChild(clonedSheet);
@@ -1671,34 +1645,56 @@ const buildPayload = (quote_id: string, version: number) => {
 
       const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; border: 1px solid #cfd3d8; padding: 16px; box-sizing: border-box;';
+// select → span 변환
+                        const clonedSelects = clonedSheet.querySelectorAll('select');
+                        const originalSelectsSms = originalSheet.querySelectorAll('select');
+                        clonedSelects.forEach((select, idx) => {
+                          const origSelect = originalSelectsSms[idx] as HTMLSelectElement;
+                          const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+                          const span = document.createElement('span');
+                          span.textContent = selectedText;
+                          span.style.cssText = 'font-size: 13px;';
+                          select.parentNode?.replaceChild(span, select);
+                        });
 
-      const clonedSelects = clonedSheet.querySelectorAll('select');
-      const originalSelects = originalSheet.querySelectorAll('select');
-      clonedSelects.forEach((select, idx) => {
-        const origSelect = originalSelects[idx] as HTMLSelectElement;
-        const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
-        const span = document.createElement('span');
-        span.textContent = selectedText;
-        span.style.cssText = 'font-size: 13px;';
-        select.parentNode?.replaceChild(span, select);
-      });
+                        // ✕ 버튼 숨김
+                        clonedSheet.querySelectorAll('button').forEach(btn => {
+                          if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
+                            btn.style.display = 'none';
+                          }
+                        });
 
-      const deleteButtons = clonedSheet.querySelectorAll('button');
-      deleteButtons.forEach(btn => {
-        if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
-          btn.style.display = 'none';
-        }
-      });
+                        // 품목 테이블 내 input 숨김
+                        clonedSheet.querySelectorAll('.a4Items input').forEach(input => {
+                          (input as HTMLElement).style.display = 'none';
+                        });
 
-      const inputs = clonedSheet.querySelectorAll('.a4Items input');
-      inputs.forEach(input => {
-        (input as HTMLElement).style.display = 'none';
-      });
+                        // + 품목추가 버튼 숨김
+                        const addBtnWrapSms = clonedSheet.querySelector('.add-item-btn-wrap');
+                        if (addBtnWrapSms) (addBtnWrapSms as HTMLElement).style.display = 'none';
 
-      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
-      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
-      
-      captureContainer.appendChild(clonedSheet);
+                        // placeholder 텍스트 제거
+                        clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+                          const input = el as HTMLInputElement;
+                          input.removeAttribute('placeholder');
+                          if (!input.value) {
+                            input.style.color = 'transparent';
+                            input.style.caretColor = 'transparent';
+                          }
+                        });
+                        clonedSheet.querySelectorAll('span').forEach((el) => {
+                          const span = el as HTMLSpanElement;
+                          const text = span.textContent || '';
+                          if (text.includes('품목 검색') || text.includes('품목 선택') || text.includes('검색...')) {
+                            span.style.display = 'none';
+                          }
+                        });
+                        clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+                          const input = el as HTMLInputElement;
+                          if (!input.value) input.style.display = 'none';
+                        });
+
+                        captureContainer.appendChild(clonedSheet);
 
       await new Promise(r => setTimeout(r, 300));
 
@@ -2375,24 +2371,38 @@ onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
                           captureContainer.appendChild(styleTag.cloneNode(true));
                         }
 
-                        const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
-                        clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+                      const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = 'width: 800px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
 
-                    // 기존 코드 순서 유지
+      // select → span 변환
       const clonedSelects = clonedSheet.querySelectorAll('select');
       const originalSelects = originalSheet.querySelectorAll('select');
-      clonedSelects.forEach((select, idx) => { ... });
+      clonedSelects.forEach((select, idx) => {
+        const origSelect = originalSelects[idx] as HTMLSelectElement;
+        const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+        const span = document.createElement('span');
+        span.textContent = selectedText;
+        span.style.cssText = 'font-size: 13px;';
+        select.parentNode?.replaceChild(span, select);
+      });
 
-      const deleteButtons = clonedSheet.querySelectorAll('button');
-      deleteButtons.forEach(btn => { ... });
+      // ✕ 버튼 숨김
+      clonedSheet.querySelectorAll('button').forEach(btn => {
+        if (btn.textContent === '✕' || btn.style.color === 'rgb(229, 57, 53)') {
+          btn.style.display = 'none';
+        }
+      });
 
-      const inputs = clonedSheet.querySelectorAll('.a4Items input');
-      inputs.forEach(input => { ... });
+      // 품목 테이블 내 input 숨김
+      clonedSheet.querySelectorAll('.a4Items input').forEach(input => {
+        (input as HTMLElement).style.display = 'none';
+      });
 
-      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+      // + 품목추가 버튼 숨김
+    const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
       if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
 
-      // ← 여기에 새 placeholder 코드
+      // placeholder 텍스트 제거
       clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
         const input = el as HTMLInputElement;
         input.removeAttribute('placeholder');
@@ -2413,15 +2423,15 @@ onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
         if (!input.value) input.style.display = 'none';
       });
 
-      captureContainer.appendChild(clonedSheet);  // ← 마지막
+      captureContainer.appendChild(clonedSheet);
 
-                        await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 300));
 
-                        const canvas = await html2canvas(clonedSheet, {
-                          scale: 1.5,
-                          backgroundColor: '#ffffff',
-                          useCORS: true,
-                          allowTaint: true,
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: true,
                           width: 800,
                           windowWidth: 800,
                         });
