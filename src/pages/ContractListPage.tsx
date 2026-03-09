@@ -73,12 +73,11 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const inventoryNumbers = allInventory
     .filter(filterByCurrentMonth)
     .map(c => parseInt(c.drawing_no) || 0);
-const numberSet = new Set([...inventoryNumbers, ...quotesNumbers].filter(n => n > 0));
+const numberSet = new Set([...quotesNumbers, ...inventoryNumbers].filter(n => n > 0));
 if (numberSet.size === 0) return 1;
 let candidate = Math.max(...numberSet) + 1;
 while (numberSet.has(candidate)) candidate++;
 return candidate;
-   
 }, [allContracts, allInventory]);
   const loadContracts = async () => {
     setLoading(true);
@@ -269,8 +268,9 @@ filtered.sort((a, b) => {
       ...inventoryMonthItems.map(item => Number(item.drawing_no) || 0)
     ];
     
-    const maxNo = allMonthNumbers.length > 0 ? Math.max(...allMonthNumbers) : 0;
-
+   const numberSet = new Set(allMonthNumbers.filter(n => n > 0));
+let baseNo = numberSet.size > 0 ? Math.max(...numberSet) + 1 : 1;
+while (numberSet.has(baseNo)) baseNo++;
     const inserts = [];
     for (let i = 0; i < qty; i++) {
       inserts.push({
