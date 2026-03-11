@@ -446,7 +446,7 @@ const handleDelete = async (quote_id: string, customer_name: string) => {
   ) : (
     <select
       value={c.contract_type || "order"}
-     onChange={(e) => updateField(c.quote_id, "contract_date", e.target.value, c.contract_type === "inventory")}
+    onChange={(e) => updateField(c.quote_id, "contract_type", e.target.value)}
       style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}
     >
       <option value="order">수주</option>
