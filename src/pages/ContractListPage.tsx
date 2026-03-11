@@ -330,13 +330,14 @@ drawing_no: newItem.drawing_no ? String(parseInt(newItem.drawing_no) + i) : Stri
   };
 
   // ✅ 삭제 - 실제 삭제가 아닌 계약 관련 필드만 초기화 (견적목록에는 유지)
-  const handleDelete = async (quote_id: string, customer_name: string) => {
-    const msg = '"' + customer_name + '" 항목을 계약관리에서 제거하시겠습니까?\n(견적목록에는 그대로 유지됩니다)';
+const handleDelete = async (quote_id: string, customer_name: string) => {
+    const msg = '"' + customer_name + '" 항목을 계약관리에서 제거하시겠습니까?\n(견적목록에는 그대로 유지되며, 계약확정도 취소됩니다)';
     if (!confirm(msg)) return;
 
     const { error } = await supabase
       .from("quotes")
       .update({
+        status: null,          // ✅ 계약확정 취소
         contract_type: null,
         contract_date: null,
         drawing_no: null,
