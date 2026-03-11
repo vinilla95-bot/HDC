@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import { supabase } from "../lib/supabase";
 import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine, searchSiteRates } from "../QuoteService";
-import { A4Quote } from "../App";  // ✅ A4Quote import 추가
+import { A4Quote } from "../App";
 
 type SupabaseOptionRow = {
   option_id: string;
@@ -65,7 +65,6 @@ type QuoteItem = {
 
 type DocTab = "quote" | "statement" | "rental";
 
-// ✅ 첨부파일 URL (Supabase Storage)
 const ATTACHMENT_URLS = {
   bankAccount: "https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/bank_account.jpg",
   bizRegistration: "https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/biz_registration.png",
@@ -127,7 +126,6 @@ function normItem(it: QuoteItem) {
   return { category, name, unit, qty, unitPrice, amount, note, months };
 }
 
-// ✅ 임대 종료일 계산 (시작일 + N개월 - 1일, 월세 계약 방식)
 function calcRentalEndDate(startStr: string, months: number): string {
   if (!startStr || !startStr.includes('/')) return "";
   try {
@@ -146,12 +144,215 @@ async function gasCall<T = any>(fn: string, args: any[] = []): Promise<T> {
   return res && typeof res === "object" && "value" in res ? (res.value as T) : (res as T);
 }
 
-export default function QuoteListPage({ onGoLive, onConfirmContract }: { 
+// ============ 모바일 규격 자유입력 ============
+function MobileSpecInput({ spec, onChange }: {
+  spec: { w: number; l: number; h?: number };
+  onChange: (spec: { w: number; l: number; h?: number }) => void;
+}) {
+  const display = spec.w > 0 && spec.l > 0 ? `${spec.w}×${spec.l}` : '';
+  const [editing, setEditing] = React.useState(false);
+  const [text, setText] = React.useState(display);
+
+  React.useEffect(() => {
+    setText(spec.w > 0 && spec.l > 0 ? `${spec.w}×${spec.l}` : '');
+  }, [spec.w, spec.l]);
+
+  const commit = () => {
+    setEditing(false);
+    const normalized = text.trim().replace(/[xX*]/g, '×');
+    const parts = normalized.split('×').map(s => parseFloat(s.trim()));
+    if (parts.length >= 2 && parts[0] > 0 && parts[1] > 0) {
+      onChange({ w: parts[0], l: parts[1], h: parts[2] || 2.6 });
+    } else if (!text.trim()) {
+      onChange({ w: 0, l: 0, h: 0 });
+    }
+  };
+
+  if (editing) return (
+    <input
+      value={text}
+      onChange={e => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+      autoFocus
+      placeholder="3×6×2.6"
+      style={{
+        width: '100%', padding: '6px 8px', border: '1px solid #90caf9',
+        borderRadius: 6, fontSize: 13, textAlign: 'center',
+        background: '#e3f2fd', color: '#1565c0', fontWeight: 700,
+        boxSizing: 'border-box',
+      }}
+    />
+  );
+  return (
+    <div
+      onClick={() => { setText(display); setEditing(true); }}
+      style={{
+        padding: '6px 8px', border: '1px solid #90caf9', borderRadius: 6,
+        fontSize: 13, textAlign: 'center', background: '#e3f2fd',
+        color: display ? '#1565c0' : '#aaa', fontWeight: 700,
+        cursor: 'pointer', minWidth: 70,
+      }}
+    >
+      {display || '규격입력'}
+    </div>
+  );
+}
+
+// ============ 모바일 편집 카드 리스트 ============
+function MobileEditItems({ editItems, setEditItems, editForm, setEditForm, options, current, handleUpdateQty, handleUpdatePrice, handleDeleteItem, handleUpdateSpec, handleSelectOption, handleAddItem, handleSiteSearch, handleAddDelivery, getInheritedSpec, computedItems, supply_amount, vat_amount, total_amount, money: fmt, onSave }: any) {
+  const isRent = (item: any) => item.unit === '개월' || String(item.optionName || '').includes('임대');
+
+  return (
+    <div style={{ width: '100%', padding: '0 0 80px 0' }}>
+      {/* 고객 정보 */}
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 14, marginBottom: 10 }}>
+        <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 10 }}>고객 정보</div>
+        {[
+          { label: '견적일', key: 'quoteDate', type: 'date' },
+          { label: '고객명', key: 'customer_name' },
+          { label: '전화', key: 'customer_phone' },
+          { label: '이메일', key: 'customer_email' },
+          { label: '현장', key: 'site_name' },
+        ].map(({ label, key, type }) => (
+          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: '#666', minWidth: 44, fontWeight: 700 }}>{label}</span>
+            <input
+              type={type || 'text'}
+              value={editForm?.[key] || ''}
+              onChange={e => setEditForm((p: any) => ({ ...p, [key]: e.target.value }))}
+              style={{ flex: 1, padding: '8px 10px', border: '1px solid #ddd', borderRadius: 8, fontSize: 13, boxSizing: 'border-box' }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* 품목 카드 */}
+      <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 8, paddingLeft: 2 }}>품목 ({computedItems.length})</div>
+      {editItems.map((item: any, idx: number) => {
+        const rent = isRent(item);
+        return (
+          <div key={item.key} style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 12, marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <MobileSpecInput
+                spec={item.lineSpec || { w: 0, l: 0, h: 0 }}
+                onChange={(newSpec) => handleUpdateSpec(item.key, newSpec)}
+              />
+              <button
+                onClick={() => handleDeleteItem(item.key)}
+                style={{ color: '#e53935', border: 'none', background: 'none', fontWeight: 'bold', fontSize: 18, lineHeight: 1, cursor: 'pointer', padding: '0 4px' }}
+              >✕</button>
+            </div>
+            <textarea
+              value={item.displayName || ''}
+              onChange={e => setEditItems((prev: any) => prev.map((it: any) =>
+                it.key === item.key ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
+              ))}
+              rows={2}
+              style={{
+                width: '100%', fontWeight: 700, border: '1px solid #ddd',
+                borderRadius: 8, padding: '8px 10px', fontSize: 13,
+                resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 8,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 100 }}>
+                <span style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>수량</span>
+                <input
+                  type="number"
+                  value={item.qty || ''}
+                  onChange={e => handleUpdateQty(item.key, Number(e.target.value))}
+                  style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6, textAlign: 'center', fontSize: 13 }}
+                />
+              </div>
+              {rent ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 100 }}>
+                  <span style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>개월</span>
+                  <input
+                    type="number"
+                    value={item.months || ''}
+                    onChange={e => {
+                      const m = Number(e.target.value) || 1;
+                      const base = item.baseUnitPrice || Math.round(item.unitPrice / (item.months || 3));
+                      setEditItems((prev: any) => prev.map((it: any) =>
+                        it.key === item.key ? { ...it, months: m, unitPrice: base * m, amount: (it.qty || 1) * base * m } : it
+                      ));
+                    }}
+                    style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6, textAlign: 'center', fontSize: 13 }}
+                  />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 100 }}>
+                  <span style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>단가</span>
+                  <input
+                    type="number"
+                    value={item.unitPrice || ''}
+                    onChange={e => handleUpdatePrice(item.key, Number(e.target.value))}
+                    style={{ flex: 1, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6, textAlign: 'right', fontSize: 13 }}
+                  />
+                </div>
+              )}
+              <div style={{ fontSize: 13, fontWeight: 800, alignSelf: 'center', color: '#1565c0', whiteSpace: 'nowrap' }}>
+                {fmt(item.qty * item.unitPrice)}원
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* 품목 추가 버튼 */}
+      <button
+        onClick={() => handleAddItem(
+          { option_id: `empty_${Date.now()}`, option_name: '', unit: 'EA', unit_price: 0, show_spec: 'n', _isCustomFreeText: true },
+          { qty: 1, unitPrice: 0, amount: 0, unit: 'EA' }
+        )}
+        style={{
+          width: '100%', padding: '12px',
+          border: '2px dashed #90caf9', borderRadius: 10,
+          background: '#f0f8ff', color: '#1565c0', fontWeight: 700,
+          fontSize: 14, cursor: 'pointer', marginBottom: 16,
+        }}
+      >+ 품목 추가</button>
+
+      {/* 합계 */}
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 14, marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+          <span style={{ color: '#666' }}>공급가</span><span>{fmt(supply_amount)}원</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+          <span style={{ color: '#666' }}>부가세</span><span>{fmt(vat_amount)}원</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, borderTop: '1px solid #eee', paddingTop: 8 }}>
+          <span>합계</span><span style={{ color: '#1565c0' }}>{fmt(total_amount)}원</span>
+        </div>
+      </div>
+
+      {/* 저장 버튼 - 하단 고정 */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        padding: '12px 16px', background: '#fff', borderTop: '1px solid #eee',
+        display: 'flex', gap: 8, zIndex: 100,
+      }}>
+        <button
+          onClick={onSave}
+          style={{
+            flex: 1, padding: '14px', background: '#111', color: '#fff',
+            border: 'none', borderRadius: 10, fontWeight: 800, fontSize: 15, cursor: 'pointer',
+          }}
+        >
+          ✓ 수정 저장
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   onGoLive?: () => void;
   onConfirmContract?: (quote: QuoteRow) => void;
 }) {
   const [q, setQ] = useState("");
-  const [dateFilter, setDateFilter] = useState("");  
+  const [dateFilter, setDateFilter] = useState("");
   const [list, setList] = useState<QuoteRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState<QuoteRow | null>(null);
@@ -159,12 +360,15 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   const [editItems, setEditItems] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<DocTab>("quote");
   const [sendOpen, setSendOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const [sendTo, setSendTo] = useState("");
   const [sendStatus, setSendStatus] = useState("");
   const [attachments, setAttachments] = useState<{ bankAccount: boolean; bizRegistration: boolean }>({ bankAccount: false, bizRegistration: false });
   const [focusedRowIndex, setFocusedRowIndex] = useState<number>(-1);
-  
+
+  // ✅ 모바일 뷰 상태 추가
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   const [rentalForm, setRentalForm] = useState({
     contractStart: "",
     contractEnd: "",
@@ -179,7 +383,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     email: "",
   });
 
-  // ✅ 임대 조건 약관 문구 상태
   const DEFAULT_RENTAL_CONDITIONS = [
     "※ 컨테이너 입고/회수 시, 하차/상차 작업은 임차인이 제공한다.",
     "※ 계약기간의 연장 시 임차인은 만료 5일 전까지 통보해야 하며, 재 계약서를 작성하지 않고 연장하였을 시 본 계약서로서 대체한다.",
@@ -194,13 +397,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
   const [editForm, setEditForm] = useState<any>(null);
   const [options, setOptions] = useState<SupabaseOptionRow[]>([]);
-  const [optQ, setOptQ] = useState("");
   const [bizcards, setBizcards] = useState<any[]>([]);
   const [selectedBizcardId, setSelectedBizcardId] = useState("");
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
-  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // ✅ 거래명세서용 상태
   const [statementDate, setStatementDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [paidAmount, setPaidAmount] = useState(0);
 
@@ -230,7 +430,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     }
   }
 
-  // ✅ 상속 규격 찾기: 위쪽으로 올라가며 가장 가까운 규격 찾기 (App.tsx와 동일)
   const getInheritedSpec = useCallback((items: any[], currentIndex: number): { w: number; l: number; h: number } => {
     for (let i = currentIndex - 1; i >= 0; i--) {
       const item = items[i];
@@ -241,7 +440,6 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     return { w: current?.w || 3, l: current?.l || 6, h: 2.6 };
   }, [current]);
 
-  // ✅ A4Quote용 form 객체 생성
   const quoteForm = useMemo(() => ({
     quoteTitle: current?.quote_title || "",
     name: editForm?.customer_name ?? current?.customer_name ?? "",
@@ -259,8 +457,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     defaultL: current?.l || 6,
   }), [current, editForm]);
 
-  // ✅ A4Quote용 setForm 함수
-const setQuoteForm = useCallback((fn: any) => {
+  const setQuoteForm = useCallback((fn: any) => {
     const newForm = typeof fn === 'function' ? fn(quoteForm) : fn;
     setEditForm((prev: any) => ({
       ...prev,
@@ -270,14 +467,12 @@ const setQuoteForm = useCallback((fn: any) => {
       site_name: newForm.sitePickedLabel || newForm.siteQ,
       quoteDate: newForm.quoteDate,
     }));
-    
     if (newForm.vatIncluded !== quoteForm.vatIncluded && current) {
       supabase.from("quotes").update({ vat_included: newForm.vatIncluded }).eq("quote_id", current.quote_id);
       setCurrent({ ...current, vat_included: newForm.vatIncluded });
     }
   }, [quoteForm, current]);
 
-  // ✅ computedItems 변환 (A4Quote 형식에 맞게)
   const computedItems = useMemo(() => {
     return editItems.map((item: any) => {
       const isRent = item.unit === "개월" || String(item.optionName || "").includes("임대");
@@ -302,31 +497,24 @@ const setQuoteForm = useCallback((fn: any) => {
     });
   }, [editItems, current]);
 
-  // ✅ 금액 계산
   const supply_amount = computedItems.reduce((acc: number, item: any) => acc + (item.finalAmount || 0), 0);
   const vat_amount = Math.round(supply_amount * 0.1);
   const total_amount = supply_amount + vat_amount;
 
-  // ✅ 빈 행 계산
   const MIN_ROWS = 12;
   const blankRows = useMemo(() => {
     return Array.from({ length: Math.max(1, MIN_ROWS - computedItems.length) });
   }, [computedItems.length]);
 
-  // ✅ 품목 업데이트 함수들 (A4Quote에서 호출)
   const handleUpdateQty = useCallback((key: string, qty: number) => {
-    setEditItems(prev => prev.map(item => 
-      item.key === key 
-        ? { ...item, qty, amount: qty * item.unitPrice }
-        : item
+    setEditItems(prev => prev.map(item =>
+      item.key === key ? { ...item, qty, amount: qty * item.unitPrice } : item
     ));
   }, []);
 
   const handleUpdatePrice = useCallback((key: string, price: number) => {
-    setEditItems(prev => prev.map(item => 
-      item.key === key 
-        ? { ...item, unitPrice: price, amount: item.qty * price }
-        : item
+    setEditItems(prev => prev.map(item =>
+      item.key === key ? { ...item, unitPrice: price, amount: item.qty * price } : item
     ));
   }, []);
 
@@ -337,87 +525,62 @@ const setQuoteForm = useCallback((fn: any) => {
   const handleUpdateSpec = useCallback((key: string, spec: { w: number; l: number; h?: number }) => {
     setEditItems(prev => prev.map(item => {
       if (item.key !== key) return item;
-      
       const isRent = item.unit === "개월" || String(item.optionName || "").includes("임대");
-      
       if (isRent) {
         const rentPrices: Record<string, number> = {
-          '3x3': 140000,
-          '3x4': 130000,
-          '3x6': 150000,
-          '3x9': 200000,
+          '3x3': 140000, '3x4': 130000, '3x6': 150000, '3x9': 200000,
         };
         const specKey = `${spec.w}x${spec.l}`;
         const baseMonthlyPrice = rentPrices[specKey] || 150000;
         const months = item.months || 3;
         const newUnitPrice = baseMonthlyPrice * months;
-        
-        return {
-          ...item,
-          lineSpec: spec,
-          specText: '',
-          unitPrice: newUnitPrice,
-          amount: (item.qty || 1) * newUnitPrice,
-        };
+        return { ...item, lineSpec: spec, specText: '', unitPrice: newUnitPrice, amount: (item.qty || 1) * newUnitPrice };
       }
-      
       const opt = options.find((o: any) => o.option_id === item.optionId);
       if (opt) {
         const calculated = calculateOptionLine(opt as any, spec.w, spec.l);
-        return {
-          ...item,
-          lineSpec: spec,
-          specText: '',
-          unitPrice: calculated.amount,
-          amount: (item.qty || 1) * calculated.amount,
-        };
+        return { ...item, lineSpec: spec, specText: '', unitPrice: calculated.amount, amount: (item.qty || 1) * calculated.amount };
       }
-      
       return { ...item, lineSpec: spec, specText: '' };
     }));
   }, [options]);
 
   const handleUpdateSpecText = useCallback((key: string, text: string) => {
-    setEditItems(prev => prev.map(item => 
-      item.key === key 
-        ? { ...item, specText: text, showSpec: text ? 'y' : 'n' }
-        : item
+    setEditItems(prev => prev.map(item =>
+      item.key === key ? { ...item, specText: text, showSpec: text ? 'y' : 'n' } : item
     ));
   }, []);
 
   const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
     const rawName = String(opt.option_name || "");
     const rent = rawName.includes("임대") && !opt._isCustomFreeText;
-    
+
     if (opt._isDisplayNameOnly) {
-      setEditItems(prev => prev.map(item => 
-        item.key === targetItem.key 
+      setEditItems(prev => prev.map(item =>
+        item.key === targetItem.key
           ? { ...item, displayName: rawName, _isRent: targetItem._isRent }
           : item
       ));
       return;
     }
-    
+
     const months = opt._months || 3;
     const showSpecValue = String(opt.show_spec || "n").toLowerCase();
-    
     const itemIndex = computedItems.findIndex((i: any) => i.key === targetItem.key);
     const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
     const existingLineSpec = (targetItem.lineSpec?.w > 0 && targetItem.lineSpec?.l > 0)
-      ? targetItem.lineSpec 
+      ? targetItem.lineSpec
       : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
-    
+
     const hasMonthInName = /\d+개월/.test(rawName);
     const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
-    
-    const customerUnitPrice = rent 
-      ? Number(opt.unit_price || calculated.unitPrice || 0) * months 
+    const customerUnitPrice = rent
+      ? Number(opt.unit_price || calculated.unitPrice || 0) * months
       : Number(calculated.amount || calculated.unitPrice || 0);
-    
     const newOptName = targetItem.optionName || rawName;
-    
-    setEditItems(prev => prev.map(item => 
-      item.key === targetItem.key 
+
+    setEditItems(prev => prev.map(item =>
+      item.key === targetItem.key
         ? {
             ...item,
             optionId: opt.option_id,
@@ -444,19 +607,15 @@ const setQuoteForm = useCallback((fn: any) => {
     const rawName = String(opt.option_name || "");
     const rent = rawName.includes("임대") && !opt._isCustomFreeText && !opt._isEmptyRow;
     const months = opt._months || 3;
-    
     const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
     const inheritedSpec = getInheritedSpec(editItems, targetIdx);
     const effectiveSpec = specOverride || inheritedSpec;
-    
     const showSpecValue = String(opt.show_spec || "n").toLowerCase();
-    
-    const customerUnitPrice = rent 
-      ? Number(calculated.unitPrice || 0) * months 
+    const customerUnitPrice = rent
+      ? Number(calculated.unitPrice || 0) * months
       : Number(calculated.amount || calculated.unitPrice || 0);
-    
     const displayName = opt._isEmptyRow ? '' : (rent ? `${rawName} ${months}개월` : rawName);
-    
+
     const newItem = {
       key: `item_${Date.now()}`,
       optionId: opt.option_id,
@@ -474,7 +633,7 @@ const setQuoteForm = useCallback((fn: any) => {
       _isRent: rent,
       _isCustomFreeText: opt._isCustomFreeText || false,
     };
-    
+
     setEditItems(prev => {
       if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
         const newArr = [...prev];
@@ -487,13 +646,12 @@ const setQuoteForm = useCallback((fn: any) => {
 
   const handleAddDelivery = useCallback((site: any, type: 'delivery' | 'crane', insertIndex?: number) => {
     const price = type === 'delivery' ? site.delivery : site.crane;
-    const name = type === 'delivery' 
-      ? `5톤 일반트럭 운송비(하차별도)-${site.alias}` 
+    const name = type === 'delivery'
+      ? `5톤 일반트럭 운송비(하차별도)-${site.alias}`
       : `크레인 운송비-${site.alias}`;
-    
     const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
     const inheritedSpec = getInheritedSpec(editItems, targetIdx);
-    
+
     const newItem = {
       key: `item_${Date.now()}`,
       optionId: type === 'delivery' ? 'DELIVERY' : 'CRANE',
@@ -507,7 +665,7 @@ const setQuoteForm = useCallback((fn: any) => {
       lineSpec: inheritedSpec,
       specText: "",
     };
-    
+
     setEditItems(prev => {
       if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
         const newArr = [...prev];
@@ -527,13 +685,10 @@ const setQuoteForm = useCallback((fn: any) => {
     });
   }, [current]);
 
-  // ✅ 저장 함수
   async function saveEditMode() {
     if (!current) return;
-
     try {
       toast("저장 중...");
-
       const itemsToSave = editItems.map((it: any, idx: number) => ({
         optionId: it.optionId || `ITEM_${idx + 1}`,
         optionName: it.optionName || it.displayName || "",
@@ -554,15 +709,15 @@ const setQuoteForm = useCallback((fn: any) => {
       const total = supply + vat;
 
       const rentalMeta = {
-  rentalForm,
-  rentalConditions,
-  statementDate,
-  paidAmount,
-  statementCustomer: {
-    customer_reg_no: editForm?.customer_reg_no || "",
-    customer_addr: editForm?.customer_addr || "",
-  },
-};
+        rentalForm,
+        rentalConditions,
+        statementDate,
+        paidAmount,
+        statementCustomer: {
+          customer_reg_no: editForm?.customer_reg_no || "",
+          customer_addr: editForm?.customer_addr || "",
+        },
+      };
       const memoJson = JSON.stringify(rentalMeta);
 
       let contractStartISO = current.contract_start;
@@ -580,8 +735,8 @@ const setQuoteForm = useCallback((fn: any) => {
           supply_amount: supply,
           vat_amount: vat,
           total_amount: total,
-      updated_at: new Date().toISOString(),
-created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : current.created_at,
+          updated_at: new Date().toISOString(),
+          created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : current.created_at,
           customer_name: editForm?.customer_name ?? current.customer_name,
           customer_email: editForm?.customer_email ?? current.customer_email,
           customer_phone: editForm?.customer_phone ?? current.customer_phone,
@@ -595,9 +750,9 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
         .select();
 
       if (error) throw error;
-
       toast("저장 완료!");
       setEditMode(false);
+      if (isMobile) setMobileView('detail');
       await loadList(q);
       if (data && data[0]) setCurrent(data[0] as QuoteRow);
     } catch (e: any) {
@@ -607,15 +762,13 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
 
   async function handleCopyQuote() {
     requireCurrent();
-    
     try {
       toast("견적 복사 중...");
-      
       const now = new Date();
       const ymd = now.toISOString().slice(2, 10).replace(/-/g, "");
       const hms = now.toTimeString().slice(0, 8).replace(/:/g, "");
       const newQuoteId = `Q${ymd}-${hms}`;
-      
+
       const { error } = await supabase.from("quotes").insert({
         quote_id: newQuoteId,
         quote_title: current!.quote_title,
@@ -638,9 +791,8 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
         vat_included: current!.vat_included,
         created_at: new Date().toISOString(),
       });
-      
+
       if (error) throw error;
-      
       toast("견적 복사 완료!");
       await loadList(q);
     } catch (e: any) {
@@ -648,7 +800,7 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
     }
   }
 
- async function handleConfirmContract() {
+  async function handleConfirmContract() {
     requireCurrent();
     const confirmed = window.confirm(
       `이 견적을 계약 확정하시겠습니까?\n\n견적번호: ${current!.quote_id}\n고객명: ${current!.customer_name || ""}\n금액: ${money(current!.total_amount)}원`
@@ -657,22 +809,14 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
 
     try {
       toast("계약 확정 중...");
-      
       const items = pickItems(current);
       let contractType = "order";
-      
       for (const it of items) {
         const name = (it.optionName || it.displayName || it.item_name || "").toString();
-        if (name.includes("임대")) {
-          contractType = "rental";
-          break;
-        } else if (name.includes("중고")) {
-          contractType = "used";
-          break;
-        }
+        if (name.includes("임대")) { contractType = "rental"; break; }
+        else if (name.includes("중고")) { contractType = "used"; break; }
       }
 
-      // ✅ 현재 editItems도 함께 저장 (편집 중 내용 손실 방지)
       const itemsToSave = editItems.map((it: any, idx: number) => ({
         optionId: it.optionId || `ITEM_${idx + 1}`,
         optionName: it.optionName || it.displayName || "",
@@ -687,14 +831,14 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
         specText: it.specText ?? "",
         months: it.months,
       }));
-      
+
       const { error, data } = await supabase
         .from("quotes")
-        .update({ 
+        .update({
           status: "confirmed",
           contract_type: contractType,
           contract_date: new Date().toISOString().slice(0, 10),
-          items: itemsToSave,  // ✅ items도 함께 저장
+          items: itemsToSave,
           customer_name: editForm?.customer_name ?? current!.customer_name,
           customer_phone: editForm?.customer_phone ?? current!.customer_phone,
           customer_email: editForm?.customer_email ?? current!.customer_email,
@@ -705,16 +849,9 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
 
       if (error) throw error;
       toast("계약 확정 완료!");
-      
-      if (onConfirmContract) {
-        onConfirmContract(current!);
-      }
-      
+      if (onConfirmContract) onConfirmContract(current!);
       await loadList(q);
-      
-      if (data && data[0]) {
-        setCurrent(data[0] as QuoteRow);
-      }
+      if (data && data[0]) setCurrent(data[0] as QuoteRow);
     } catch (e: any) {
       toast("계약 확정 실패: " + (e?.message || String(e)));
     }
@@ -723,17 +860,17 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
   async function loadList(keyword = ""): Promise<void> {
     setLoading(true);
     try {
-    const selectCols = [
+      const selectCols = [
         "quote_id", "version", "quote_title", "customer_name", "customer_phone",
         "customer_email", "site_name", "site_addr", "spec", "w", "l", "product",
         "qty", "memo", "contract_start", "supply_amount", "vat_amount", "total_amount",
-        "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id","vat_included",
-        "status",  // ← 추가
+        "pdf_url", "statement_url", "created_at", "updated_at", "items", "bizcard_id", "vat_included",
+        "status",
       ].join(",");
 
-     const oneMonthAgo = new Date();
+      const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      
+
       let query = supabase
         .from("quotes")
         .select(selectCols)
@@ -743,6 +880,7 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
         .gte("created_at", oneMonthAgo.toISOString())
         .order("created_at", { ascending: false })
         .limit(200);
+
       const kw = (keyword || "").trim();
       if (kw) {
         const like = `%${kw}%`;
@@ -754,7 +892,6 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
           `site_name.ilike.${like}`,
         ].join(","));
       }
-
       if (dateFilter) {
         const startOfDay = `${dateFilter}T00:00:00`;
         const endOfDay = `${dateFilter}T23:59:59`;
@@ -773,10 +910,10 @@ created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : c
     }
   }
 
-const confirmedCount = useMemo(() => 
+  const confirmedCount = useMemo(() =>
     list.filter((it: any) => (it as any).status === "confirmed").length
   , [list]);
-  
+
   const getDocTitle = () => {
     switch (activeTab) {
       case "quote": return "견적서";
@@ -787,22 +924,14 @@ const confirmedCount = useMemo(() =>
 
   async function handleSendEmail() {
     requireCurrent();
-    
     const quoteId = current!.quote_id;
     const to = sendTo.trim() || (current!.customer_email || "").trim();
-
-    if (!to) {
-      setSendStatus("수신 이메일이 비어있습니다.");
-      return;
-    }
+    if (!to) { setSendStatus("수신 이메일이 비어있습니다."); return; }
 
     try {
       setSendStatus("PDF 생성 중...");
-
       const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
-      if (!sheetEl) {
-        throw new Error("문서를 찾을 수 없습니다.");
-      }
+      if (!sheetEl) throw new Error("문서를 찾을 수 없습니다.");
 
       const isStatement = activeTab === 'statement';
       const captureWidth = isStatement ? 1100 : 794;
@@ -813,9 +942,7 @@ const confirmedCount = useMemo(() =>
       document.body.appendChild(captureContainer);
 
       const styleTag = document.querySelector('#docPreview style');
-      if (styleTag) {
-        captureContainer.appendChild(styleTag.cloneNode(true));
-      }
+      if (styleTag) captureContainer.appendChild(styleTag.cloneNode(true));
 
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
@@ -832,44 +959,25 @@ const confirmedCount = useMemo(() =>
       });
 
       captureContainer.appendChild(clonedSheet);
-
       await new Promise(r => setTimeout(r, 300));
 
       const canvas = await html2canvas(clonedSheet, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        width: captureWidth,
-        windowWidth: captureWidth,
+        scale: 2, backgroundColor: "#ffffff", useCORS: true,
+        width: captureWidth, windowWidth: captureWidth,
       });
-
       document.body.removeChild(captureContainer);
 
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
       const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
       const bizcardImageUrl = selectedBizcard?.image_url || "";
       const customerName = current!.customer_name || "고객";
 
       const attachmentUrls: string[] = [];
-      if (attachments.bankAccount) {
-        attachmentUrls.push(ATTACHMENT_URLS.bankAccount);
-      }
-      if (attachments.bizRegistration) {
-        attachmentUrls.push(ATTACHMENT_URLS.bizRegistration);
-      }
+      if (attachments.bankAccount) attachmentUrls.push(ATTACHMENT_URLS.bankAccount);
+      if (attachments.bizRegistration) attachmentUrls.push(ATTACHMENT_URLS.bizRegistration);
 
       setSendStatus("메일 전송 중...");
-
-      await gasCall("sendDocEmailWithPdf", [
-        quoteId,
-        to,
-        imgData,
-        bizcardImageUrl,
-        customerName,
-        getDocTitle(),
-        attachmentUrls
-      ]);
+      await gasCall("sendDocEmailWithPdf", [quoteId, to, imgData, bizcardImageUrl, customerName, getDocTitle(), attachmentUrls]);
 
       setSendStatus("전송 완료!");
       toast(`${getDocTitle()} 메일 전송 완료`);
@@ -884,15 +992,10 @@ const confirmedCount = useMemo(() =>
 
   async function downloadJpg() {
     requireCurrent();
-
     const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
-    if (!sheetEl) {
-      toast("캡처 대상을 찾을 수 없습니다.");
-      return;
-    }
+    if (!sheetEl) { toast("캡처 대상을 찾을 수 없습니다."); return; }
 
     toast("JPG 생성 중...");
-
     try {
       const isStatement = activeTab === 'statement';
       const captureWidth = isStatement ? 1100 : 794;
@@ -903,9 +1006,7 @@ const confirmedCount = useMemo(() =>
       document.body.appendChild(captureContainer);
 
       const styleTag = document.querySelector('#docPreview style');
-      if (styleTag) {
-        captureContainer.appendChild(styleTag.cloneNode(true));
-      }
+      if (styleTag) captureContainer.appendChild(styleTag.cloneNode(true));
 
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
@@ -925,14 +1026,9 @@ const confirmedCount = useMemo(() =>
       await new Promise(r => setTimeout(r, 300));
 
       const canvas = await html2canvas(clonedSheet, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: true,
-        width: captureWidth,
-        windowWidth: captureWidth,
+        scale: 2, backgroundColor: "#ffffff", useCORS: true, allowTaint: true,
+        width: captureWidth, windowWidth: captureWidth,
       });
-
       document.body.removeChild(captureContainer);
 
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
@@ -942,7 +1038,6 @@ const confirmedCount = useMemo(() =>
       document.body.appendChild(a);
       a.click();
       a.remove();
-
       toast("다운로드 완료");
     } catch (e: any) {
       toast("JPG 생성 실패: " + (e?.message || String(e)));
@@ -951,15 +1046,10 @@ const confirmedCount = useMemo(() =>
 
   async function handlePrint() {
     requireCurrent();
-
     const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
-    if (!sheetEl) {
-      toast("인쇄할 문서를 찾을 수 없습니다.");
-      return;
-    }
+    if (!sheetEl) { toast("인쇄할 문서를 찾을 수 없습니다."); return; }
 
     toast("인쇄 준비 중...");
-
     try {
       const isStatement = activeTab === 'statement';
       const captureWidth = isStatement ? 1100 : 794;
@@ -969,71 +1059,48 @@ const confirmedCount = useMemo(() =>
       document.body.appendChild(captureContainer);
 
       const styleTag = document.querySelector('#docPreview style');
-      if (styleTag) {
-        captureContainer.appendChild(styleTag.cloneNode(true));
-      }
+      if (styleTag) captureContainer.appendChild(styleTag.cloneNode(true));
 
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${isStatement ? 600 : 1123}px; background: #fff; padding: 16px; box-sizing: border-box;`;
 
-      const clonedSelects = clonedSheet.querySelectorAll('select');
-      const originalSelects = sheetEl.querySelectorAll('select');
-      clonedSelects.forEach((select, idx) => {
-        const origSelect = originalSelects[idx] as HTMLSelectElement;
-        const selectedText = origSelect.options[origSelect.selectedIndex]?.text || '';
+      clonedSheet.querySelectorAll('select').forEach((select, idx) => {
+        const origSelect = sheetEl.querySelectorAll('select')[idx] as HTMLSelectElement;
         const span = document.createElement('span');
-        span.textContent = selectedText;
+        span.textContent = origSelect.options[origSelect.selectedIndex]?.text || '';
         span.style.cssText = 'font-size: 13px;';
         select.parentNode?.replaceChild(span, select);
       });
-
-      const buttons = clonedSheet.querySelectorAll('button');
-      buttons.forEach(btn => btn.style.display = 'none');
-
-      const inputs = clonedSheet.querySelectorAll('.a4Items input');
-      inputs.forEach(input => (input as HTMLElement).style.display = 'none');
-
+      clonedSheet.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+      clonedSheet.querySelectorAll('.a4Items input').forEach(input => (input as HTMLElement).style.display = 'none');
       const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
       if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
 
       captureContainer.appendChild(clonedSheet);
-
       await new Promise(r => setTimeout(r, 300));
 
       const canvas = await html2canvas(clonedSheet, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: true,
-        width: captureWidth,
-        windowWidth: captureWidth,
+        scale: 2, backgroundColor: "#ffffff", useCORS: true, allowTaint: true,
+        width: captureWidth, windowWidth: captureWidth,
       });
-
       document.body.removeChild(captureContainer);
 
       const imgData = canvas.toDataURL("image/png");
-
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>${getDocTitle()} 인쇄</title>
-            <style>
-              @page { size: ${isStatement ? 'landscape' : 'A4'}; margin: 0; }
-              body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; }
-              img { width: ${isStatement ? '297mm' : '210mm'}; height: auto; }
-            </style>
-          </head>
-          <body>
-            <img src="${imgData}" onload="setTimeout(() => { window.print(); window.close(); }, 100);" />
-          </body>
+          <!DOCTYPE html><html><head>
+          <title>${getDocTitle()} 인쇄</title>
+          <style>
+            @page { size: ${isStatement ? 'landscape' : 'A4'}; margin: 0; }
+            body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; }
+            img { width: ${isStatement ? '297mm' : '210mm'}; height: auto; }
+          </style></head>
+          <body><img src="${imgData}" onload="setTimeout(() => { window.print(); window.close(); }, 100);" /></body>
           </html>
         `);
         printWindow.document.close();
       }
-
       toast("");
     } catch (e: any) {
       toast("인쇄 실패: " + (e?.message || String(e)));
@@ -1053,6 +1120,7 @@ const confirmedCount = useMemo(() =>
       if (error) throw error;
       toast("삭제 완료!");
       setCurrent(null);
+      if (isMobile) setMobileView('list');
       await loadList(q);
     } catch (e: any) {
       toast("삭제 실패: " + (e?.message || String(e)));
@@ -1067,78 +1135,54 @@ const confirmedCount = useMemo(() =>
     setSendOpen(true);
   }
 
- useEffect(() => {
-  if (current) {
-    const items = pickItems(current);
-    const rentalItem = items.find(it => {
-      const name = it.optionName || it.displayName || it.item_name || "";
-      return String(name).includes("임대");
-    });
-    const months = rentalItem?.months || 3;
+  useEffect(() => {
+    if (current) {
+      const items = pickItems(current);
+      const rentalItem = items.find(it => {
+        const name = it.optionName || it.displayName || it.item_name || "";
+        return String(name).includes("임대");
+      });
+      const months = rentalItem?.months || 3;
 
-    // ✅ 자동생성 금지 - contract_start가 있을 때만 설정
-    let contractStart = "";
-    let contractEnd = "";
-    
-    if (current.contract_start) {
-      contractStart = current.contract_start.replace(/-/g, '/').slice(2);
-      const endDate = new Date(current.contract_start);
-      endDate.setMonth(endDate.getMonth() + months);
-      endDate.setDate(endDate.getDate() - 1);  // ✅ 1일 마이너스 (월세 계약 방식)
-      contractEnd = endDate.toISOString().slice(2, 10).replace(/-/g, '/');
-    }
+      let contractStart = "";
+      let contractEnd = "";
+      if (current.contract_start) {
+        contractStart = current.contract_start.replace(/-/g, '/').slice(2);
+        const endDate = new Date(current.contract_start);
+        endDate.setMonth(endDate.getMonth() + months);
+        endDate.setDate(endDate.getDate() - 1);
+        contractEnd = endDate.toISOString().slice(2, 10).replace(/-/g, '/');
+      }
 
-    setRentalForm({
-      contractStart,
-      contractEnd,
-      months: months,
-      companyName: "",
-      regNo: "",
-      ceo: "",
-      siteAddr: current.site_addr || "",
-      phone: current.customer_phone || "",
-      officePhone: "",
-      fax: "",
-      email: current.customer_email || "",
-    });
+      setRentalForm({
+        contractStart, contractEnd, months,
+        companyName: "", regNo: "", ceo: "",
+        siteAddr: current.site_addr || "",
+        phone: current.customer_phone || "",
+        officePhone: "", fax: "",
+        email: current.customer_email || "",
+      });
 
-    setEditForm({
-  customer_name: current.customer_name || "",
-  customer_email: current.customer_email || "",
-  customer_phone: current.customer_phone || "",
-  site_name: current.site_name || "",
-  spec: current.spec || "",
-  customer_reg_no: "",
-  customer_addr: "",
-  quoteDate: current.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-});
-      // ✅ memo에서 임대차/거래명세서 데이터 복원
-      let restoredRental = false;
+      setEditForm({
+        customer_name: current.customer_name || "",
+        customer_email: current.customer_email || "",
+        customer_phone: current.customer_phone || "",
+        site_name: current.site_name || "",
+        spec: current.spec || "",
+        customer_reg_no: "",
+        customer_addr: "",
+        quoteDate: current.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      });
+
       if (current.memo) {
         try {
           const meta = JSON.parse(current.memo);
-          if (meta && meta.rentalForm) {
-            setRentalForm(prev => ({ ...prev, ...meta.rentalForm }));
-            restoredRental = true;
-          }
-          if (meta && meta.statementCustomer) {
-  setEditForm(prev => ({ ...prev, ...meta.statementCustomer }));
-}
-          if (meta && Array.isArray(meta.rentalConditions)) {
-            setRentalConditions(meta.rentalConditions);
-          } else {
-            setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
-          }
-          if (meta && typeof meta.paidAmount === 'number') {
-            setPaidAmount(meta.paidAmount);
-          } else {
-            setPaidAmount(0);
-          }
-          if (meta && meta.statementDate) {
-            setStatementDate(meta.statementDate);
-          } else {
-            setStatementDate(new Date().toISOString().slice(0, 10));
-          }
+          if (meta?.rentalForm) setRentalForm(prev => ({ ...prev, ...meta.rentalForm }));
+          if (meta?.statementCustomer) setEditForm((prev: any) => ({ ...prev, ...meta.statementCustomer }));
+          if (Array.isArray(meta?.rentalConditions)) setRentalConditions(meta.rentalConditions);
+          else setRentalConditions(DEFAULT_RENTAL_CONDITIONS);
+          setPaidAmount(typeof meta?.paidAmount === 'number' ? meta.paidAmount : 0);
+          setStatementDate(meta?.statementDate || new Date().toISOString().slice(0, 10));
         } catch (e) {
           setPaidAmount(0);
           setStatementDate(new Date().toISOString().slice(0, 10));
@@ -1192,7 +1236,7 @@ const confirmedCount = useMemo(() =>
     }
   }, [current]);
 
-  const selectedBizcard = useMemo(() => 
+  const selectedBizcard = useMemo(() =>
     bizcards.find((b: any) => b.id === selectedBizcardId),
     [bizcards, selectedBizcardId]
   );
@@ -1206,51 +1250,29 @@ const confirmedCount = useMemo(() =>
 
     const MIN_ROWS = 12;
 
-    const thStyle: React.CSSProperties = { 
-      border: '1px solid #5b9bd5', 
-      padding: '4px 8px', 
-      background: '#d6eaf8', 
-      color: '#1a5276',
-      fontWeight: 700,
-      fontSize: 11,
-      textAlign: 'center' as const,
-      whiteSpace: 'nowrap' as const,
-      width: 60,
+    const thStyle: React.CSSProperties = {
+      border: '1px solid #5b9bd5', padding: '4px 8px', background: '#d6eaf8',
+      color: '#1a5276', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
+      whiteSpace: 'nowrap' as const, width: 60,
     };
-    const tdStyle: React.CSSProperties = { 
-      border: '1px solid #5b9bd5', 
-      padding: '4px 8px', 
-      background: '#fff',
-      fontSize: 11,
+    const tdStyle: React.CSSProperties = {
+      border: '1px solid #5b9bd5', padding: '4px 8px', background: '#fff', fontSize: 11,
     };
     const itemThStyle: React.CSSProperties = {
-      border: '1px solid #5b9bd5',
-      padding: '6px 4px',
-      background: '#d6eaf8',
-      color: '#1a5276',
-      fontWeight: 700,
-      fontSize: 11,
-      textAlign: 'center' as const,
+      border: '1px solid #5b9bd5', padding: '6px 4px', background: '#d6eaf8',
+      color: '#1a5276', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
     };
     const itemTdStyle: React.CSSProperties = {
-      border: '1px solid #5b9bd5',
-      padding: '4px 6px',
-      background: '#fff',
-      fontSize: 11,
-      height: 24,
+      border: '1px solid #5b9bd5', padding: '4px 6px', background: '#fff', fontSize: 11, height: 24,
     };
     const editInputStyle: React.CSSProperties = {
-      width: '100%',
-      border: 'none',
-      background: 'transparent',
-      fontSize: 11,
-      padding: '2px 4px',
-      boxSizing: 'border-box' as const,
+      width: '100%', border: 'none', background: 'transparent',
+      fontSize: 11, padding: '2px 4px', boxSizing: 'border-box' as const,
     };
 
     const [yy, mm, dd] = statementDate.split('-');
     const monthDay = `${parseInt(mm)}/${parseInt(dd)}`;
-    
+
     const filteredItems = computedItems.filter((item: any) => {
       const name = String(item.displayName || item.optionName || "");
       if (name.includes("마감 사양") || name.includes("마감사양")) return false;
@@ -1266,7 +1288,7 @@ const confirmedCount = useMemo(() =>
       if (name.includes("필요한 정보") || name.includes("필요정보")) return false;
       return true;
     });
-    
+
     const filteredSupply = filteredItems.reduce((acc: number, item: any) => acc + (item.finalAmount || 0), 0);
     const filteredVat = Math.round(filteredSupply * 0.1);
     const filteredTotal = filteredSupply + filteredVat;
@@ -1299,21 +1321,21 @@ const confirmedCount = useMemo(() =>
                 </td>
               </tr>
               <tr>
-  <th style={{ ...thStyle, width: '80px' }}>등록번호</th>
-  <td style={tdStyle}>
-    {editMode ? (
-      <input value={editForm?.customer_reg_no || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_reg_no: e.target.value }))} style={editInputStyle} />
-    ) : (editForm?.customer_reg_no || "")}
-  </td>
-</tr>
-<tr>
-  <th style={{ ...thStyle, width: '80px' }}>주소</th>
-  <td style={tdStyle}>
-    {editMode ? (
-      <input value={editForm?.customer_addr || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_addr: e.target.value }))} style={editInputStyle} />
-    ) : (editForm?.customer_addr || "")}
-  </td>
-</tr>
+                <th style={{ ...thStyle, width: '80px' }}>등록번호</th>
+                <td style={tdStyle}>
+                  {editMode ? (
+                    <input value={editForm?.customer_reg_no || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_reg_no: e.target.value }))} style={editInputStyle} />
+                  ) : (editForm?.customer_reg_no || "")}
+                </td>
+              </tr>
+              <tr>
+                <th style={{ ...thStyle, width: '80px' }}>주소</th>
+                <td style={tdStyle}>
+                  {editMode ? (
+                    <input value={editForm?.customer_addr || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_addr: e.target.value }))} style={editInputStyle} />
+                  ) : (editForm?.customer_addr || "")}
+                </td>
+              </tr>
               <tr>
                 <th style={{ ...thStyle, width: '80px' }}>전화번호</th>
                 <td style={tdStyle}>
@@ -1324,44 +1346,34 @@ const confirmedCount = useMemo(() =>
               </tr>
             </tbody>
           </table>
-<table style={{ borderCollapse: 'collapse', width: '55%' }}>
-  <tbody>
-    <tr>
-      <th style={thStyle}>등록번호</th><td style={tdStyle}>130-41-38154</td>
-      <th style={thStyle}>성명</th><td style={tdStyle}>류창석</td>
-    </tr>
-    <tr>
-      <th style={thStyle}>상호</th>
-      <td style={tdStyle}>
-        <span style={{ position: 'relative', display: 'inline-block' }}>
-          현대컨테이너
-          <img 
-            src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" 
-            alt="도장" 
-            style={{ 
-              position: 'absolute',
-              top: -10, 
-              left: 55, 
-              width: 32, 
-              height: 32, 
-              opacity: 0.9 
-            }} 
-          />
-        </span>
-      </td>
-      <th style={thStyle}>주소</th><td style={tdStyle}>화성시구문천안길16</td>
-    </tr>
-    <tr>
-      <th style={thStyle}>업태</th><td style={tdStyle}>컨테이너 판매 임대</td>
-      <th style={thStyle}>종목</th><td style={tdStyle}>제조업,도소매</td>
-    </tr>
-    <tr>
-      <th style={thStyle}>전화번호</th><td style={tdStyle}>010-4138-9268</td>
-      <th style={thStyle}>팩스번호</th><td style={tdStyle}>031-359-8246</td>
-    </tr>
-  </tbody>
-</table>
-          </div>
+          <table style={{ borderCollapse: 'collapse', width: '55%' }}>
+            <tbody>
+              <tr>
+                <th style={thStyle}>등록번호</th><td style={tdStyle}>130-41-38154</td>
+                <th style={thStyle}>성명</th><td style={tdStyle}>류창석</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>상호</th>
+                <td style={tdStyle}>
+                  <span style={{ position: 'relative', display: 'inline-block' }}>
+                    현대컨테이너
+                    <img src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" alt="도장"
+                      style={{ position: 'absolute', top: -10, left: 55, width: 32, height: 32, opacity: 0.9 }} />
+                  </span>
+                </td>
+                <th style={thStyle}>주소</th><td style={tdStyle}>화성시구문천안길16</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>업태</th><td style={tdStyle}>컨테이너 판매 임대</td>
+                <th style={thStyle}>종목</th><td style={tdStyle}>제조업,도소매</td>
+              </tr>
+              <tr>
+                <th style={thStyle}>전화번호</th><td style={tdStyle}>010-4138-9268</td>
+                <th style={thStyle}>팩스번호</th><td style={tdStyle}>031-359-8246</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #5b9bd5', padding: '8px 12px', marginBottom: 8, gap: 20 }}>
           <div>
@@ -1371,12 +1383,8 @@ const confirmedCount = useMemo(() =>
           <div>
             <span style={{ fontWeight: 700, color: '#059669', marginRight: 6 }}>입금:</span>
             {editMode ? (
-              <input 
-                type="number" 
-                value={paidAmount || ''} 
-                onChange={(e) => setPaidAmount(Number(e.target.value) || 0)} 
-                style={{ width: 100, fontSize: 14, fontWeight: 700, border: '1px solid #d7dbe2', borderRadius: 4, padding: '2px 6px' }} 
-              />
+              <input type="number" value={paidAmount || ''} onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
+                style={{ width: 100, fontSize: 14, fontWeight: 700, border: '1px solid #d7dbe2', borderRadius: 4, padding: '2px 6px' }} />
             ) : (
               <span style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>{money(paidAmount)}</span>
             )}
@@ -1409,46 +1417,34 @@ const confirmedCount = useMemo(() =>
                   <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>{monthDay}</td>
                   <td style={itemTdStyle}>
                     {editMode ? (
-                      <input 
-                        value={item.displayName || item.optionName || ''} 
+                      <input value={item.displayName || item.optionName || ''}
                         onChange={(e) => {
                           const itemKey = item.key;
-                          setEditItems(prev => prev.map((it) => 
+                          setEditItems(prev => prev.map((it) =>
                             it.key === itemKey ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
                           ));
                         }}
-                        style={editInputStyle}
-                      />
+                        style={editInputStyle} />
                     ) : (item.displayName || item.optionName)}
                   </td>
                   <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>
                     {editMode ? (
-                      <input 
-                        type="number"
-                        value={item.qty || ''} 
-                        onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }}
-                      />
+                      <input type="number" value={item.qty || ''} onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }} />
                     ) : (item.displayQty || item.qty || 1)}
                   </td>
                   <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>
                     {editMode ? (
-                      <input 
-                        type="number"
-                        value={item.unitPrice || ''} 
-                        onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }}
-                      />
+                      <input type="number" value={item.unitPrice || ''} onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }} />
                     ) : money(item.unitPrice)}
                   </td>
                   <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(supply)}</td>
                   <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(vat)}</td>
                   <td style={itemTdStyle}>
                     {editMode && (
-                      <button 
-                        onClick={() => handleDeleteItem(item.key)} 
-                        style={{ padding: '2px 6px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 4, background: '#fff', cursor: 'pointer' }}
-                      >
+                      <button onClick={() => handleDeleteItem(item.key)}
+                        style={{ padding: '2px 6px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 4, background: '#fff', cursor: 'pointer' }}>
                         삭제
                       </button>
                     )}
@@ -1491,16 +1487,15 @@ const confirmedCount = useMemo(() =>
     const customerEmail = current.customer_email ?? "";
     const siteName = current.site_name ?? "";
 
-    // ✅ 규격에서 차원(예: 3x9)만 추출 - editForm 반영
     const rawSpec = editForm?.spec || (current.spec ?? "3*6");
     const specMatch = rawSpec.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-    const spec = specMatch 
-      ? `${specMatch[1]}x${specMatch[2]}` 
+    const spec = specMatch
+      ? `${specMatch[1]}x${specMatch[2]}`
       : (current.w && current.l ? `${current.w}x${current.l}` : rawSpec);
 
     const today = new Date();
     const ymd = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
-    
+
     const cutoffIndex = items.findIndex((it: any) => {
       const name = it.displayName || it.optionName || "";
       return String(name).includes("임대 계약시 필요한 정보");
@@ -1515,35 +1510,33 @@ const confirmedCount = useMemo(() =>
     const MIN_ROWS = 8;
 
     const editInputStyle: React.CSSProperties = {
-      width: '100%',
-      border: '1px solid #ccc',
-      background: '#fffff0',
-      fontSize: 11,
-      padding: '2px 4px',
-      boxSizing: 'border-box' as const,
-      borderRadius: 3,
+      width: '100%', border: '1px solid #ccc', background: '#fffff0',
+      fontSize: 11, padding: '2px 4px', boxSizing: 'border-box' as const, borderRadius: 3,
     };
-
     const thStyle: React.CSSProperties = {
-      border: '1px solid #999', padding: '6px 4px', background: '#fff', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
+      border: '1px solid #999', padding: '6px 4px', background: '#fff',
+      fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
     };
     const tdStyle: React.CSSProperties = {
       border: '1px solid #999', padding: '6px 4px', fontSize: 11, height: 22,
     };
     const conditionThStyle: React.CSSProperties = {
-      border: '1px solid #2e86de', padding: '6px 8px', background: '#fff', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
+      border: '1px solid #2e86de', padding: '6px 8px', background: '#fff',
+      fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
     };
     const conditionTdStyle: React.CSSProperties = {
       border: '1px solid #2e86de', padding: '6px 8px', fontSize: 11, textAlign: 'center' as const,
     };
     const partyThStyle: React.CSSProperties = {
-      border: '1px solid #999', padding: '5px 8px', background: '#fff', fontWeight: 400, fontSize: 11, textAlign: 'center' as const, width: 30,
+      border: '1px solid #999', padding: '5px 8px', background: '#fff',
+      fontWeight: 400, fontSize: 11, textAlign: 'center' as const, width: 30,
     };
     const partyTdStyle: React.CSSProperties = {
       border: '1px solid #999', padding: '5px 8px', fontSize: 11,
     };
     const partyHeaderStyle: React.CSSProperties = {
-      border: '1px solid #999', padding: '8px', background: '#fff', fontWeight: 900, fontSize: 12, textAlign: 'center' as const,
+      border: '1px solid #999', padding: '8px', background: '#fff',
+      fontWeight: 900, fontSize: 12, textAlign: 'center' as const,
     };
 
     return (
@@ -1559,7 +1552,6 @@ const confirmedCount = useMemo(() =>
 
         <div style={{ borderTop: '2px solid #2e86de', marginBottom: 15 }}></div>
 
-        {/* ✅ 품목 테이블 - 인라인 수정 지원 */}
         <table style={{ borderCollapse: 'collapse', width: '90%', margin: '0 auto', marginBottom: 5 }}>
           <thead>
             <tr>
@@ -1576,82 +1568,59 @@ const confirmedCount = useMemo(() =>
             {rentalItems.length > 0 ? rentalItems.map((item: any, idx: number) => {
               const name = item.displayName || item.optionName || "";
               const isContainerRental = String(name).includes("컨테이너 임대") || String(name).includes("임대");
-              const isDelivery = String(name).includes("5톤 일반 트럭 운송비") || String(name).includes("크레인 운송비") || String(name).includes("운송비");
+              const isDelivery = String(name).includes("운송비");
               const showSpec = isContainerRental || isDelivery;
               const months = isContainerRental ? (item.months || rentalForm.months) : "";
-              
+
               return (
                 <tr key={item.key || idx}>
                   <td style={tdStyle}>
                     {editMode ? (
-                      <input 
-                        value={name} 
-                        onChange={(e) => {
-                          const itemKey = item.key;
-                          setEditItems(prev => prev.map(it => 
-                            it.key === itemKey ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
-                          ));
-                        }}
-                        style={editInputStyle}
-                      />
+                      <input value={name} onChange={(e) => {
+                        const itemKey = item.key;
+                        setEditItems(prev => prev.map(it =>
+                          it.key === itemKey ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
+                        ));
+                      }} style={editInputStyle} />
                     ) : name}
                   </td>
-                  {/* ✅ 규격 셀 - 편집모드에서 수정 가능 */}
                   <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                     {editMode && showSpec ? (
-                      <input 
-                        value={editForm?.spec || spec} 
-                        onChange={(e) => setEditForm((p: any) => ({ ...p, spec: e.target.value }))}
-                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }}
-                      />
+                      <input value={editForm?.spec || spec} onChange={(e) => setEditForm((p: any) => ({ ...p, spec: e.target.value }))}
+                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }} />
                     ) : (showSpec ? spec : "")}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                     {editMode && isContainerRental ? (
-                      <input 
-                        type="number"
-                        value={item.months || rentalForm.months || ''} 
-                        onChange={(e) => {
-                          const newMonths = Number(e.target.value) || 1;
-                          const itemKey = item.key;
-                          setEditItems(prev => prev.map(it => {
-                            if (it.key !== itemKey) return it;
-                            const basePrice = it.baseUnitPrice || Math.round(it.unitPrice / (it.months || 3));
-                            const newUnitPrice = basePrice * newMonths;
-                            return { ...it, months: newMonths, unitPrice: newUnitPrice, amount: (it.qty || 1) * newUnitPrice };
-                          }));
-                        }}
-                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 40 }}
-                      />
+                      <input type="number" value={item.months || rentalForm.months || ''} onChange={(e) => {
+                        const newMonths = Number(e.target.value) || 1;
+                        const itemKey = item.key;
+                        setEditItems(prev => prev.map(it => {
+                          if (it.key !== itemKey) return it;
+                          const basePrice = it.baseUnitPrice || Math.round(it.unitPrice / (it.months || 3));
+                          const newUnitPrice = basePrice * newMonths;
+                          return { ...it, months: newMonths, unitPrice: newUnitPrice, amount: (it.qty || 1) * newUnitPrice };
+                        }));
+                      }} style={{ ...editInputStyle, textAlign: 'center' as const, width: 40 }} />
                     ) : months}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' as const }}>
                     {editMode ? (
-                      <input 
-                        type="number"
-                        value={item.unitPrice || ''} 
-                        onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }}
-                      />
+                      <input type="number" value={item.unitPrice || ''} onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }} />
                     ) : money(item.unitPrice)}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'center' as const }}>
                     {editMode ? (
-                      <input 
-                        type="number"
-                        value={item.qty || ''} 
-                        onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 40 }}
-                      />
+                      <input type="number" value={item.qty || ''} onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
+                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 40 }} />
                     ) : item.qty}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' as const }}>{money(item.qty * item.unitPrice)}</td>
                   {editMode && (
                     <td style={{ ...tdStyle, textAlign: 'center' as const }}>
-                      <button 
-                        onClick={() => handleDeleteItem(item.key)} 
-                        style={{ padding: '1px 5px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 3, background: '#fff', cursor: 'pointer' }}
-                      >✕</button>
+                      <button onClick={() => handleDeleteItem(item.key)}
+                        style={{ padding: '1px 5px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 3, background: '#fff', cursor: 'pointer' }}>✕</button>
                     </td>
                   )}
                 </tr>
@@ -1670,35 +1639,27 @@ const confirmedCount = useMemo(() =>
             {editMode && (
               <tr>
                 <td colSpan={editMode ? 7 : 6} style={{ ...tdStyle, textAlign: 'center' as const }}>
-                  <button 
-                    onClick={() => {
-                      const newItem = {
-                        key: `item_${Date.now()}`,
-                        optionId: '',
-                        optionName: '',
-                        displayName: '',
-                        unit: 'EA',
-                        qty: 1,
-                        unitPrice: 0,
-                        amount: 0,
-                        showSpec: 'n',
-                        lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
-                        specText: '',
-                        months: rentalForm.months || 3,
-                      };
-                      setEditItems(prev => {
-                        const ci = prev.findIndex((it: any) => {
-                          const n = it.displayName || it.optionName || "";
-                          return String(n).includes("임대 계약시 필요한 정보");
-                        });
-                        if (ci === -1) return [...prev, newItem];
-                        const arr = [...prev];
-                        arr.splice(ci, 0, newItem);
-                        return arr;
+                  <button onClick={() => {
+                    const newItem = {
+                      key: `item_${Date.now()}`,
+                      optionId: '', optionName: '', displayName: '',
+                      unit: 'EA', qty: 1, unitPrice: 0, amount: 0,
+                      showSpec: 'n', lineSpec: { w: current?.w || 3, l: current?.l || 6, h: 2.6 },
+                      specText: '', months: rentalForm.months || 3,
+                    };
+                    setEditItems(prev => {
+                      const ci = prev.findIndex((it: any) => {
+                        const n = it.displayName || it.optionName || "";
+                        return String(n).includes("임대 계약시 필요한 정보");
                       });
-                    }}
-                    style={{ padding: '4px 12px', fontSize: 11, color: '#2e86de', border: '1px solid #2e86de', borderRadius: 4, background: '#fff', cursor: 'pointer', fontWeight: 700 }}
-                  >+ 품목 추가</button>
+                      if (ci === -1) return [...prev, newItem];
+                      const arr = [...prev];
+                      arr.splice(ci, 0, newItem);
+                      return arr;
+                    });
+                  }} style={{ padding: '4px 12px', fontSize: 11, color: '#2e86de', border: '1px solid #2e86de', borderRadius: 4, background: '#fff', cursor: 'pointer', fontWeight: 700 }}>
+                    + 품목 추가
+                  </button>
                 </td>
               </tr>
             )}
@@ -1720,7 +1681,6 @@ const confirmedCount = useMemo(() =>
           합계(VAT별도) {money(totalAmount)}원
         </div>
 
-        {/* ✅ 임대 조건 - calcRentalEndDate 사용 */}
         <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 900, marginBottom: 8 }}>임대 조건</div>
         <table style={{ borderCollapse: 'collapse', width: '70%', margin: '0 auto 12px auto' }}>
           <tbody>
@@ -1729,48 +1689,31 @@ const confirmedCount = useMemo(() =>
               <td style={{ ...conditionTdStyle, width: '20%' }}>
                 {editMode ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <input 
-                      value={rentalForm.contractStart} 
-                      onChange={(e) => {
-                        const start = e.target.value;
-                        const endDate = calcRentalEndDate(start, rentalForm.months);
-                        setRentalForm(prev => ({ ...prev, contractStart: start, contractEnd: endDate }));
-                      }}
-                      placeholder="26/01/15"
-                      style={{ ...editInputStyle, width: 65, textAlign: 'center' as const }}
-                    />
+                    <input value={rentalForm.contractStart} onChange={(e) => {
+                      const start = e.target.value;
+                      const endDate = calcRentalEndDate(start, rentalForm.months);
+                      setRentalForm(prev => ({ ...prev, contractStart: start, contractEnd: endDate }));
+                    }} placeholder="26/01/15" style={{ ...editInputStyle, width: 65, textAlign: 'center' as const }} />
                     <span>~</span>
-                    <input 
-                      value={rentalForm.contractEnd}
-                      onChange={(e) => setRentalForm(prev => ({ ...prev, contractEnd: e.target.value }))}
-                      placeholder="26/04/14"
-                      style={{ ...editInputStyle, width: 65, textAlign: 'center' as const }}
-                    />
+                    <input value={rentalForm.contractEnd} onChange={(e) => setRentalForm(prev => ({ ...prev, contractEnd: e.target.value }))}
+                      placeholder="26/04/14" style={{ ...editInputStyle, width: 65, textAlign: 'center' as const }} />
                   </div>
                 ) : `${rentalForm.contractStart}~${rentalForm.contractEnd}`}
               </td>
               <td style={{ ...conditionTdStyle, width: '10%' }}>
                 {editMode ? (
-                  <input 
-                    value={rentalForm.contractStart?.slice(3, 8) || ''} 
-                    readOnly
-                    style={{ ...editInputStyle, width: 40, textAlign: 'center' as const, background: '#f0f0f0' }}
-                  />
+                  <input value={rentalForm.contractStart?.slice(3, 8) || ''} readOnly
+                    style={{ ...editInputStyle, width: 40, textAlign: 'center' as const, background: '#f0f0f0' }} />
                 ) : rentalForm.contractStart?.slice(3, 8)}
               </td>
               <th style={{ ...conditionThStyle, width: '8%' }}>로부터</th>
               <td style={{ ...conditionTdStyle, width: '10%' }}>
                 {editMode ? (
-                  <input 
-                    type="number"
-                    value={rentalForm.months || ''} 
-                    onChange={(e) => {
-                      const m = Number(e.target.value) || 1;
-                      const endDate = calcRentalEndDate(rentalForm.contractStart, m);
-                      setRentalForm(prev => ({ ...prev, months: m, contractEnd: endDate }));
-                    }}
-                    style={{ ...editInputStyle, width: 35, textAlign: 'center' as const }}
-                  />
+                  <input type="number" value={rentalForm.months || ''} onChange={(e) => {
+                    const m = Number(e.target.value) || 1;
+                    const endDate = calcRentalEndDate(rentalForm.contractStart, m);
+                    setRentalForm(prev => ({ ...prev, months: m, contractEnd: endDate }));
+                  }} style={{ ...editInputStyle, width: 35, textAlign: 'center' as const }} />
                 ) : rentalForm.months}
               </td>
               <th style={{ ...conditionThStyle, width: '8%' }}>개월</th>
@@ -1778,39 +1721,16 @@ const confirmedCount = useMemo(() =>
           </tbody>
         </table>
 
-        {/* ✅ 임대 조건 약관 - 인라인 수정 지원 */}
         <div style={{ fontSize: 11, lineHeight: 1.7, marginBottom: 15, textAlign: 'left' }}>
           {rentalConditions.map((text, idx) => (
             <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, margin: '2px 0' }}>
               {editMode ? (
                 <>
-                  <textarea
-                    value={text}
-                    onChange={(e) => {
-                      setRentalConditions(prev => {
-                        const next = [...prev];
-                        next[idx] = e.target.value;
-                        return next;
-                      });
-                    }}
-                    style={{
-                      flex: 1,
-                      fontSize: 11,
-                      lineHeight: '1.7',
-                      border: '1px solid #ccc',
-                      background: '#fffff0',
-                      borderRadius: 3,
-                      padding: '2px 6px',
-                      resize: 'vertical',
-                      minHeight: 22,
-                      fontFamily: 'inherit',
-                    }}
-                    rows={text.length > 80 ? 2 : 1}
-                  />
-                  <button
-                    onClick={() => setRentalConditions(prev => prev.filter((_, i) => i !== idx))}
-                    style={{ padding: '1px 5px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 3, background: '#fff', cursor: 'pointer', flexShrink: 0, marginTop: 1 }}
-                  >✕</button>
+                  <textarea value={text} onChange={(e) => {
+                    setRentalConditions(prev => { const next = [...prev]; next[idx] = e.target.value; return next; });
+                  }} style={{ flex: 1, fontSize: 11, lineHeight: '1.7', border: '1px solid #ccc', background: '#fffff0', borderRadius: 3, padding: '2px 6px', resize: 'vertical', minHeight: 22, fontFamily: 'inherit' }} rows={text.length > 80 ? 2 : 1} />
+                  <button onClick={() => setRentalConditions(prev => prev.filter((_, i) => i !== idx))}
+                    style={{ padding: '1px 5px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 3, background: '#fff', cursor: 'pointer', flexShrink: 0, marginTop: 1 }}>✕</button>
                 </>
               ) : (
                 <p style={{ margin: 0 }}>{text}</p>
@@ -1818,22 +1738,19 @@ const confirmedCount = useMemo(() =>
             </div>
           ))}
           {editMode && (
-            <button
-              onClick={() => setRentalConditions(prev => [...prev, "※ "])}
-              style={{ marginTop: 4, padding: '3px 10px', fontSize: 10, color: '#2e86de', border: '1px solid #2e86de', borderRadius: 4, background: '#fff', cursor: 'pointer', fontWeight: 700 }}
-            >+ 조항 추가</button>
+            <button onClick={() => setRentalConditions(prev => [...prev, "※ "])}
+              style={{ marginTop: 4, padding: '3px 10px', fontSize: 10, color: '#2e86de', border: '1px solid #2e86de', borderRadius: 4, background: '#fff', cursor: 'pointer', fontWeight: 700 }}>
+              + 조항 추가
+            </button>
           )}
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, marginBottom: 15 }}>{ymd}</div>
 
-        {/* ✅ 임대인/임차인 테이블 */}
         <table style={{ borderCollapse: 'collapse', width: '80%', margin: '0 auto 15px auto' }}>
           <colgroup>
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '38%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '38%' }} />
+            <col style={{ width: '12%' }} /><col style={{ width: '38%' }} />
+            <col style={{ width: '12%' }} /><col style={{ width: '38%' }} />
           </colgroup>
           <thead>
             <tr>
@@ -1845,116 +1762,79 @@ const confirmedCount = useMemo(() =>
             <tr>
               <th style={partyThStyle}>상호:</th><td style={partyTdStyle}>현대 컨테이너</td>
               <th style={partyThStyle}>상호:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.companyName} onChange={(e) => setRentalForm(prev => ({ ...prev, companyName: e.target.value }))} style={editInputStyle} />
-                ) : rentalForm.companyName}
-              </td>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.companyName} onChange={(e) => setRentalForm(prev => ({ ...prev, companyName: e.target.value }))} style={editInputStyle} /> : rentalForm.companyName}</td>
             </tr>
             <tr>
               <th style={partyThStyle}>등록번호:</th><td style={partyTdStyle}>130-41-38154</td>
               <th style={partyThStyle}>등록번호:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.regNo} onChange={(e) => setRentalForm(prev => ({ ...prev, regNo: e.target.value }))} style={editInputStyle} />
-                ) : rentalForm.regNo}
-              </td>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.regNo} onChange={(e) => setRentalForm(prev => ({ ...prev, regNo: e.target.value }))} style={editInputStyle} /> : rentalForm.regNo}</td>
             </tr>
             <tr>
               <th style={partyThStyle}>대표:</th>
               <td style={partyTdStyle}>
                 <span style={{ position: 'relative', display: 'inline-block' }}>
                   류창석
-                  <img 
-                    src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" 
-                    alt="도장" 
-                    style={{ 
-                      position: 'absolute', 
-                      top: -12, 
-                      left: 20, 
-                      width: 40, 
-                      height: 40, 
-                    }} 
-                  />
+                  <img src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" alt="도장"
+                    style={{ position: 'absolute', top: -12, left: 20, width: 40, height: 40 }} />
                 </span>
               </td>
               <th style={partyThStyle}>대표:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.ceo} onChange={(e) => setRentalForm(prev => ({ ...prev, ceo: e.target.value }))} style={editInputStyle} />
-                ) : rentalForm.ceo}
-              </td>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.ceo} onChange={(e) => setRentalForm(prev => ({ ...prev, ceo: e.target.value }))} style={editInputStyle} /> : rentalForm.ceo}</td>
             </tr>
             <tr>
               <th style={partyThStyle}>주소:</th><td style={partyTdStyle}>화성시 향남읍 구문천안길16</td>
               <th style={partyThStyle}>현장주소:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.siteAddr} onChange={(e) => setRentalForm(prev => ({ ...prev, siteAddr: e.target.value }))} style={editInputStyle} />
-                ) : (rentalForm.siteAddr || siteName)}
-              </td>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.siteAddr} onChange={(e) => setRentalForm(prev => ({ ...prev, siteAddr: e.target.value }))} style={editInputStyle} /> : (rentalForm.siteAddr || siteName)}</td>
             </tr>
             <tr>
               <th style={partyThStyle}>연락처:</th><td style={partyTdStyle}>010-4775-7557</td>
               <th style={partyThStyle}>연락처:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.phone} onChange={(e) => setRentalForm(prev => ({ ...prev, phone: e.target.value }))} style={editInputStyle} />
-                ) : rentalForm.phone}
-              </td>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.phone} onChange={(e) => setRentalForm(prev => ({ ...prev, phone: e.target.value }))} style={editInputStyle} /> : rentalForm.phone}</td>
             </tr>
             <tr>
               <th style={partyThStyle}>연락처:</th><td style={partyTdStyle}>010-4138-9268</td>
               <th style={partyThStyle}>사무실:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.officePhone} onChange={(e) => setRentalForm(prev => ({ ...prev, officePhone: e.target.value }))} style={editInputStyle} />
-                ) : rentalForm.officePhone}
-              </td>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.officePhone} onChange={(e) => setRentalForm(prev => ({ ...prev, officePhone: e.target.value }))} style={editInputStyle} /> : rentalForm.officePhone}</td>
             </tr>
             <tr>
               <th style={partyThStyle}>팩스:</th><td style={partyTdStyle}>0504-392-4298</td>
               <th style={partyThStyle}>팩스:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.fax} onChange={(e) => setRentalForm(prev => ({ ...prev, fax: e.target.value }))} style={editInputStyle} />
-                ) : rentalForm.fax}
-              </td>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.fax} onChange={(e) => setRentalForm(prev => ({ ...prev, fax: e.target.value }))} style={editInputStyle} /> : rentalForm.fax}</td>
             </tr>
             <tr>
-              <th style={partyThStyle}>메일:</th><td style={partyTdStyle}><a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a></td>
               <th style={partyThStyle}>메일:</th>
-              <td style={partyTdStyle}>
-                {editMode ? (
-                  <input value={rentalForm.email} onChange={(e) => setRentalForm(prev => ({ ...prev, email: e.target.value }))} style={editInputStyle} />
-                ) : (rentalForm.email || customerEmail)}
-              </td>
+              <td style={partyTdStyle}><a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a></td>
+              <th style={partyThStyle}>메일:</th>
+              <td style={partyTdStyle}>{editMode ? <input value={rentalForm.email} onChange={(e) => setRentalForm(prev => ({ ...prev, email: e.target.value }))} style={editInputStyle} /> : (rentalForm.email || customerEmail)}</td>
             </tr>
           </tbody>
         </table>
 
         <div style={{ textAlign: 'center', fontSize: 11, color: '#333' }}>
-          서명하시고 fax 0504-392-4298이나 이메일<a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a>으로 회신부탁드립니다.
+          서명하시고 fax 0504-392-4298이나 이메일
+          <a href="mailto:hdcon20@naver.com" style={{ color: '#2e86de', textDecoration: 'underline' }}>hdcon20@naver.com</a>
+          으로 회신부탁드립니다.
         </div>
       </div>
     );
   }, [current, rentalForm, editItems, editMode, editForm, rentalConditions, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
 
+  // ============ 렌더 ============
   return (
     <div className="quoteListPage">
       <style>{css}</style>
 
       <div className="app">
-        {/* LEFT - 목록 */}
-        <div className="panel">
+        {/* LEFT - 목록 (모바일에서 detail 뷰이면 숨김) */}
+        <div className="panel" style={isMobile && mobileView === 'detail' ? { display: 'none' } : undefined}>
           <div className="hdr">
-  <h1>견적 목록</h1>
-  <span className="spacer" />
-  <span className="badge">{loading ? "..." : String(list.length)}</span>
-  <span className="badge" style={{ background: "#059669", color: "#fff", borderColor: "#059669" }}>
-    확정 {confirmedCount}
-  </span>
-</div>
+            <h1>견적 목록</h1>
+            <span className="spacer" />
+            <span className="badge">{loading ? "..." : String(list.length)}</span>
+            <span className="badge" style={{ background: "#059669", color: "#fff", borderColor: "#059669" }}>
+              확정 {confirmedCount}
+            </span>
+          </div>
 
           <div className="search">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="견적 검색 (견적번호/고객/규격/제목/현장)" />
@@ -1963,7 +1843,7 @@ const confirmedCount = useMemo(() =>
               <button onClick={() => setDateFilter("")} style={{ marginTop: 4, fontSize: 11, padding: '4px 8px' }}>날짜 필터 해제</button>
             )}
           </div>
-          
+
           <div className="list">
             {!loading && list.length === 0 && (
               <div style={{ padding: 12 }} className="muted">검색 결과 없음</div>
@@ -1975,36 +1855,54 @@ const confirmedCount = useMemo(() =>
                 onClick={() => {
                   setCurrent(it);
                   if (it.bizcard_id) setSelectedBizcardId(it.bizcard_id);
+                  // ✅ 모바일: 목록 클릭 시 detail 뷰로 전환
+                  if (isMobile) setMobileView('detail');
                 }}
               >
-              <div className="top">
-  <span className="muted">{formatKoDate(it.created_at || "")}</span>
-  {(it as any).status === "confirmed" && (
-    <span style={{ 
-      background: "#059669", 
-      color: "#fff", 
-      fontSize: 10, 
-      fontWeight: 700,
-      padding: "1px 6px", 
-      borderRadius: 4,
-    }}>✓확정</span>
-  )}
-</div>
-<div className="mid">
-  {it.customer_name || it.quote_title || it.quote_id || ""}
-</div>
-<div className="bot">
-  <span>{it.spec ? "· " + it.spec : ""}</span>
-  <span><b>{money(it.total_amount)}</b>원</span>
-</div>
-               
+                <div className="top">
+                  <span className="muted">{formatKoDate(it.created_at || "")}</span>
+                  {(it as any).status === "confirmed" && (
+                    <span style={{ background: "#059669", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>✓확정</span>
+                  )}
+                </div>
+                <div className="mid">{it.customer_name || it.quote_title || it.quote_id || ""}</div>
+                <div className="bot">
+                  <span>{it.spec ? "· " + it.spec : ""}</span>
+                  <span><b>{money(it.total_amount)}</b>원</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* RIGHT - 미리보기 */}
-        <div className="right">
+        {/* RIGHT - 미리보기 (모바일에서 list 뷰이면 숨김) */}
+        <div className="right" style={isMobile && mobileView === 'list' ? { display: 'none' } : undefined}>
+
+          {/* ✅ 모바일 뒤로가기 헤더 */}
+          {isMobile && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 12px', background: '#fff',
+              border: '1px solid #e5e7eb', borderRadius: 14,
+            }}>
+              <button
+                onClick={() => { setMobileView('list'); setEditMode(false); }}
+                style={{ padding: '8px 14px', fontWeight: 700, fontSize: 13, background: '#f5f6f8', border: '1px solid #ddd', borderRadius: 8 }}
+              >
+                ← 목록
+              </button>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 14 }}>{current?.customer_name || current?.quote_title || '견적서'}</div>
+                <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                  {current?.spec && `· ${current.spec}`}{current?.total_amount ? ` · ${money(current.total_amount)}원` : ''}
+                </div>
+              </div>
+              {(current as any)?.status === 'confirmed' && (
+                <span style={{ background: '#059669', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>✓확정</span>
+              )}
+            </div>
+          )}
+
           <div className="tabBar">
             <button className={`tabBtn ${activeTab === 'quote' ? 'active' : ''}`} onClick={() => setActiveTab('quote')}>견적서</button>
             <button className={`tabBtn ${activeTab === 'statement' ? 'active' : ''}`} onClick={() => setActiveTab('statement')}>거래명세서</button>
@@ -2030,31 +1928,21 @@ const confirmedCount = useMemo(() =>
             <button className="danger" onClick={handleDelete}>삭제</button>
           </div>
 
-          {/* 임대차 폼 - calcRentalEndDate 사용 */}
           {activeTab === 'rental' && current && !editMode && (
             <div className="rentalFormBox">
               <div className="formRow">
                 <label>계약시작</label>
-                <input 
-                  value={rentalForm.contractStart} 
-                  onChange={(e) => {
-                    const start = e.target.value;
-                    const endDate = calcRentalEndDate(start, rentalForm.months);
-                    setRentalForm({ ...rentalForm, contractStart: start, contractEnd: endDate });
-                  }} 
-                  placeholder="26/01/15" 
-                />
+                <input value={rentalForm.contractStart} onChange={(e) => {
+                  const start = e.target.value;
+                  const endDate = calcRentalEndDate(start, rentalForm.months);
+                  setRentalForm({ ...rentalForm, contractStart: start, contractEnd: endDate });
+                }} placeholder="26/01/15" />
                 <label>개월</label>
-                <input
-                  type="number"
-                  value={rentalForm.months}
-                  onChange={(e) => {
-                    const m = Number(e.target.value) || 1;
-                    const endDate = calcRentalEndDate(rentalForm.contractStart, m);
-                    setRentalForm({ ...rentalForm, months: m, contractEnd: endDate });
-                  }}
-                  style={{ width: 60 }}
-                />
+                <input type="number" value={rentalForm.months} onChange={(e) => {
+                  const m = Number(e.target.value) || 1;
+                  const endDate = calcRentalEndDate(rentalForm.contractStart, m);
+                  setRentalForm({ ...rentalForm, months: m, contractEnd: endDate });
+                }} style={{ width: 60 }} />
               </div>
               <div className="formRow">
                 <label>회사명</label>
@@ -2081,39 +1969,94 @@ const confirmedCount = useMemo(() =>
             </div>
           )}
 
-          {/* ✅ 미리보기 - A4Quote 컴포넌트 사용 */}
+          {/* ✅ 미리보기 */}
           <div className="content">
             <div className="previewWrap" id="docPreview">
               {activeTab === 'quote' && current ? (
-                <A4Quote
-                  form={quoteForm}
-                  setForm={setQuoteForm}
-                  computedItems={computedItems}
-                  blankRows={blankRows}
-                  fmt={money}
-                  supply_amount={supply_amount}
-                  vat_amount={vat_amount}
-                  total_amount={total_amount}
-                  bizcardName={selectedBizcard?.name || ""}
-                  bizcards={bizcards}
-                  selectedBizcardId={selectedBizcardId}
-                  setSelectedBizcardId={setSelectedBizcardId}
-                  options={options}
-                  editable={editMode}
-                  onSelectOption={handleSelectOption}
-                  onAddItem={handleAddItem}
-                  onUpdateQty={handleUpdateQty}
-                  onUpdatePrice={handleUpdatePrice}
-                  onDeleteItem={handleDeleteItem}
-                  onUpdateSpec={handleUpdateSpec}
-                  onUpdateSpecText={handleUpdateSpecText}
-                  onSiteSearch={handleSiteSearch}
-                  onAddDelivery={handleAddDelivery}
-                  focusedRowIndex={focusedRowIndex}
-                  setFocusedRowIndex={setFocusedRowIndex}
-                  getInheritedSpec={getInheritedSpec}
-                  noPadding
-                />
+                isMobile && !editMode ? (
+                  // 모바일 읽기 모드 - A4 축소 미리보기
+                  <div style={{
+                    width: Math.floor(794 * ((window.innerWidth - 32) / 794)),
+                    height: Math.floor(1123 * ((window.innerWidth - 32) / 794)),
+                    position: 'relative', overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, width: 794,
+                      transformOrigin: 'top left',
+                      transform: `scale(${(window.innerWidth - 32) / 794})`,
+                    }}>
+                      <A4Quote
+                        form={quoteForm}
+                        computedItems={computedItems}
+                        blankRows={blankRows}
+                        fmt={money}
+                        supply_amount={supply_amount}
+                        vat_amount={vat_amount}
+                        total_amount={total_amount}
+                        bizcardName={selectedBizcard?.name || ""}
+                        editable={false}
+                        getInheritedSpec={getInheritedSpec}
+                        noPadding
+                      />
+                    </div>
+                  </div>
+                ) : isMobile && editMode ? (
+                  // 모바일 편집 모드 - 카드 리스트 UI
+                  <MobileEditItems
+                    editItems={editItems}
+                    setEditItems={setEditItems}
+                    editForm={editForm}
+                    setEditForm={setEditForm}
+                    options={options}
+                    current={current}
+                    handleUpdateQty={handleUpdateQty}
+                    handleUpdatePrice={handleUpdatePrice}
+                    handleDeleteItem={handleDeleteItem}
+                    handleUpdateSpec={handleUpdateSpec}
+                    handleSelectOption={handleSelectOption}
+                    handleAddItem={handleAddItem}
+                    handleSiteSearch={handleSiteSearch}
+                    handleAddDelivery={handleAddDelivery}
+                    getInheritedSpec={getInheritedSpec}
+                    computedItems={computedItems}
+                    supply_amount={supply_amount}
+                    vat_amount={vat_amount}
+                    total_amount={total_amount}
+                    money={money}
+                    onSave={saveEditMode}
+                  />
+                ) : (
+                  // PC 모드 - 기존 A4Quote 인라인 편집
+                  <A4Quote
+                    form={quoteForm}
+                    setForm={setQuoteForm}
+                    computedItems={computedItems}
+                    blankRows={blankRows}
+                    fmt={money}
+                    supply_amount={supply_amount}
+                    vat_amount={vat_amount}
+                    total_amount={total_amount}
+                    bizcardName={selectedBizcard?.name || ""}
+                    bizcards={bizcards}
+                    selectedBizcardId={selectedBizcardId}
+                    setSelectedBizcardId={setSelectedBizcardId}
+                    options={options}
+                    editable={editMode}
+                    onSelectOption={handleSelectOption}
+                    onAddItem={handleAddItem}
+                    onUpdateQty={handleUpdateQty}
+                    onUpdatePrice={handleUpdatePrice}
+                    onDeleteItem={handleDeleteItem}
+                    onUpdateSpec={handleUpdateSpec}
+                    onUpdateSpecText={handleUpdateSpecText}
+                    onSiteSearch={handleSiteSearch}
+                    onAddDelivery={handleAddDelivery}
+                    focusedRowIndex={focusedRowIndex}
+                    setFocusedRowIndex={setFocusedRowIndex}
+                    getInheritedSpec={getInheritedSpec}
+                    noPadding
+                  />
+                )
               ) : activeTab === 'statement' ? (
                 statementPreviewHtml
               ) : activeTab === 'rental' ? (
@@ -2138,43 +2081,27 @@ const confirmedCount = useMemo(() =>
                 <div className="modalBody">
                   <div className="muted" style={{ marginBottom: 8 }}>비워두면 견적에 등록된 이메일로 전송합니다.</div>
                   <div className="row" style={{ marginBottom: 10 }}>
-                    <input
-                      value={sendTo}
-                      onChange={(e) => setSendTo(e.target.value)}
-                      placeholder="수신 이메일"
-                      style={{ flex: 1, padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
-                    />
+                    <input value={sendTo} onChange={(e) => setSendTo(e.target.value)} placeholder="수신 이메일"
+                      style={{ flex: 1, padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }} />
                   </div>
                   <div style={{ marginBottom: 10 }}>
                     <div className="muted" style={{ marginBottom: 4 }}>명함 선택</div>
-                    <select
-                      value={selectedBizcardId}
-                      onChange={(e) => setSelectedBizcardId(e.target.value)}
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
-                    >
+                    <select value={selectedBizcardId} onChange={(e) => setSelectedBizcardId(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}>
                       {bizcards.length === 0 && <option value="">(명함 없음)</option>}
                       {bizcards.map((b: any) => (<option key={b.id} value={b.id}>{b.name}</option>))}
                     </select>
                   </div>
-                  
                   <div style={{ marginBottom: 10, padding: 12, background: '#f9fafb', borderRadius: 10, border: '1px solid #e5e7eb' }}>
                     <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>📎 첨부파일 추가</div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 6 }}>
-                      <input 
-                        type="checkbox" 
-                        checked={attachments.bankAccount} 
-                        onChange={(e) => setAttachments(prev => ({ ...prev, bankAccount: e.target.checked }))}
-                        style={{ width: 18, height: 18, cursor: 'pointer' }}
-                      />
+                      <input type="checkbox" checked={attachments.bankAccount} onChange={(e) => setAttachments(prev => ({ ...prev, bankAccount: e.target.checked }))}
+                        style={{ width: 18, height: 18, cursor: 'pointer' }} />
                       <span style={{ fontSize: 13 }}>1. 통장사본 (JPG)</span>
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={attachments.bizRegistration} 
-                        onChange={(e) => setAttachments(prev => ({ ...prev, bizRegistration: e.target.checked }))}
-                        style={{ width: 18, height: 18, cursor: 'pointer' }}
-                      />
+                      <input type="checkbox" checked={attachments.bizRegistration} onChange={(e) => setAttachments(prev => ({ ...prev, bizRegistration: e.target.checked }))}
+                        style={{ width: 18, height: 18, cursor: 'pointer' }} />
                       <span style={{ fontSize: 13 }}>2. 사업자등록증 (JPG)</span>
                     </label>
                     {(attachments.bankAccount || attachments.bizRegistration) && (
@@ -2183,7 +2110,6 @@ const confirmedCount = useMemo(() =>
                       </div>
                     )}
                   </div>
-
                   <div className="row">
                     <span className="spacer" />
                     <button className="primary" onClick={handleSendEmail}>전송</button>
@@ -2420,95 +2346,73 @@ button.danger { background: #fee; border-color: #f99; color: #c00; }
 @media (max-width: 768px) {
   .app {
     grid-template-columns: 1fr;
-    height: auto;
+    height: 100vh;
     padding: 8px;
+    gap: 8px;
+    overflow: hidden;
   }
-  .panel { max-height: 200px; }
-  .tabBar { flex-wrap: wrap; }
-  .tabBtn { flex: 1 1 30%; font-size: 11px; padding: 10px 8px; }
-  .actions { flex-wrap: wrap; }
-  .actions button { flex: 1 1 auto; min-width: 80px; }
-  .previewWrap { overflow-x: auto; }
+  .panel {
+    max-height: none;
+    height: 100%;
+    border-radius: 12px;
+  }
+  .right {
+    height: 100vh;
+    overflow-y: auto;
+    gap: 8px;
+    padding-bottom: 80px;
+  }
+  .tabBar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabBtn {
+    flex: 0 0 auto;
+    font-size: 12px;
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+  .actions {
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 6px;
+  }
+  .actions button {
+    flex: 1 1 calc(33% - 6px);
+    min-width: 70px;
+    font-size: 11px;
+    padding: 9px 6px;
+  }
+  .previewWrap {
+    overflow-x: auto;
+    padding: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .content { overflow: visible; }
+  .rentalFormBox .formRow { flex-wrap: wrap; }
+  .rentalFormBox .formRow label { min-width: 50px; }
+  .rentalFormBox .formRow input { flex: 1 1 calc(50% - 60px); min-width: 100px; }
+  .list { max-height: calc(100vh - 180px); }
 }
 
 @media print {
-  .panel, 
-  .tabBar, 
-  .actions, 
-  .rentalFormBox, 
-  .modal, 
+  .panel,
+  .tabBar,
+  .actions,
+  .rentalFormBox,
+  .modal,
   .toast,
-  button {
-    display: none !important;
-    visibility: hidden !important;
-  }
-  
-  .app { 
-    display: block !important; 
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: 0 !important;
-  }
-  
-  .right { 
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    gap: 0 !important;
-  }
-  
-  .content { 
-    overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  .previewWrap { 
-    border: none !important; 
-    padding: 0 !important; 
-    margin: 0 !important;
-    background: #fff !important;
-    border-radius: 0 !important;
-  }
-  
-  body, html, .quoteListPage { 
-    background: #fff !important; 
-    margin: 0 !important; 
-    padding: 0 !important; 
-  }
-  
-  select, 
-  .specDropdown,
-  .optionDropdown,
-  .priceOptions,
-  [class*="dropdown"],
-  [class*="Dropdown"] {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  
-  select::-ms-expand {
-    display: none !important;
-  }
-  
-  td > div:nth-child(n+2),
-  td > span:nth-child(n+2),
-  .priceCell > div:nth-child(n+2),
-  .priceCell > span:nth-child(n+2) {
-    display: none !important;
-  }
-  
-  td div[style*="cursor: pointer"],
-  td div[style*="background"]:not(:first-child) {
-    display: none !important;
-  }
+  button { display: none !important; visibility: hidden !important; }
+
+  .app { display: block !important; padding: 0 !important; margin: 0 !important; gap: 0 !important; }
+  .right { display: block !important; padding: 0 !important; margin: 0 !important; gap: 0 !important; }
+  .content { overflow: visible !important; padding: 0 !important; margin: 0 !important; }
+  .previewWrap { border: none !important; padding: 0 !important; margin: 0 !important; background: #fff !important; border-radius: 0 !important; }
+  body, html, .quoteListPage { background: #fff !important; margin: 0 !important; padding: 0 !important; }
 }
 
-@page {
-  size: A4;
-  margin: 0;
-}
+@page { size: A4; margin: 0; }
 `;
