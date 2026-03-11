@@ -69,6 +69,82 @@ export const getWebAppUrl = () => {
   return "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
 };
 
+
+// ============ 모바일 규격 자유입력 셀 ============
+function MobileSpecInput({ spec, onChange }: {
+  spec: { w: number; l: number; h?: number };
+  onChange: (spec: { w: number; l: number; h?: number }) => void;
+}) {
+  const display = spec.w > 0 && spec.l > 0
+    ? `${spec.w}×${spec.l}${spec.h ? '×' + spec.h : ''}`
+    : '';
+  const [isEditing, setIsEditing] = useState(false);
+  const [text, setText] = useState(display);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    setText(spec.w > 0 && spec.l > 0
+      ? `${spec.w}×${spec.l}${spec.h ? '×' + spec.h : ''}`
+      : '');
+  }, [spec.w, spec.l, spec.h]);
+
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const commit = () => {
+    setIsEditing(false);
+    const trimmed = text.trim();
+    if (!trimmed) { onChange({ w: 0, l: 0, h: 0 }); return; }
+    const normalized = trimmed.replace(/[xX*]/g, '×');
+    const parts = normalized.split('×').map(s => parseFloat(s.trim()));
+    if (parts.length >= 2 && parts[0] > 0 && parts[1] > 0 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      onChange({ w: parts[0], l: parts[1], h: parts[2] || 2.6 });
+    } else {
+      setText(display);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') { setText(display); setIsEditing(false); }
+        }}
+        placeholder="3×6×2.6"
+        style={{
+          width: '100%', padding: '6px 8px', border: '1px solid #90caf9',
+          borderRadius: 6, fontSize: 13, textAlign: 'center',
+          background: '#e3f2fd', color: '#1565c0', fontWeight: 700,
+          boxSizing: 'border-box',
+        }}
+      />
+    );
+  }
+
+  return (
+    <div
+      onClick={() => { setText(display); setIsEditing(true); }}
+      style={{
+        padding: '6px 8px', border: '1px solid #90caf9', borderRadius: 6,
+        fontSize: 13, textAlign: 'center', background: '#e3f2fd',
+        color: display ? '#1565c0' : '#aaa', fontWeight: 700,
+        cursor: 'pointer', minWidth: 70,
+      }}
+    >
+      {display || '규격입력'}
+    </div>
+  );
+}
+
 // ============ 인라인 숫자 편집 셀 ============
 function EditableNumberCell({ value, onChange, disabled = false }: { value: number; onChange: (val: number) => void; disabled?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -2033,64 +2109,12 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
               <div key={item.key} style={{ padding: '10px', borderBottom: '1px solid #eee', background: '#fafafa', borderRadius: 6, marginBottom: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                   <div style={{ flex: 1 }}>
-                    {/* ✅ 규격 수정 UI */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <select
-                        value={item.lineSpec?.w || 0}
-                        onChange={(e) => {
-                          const newW = Number(e.target.value);
-                          updateRow(item.key, 'lineSpec', { 
-                            w: newW, 
-                            l: item.lineSpec?.l || 6, 
-                            h: item.lineSpec?.h || 2.6 
-                          });
-                        }}
-                        style={{ 
-                          padding: '4px 8px', 
-                          border: '1px solid #90caf9', 
-                          borderRadius: 4, 
-                          fontSize: 11, 
-                          background: '#e3f2fd',
-                          color: '#1565c0',
-                          fontWeight: 700
-                        }}
-                      >
-                        <option value={0}>-</option>
-                        <option value={3}>3m</option>
-                        <option value={4}>4m</option>
-                      </select>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#666' }}>×</span>
-                      <select
-                        value={item.lineSpec?.l || 0}
-                        onChange={(e) => {
-                          const newL = Number(e.target.value);
-                          updateRow(item.key, 'lineSpec', { 
-                            w: item.lineSpec?.w || 3, 
-                            l: newL, 
-                            h: item.lineSpec?.h || 2.6 
-                          });
-                        }}
-                        style={{ 
-                          padding: '4px 8px', 
-                          border: '1px solid #90caf9', 
-                          borderRadius: 4, 
-                          fontSize: 11, 
-                          background: '#e3f2fd',
-                          color: '#1565c0',
-                          fontWeight: 700
-                        }}
-                      >
-                        <option value={0}>-</option>
-                        <option value={3}>3m</option>
-                        <option value={6}>6m</option>
-                        <option value={9}>9m</option>
-                        <option value={12}>12m</option>
-                      </select>
-                      {item.lineSpec?.w > 0 && item.lineSpec?.l > 0 && (
-                        <span style={{ fontSize: 10, color: '#888', marginLeft: 4 }}>
-                          ×2.6m
-                        </span>
-                      )}
+                   {/* ✅ 규격 수정 UI - 자유입력 */}
+                    <div style={{ marginBottom: 6 }}>
+                      <MobileSpecInput
+                        spec={item.lineSpec || { w: 0, l: 0, h: 0 }}
+                        onChange={(newSpec) => updateRow(item.key, 'lineSpec', newSpec)}
+                      />
                     </div>
                     <input
                       value={item.displayName || ''}
