@@ -1139,6 +1139,7 @@ export default function App() {
     vatIncluded: true,
     defaultW: 3,   // ← 추가
   defaultL: 6, 
+    defaultH: 2.6,
   });
 
   const [statusMsg, setStatusMsg] = useState("");
@@ -1962,29 +1963,14 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
       
       {/* ✅ 기본 규격 선택 */}
       <div className="row">
-        <label>기본규격</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-          <select
-            value={(form as any).defaultW || 3}
-            onChange={(e) => setForm((p: any) => ({ ...p, defaultW: Number(e.target.value) }))}
-            style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13 }}
-          >
-            <option value={3}>3m</option>
-            <option value={4}>4m</option>
-          </select>
-          <span style={{ fontWeight: 700 }}>×</span>
-          <select
-            value={(form as any).defaultL || 6}
-            onChange={(e) => setForm((p: any) => ({ ...p, defaultL: Number(e.target.value) }))}
-            style={{ flex: 1, padding: '8px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13 }}
-          >
-            <option value={3}>3m</option>
-            <option value={6}>6m</option>
-            <option value={9}>9m</option>
-            <option value={12}>12m</option>
-          </select>
-        </div>
-      </div>
+  <label>기본규격</label>
+  <div style={{ flex: 1 }}>
+    <MobileSpecInput
+      spec={{ w: (form as any).defaultW || 3, l: (form as any).defaultL || 6, h: (form as any).defaultH || 2.6 }}
+      onChange={(spec) => setForm((p: any) => ({ ...p, defaultW: spec.w, defaultL: spec.l, defaultH: spec.h || 2.6 }))}
+    />
+  </div>
+</div>
       
       <hr />
       
@@ -2025,7 +2011,7 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
                           const months = Number(input?.value) || 3;
                           const defaultW = (form as any).defaultW || 3;
                           const defaultL = (form as any).defaultL || 6;
-                          addOption(opt, false, 0, "", months, undefined, { w: defaultW, l: defaultL, h: 2.6 });
+                          w: defaultW, l: defaultL, h: (form as any).defaultH || 2.6w: defaultW, l: defaultL, h: 2.6 });
                         }}
                         style={{ padding: '6px 12px', background: '#1565c0', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700 }}
                       >
