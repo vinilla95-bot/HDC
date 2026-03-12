@@ -2344,60 +2344,130 @@ button.danger { background: #fee; border-color: #f99; color: #c00; }
 .modalBody { padding: 12px; }
 
 @media (max-width: 768px) {
+  /* 앱 전체 - 1단 컬럼 */
   .app {
     grid-template-columns: 1fr;
-    height: 100vh;
-    padding: 8px;
-    gap: 8px;
-    overflow: hidden;
+    height: auto;
+    min-height: 100vh;
+    padding: 0;
+    gap: 0;
+    overflow: visible;
   }
+
+  /* 목록 패널 - 전체 높이 */
   .panel {
     max-height: none;
-    height: 100%;
-    border-radius: 12px;
+    height: calc(100vh - 56px); /* NavBar 높이 제외 */
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
   }
-  .right {
-    height: 100vh;
+
+  /* 검색창 */
+  .search input {
+    font-size: 16px; /* iOS 줌 방지 */
+  }
+
+  /* 목록 스크롤 영역 */
+  .list {
     overflow-y: auto;
-    gap: 8px;
-    padding-bottom: 80px;
+    -webkit-overflow-scrolling: touch;
   }
+
+  /* 오른쪽 상세 패널 */
+  .right {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 56px);
+    gap: 0;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  /* 모바일 뒤로가기 헤더 */
+  .right > div:first-child {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #fff !important;
+  }
+
+  /* 탭바 - 가로 스크롤 */
   .tabBar {
     flex-wrap: nowrap;
     overflow-x: auto;
-    gap: 6px;
-    padding: 8px;
     -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    position: sticky;
+    top: 57px;
+    z-index: 40;
+    background: #fff !important;
+    scrollbar-width: none;
   }
+  .tabBar::-webkit-scrollbar { display: none; }
+
   .tabBtn {
     flex: 0 0 auto;
     font-size: 12px;
-    padding: 10px 14px;
+    padding: 9px 14px;
     white-space: nowrap;
   }
+
+  /* 액션 버튼 - 2줄 그리드 */
   .actions {
-    flex-wrap: wrap;
-    padding: 8px;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    padding: 8px 10px;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    background: #fff !important;
   }
+
   .actions button {
-    flex: 1 1 calc(33% - 6px);
-    min-width: 70px;
+    padding: 9px 4px;
     font-size: 11px;
-    padding: 9px 6px;
+    white-space: nowrap;
+    text-align: center;
+    border-radius: 8px !important;
   }
+
+  /* 미리보기 래퍼 */
   .previewWrap {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 10px;
     overflow-x: auto;
-    padding: 8px;
     -webkit-overflow-scrolling: touch;
   }
-  .content { overflow: visible; }
+
+  .content {
+    overflow: visible;
+    flex: 1;
+  }
+
+  /* 임대차 폼 */
+  .rentalFormBox {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
   .rentalFormBox .formRow { flex-wrap: wrap; }
   .rentalFormBox .formRow label { min-width: 50px; }
   .rentalFormBox .formRow input { flex: 1 1 calc(50% - 60px); min-width: 100px; }
-  .list { max-height: calc(100vh - 180px); }
 }
-
 @media print {
   .panel,
   .tabBar,
