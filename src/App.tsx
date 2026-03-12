@@ -2006,12 +2006,12 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
                       />
                       <span style={{ fontSize: 12 }}>개월</span>
                       <button
-                        onClick={() => {
+                       onClick={() => {
                           const input = document.getElementById(`rent-mobile-${opt.option_id}`) as HTMLInputElement;
                           const months = Number(input?.value) || 3;
                           const defaultW = (form as any).defaultW || 3;
                           const defaultL = (form as any).defaultL || 6;
-                          w: defaultW, l: defaultL, h: (form as any).defaultH || 2.6w: defaultW, l: defaultL, h: 2.6 });
+                          addOption(opt, false, 0, "", months, undefined, { w: defaultW, l: defaultL, h: (form as any).defaultH || 2.6 });
                         }}
                         style={{ padding: '6px 12px', background: '#1565c0', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700 }}
                       >
