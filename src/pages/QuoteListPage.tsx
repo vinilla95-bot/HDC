@@ -764,13 +764,7 @@ leLines = keywordsStr.split("\n").map((s: string) => s.trim()).filter((s: string
           vat_amount: vat,
           total_amount: total,
           updated_at: new Date().toISOString(),
-          created_at: (() => {
-            if (!editForm?.quoteDate) return current.created_at;
-            const originalDate = current.created_at ? new Date(current.created_at) : new Date();
-            const [y, m, d] = editForm.quoteDate.split('-').map(Number);
-            originalDate.setFullYear(y, m - 1, d);
-            return originalDate.toISOString();
-          })(),
+        created_at: current.created_at,
           customer_name: editForm?.customer_name ?? current.customer_name,
           customer_email: editForm?.customer_email ?? current.customer_email,
           customer_phone: editForm?.customer_phone ?? current.customer_phone,
