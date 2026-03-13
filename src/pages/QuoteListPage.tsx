@@ -553,6 +553,26 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
 const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
   const rawName = String(opt.option_name || "");
+   const keywordsStr = String(opt.keywords || "");
+  const bundleLines = keywordsStr.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+  if (bundleLines.length > 0) {
+    setEditItems(prev => {
+      const targetIndex = prev.findIndex((it: any) => it.key === targetItem.key);
+      const newItems = bundleLines.map((line: string, i: number) => ({
+        key: `item_${Date.now()}_${i}`,
+        optionId: `bundle_${i}_${Date.now()}`,
+        optionName: line, displayName: line,
+        unit: "EA", qty: 1, unitPrice: 0, amount: 0,
+        showSpec: "n", lineSpec: { w: 0, l: 0, h: 0 },
+        specText: "", months: 3, baseUnitPrice: 0,
+        _isRent: false, _isCustomFreeText: true,
+      }));
+      const arr = [...prev];
+      arr.splice(targetIndex, 1, ...newItems);
+      return arr;
+    });
+    return;
+  }
   const rent = rawName.includes("임대") && !opt._isCustomFreeText;
 
   if (opt._isDisplayNameOnly) {
