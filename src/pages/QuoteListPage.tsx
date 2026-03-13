@@ -648,9 +648,51 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
 
 const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
   const rawName = String(opt.option_name || "");
+
+  // ✅ 번들 옵션 처리: keywords에 \n으로 서브항목이 있으면 여러 행 추가
+  const keywordsStr = String(opt.keywords || "");
+  const bundleLines = keywordsStr
+    .split("\n")
+    .map(s => s.trim())
+    .filter(s => s.length > 0 && (
+      s.startsWith("[") || s.startsWith("-") ||
+      s.startsWith("▷") || s.startsWith("▶")
+    ));
+
+  if (bundleLines.length > 0) {
+    const baseIdx = insertIndex !== undefined ? insertIndex : editItems.length - 1;
+    setEditItems(prev => {
+      const newItems = bundleLines.map((line, i) => ({
+        key: `item_${Date.now()}_${i}`,
+        optionId: `${opt.option_id}_sub_${i}`,
+        optionName: line,
+        displayName: line,
+        unit: "EA",
+        qty: 1,
+        unitPrice: 0,
+        amount: 0,
+        showSpec: "n",
+        lineSpec: { w: 0, l: 0, h: 0 },
+        specText: "",
+        months: 3,
+        baseUnitPrice: 0,
+        _isRent: false,
+        _isCustomFreeText: true,
+      }));
+
+      if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+        const arr = [...prev];
+        arr.splice(insertIndex + 1, 0, ...newItems);
+        return arr;
+      }
+      return [...prev, ...newItems];
+    });
+    return; // 번들이면 여기서 종료
+  }
+
+  // ✅ 기존 단일 항목 로직 (아래는 기존 코드 그대로)
   const rent = rawName.includes("임대") && !opt._isCustomFreeText && !opt._isEmptyRow;
 
-  // ✅ 마감사양 설명 항목
   const isDescriptionItem =
     rawName.startsWith("-") ||
     rawName.startsWith("▷") ||
@@ -710,6 +752,19 @@ const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: numb
     return [...prev, newItem];
   });
 }, [current, editItems, getInheritedSpec]);
+```
+
+---
+
+**그리고 Supabase `options` 테이블에서 해당 옵션의 `keywords` 필드를 아래처럼 업데이트:**
+```
+[신품 컨테이너 기본 마감 사양]
+-기본 구성 : 환풍기, 누전 차단기, 스위치, 콘센트, LED등 (접지 포함)
+-내벽 천정 : 30mm단열+회색 갈매기 방수 합판
+-바닥 : 하부철골 프레임 고강도 철판,고급 합판 후로링 장판 마감
+-지붕,외벽 : 지붕 올용접, 그 외 부분 테크 마감
+-도장 : 고급 도료 회색 마감(색 변경 시 추가금 발생)
+▷선택사항 : 모노륨 장판 변경 / 전기 온돌 판넬 / 노출배관 등 부가 옵션 사항 문의
  const handleAddDelivery = useCallback((site: any, type: 'delivery' | 'crane', insertIndex?: number) => {
   const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
   const inheritedSpec = getInheritedSpec(editItems, targetIdx);
