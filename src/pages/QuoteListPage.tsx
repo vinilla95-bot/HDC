@@ -722,6 +722,9 @@ const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: numb
 
   const basePrice = type === 'delivery' ? site.delivery : site.crane;
   const price = Math.round(basePrice * heightMultiplier);
+   const name = type === 'delivery'
+  ? `5톤 일반트럭 운송비(하차별도)-${site.alias}`
+  : `크레인 운송비-${site.alias}`;
 
 
   const newItem = {
