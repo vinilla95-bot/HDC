@@ -1243,240 +1243,247 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
   // ============ 거래명세서 미리보기 ============
   const statementPreviewHtml = useMemo(() => {
-    if (!current) return null;
+  if (!current) return null;
 
-    const customerName = editForm?.customer_name ?? current.customer_name ?? "";
-    const customerPhone = editForm?.customer_phone ?? current.customer_phone ?? "";
+  const customerName = editForm?.customer_name ?? current.customer_name ?? "";
+  const customerPhone = editForm?.customer_phone ?? current.customer_phone ?? "";
 
-    const MIN_ROWS = 12;
+  const MIN_ROWS = 12;
 
-    const thStyle: React.CSSProperties = {
-      border: '1px solid #5b9bd5', padding: '4px 8px', background: '#d6eaf8',
-      color: '#1a5276', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
-      whiteSpace: 'nowrap' as const, width: 60,
-    };
-    const tdStyle: React.CSSProperties = {
-      border: '1px solid #5b9bd5', padding: '4px 8px', background: '#fff', fontSize: 11,
-    };
-    const itemThStyle: React.CSSProperties = {
-      border: '1px solid #5b9bd5', padding: '6px 4px', background: '#d6eaf8',
-      color: '#1a5276', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
-    };
-    const itemTdStyle: React.CSSProperties = {
-      border: '1px solid #5b9bd5', padding: '4px 6px', background: '#fff', fontSize: 11, height: 24,
-    };
-    const editInputStyle: React.CSSProperties = {
-      width: '100%', border: 'none', background: 'transparent',
-      fontSize: 11, padding: '2px 4px', boxSizing: 'border-box' as const,
-    };
+  const thStyle: React.CSSProperties = {
+    border: '1px solid #5b9bd5', padding: '4px 8px', background: '#d6eaf8',
+    color: '#1a5276', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
+    whiteSpace: 'nowrap' as const, width: 60,
+  };
+  const tdStyle: React.CSSProperties = {
+    border: '1px solid #5b9bd5', padding: '4px 8px', background: '#fff', fontSize: 11,
+  };
+  const itemThStyle: React.CSSProperties = {
+    border: '1px solid #5b9bd5', padding: '6px 4px', background: '#d6eaf8',
+    color: '#1a5276', fontWeight: 700, fontSize: 11, textAlign: 'center' as const,
+  };
+  const itemTdStyle: React.CSSProperties = {
+    border: '1px solid #5b9bd5', padding: '4px 6px', background: '#fff', fontSize: 11, height: 24,
+  };
+  const editInputStyle: React.CSSProperties = {
+    width: '100%', border: 'none', background: 'transparent',
+    fontSize: 11, padding: '2px 4px', boxSizing: 'border-box' as const,
+  };
 
-    const [yy, mm, dd] = statementDate.split('-');
-    const monthDay = `${parseInt(mm)}/${parseInt(dd)}`;
+  const [yy, mm, dd] = statementDate.split('-');
+  const monthDay = `${parseInt(mm)}/${parseInt(dd)}`;
 
-    const filteredItems = computedItems.filter((item: any) => {
-      const name = String(item.displayName || item.optionName || "");
-      if (name.includes("마감 사양") || name.includes("마감사양")) return false;
-      if (name.startsWith("-기본 구성") || name.startsWith("-기본구성")) return false;
-      if (name.startsWith("-내벽") || name.startsWith("-바닥") || name.startsWith("-지붕") || name.startsWith("-도장")) return false;
-      if (name.startsWith("▷선택사항") || name.startsWith("▶선택사항")) return false;
-      if (name.includes("천정") && name.includes("단열")) return false;
-      if (name.includes("프레임") && name.includes("합판")) return false;
-      if (name.includes("테크 마감") || name.includes("테크마감")) return false;
-      if (name.includes("도료 회색 마감") || name.includes("도료회색마감")) return false;
-      if (name.includes("옵션 사항 문의") || name.includes("부가 옵션")) return false;
-      if (name.includes("임대 계약") || name.includes("임대계약")) return false;
-      if (name.includes("필요한 정보") || name.includes("필요정보")) return false;
-      return true;
-    });
+  const filteredItems = computedItems.filter((item: any) => {
+    const name = String(item.displayName || item.optionName || "");
+    if (name.includes("마감 사양") || name.includes("마감사양")) return false;
+    if (name.startsWith("-기본 구성") || name.startsWith("-기본구성")) return false;
+    if (name.startsWith("-내벽") || name.startsWith("-바닥") || name.startsWith("-지붕") || name.startsWith("-도장")) return false;
+    if (name.startsWith("▷선택사항") || name.startsWith("▶선택사항")) return false;
+    if (name.includes("천정") && name.includes("단열")) return false;
+    if (name.includes("프레임") && name.includes("합판")) return false;
+    if (name.includes("테크 마감") || name.includes("테크마감")) return false;
+    if (name.includes("도료 회색 마감") || name.includes("도료회색마감")) return false;
+    if (name.includes("옵션 사항 문의") || name.includes("부가 옵션")) return false;
+    if (name.includes("임대 계약") || name.includes("임대계약")) return false;
+    if (name.includes("필요한 정보") || name.includes("필요정보")) return false;
+    return true;
+  });
 
-    const filteredSupply = filteredItems.reduce((acc: number, item: any) => acc + (item.finalAmount || 0), 0);
-    const filteredVat = Math.round(filteredSupply * 0.1);
-    const filteredTotal = filteredSupply + filteredVat;
-    const unpaidAmount = filteredTotal - paidAmount;
+  const filteredSupply = filteredItems.reduce((acc: number, item: any) => acc + (item.finalAmount || 0), 0);
+  const filteredVat = Math.round(filteredSupply * 0.1);
+  const filteredTotal = filteredSupply + filteredVat;
+  const unpaidAmount = filteredTotal - paidAmount;
 
-    return (
-      <div className="a4Sheet statementSheet" style={{ background: '#fff', padding: 30, width: 1100, minHeight: 500 }}>
-        <div style={{ textAlign: 'center', marginBottom: 5 }}>
-          <div style={{ fontSize: 28, fontWeight: 900, color: '#1a5276', letterSpacing: 8 }}>거래명세서</div>
-          <div style={{ fontSize: 11, color: '#666' }}>[ 공급받는자 보관용 ]</div>
-        </div>
+  return (
+    <div className="a4Sheet statementSheet" style={{ background: '#fff', padding: 30, width: 1100, minHeight: 500 }}>
+      <div style={{ textAlign: 'center', marginBottom: 5 }}>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#1a5276', letterSpacing: 8 }}>거래명세서</div>
+        <div style={{ fontSize: 11, color: '#666' }}>[ 공급받는자 보관용 ]</div>
+      </div>
 
-        <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-          <table style={{ borderCollapse: 'collapse', width: '45%' }}>
-            <tbody>
-              <tr>
-                <th style={{ ...thStyle, width: '80px' }}>일자</th>
-                <td style={tdStyle}>
-                  {editMode ? (
-                    <input type="date" value={statementDate} onChange={(e) => setStatementDate(e.target.value)} style={{ ...editInputStyle, width: 130 }} />
-                  ) : statementDate}
-                </td>
-              </tr>
-              <tr>
-                <th style={{ ...thStyle, width: '80px' }}>거래처</th>
-                <td style={tdStyle}>
-                  {editMode ? (
-                    <input value={customerName} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_name: e.target.value }))} style={editInputStyle} />
-                  ) : customerName}
-                </td>
-              </tr>
-              <tr>
-                <th style={{ ...thStyle, width: '80px' }}>등록번호</th>
-                <td style={tdStyle}>
-                  {editMode ? (
-                    <input value={editForm?.customer_reg_no || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_reg_no: e.target.value }))} style={editInputStyle} />
-                  ) : (editForm?.customer_reg_no || "")}
-                </td>
-              </tr>
-              <tr>
-                <th style={{ ...thStyle, width: '80px' }}>주소</th>
-                <td style={tdStyle}>
-                  {editMode ? (
-                    <input value={editForm?.customer_addr || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_addr: e.target.value }))} style={editInputStyle} />
-                  ) : (editForm?.customer_addr || "")}
-                </td>
-              </tr>
-              <tr>
-                <th style={{ ...thStyle, width: '80px' }}>전화번호</th>
-                <td style={tdStyle}>
-                  {editMode ? (
-                    <input value={customerPhone} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_phone: e.target.value }))} style={editInputStyle} />
-                  ) : customerPhone}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <table style={{ borderCollapse: 'collapse', width: '55%' }}>
-            <tbody>
-              <tr>
-                <th style={thStyle}>등록번호</th><td style={tdStyle}>130-41-38154</td>
-                <th style={thStyle}>성명</th><td style={tdStyle}>류창석</td>
-              </tr>
-              <tr>
-                <th style={thStyle}>상호</th>
-                <td style={tdStyle}>
-                  <span style={{ position: 'relative', display: 'inline-block' }}>
-                    현대컨테이너
-                    <img src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" alt="도장"
-                      style={{ position: 'absolute', top: -10, left: 55, width: 32, height: 32, opacity: 0.9 }} />
-                  </span>
-                </td>
-                <th style={thStyle}>주소</th><td style={tdStyle}>화성시구문천안길16</td>
-              </tr>
-              <tr>
-                <th style={thStyle}>업태</th><td style={tdStyle}>컨테이너 판매 임대</td>
-                <th style={thStyle}>종목</th><td style={tdStyle}>제조업,도소매</td>
-              </tr>
-              <tr>
-                <th style={thStyle}>전화번호</th><td style={tdStyle}>010-4138-9268</td>
-                <th style={thStyle}>팩스번호</th><td style={tdStyle}>031-359-8246</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #5b9bd5', padding: '8px 12px', marginBottom: 8, gap: 20 }}>
-          <div>
-            <span style={{ fontWeight: 900, color: '#1a5276', marginRight: 10 }}>합계금액:</span>
-            <span style={{ fontSize: 18, fontWeight: 900 }}>{money(filteredTotal)}</span>
-          </div>
-          <div>
-            <span style={{ fontWeight: 700, color: '#059669', marginRight: 6 }}>입금:</span>
-            {editMode ? (
-              <input type="number" value={paidAmount || ''} onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
-                style={{ width: 100, fontSize: 14, fontWeight: 700, border: '1px solid #d7dbe2', borderRadius: 4, padding: '2px 6px' }} />
-            ) : (
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>{money(paidAmount)}</span>
-            )}
-          </div>
-          <div>
-            <span style={{ fontWeight: 700, color: '#dc2626', marginRight: 6 }}>미수금:</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: '#dc2626' }}>{money(unpaidAmount)}</span>
-          </div>
-          <span style={{ fontSize: 11, marginLeft: 'auto' }}>기업은행 465-096127-04-015 현대컨테이너 류창석</span>
-        </div>
-
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ ...itemThStyle, width: '6%' }}>월일</th>
-              <th style={{ ...itemThStyle, width: '34%' }}>품목명</th>
-              <th style={{ ...itemThStyle, width: '6%' }}>수량</th>
-              <th style={{ ...itemThStyle, width: '12%' }}>단가</th>
-              <th style={{ ...itemThStyle, width: '14%' }}>공급가액</th>
-              <th style={{ ...itemThStyle, width: '12%' }}>세액</th>
-              <th style={{ ...itemThStyle, width: '16%' }}>비고</th>
-            </tr>
-          </thead>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+        <table style={{ borderCollapse: 'collapse', width: '45%' }}>
           <tbody>
-            {filteredItems.map((item: any, idx: number) => {
-              const supply = item.unitPrice * (item.displayQty || item.qty || 1);
-              const vat = Math.round(supply * 0.1);
-              return (
-                <tr key={item.key || idx}>
-                  <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>{monthDay}</td>
-                  <td style={itemTdStyle}>
-                    {editMode ? (
-                      <input value={item.displayName || item.optionName || ''}
-                        onChange={(e) => {
-                          const itemKey = item.key;
-                          setEditItems(prev => prev.map((it) =>
-                            it.key === itemKey ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
-                          ));
-                        }}
-                        style={editInputStyle} />
-                    ) : (item.displayName || item.optionName)}
-                  </td>
-                  <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>
-                    {editMode ? (
-                      <input type="number" value={item.qty || ''} onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }} />
-                    ) : (item.displayQty || item.qty || 1)}
-                  </td>
-                  <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>
-                    {editMode ? (
-                      <input type="number" value={item.unitPrice || ''} onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
-                        style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }} />
-                    ) : money(item.unitPrice)}
-                  </td>
-                  <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(supply)}</td>
-                  <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(vat)}</td>
-                  <td style={itemTdStyle}>
-                    {editMode && (
-                      <button onClick={() => handleDeleteItem(item.key)}
-                        style={{ padding: '2px 6px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 4, background: '#fff', cursor: 'pointer' }}>
-                        삭제
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {Array.from({ length: Math.max(0, MIN_ROWS - filteredItems.length) }).map((_, i) => (
-              <tr key={`blank-${i}`}>
-                <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>&nbsp;</td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-                <td style={itemTdStyle}></td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
             <tr>
-              <td colSpan={4} style={{ ...itemTdStyle, textAlign: 'center' as const, fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right' as const, fontWeight: 900 }}>{money(filteredSupply)}</td>
-              <td style={{ ...itemTdStyle, textAlign: 'right' as const, fontWeight: 900 }}>{money(filteredVat)}</td>
-              <td style={itemTdStyle}></td>
+              <th style={{ ...thStyle, width: '80px' }}>일자</th>
+              <td style={tdStyle}>
+                {editMode ? (
+                  <input type="date" value={statementDate} onChange={(e) => setStatementDate(e.target.value)} style={{ ...editInputStyle, width: 130 }} />
+                ) : statementDate}
+              </td>
             </tr>
-          </tfoot>
+            <tr>
+              <th style={{ ...thStyle, width: '80px' }}>거래처</th>
+              <td style={tdStyle}>
+                {editMode ? (
+                  <input value={customerName} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_name: e.target.value }))} style={editInputStyle} />
+                ) : customerName}
+              </td>
+            </tr>
+            <tr>
+              <th style={{ ...thStyle, width: '80px' }}>등록번호</th>
+              <td style={tdStyle}>
+                {editMode ? (
+                  <input value={editForm?.customer_reg_no || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_reg_no: e.target.value }))} style={editInputStyle} />
+                ) : (editForm?.customer_reg_no || "")}
+              </td>
+            </tr>
+            <tr>
+              <th style={{ ...thStyle, width: '80px' }}>주소</th>
+              <td style={tdStyle}>
+                {editMode ? (
+                  <input value={editForm?.customer_addr || ''} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_addr: e.target.value }))} style={editInputStyle} />
+                ) : (editForm?.customer_addr || "")}
+              </td>
+            </tr>
+            <tr>
+              <th style={{ ...thStyle, width: '80px' }}>전화번호</th>
+              <td style={tdStyle}>
+                {editMode ? (
+                  <input value={customerPhone} onChange={(e) => setEditForm((p: any) => ({ ...p, customer_phone: e.target.value }))} style={editInputStyle} />
+                ) : customerPhone}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table style={{ borderCollapse: 'collapse', width: '55%' }}>
+          <tbody>
+            <tr>
+              <th style={thStyle}>등록번호</th><td style={tdStyle}>130-41-38154</td>
+              <th style={thStyle}>성명</th><td style={tdStyle}>류창석</td>
+            </tr>
+            <tr>
+              <th style={thStyle}>상호</th>
+              <td style={tdStyle}>
+                <span style={{ position: 'relative', display: 'inline-block' }}>
+                  현대컨테이너
+                  <img src="https://tssndwlbeogehtfinqek.supabase.co/storage/v1/object/public/attachments/stamp.png" alt="도장"
+                    style={{ position: 'absolute', top: -10, left: 55, width: 32, height: 32, opacity: 0.9 }} />
+                </span>
+              </td>
+              <th style={thStyle}>주소</th><td style={tdStyle}>화성시구문천안길16</td>
+            </tr>
+            <tr>
+              <th style={thStyle}>업태</th><td style={tdStyle}>컨테이너 판매 임대</td>
+              <th style={thStyle}>종목</th><td style={tdStyle}>제조업,도소매</td>
+            </tr>
+            <tr>
+              <th style={thStyle}>전화번호</th><td style={tdStyle}>010-4138-9268</td>
+              <th style={thStyle}>팩스번호</th><td style={tdStyle}>031-359-8246</td>
+            </tr>
+          </tbody>
         </table>
       </div>
-    );
-  }, [current, editMode, editForm, computedItems, supply_amount, vat_amount, total_amount, statementDate, paidAmount, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
 
+      <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #5b9bd5', padding: '8px 12px', marginBottom: 8, gap: 20 }}>
+        <div>
+          <span style={{ fontWeight: 900, color: '#1a5276', marginRight: 10 }}>합계금액:</span>
+          <span style={{ fontSize: 18, fontWeight: 900 }}>{money(filteredTotal)}</span>
+        </div>
+        <div>
+          <span style={{ fontWeight: 700, color: '#059669', marginRight: 6 }}>입금:</span>
+          {editMode ? (
+            <input type="number" value={paidAmount || ''} onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
+              style={{ width: 100, fontSize: 14, fontWeight: 700, border: '1px solid #d7dbe2', borderRadius: 4, padding: '2px 6px' }} />
+          ) : (
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>{money(paidAmount)}</span>
+          )}
+        </div>
+        <div>
+          <span style={{ fontWeight: 700, color: '#dc2626', marginRight: 6 }}>미수금:</span>
+          <span style={{ fontSize: 16, fontWeight: 900, color: '#dc2626' }}>{money(unpaidAmount)}</span>
+        </div>
+        <span style={{ fontSize: 11, marginLeft: 'auto' }}>기업은행 465-096127-04-015 현대컨테이너 류창석</span>
+      </div>
+
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr>
+            <th style={{ ...itemThStyle, width: '5%' }}>월일</th>
+            <th style={{ ...itemThStyle, width: '28%' }}>품목명</th>
+            <th style={{ ...itemThStyle, width: '8%' }}>규격</th>
+            <th style={{ ...itemThStyle, width: '5%' }}>수량</th>
+            <th style={{ ...itemThStyle, width: '12%' }}>단가</th>
+            <th style={{ ...itemThStyle, width: '13%' }}>공급가액</th>
+            <th style={{ ...itemThStyle, width: '11%' }}>세액</th>
+            <th style={{ ...itemThStyle, width: '18%' }}>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredItems.map((item: any, idx: number) => {
+            const supply = item.unitPrice * (item.displayQty || item.qty || 1);
+            const vat = Math.round(supply * 0.1);
+            const specText = item.lineSpec?.w > 0 && item.lineSpec?.l > 0
+              ? `${item.lineSpec.w}x${item.lineSpec.l}`
+              : "";
+            return (
+              <tr key={item.key || idx}>
+                <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>{monthDay}</td>
+                <td style={itemTdStyle}>
+                  {editMode ? (
+                    <input value={item.displayName || item.optionName || ''}
+                      onChange={(e) => {
+                        const itemKey = item.key;
+                        setEditItems(prev => prev.map((it) =>
+                          it.key === itemKey ? { ...it, displayName: e.target.value, optionName: e.target.value } : it
+                        ));
+                      }}
+                      style={editInputStyle} />
+                  ) : (item.displayName || item.optionName)}
+                </td>
+                <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>
+                  {specText}
+                </td>
+                <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>
+                  {editMode ? (
+                    <input type="number" value={item.qty || ''} onChange={(e) => handleUpdateQty(item.key, Number(e.target.value) || 0)}
+                      style={{ ...editInputStyle, textAlign: 'center' as const, width: 50 }} />
+                  ) : (item.displayQty || item.qty || 1)}
+                </td>
+                <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>
+                  {editMode ? (
+                    <input type="number" value={item.unitPrice || ''} onChange={(e) => handleUpdatePrice(item.key, Number(e.target.value) || 0)}
+                      style={{ ...editInputStyle, textAlign: 'right' as const, width: 80 }} />
+                  ) : money(item.unitPrice)}
+                </td>
+                <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(supply)}</td>
+                <td style={{ ...itemTdStyle, textAlign: 'right' as const }}>{money(vat)}</td>
+                <td style={itemTdStyle}>
+                  {editMode && (
+                    <button onClick={() => handleDeleteItem(item.key)}
+                      style={{ padding: '2px 6px', fontSize: 10, color: '#c00', border: '1px solid #fcc', borderRadius: 4, background: '#fff', cursor: 'pointer' }}>
+                      삭제
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+          {Array.from({ length: Math.max(0, MIN_ROWS - filteredItems.length) }).map((_, i) => (
+            <tr key={`blank-${i}`}>
+              <td style={{ ...itemTdStyle, textAlign: 'center' as const }}>&nbsp;</td>
+              <td style={itemTdStyle}></td>
+              <td style={itemTdStyle}></td>
+              <td style={itemTdStyle}></td>
+              <td style={itemTdStyle}></td>
+              <td style={itemTdStyle}></td>
+              <td style={itemTdStyle}></td>
+              <td style={itemTdStyle}></td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={5} style={{ ...itemTdStyle, textAlign: 'center' as const, fontWeight: 900, background: '#d6eaf8' }}>총금액</td>
+            <td style={{ ...itemTdStyle, textAlign: 'right' as const, fontWeight: 900 }}>{money(filteredSupply)}</td>
+            <td style={{ ...itemTdStyle, textAlign: 'right' as const, fontWeight: 900 }}>{money(filteredVat)}</td>
+            <td style={itemTdStyle}></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}, [current, editMode, editForm, computedItems, supply_amount, vat_amount, total_amount, statementDate, paidAmount, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
   // ============ 임대차계약서 미리보기 ============
   const rentalPreviewHtml = useMemo(() => {
     if (!current) return null;
