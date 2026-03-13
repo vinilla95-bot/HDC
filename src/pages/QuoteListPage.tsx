@@ -649,22 +649,18 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
 const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
   const rawName = String(opt.option_name || "");
 
-  // ✅ 번들 옵션 처리: keywords에 \n으로 서브항목이 있으면 여러 행 추가
+  // ✅ keywords 번들 처리 (DB keywords 필드에 줄바꿈으로 서브항목 저장된 경우)
   const keywordsStr = String(opt.keywords || "");
   const bundleLines = keywordsStr
     .split("\n")
-    .map(s => s.trim())
-    .filter(s => s.length > 0 && (
-      s.startsWith("[") || s.startsWith("-") ||
-      s.startsWith("▷") || s.startsWith("▶")
-    ));
+    .map((s: string) => s.trim())
+    .filter((s: string) => s.length > 0);
 
   if (bundleLines.length > 0) {
-    const baseIdx = insertIndex !== undefined ? insertIndex : editItems.length - 1;
     setEditItems(prev => {
-      const newItems = bundleLines.map((line, i) => ({
+      const newItems = bundleLines.map((line: string, i: number) => ({
         key: `item_${Date.now()}_${i}`,
-        optionId: `${opt.option_id}_sub_${i}`,
+        optionId: `bundle_${i}_${Date.now()}`,
         optionName: line,
         displayName: line,
         unit: "EA",
@@ -679,7 +675,6 @@ const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: numb
         _isRent: false,
         _isCustomFreeText: true,
       }));
-
       if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
         const arr = [...prev];
         arr.splice(insertIndex + 1, 0, ...newItems);
@@ -687,8 +682,10 @@ const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: numb
       }
       return [...prev, ...newItems];
     });
-    return; // 번들이면 여기서 종료
+    return;
   }
+
+
 
   // ✅ 기존 단일 항목 로직 (아래는 기존 코드 그대로)
   const rent = rawName.includes("임대") && !opt._isCustomFreeText && !opt._isEmptyRow;
