@@ -701,37 +701,52 @@ const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: numb
     return [...prev, newItem];
   });
 }, [current, editItems, getInheritedSpec]);
-  const handleAddDelivery = useCallback((site: any, type: 'delivery' | 'crane', insertIndex?: number) => {
-    const price = type === 'delivery' ? site.delivery : site.crane;
-    const name = type === 'delivery'
-      ? `5톤 일반트럭 운송비(하차별도)-${site.alias}`
-      : `크레인 운송비-${site.alias}`;
-    const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
-    const inheritedSpec = getInheritedSpec(editItems, targetIdx);
+ const handleAddDelivery = useCallback((site: any, type: 'delivery' | 'crane', insertIndex?: number) => {
+  const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
+  const inheritedSpec = getInheritedSpec(editItems, targetIdx);
 
-    const newItem = {
-      key: `item_${Date.now()}`,
-      optionId: type === 'delivery' ? 'DELIVERY' : 'CRANE',
-      optionName: name,
-      displayName: name,
-      unit: "EA",
-      qty: 1,
-      unitPrice: price,
-      amount: price,
-      showSpec: "y",
-      lineSpec: inheritedSpec,
-      specText: "",
-    };
+  // ✅ 높이에 따른 운송비 배수 계산
+  const h = inheritedSpec?.h || 2.6;
+  let heightMultiplier = 1;
+  let heightNote = "";
+  if (h >= 4) {
+    heightMultiplier = 3;
+    heightNote = " (높이4m×3배)";
+  } else if (h > 3) {
+    heightMultiplier = 2;
+    heightNote = " (높이3m초과×2배)";
+  } else if (h >= 3) {
+    heightMultiplier = 1.5;
+    heightNote = " (높이3m×1.5배)";
+  }
 
-    setEditItems(prev => {
-      if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
-        const newArr = [...prev];
-        newArr.splice(insertIndex + 1, 0, newItem);
-        return newArr;
-      }
-      return [...prev, newItem];
-    });
-  }, [current, editItems, getInheritedSpec]);
+  const basePrice = type === 'delivery' ? site.delivery : site.crane;
+  const price = Math.round(basePrice * heightMultiplier);
+
+
+  const newItem = {
+    key: `item_${Date.now()}`,
+    optionId: type === 'delivery' ? 'DELIVERY' : 'CRANE',
+    optionName: name,
+    displayName: name,
+    unit: "EA",
+    qty: 1,
+    unitPrice: price,
+    amount: price,
+    showSpec: "y",
+    lineSpec: inheritedSpec,
+    specText: "",
+  };
+
+  setEditItems(prev => {
+    if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+      const newArr = [...prev];
+      newArr.splice(insertIndex + 1, 0, newItem);
+      return newArr;
+    }
+    return [...prev, newItem];
+  });
+}, [current, editItems, getInheritedSpec]);
 
   const handleSiteSearch = useCallback(async (query: string) => {
     if (!query.trim()) return [];
