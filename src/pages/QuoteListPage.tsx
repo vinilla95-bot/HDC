@@ -553,7 +553,10 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
 const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
   const rawName = String(opt.option_name || "");
-   const keywordsStr = String(opt.keywords || "");
+
+  // ✅ options state에서 keywords 직접 조회
+  const fullOpt = options.find((o: any) => o.option_id === opt.option_id) || opt;
+  const keywordsStr = String(fullOpt.keywords || "");
   const bundleLines = keywordsStr.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
   if (bundleLines.length > 0) {
     setEditItems(prev => {
@@ -573,6 +576,7 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     });
     return;
   }
+
   const rent = rawName.includes("임대") && !opt._isCustomFreeText;
 
   if (opt._isDisplayNameOnly) {
@@ -630,7 +634,6 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     ? Number(opt.unit_price || calculated.unitPrice || 0) * months
     : Number(calculated.amount || calculated.unitPrice || 0);
 
-  // ✅ show_spec='y'인데 가격이 0이면 현재 견적 규격으로 재계산
   if (customerUnitPrice === 0 && showSpecValue === 'y') {
     const specW = existingLineSpec?.w > 0 ? existingLineSpec.w : (current?.w || 3);
     const specL = existingLineSpec?.l > 0 ? existingLineSpec.l : (current?.l || 6);
@@ -664,7 +667,98 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
         }
       : item
   ));
-}, [current, computedItems, getInheritedSpec]);
+}, [current, computedItems, getInheritedSpec, options]);
+
+const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
+  const rawName = String(opt.option_name || "");
+
+  // ✅ options state에서 keywords 직접 조회
+  const fullOpt = options.find((o: any) => o.option_id === opt.option_id) || opt;
+  const keywordsStr = String(fullOpt.keywords || "");
+  const bundleLines = keywordsStr.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+
+  if (bundleLines.length > 0) {
+    setEditItems(prev => {
+      const newItems = bundleLines.map((line: string, i: number) => ({
+        key: `item_${Date.now()}_${i}`,
+        optionId: `bundle_${i}_${Date.now()}`,
+        optionName: line, displayName: line,
+        unit: "EA", qty: 1, unitPrice: 0, amount: 0,
+        showSpec: "n", lineSpec: { w: 0, l: 0, h: 0 },
+        specText: "", months: 3, baseUnitPrice: 0,
+        _isRent: false, _isCustomFreeText: true,
+      }));
+      if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+        const arr = [...prev];
+        arr.splice(insertIndex + 1, 0, ...newItems);
+        return arr;
+      }
+      return [...prev, ...newItems];
+    });
+    return;
+  }
+
+  const rent = rawName.includes("임대") && !opt._isCustomFreeText && !opt._isEmptyRow;
+
+  const isDescriptionItem =
+    rawName.startsWith("-") ||
+    rawName.startsWith("▷") ||
+    rawName.startsWith("▶") ||
+    rawName.includes("마감 사양") ||
+    rawName.includes("마감사양") ||
+    rawName.includes("기본 구성") ||
+    rawName.includes("기본구성") ||
+    rawName.includes("선택사항") ||
+    rawName.includes("부가 옵션") ||
+    rawName.includes("옵션 사항 문의");
+
+  const months = opt._months || 3;
+  const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
+  const inheritedSpec = getInheritedSpec(editItems, targetIdx);
+  const effectiveSpec = specOverride || inheritedSpec;
+  const showSpecValue = isDescriptionItem ? "n" : String(opt.show_spec || "n").toLowerCase();
+  const customerUnitPrice = isDescriptionItem
+    ? 0
+    : rent
+      ? Number(calculated.unitPrice || 0) * months
+      : Number(calculated.amount || calculated.unitPrice || 0);
+  const displayName = opt._isEmptyRow
+    ? ''
+    : isDescriptionItem
+      ? rawName
+      : rent
+        ? `${rawName} ${months}개월`
+        : rawName;
+
+  const newItem = {
+    key: `item_${Date.now()}`,
+    optionId: opt.option_id,
+    optionName: opt._isEmptyRow ? '' : rawName,
+    displayName,
+    unit: rent ? "개월" : (calculated.unit || "EA"),
+    qty: 1,
+    unitPrice: customerUnitPrice,
+    amount: customerUnitPrice,
+    showSpec: showSpecValue,
+    lineSpec: isDescriptionItem
+      ? { w: 0, l: 0, h: 0 }
+      : specOverride || (showSpecValue === 'y' ? effectiveSpec : { w: 0, l: 0, h: 0 }),
+    specText: "",
+    months,
+    baseUnitPrice: isDescriptionItem ? 0 : Number(opt.unit_price || calculated.unitPrice || 0),
+    _isRent: rent,
+    _isCustomFreeText: isDescriptionItem ? true : (opt._isCustomFreeText || false),
+  };
+
+  setEditItems(prev => {
+    if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
+      const newArr = [...prev];
+      newArr.splice(insertIndex + 1, 0, newItem);
+      return newArr;
+    }
+    return [...prev, newItem];
+  });
+}, [current, editItems, getInheritedSpec, options]);
 
 const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
   const rawName = String(opt.option_name || "");
