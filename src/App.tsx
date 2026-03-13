@@ -64,6 +64,15 @@ const matchesSpecKeyword = (opt: any, spec: { w: number; l: number }): boolean =
   return isSmall ? kwArea <= 18 : kwArea > 18;
 };
 
+
+// ✅ 높이에 따른 운송비 배수 계산
+function applyHeightMultiplier(basePrice: number, h: number): number {
+  if (h >= 4) return Math.round(basePrice * 3);
+  if (h > 3) return Math.round(basePrice * 2);
+  if (h >= 3) return Math.round(basePrice * 1.5);
+  return basePrice;
+}
+
 // ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
   return "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
@@ -492,38 +501,40 @@ const filteredOptions = React.useMemo(() => {
   };
 
   // ✅ 운송비 선택 핸들러 - 현재 행을 운송비로 대체
-  const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
-    const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
-    const query = searchQuery.toLowerCase();
-    const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
-    
-    setIsEditing(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    setSites([]);
-    
-    // ✅ 운송비 품목으로 현재 행 업데이트 (새 행 추가 대신)
-    const price = type === 'delivery' ? site.delivery : site.crane;
-    const optName = type === 'delivery' ? '5톤 일반트럭 운송비(하차별도)' : '크레인 운송비';
-    
-    const deliveryOpt = {
-      option_id: type === 'delivery' ? 'DELIVERY' : 'CRANE',
-      option_name: `${optName}-${matchedRegion}`,
-      unit: 'EA',
-      unit_price: price,
-      show_spec: 'y',
-      _isDelivery: true,
-    };
-    
-    const calculated = {
-      qty: 1,
-      unitPrice: price,
-      amount: price,
-      unit: 'EA',
-    };
-    
-    onSelectOption(item, deliveryOpt, calculated);
+// 변경
+const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
+  const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
+  const query = searchQuery.toLowerCase();
+  const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
+  
+  setIsEditing(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  setSites([]);
+  
+  // ✅ 높이 배수 적용
+  const basePrice = type === 'delivery' ? site.delivery : site.crane;
+  const price = applyHeightMultiplier(basePrice, effectiveSpec.h || 0);
+  const optName = type === 'delivery' ? '5톤 일반트럭 운송비(하차별도)' : '크레인 운송비';
+  
+  const deliveryOpt = {
+    option_id: type === 'delivery' ? 'DELIVERY' : 'CRANE',
+    option_name: `${optName}-${matchedRegion}`,
+    unit: 'EA',
+    unit_price: price,
+    show_spec: 'y',
+    _isDelivery: true,
   };
+  
+  const calculated = {
+    qty: 1,
+    unitPrice: price,
+    amount: price,
+    unit: 'EA',
+  };
+  
+  onSelectOption(item, deliveryOpt, calculated);
+};
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
@@ -902,19 +913,26 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
     setSpecValue("");
   };
 
-  const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
-    const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
-    const query = searchQuery.toLowerCase();
-    const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
-    setIsEditingItem(false);
-    setShowDropdown(false);
-    setSearchQuery("");
-    setSites([]);
-    if (onAddDelivery) onAddDelivery({ ...site, alias: matchedRegion }, type, insertIndex);
-    setCurrentSpec(null);
-    setSpecValue("");
+ // 변경
+const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
+  const regions = String(site.alias || "").split(',').map((r: string) => r.trim());
+  const query = searchQuery.toLowerCase();
+  const matchedRegion = regions.find((r: string) => r.toLowerCase().includes(query)) || regions[0];
+  setIsEditingItem(false);
+  setShowDropdown(false);
+  setSearchQuery("");
+  setSites([]);
+  const h = effectiveSpec.h || 0;
+  const adjustedSite = {
+    ...site,
+    alias: matchedRegion,
+    delivery: applyHeightMultiplier(site.delivery, h),
+    crane: applyHeightMultiplier(site.crane, h),
   };
-
+  if (onAddDelivery) onAddDelivery(adjustedSite, type, insertIndex);
+  setCurrentSpec(null);
+  setSpecValue("");
+};
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
 
   const renderSpecCell = () => {
@@ -1306,13 +1324,20 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
     return;
   }
 
-  const res = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
-  const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
-  const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
-  const isAircon = rawName.includes("냉난방");
-  const baseQty = isSpecial ? 1 : Number(res.qty || 1);
-  const baseUnitPrice = isSpecial ? Number(price) : Number(res.unitPrice || 0);
-  const baseAmount = isSpecial ? Number(price) : Number(res.amount || 0);
+  // 변경
+const res = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
+const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
+const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
+const isAircon = rawName.includes("냉난방");
+
+// ✅ 운송비(isSpecial)일 때 높이 배수 적용
+const adjustedPrice = isSpecial
+  ? applyHeightMultiplier(Number(price), effectiveSpec.h || 0)
+  : Number(price);
+
+const baseQty = isSpecial ? 1 : Number(res.qty || 1);
+const baseUnitPrice = isSpecial ? adjustedPrice : Number(res.unitPrice || 0);
+const baseAmount = isSpecial ? adjustedPrice : Number(res.amount || 0);
   const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
   const displayQty = 1;
   const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
