@@ -564,13 +564,10 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
     return;
   }
 
-  // ✅ 마감사양 설명 항목 감지 - 가격 0, 텍스트만 표시
   const isDescriptionItem =
     rawName.startsWith("-") ||
     rawName.startsWith("▷") ||
     rawName.startsWith("▶") ||
-    rawName.includes("마감 사양") ||
-    rawName.includes("마감사양") ||
     rawName.includes("기본 구성") ||
     rawName.includes("기본구성") ||
     rawName.includes("선택사항") ||
@@ -608,9 +605,21 @@ const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: a
 
   const hasMonthInName = /\d+개월/.test(rawName);
   const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
-  const customerUnitPrice = rent
+
+  let customerUnitPrice = rent
     ? Number(opt.unit_price || calculated.unitPrice || 0) * months
     : Number(calculated.amount || calculated.unitPrice || 0);
+
+  // ✅ show_spec='y'인데 가격이 0이면 현재 견적 규격으로 재계산
+  if (customerUnitPrice === 0 && showSpecValue === 'y') {
+    const specW = existingLineSpec?.w > 0 ? existingLineSpec.w : (current?.w || 3);
+    const specL = existingLineSpec?.l > 0 ? existingLineSpec.l : (current?.l || 6);
+    const recalc = calculateOptionLine(opt as any, specW, specL);
+    customerUnitPrice = rent
+      ? (recalc.amount || recalc.unitPrice || 0) * months
+      : (recalc.amount || recalc.unitPrice || 0);
+  }
+
   const newOptName = targetItem.optionName || rawName;
 
   setEditItems(prev => prev.map(item =>
