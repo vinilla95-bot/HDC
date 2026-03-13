@@ -10,9 +10,8 @@ type SupabaseOptionRow = {
   option_name: string;
   unit?: string;
   unit_price?: number;
-  keywords?: string;
+  sub_items?: string;  // keywords → sub_items
 };
-
 type QuoteRow = {
   quote_id: string;
   version: string | number | null;
@@ -555,7 +554,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
     // options state에서 keywords 직접 조회
     const fullOpt = options.find((o: any) => o.option_id === opt.option_id) || opt;
-    const keywordsStr = String(fullOpt.keywords || "");
+   const keywordsStr = String(fullOpt.sub_items || "");
     const bundleLines = keywordsStr.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
     if (bundleLines.length > 0) {
       setEditItems(prev => {
@@ -673,7 +672,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
 
     // options state에서 keywords 직접 조회
     const fullOpt = options.find((o: any) => o.option_id === opt.option_id) || opt;
-    const keywordsStr = String(fullOpt.keywords || "");
+   const keywordsStr = String(fullOpt.sub_items || "");
     const bundleLines = keywordsStr.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
 
     if (bundleLines.length > 0) {
