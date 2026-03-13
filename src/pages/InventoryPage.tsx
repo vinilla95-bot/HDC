@@ -511,7 +511,7 @@ const nextDrawingNo = useMemo(() => {
                               {SPEC_OPTIONS.map(spec => <option key={spec} value={spec}>{spec}</option>)}
                             </select>
                           </td>
-                          <td style={{ padding: 8, border: "1px solid #eee" }}><input defaultValue={item.customer_name || ""} onBlur={(e) => updateField(item.quote_id, "customer_name", e.target.value)} style={{ width: 80, padding: 4, border: "1px solid #ddd", borderRadius: 4 }} /></td>
+                          <td style={{ padding: 8, border: "1px solid #eee" }}><input defaultValue={item.customer_name || ""} onBlur={(e) => updateField(item.quote_id, "customer_name", e.target.value)}style={{ width: "100%", minWidth: 80, padding: 4, border: "1px solid #ddd", borderRadius: 4, boxSizing: "border-box" as const }} /></td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}><input defaultValue={item.drawing_no || ""} onBlur={(e) => updateField(item.quote_id, "drawing_no", e.target.value)} style={{ width: 40, padding: 4, border: "1px solid #ddd", borderRadius: 4, textAlign: "center", fontWeight: 700 }} /></td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.sebal_status || ""} onChange={(e) => updateField(item.quote_id, "sebal_status", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, background: item.sebal_status === "완료" ? "#28a745" : item.sebal_status === "계약금만" ? "#ffc107" : "#fff", color: item.sebal_status === "완료" ? "#fff" : "#000", fontWeight: 600 }}>
@@ -523,7 +523,7 @@ const nextDrawingNo = useMemo(() => {
                               <option value="">-</option><option value="대기">대기</option><option value="완료">완료</option><option value="계약금">계약금</option><option value="미입금">미입금</option>
                             </select>
                           </td>
-                          <td style={{ padding: 8, border: "1px solid #eee" }}><input defaultValue={item.interior || ""} onBlur={(e) => updateField(item.quote_id, "interior", e.target.value)} style={{ width: 100, padding: 4, border: "1px solid #ddd", borderRadius: 4 }} /></td>
+                          <td style={{ padding: 8, border: "1px solid #eee" }}><input defaultValue={item.interior || ""} onBlur={(e) => updateField(item.quote_id, "interior", e.target.value)}style={{ width: "100%", minWidth: 80, padding: 4, border: "1px solid #ddd", borderRadius: 4, boxSizing: "border-box" as const }} /></td>
                           <td style={{ padding: 8, border: "1px solid #eee" }}><input type="date" value={item.delivery_date || ""} onChange={(e) => updateField(item.quote_id, "delivery_date", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }} /></td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}><button onClick={() => handleDelete(item.quote_id, item.spec)} style={{ padding: "4px 8px", background: "#dc3545", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, cursor: "pointer" }}>삭제</button></td>
                         </tr>
