@@ -10,8 +10,9 @@ type SupabaseOptionRow = {
   option_name: string;
   unit?: string;
   unit_price?: number;
-  sub_items?: string;  // keywords → sub_items
+  keywords?: string;
 };
+
 type QuoteRow = {
   quote_id: string;
   version: string | number | null;
@@ -549,223 +550,119 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     ));
   }, []);
 
-const handleSelectOption = useCallback((targetItem: any, opt: any, calculated: any) => {
-  const rawName = String(opt.option_name || "");
+leLines = keywordsStr.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+    if (bundleLines.length > 0) {
+      setEditItems(prev => {
+        const targetIndex = prev.findIndex((it: any) => it.key === targetItem.key);
+        const newItems = bundleLines.map((line: string, i: number) => ({
+          key: `item_${Date.now()}_${i}`,
+          optionId: `bundle_${i}_${Date.now()}`,
+          optionName: line, displayName: line,
+          unit: "EA", qty: 1, unitPrice: 0, amount: 0,
+          showSpec: "n", lineSpec: { w: 0, l: 0, h: 0 },
+          specText: "", months: 3, baseUnitPrice: 0,
+          _isRent: false, _isCustomFreeText: true,
+        }));
+        const arr = [...prev];
+        arr.splice(targetIndex, 1, ...newItems);
+        return arr;
+      });
+      return;
+    }
 
-  const fullOpt = options.find((o: any) => o.option_id === opt.option_id) || opt;
-  const subItems = fullOpt.sub_items;
-  const bundleLines: string[] = Array.isArray(subItems)
-    ? subItems.map((it: any) => String(it.name || "")).filter(Boolean)
-    : typeof subItems === 'string' && subItems.trim()
-      ? (() => { try { const parsed = JSON.parse(subItems); return Array.isArray(parsed) ? parsed.map((it: any) => String(it.name || "")).filter(Boolean) : []; } catch { return subItems.split("\n").map((s: string) => s.trim()).filter(Boolean); } })()
-      : [];
+    const rent = rawName.includes("임대") && !opt._isCustomFreeText;
 
-  if (bundleLines.length > 0) {
-    setEditItems(prev => {
-      const targetIndex = prev.findIndex((it: any) => it.key === targetItem.key);
-      const newItems = bundleLines.map((line: string, i: number) => ({
-        key: `item_${Date.now()}_${i}`,
-        optionId: `bundle_${i}_${Date.now()}`,
-        optionName: line, displayName: line,
-        unit: "EA", qty: 1, unitPrice: 0, amount: 0,
-        showSpec: "n", lineSpec: { w: 0, l: 0, h: 0 },
-        specText: "", months: 3, baseUnitPrice: 0,
-        _isRent: false, _isCustomFreeText: true,
-      }));
-      const arr = [...prev];
-      arr.splice(targetIndex, 1, ...newItems);
-      return arr;
-    });
-    return;
-  }
+    if (opt._isDisplayNameOnly) {
+      setEditItems(prev => prev.map(item =>
+        item.key === targetItem.key
+          ? { ...item, displayName: rawName, _isRent: targetItem._isRent }
+          : item
+      ));
+      return;
+    }
 
-  const rent = rawName.includes("임대") && !opt._isCustomFreeText;
+    const isDescriptionItem =
+      rawName.startsWith("-") ||
+      rawName.startsWith("▷") ||
+      rawName.startsWith("▶") ||
+      rawName.includes("기본 구성") ||
+      rawName.includes("기본구성") ||
+      rawName.includes("선택사항") ||
+      rawName.includes("부가 옵션") ||
+      rawName.includes("옵션 사항 문의");
 
-  if (opt._isDisplayNameOnly) {
-    setEditItems(prev => prev.map(item =>
-      item.key === targetItem.key
-        ? { ...item, displayName: rawName, _isRent: targetItem._isRent }
-        : item
-    ));
-    return;
-  }
+    if (isDescriptionItem) {
+      setEditItems(prev => prev.map(item =>
+        item.key === targetItem.key
+          ? {
+              ...item,
+              optionId: opt.option_id,
+              optionName: rawName,
+              displayName: rawName,
+              unit: "EA",
+              qty: 1,
+              unitPrice: 0,
+              amount: 0,
+              showSpec: "n",
+              lineSpec: { w: 0, l: 0, h: 0 },
+              _isCustomFreeText: true,
+            }
+          : item
+      ));
+      return;
+    }
 
-  const isDescriptionItem =
-    rawName.startsWith("-") ||
-    rawName.startsWith("▷") ||
-    rawName.startsWith("▶") ||
-    rawName.includes("기본 구성") ||
-    rawName.includes("기본구성") ||
-    rawName.includes("선택사항") ||
-    rawName.includes("부가 옵션") ||
-    rawName.includes("옵션 사항 문의");
+    const months = opt._months || 3;
+    const showSpecValue = String(opt.show_spec || "n").toLowerCase();
+    const itemIndex = computedItems.findIndex((i: any) => i.key === targetItem.key);
+    const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
+    const existingLineSpec = (targetItem.lineSpec?.w > 0 && targetItem.lineSpec?.l > 0)
+      ? targetItem.lineSpec
+      : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
 
-  if (isDescriptionItem) {
+    const hasMonthInName = /\d+개월/.test(rawName);
+    const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
+
+    let customerUnitPrice = rent
+      ? Number(opt.unit_price || calculated.unitPrice || 0) * months
+      : Number(calculated.amount || calculated.unitPrice || 0);
+
+    if (customerUnitPrice === 0 && showSpecValue === 'y') {
+      const specW = existingLineSpec?.w > 0 ? existingLineSpec.w : (current?.w || 3);
+      const specL = existingLineSpec?.l > 0 ? existingLineSpec.l : (current?.l || 6);
+      const recalc = calculateOptionLine(opt as any, specW, specL);
+      customerUnitPrice = rent
+        ? (recalc.amount || recalc.unitPrice || 0) * months
+        : (recalc.amount || recalc.unitPrice || 0);
+    }
+
+    const newOptName = targetItem.optionName || rawName;
+
     setEditItems(prev => prev.map(item =>
       item.key === targetItem.key
         ? {
             ...item,
             optionId: opt.option_id,
-            optionName: rawName,
-            displayName: rawName,
-            unit: "EA",
+            optionName: newOptName,
+            displayName,
+            unit: rent ? "개월" : (calculated.unit || "EA"),
             qty: 1,
-            unitPrice: 0,
-            amount: 0,
-            showSpec: "n",
-            lineSpec: { w: 0, l: 0, h: 0 },
-            _isCustomFreeText: true,
+            unitPrice: customerUnitPrice,
+            amount: customerUnitPrice,
+            showSpec: showSpecValue,
+            baseQty: calculated.qty || 1,
+            baseUnitPrice: opt.unit_price || calculated.unitPrice || 0,
+            baseAmount: calculated.amount || 0,
+            months,
+            lineSpec: existingLineSpec,
+            _isRent: (targetItem as any)._isRent ?? rent,
+            _isCustomFreeText: opt._isCustomFreeText || false,
           }
         : item
     ));
-    return;
-  }
+  }, [current, computedItems, getInheritedSpec, options]);
 
-  const months = opt._months || 3;
-  const showSpecValue = String(opt.show_spec || "n").toLowerCase();
-  const itemIndex = computedItems.findIndex((i: any) => i.key === targetItem.key);
-  const inheritedSpec = getInheritedSpec(computedItems, itemIndex);
-  const existingLineSpec = (targetItem.lineSpec?.w > 0 && targetItem.lineSpec?.l > 0)
-    ? targetItem.lineSpec
-    : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
 
-  const hasMonthInName = /\d+개월/.test(rawName);
-  const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
-
-  let customerUnitPrice = rent
-    ? Number(opt.unit_price || calculated.unitPrice || 0) * months
-    : Number(calculated.amount || calculated.unitPrice || 0);
-
-  if (customerUnitPrice === 0 && showSpecValue === 'y') {
-    const specW = existingLineSpec?.w > 0 ? existingLineSpec.w : (current?.w || 3);
-    const specL = existingLineSpec?.l > 0 ? existingLineSpec.l : (current?.l || 6);
-    const recalc = calculateOptionLine(opt as any, specW, specL);
-    customerUnitPrice = rent
-      ? (recalc.amount || recalc.unitPrice || 0) * months
-      : (recalc.amount || recalc.unitPrice || 0);
-  }
-
-  const newOptName = targetItem.optionName || rawName;
-
-  setEditItems(prev => prev.map(item =>
-    item.key === targetItem.key
-      ? {
-          ...item,
-          optionId: opt.option_id,
-          optionName: newOptName,
-          displayName,
-          unit: rent ? "개월" : (calculated.unit || "EA"),
-          qty: 1,
-          unitPrice: customerUnitPrice,
-          amount: customerUnitPrice,
-          showSpec: showSpecValue,
-          baseQty: calculated.qty || 1,
-          baseUnitPrice: opt.unit_price || calculated.unitPrice || 0,
-          baseAmount: calculated.amount || 0,
-          months,
-          lineSpec: existingLineSpec,
-          _isRent: (targetItem as any)._isRent ?? rent,
-          _isCustomFreeText: opt._isCustomFreeText || false,
-        }
-      : item
-  ));
-}, [current, computedItems, getInheritedSpec, options]);
-
-const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => {
-  const rawName = String(opt.option_name || "");
-
-  const fullOpt = options.find((o: any) => o.option_id === opt.option_id) || opt;
-  const subItems = fullOpt.sub_items;
-  const bundleLines: string[] = Array.isArray(subItems)
-    ? subItems.map((it: any) => String(it.name || "")).filter(Boolean)
-    : typeof subItems === 'string' && subItems.trim()
-      ? (() => { try { const parsed = JSON.parse(subItems); return Array.isArray(parsed) ? parsed.map((it: any) => String(it.name || "")).filter(Boolean) : []; } catch { return subItems.split("\n").map((s: string) => s.trim()).filter(Boolean); } })()
-      : [];
-
-  if (bundleLines.length > 0) {
-    setEditItems(prev => {
-      const newItems = bundleLines.map((line: string, i: number) => ({
-        key: `item_${Date.now()}_${i}`,
-        optionId: `bundle_${i}_${Date.now()}`,
-        optionName: line, displayName: line,
-        unit: "EA", qty: 1, unitPrice: 0, amount: 0,
-        showSpec: "n", lineSpec: { w: 0, l: 0, h: 0 },
-        specText: "", months: 3, baseUnitPrice: 0,
-        _isRent: false, _isCustomFreeText: true,
-      }));
-      if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
-        const arr = [...prev];
-        arr.splice(insertIndex + 1, 0, ...newItems);
-        return arr;
-      }
-      return [...prev, ...newItems];
-    });
-    return;
-  }
-
-  const rent = rawName.includes("임대") && !opt._isCustomFreeText && !opt._isEmptyRow;
-
-  const isDescriptionItem =
-    rawName.startsWith("-") ||
-    rawName.startsWith("▷") ||
-    rawName.startsWith("▶") ||
-    rawName.includes("마감 사양") ||
-    rawName.includes("마감사양") ||
-    rawName.includes("기본 구성") ||
-    rawName.includes("기본구성") ||
-    rawName.includes("선택사항") ||
-    rawName.includes("부가 옵션") ||
-    rawName.includes("옵션 사항 문의");
-
-  const months = opt._months || 3;
-  const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
-  const inheritedSpec = getInheritedSpec(editItems, targetIdx);
-  const effectiveSpec = specOverride || inheritedSpec;
-  const showSpecValue = isDescriptionItem ? "n" : String(opt.show_spec || "n").toLowerCase();
-  const customerUnitPrice = isDescriptionItem
-    ? 0
-    : rent
-      ? Number(calculated.unitPrice || 0) * months
-      : Number(calculated.amount || calculated.unitPrice || 0);
-  const displayName = opt._isEmptyRow
-    ? ''
-    : isDescriptionItem
-      ? rawName
-      : rent
-        ? `${rawName} ${months}개월`
-        : rawName;
-
-  const newItem = {
-    key: `item_${Date.now()}`,
-    optionId: opt.option_id,
-    optionName: opt._isEmptyRow ? '' : rawName,
-    displayName,
-    unit: rent ? "개월" : (calculated.unit || "EA"),
-    qty: 1,
-    unitPrice: customerUnitPrice,
-    amount: customerUnitPrice,
-    showSpec: showSpecValue,
-    lineSpec: isDescriptionItem
-      ? { w: 0, l: 0, h: 0 }
-      : specOverride || (showSpecValue === 'y' ? effectiveSpec : { w: 0, l: 0, h: 0 }),
-    specText: "",
-    months,
-    baseUnitPrice: isDescriptionItem ? 0 : Number(opt.unit_price || calculated.unitPrice || 0),
-    _isRent: rent,
-    _isCustomFreeText: isDescriptionItem ? true : (opt._isCustomFreeText || false),
-  };
-
-  setEditItems(prev => {
-    if (insertIndex !== undefined && insertIndex >= 0 && insertIndex < prev.length) {
-      const newArr = [...prev];
-      newArr.splice(insertIndex + 1, 0, newItem);
-      return newArr;
-    }
-    return [...prev, newItem];
-  });
-}, [current, editItems, getInheritedSpec, options]);
-
-  
 
   const handleAddDelivery = useCallback((site: any, type: 'delivery' | 'crane', insertIndex?: number) => {
     const targetIdx = insertIndex !== undefined ? insertIndex + 1 : editItems.length;
@@ -867,7 +764,13 @@ const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: numb
           vat_amount: vat,
           total_amount: total,
           updated_at: new Date().toISOString(),
-          created_at: editForm?.quoteDate ? new Date(editForm.quoteDate).toISOString() : current.created_at,
+          created_at: (() => {
+            if (!editForm?.quoteDate) return current.created_at;
+            const originalDate = current.created_at ? new Date(current.created_at) : new Date();
+            const [y, m, d] = editForm.quoteDate.split('-').map(Number);
+            originalDate.setFullYear(y, m - 1, d);
+            return originalDate.toISOString();
+          })(),
           customer_name: editForm?.customer_name ?? current.customer_name,
           customer_email: editForm?.customer_email ?? current.customer_email,
           customer_phone: editForm?.customer_phone ?? current.customer_phone,
@@ -1009,7 +912,7 @@ const handleAddItem = useCallback((opt: any, calculated: any, insertIndex?: numb
         .not("quote_id", "like", "SCHEDULE_%")
         .not("quote_id", "like", "KAKAO_%")
         .gte("created_at", oneMonthAgo.toISOString())
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false, nullsFirst: false })
         .limit(200);
 
       const kw = (keyword || "").trim();
