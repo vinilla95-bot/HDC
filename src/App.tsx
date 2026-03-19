@@ -289,23 +289,46 @@ function EditableSpecCell({
     }
   };
 
- const handleKeyDown = (e: React.KeyboardEvent) => { 
+const handleKeyDown = (e: React.KeyboardEvent) => { 
   if (e.key === "Enter") handleBlur(); 
-  // 변경
-else if (e.key === "Tab" && !e.shiftKey) {
-  e.preventDefault();
-  const td = (e.target as HTMLElement).closest('td'); // 먼저 캡처
-  handleBlur();
-  setTimeout(() => {
+  else if (e.key === "Tab" && !e.shiftKey) {
+    e.preventDefault();
+    const td = (e.target as HTMLElement).closest('td');
     const nextTd = td?.nextElementSibling as HTMLElement;
-    if (nextTd) nextTd.click();
-  }, 50);
-}else if (e.key === "Escape") { 
+
+    // 값 저장 (handleBlur 로직 인라인)
+    const trimmed = tempValue.trim();
+    if (!trimmed) {
+      if (onTextChange) onTextChange('');
+      onChange({ w: 0, l: 0, h: 0 });
+    } else {
+      const normalized = trimmed.replace(/[xX*]/g, '×');
+      const parts = normalized.split('×').map((s: string) => s.trim()).filter((s: string) => s !== '');
+      const nums = parts.map((s: string) => parseFloat(s));
+      if (nums.length >= 2 && nums.slice(0, Math.min(nums.length, 3)).every((p: number) => !isNaN(p) && isFinite(p))) {
+        onChange({ w: nums[0] || 0, l: nums[1] || 0, h: nums[2] || 0 });
+        if (onTextChange) onTextChange('');
+      } else {
+        if (onTextChange) onTextChange(trimmed);
+      }
+    }
+
+    // input 사라지기 전에 다음 td에 먼저 포커스 → 브라우저가 결제조건으로 안 감
+    if (nextTd) {
+      nextTd.setAttribute('tabindex', '-1');
+      nextTd.focus();
+    }
+
+    setIsEditing(false);
+
+    setTimeout(() => {
+      if (nextTd) nextTd.click();
+    }, 10);
+  } else if (e.key === "Escape") { 
     setTempValue(displayText); 
     setIsEditing(false); 
   } 
 };
-
   if (isEditing) {
     return (
       <input 
