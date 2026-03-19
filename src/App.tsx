@@ -293,38 +293,20 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
   if (e.key === "Enter") handleBlur(); 
   else if (e.key === "Tab" && !e.shiftKey) {
     e.preventDefault();
-    e.stopPropagation(); // ← 추가
+    e.stopPropagation();
+    
     const td = (e.target as HTMLElement).closest('td');
     const nextTd = td?.nextElementSibling as HTMLElement;
     
-    // 다음 td에 먼저 포커스 (input 사라지기 전에)
     if (nextTd) {
       nextTd.setAttribute('tabindex', '0');
+      // setIsEditing(false) 직접 호출 X
+      // nextTd.focus()가 input의 onBlur를 트리거 → handleBlur() 자동 호출
       nextTd.focus();
-    }
-    
-    // 값 저장
-    const trimmed = tempValue.trim();
-    if (!trimmed) {
-      if (onTextChange) onTextChange('');
-      onChange({ w: 0, l: 0, h: 0 });
+      setTimeout(() => nextTd.click(), 10);
     } else {
-      const normalized = trimmed.replace(/[xX*]/g, '×');
-      const parts = normalized.split('×').map((s: string) => s.trim()).filter((s: string) => s !== '');
-      const nums = parts.map((s: string) => parseFloat(s));
-      if (nums.length >= 2 && nums.slice(0, Math.min(nums.length, 3)).every((p: number) => !isNaN(p) && isFinite(p))) {
-        onChange({ w: nums[0] || 0, l: nums[1] || 0, h: nums[2] || 0 });
-        if (onTextChange) onTextChange('');
-      } else {
-        if (onTextChange) onTextChange(trimmed);
-      }
+      handleBlur();
     }
-    
-    setIsEditing(false);
-    
-    setTimeout(() => {
-      if (nextTd) nextTd.click();
-    }, 10);
   } else if (e.key === "Escape") { 
     setTempValue(displayText); 
     setIsEditing(false); 
