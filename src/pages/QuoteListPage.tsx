@@ -273,6 +273,8 @@ function MobileEditItems({ editItems, setEditItems, editForm, setEditForm, optio
                     value={item.months || ''}
                     onChange={e => {
                       const m = Number(e.target.value) || 1;
+                       const val = e.target.value === '' ? 0 : Number(e.target.value);
+  handleUpdatePrice(item.key, isNaN(val) ? 0 : val);
                       const base = item.baseUnitPrice || Math.round(item.unitPrice / (item.months || 3));
                       setEditItems((prev: any) => prev.map((it: any) =>
                         it.key === item.key ? { ...it, months: m, unitPrice: base * m, amount: (it.qty || 1) * base * m } : it
@@ -511,11 +513,12 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     ));
   }, []);
 
-  const handleUpdatePrice = useCallback((key: string, price: number) => {
-    setEditItems(prev => prev.map(item =>
-      item.key === key ? { ...item, unitPrice: price, amount: item.qty * price } : item
-    ));
-  }, []);
+ const handleUpdatePrice = useCallback((key: string, price: number) => {
+  const p = isNaN(price) ? 0 : price;  // ← 추가
+  setEditItems(prev => prev.map(item =>
+    item.key === key ? { ...item, unitPrice: p, amount: (item.qty || 1) * p } : item
+  ));
+}, []);
 
   const handleDeleteItem = useCallback((key: string) => {
     setEditItems(prev => prev.filter(item => item.key !== key));
