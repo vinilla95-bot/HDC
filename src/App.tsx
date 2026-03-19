@@ -293,10 +293,17 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
   if (e.key === "Enter") handleBlur(); 
   else if (e.key === "Tab" && !e.shiftKey) {
     e.preventDefault();
+    e.stopPropagation(); // ← 추가
     const td = (e.target as HTMLElement).closest('td');
     const nextTd = td?.nextElementSibling as HTMLElement;
-
-    // 값 저장 (handleBlur 로직 인라인)
+    
+    // 다음 td에 먼저 포커스 (input 사라지기 전에)
+    if (nextTd) {
+      nextTd.setAttribute('tabindex', '0');
+      nextTd.focus();
+    }
+    
+    // 값 저장
     const trimmed = tempValue.trim();
     if (!trimmed) {
       if (onTextChange) onTextChange('');
@@ -312,15 +319,9 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
         if (onTextChange) onTextChange(trimmed);
       }
     }
-
-    // input 사라지기 전에 다음 td에 먼저 포커스 → 브라우저가 결제조건으로 안 감
-    if (nextTd) {
-      nextTd.setAttribute('tabindex', '-1');
-      nextTd.focus();
-    }
-
+    
     setIsEditing(false);
-
+    
     setTimeout(() => {
       if (nextTd) nextTd.click();
     }, 10);
