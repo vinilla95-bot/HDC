@@ -155,6 +155,7 @@ function MobileSpecInput({ spec, onChange }: {
 }
 
 // ============ 인라인 숫자 편집 셀 ============
+// ============ 인라인 숫자 편집 셀 ============
 function EditableNumberCell({ value, onChange, disabled = false }: { value: number; onChange: (val: number) => void; disabled?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(String(value));
@@ -175,29 +176,38 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
     onChange(isNaN(n) ? 0 : n);
   };
 
-  // 변경
-} else if (e.key === "Tab" && !e.shiftKey) {
-  e.preventDefault();
-  const td = (e.target as HTMLElement).closest('td');  // ← 먼저 캡처
-  const tr = td?.closest('tr');
-  setIsEditing(false);
-  const n = Number(tempValue);
-  onChange(isNaN(n) ? 0 : n);
-  setTimeout(() => {
-    const tds = Array.from(tr?.querySelectorAll('td') || []);
-    const currentIdx = tds.indexOf(td as any);
-    const next = tds[currentIdx + 1] as HTMLElement;
-    if (next) {
-      next.click();
-    } else {
-      const nextTr = tr?.nextElementSibling as HTMLElement;
-      if (nextTr) {
-        const nextTds = Array.from(nextTr.querySelectorAll('td'));
-        (nextTds[1] as HTMLElement)?.click();
-      }
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      setIsEditing(false);
+      const n = Number(tempValue);
+      onChange(isNaN(n) ? 0 : n);
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      const td = (e.target as HTMLElement).closest('td');
+      const tr = td?.closest('tr');
+      setIsEditing(false);
+      const n = Number(tempValue);
+      onChange(isNaN(n) ? 0 : n);
+      setTimeout(() => {
+        const tds = Array.from(tr?.querySelectorAll('td') || []);
+        const currentIdx = tds.indexOf(td as any);
+        const next = tds[currentIdx + 1] as HTMLElement;
+        if (next) {
+          next.click();
+        } else {
+          const nextTr = tr?.nextElementSibling as HTMLElement;
+          if (nextTr) {
+            const nextTds = Array.from(nextTr.querySelectorAll('td'));
+            (nextTds[1] as HTMLElement)?.click();
+          }
+        }
+      }, 50);
+    } else if (e.key === "Escape") {
+      setTempValue(String(value));
+      setIsEditing(false);
     }
-  }, 50);
-}
+  };
+
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   if (disabled) return <span>{fmtNum(value)}</span>;
   if (isEditing) return (
@@ -281,16 +291,16 @@ function EditableSpecCell({
 
  const handleKeyDown = (e: React.KeyboardEvent) => { 
   if (e.key === "Enter") handleBlur(); 
-  else if (e.key === "Tab" && !e.shiftKey) {
-    e.preventDefault();
-    handleBlur();
-    setTimeout(() => {
-      const td = (e.target as HTMLElement).closest('td');
-      const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
-      const next = tds[tds.indexOf(td as any) + 1] as HTMLElement;
-      if (next) next.click();
-    }, 50);
-  } else if (e.key === "Escape") { 
+  // 변경
+else if (e.key === "Tab" && !e.shiftKey) {
+  e.preventDefault();
+  const td = (e.target as HTMLElement).closest('td'); // 먼저 캡처
+  handleBlur();
+  setTimeout(() => {
+    const nextTd = td?.nextElementSibling as HTMLElement;
+    if (nextTd) nextTd.click();
+  }, 50);
+}else if (e.key === "Escape") { 
     setTempValue(displayText); 
     setIsEditing(false); 
   } 
