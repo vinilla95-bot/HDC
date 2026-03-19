@@ -1015,7 +1015,7 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
         .not("quote_id", "like", "SCHEDULE_%")
         .not("quote_id", "like", "KAKAO_%")
         .gte("created_at", oneMonthAgo.toISOString())
-        .order("updated_at", { ascending: false, nullsFirst: false })
+       .order("created_at", { ascending: false, nullsFirst: false })
         .limit(200);
 
       const kw = (keyword || "").trim();
