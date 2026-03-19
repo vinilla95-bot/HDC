@@ -1139,7 +1139,7 @@ if (bizcardRawUrl) {
       if (attachments.bizRegistration) attachmentUrls.push(ATTACHMENT_URLS.bizRegistration);
 
       setSendStatus("메일 전송 중...");
-     const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
+     const GAS_URL = "https://script.google.com/macros/s/AKfycbwJfoZrigsyuVV18-5M6Qziky_hV1gtn-GZgxtV18u9BDmuQsL_Y9w07k4voDQQh1k/exec";
 
 const response = await fetch(GAS_URL, {
   method: "POST",
