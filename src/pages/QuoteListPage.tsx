@@ -2105,7 +2105,7 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
               setMultiSelectMode(!multiSelectMode);
               setSelectedQuoteIds(new Set());
             }}>
-              {multiSelectMode ? "선택취소" : "다중선택"}
+              {multiSelectMode ? "선택취소" : "일괄전송"}
             </button>
             {multiSelectMode && selectedQuoteIds.size > 0 && (
               <button className="primary" onClick={() => {
@@ -2113,7 +2113,7 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
                 setMultiSendStatus("");
                 setMultiSendOpen(true);
               }}>
-                묶음전송 ({selectedQuoteIds.size}건)
+                묶음 ({selectedQuoteIds.size}건)
               </button>
             )}
           </div>
