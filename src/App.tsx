@@ -176,35 +176,36 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      setIsEditing(false);
-      const n = Number(tempValue);
-      onChange(isNaN(n) ? 0 : n);
-   // 변경
-} else if (e.key === "Tab" && !e.shiftKey) {
-  e.preventDefault();
-  setIsEditing(false);
-  const n = Number(tempValue);
-  onChange(isNaN(n) ? 0 : n);
-  setTimeout(() => {
-    const td = (e.target as HTMLElement).closest('td');
-    const tr = td?.closest('tr');
-    const tds = Array.from(tr?.querySelectorAll('td') || []);
-    const currentIdx = tds.indexOf(td as any);
-    const next = tds[currentIdx + 1] as HTMLElement;
-    if (next) {
-      next.click();
-    } else {
-      // 마지막 셀 → 다음 행 규격 셀로
-      const nextTr = tr?.nextElementSibling as HTMLElement;
-      if (nextTr) {
-        const nextTds = Array.from(nextTr.querySelectorAll('td'));
-        (nextTds[1] as HTMLElement)?.click();
+  if (e.key === "Enter") {
+    setIsEditing(false);
+    const n = Number(tempValue);
+    onChange(isNaN(n) ? 0 : n);
+  } else if (e.key === "Tab" && !e.shiftKey) {
+    e.preventDefault();
+    setIsEditing(false);
+    const n = Number(tempValue);
+    onChange(isNaN(n) ? 0 : n);
+    setTimeout(() => {
+      const td = (e.target as HTMLElement).closest('td');
+      const tr = td?.closest('tr');
+      const tds = Array.from(tr?.querySelectorAll('td') || []);
+      const currentIdx = tds.indexOf(td as any);
+      const next = tds[currentIdx + 1] as HTMLElement;
+      if (next) {
+        next.click();
+      } else {
+        const nextTr = tr?.nextElementSibling as HTMLElement;
+        if (nextTr) {
+          const nextTds = Array.from(nextTr.querySelectorAll('td'));
+          (nextTds[1] as HTMLElement)?.click();
+        }
       }
-    }
-  }, 50);
-}
-
+    }, 50);
+  } else if (e.key === "Escape") {
+    setTempValue(String(value));
+    setIsEditing(false);
+  }
+};
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   if (disabled) return <span>{fmtNum(value)}</span>;
   if (isEditing) return (
