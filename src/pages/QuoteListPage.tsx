@@ -2426,6 +2426,17 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
                       return <div key={id}>· {found?.customer_name || id}</div>;
                     })}
                   </div>
+                  <div style={{ marginBottom: 10 }}>
+    <div className="muted" style={{ marginBottom: 4 }}>명함 선택</div>
+    <select
+      value={selectedBizcardId}
+      onChange={(e) => setSelectedBizcardId(e.target.value)}
+      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10 }}
+    >
+      {bizcards.length === 0 && <option value="">(명함 없음)</option>}
+      {bizcards.map((b: any) => (<option key={b.id} value={b.id}>{b.name}</option>))}
+    </select>
+  </div>
                   <input
                     value={multiSendTo}
                     onChange={(e) => setMultiSendTo(e.target.value)}
