@@ -1105,8 +1105,24 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       document.body.removeChild(captureContainer);
 
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
-      const bizcardImageUrl = selectedBizcard?.image_url || "";
+     const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+const bizcardRawUrl = selectedBizcard?.image_url || "";
+
+// URL → base64 변환 (GAS에서 직접 fetch 안 해도 됨)
+let bizcardImageUrl = "";
+if (bizcardRawUrl) {
+  try {
+    const resp = await fetch(bizcardRawUrl);
+    const blob = await resp.blob();
+    bizcardImageUrl = await new Promise<string>((res) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn("명함 변환 실패", e);
+  }
+}
       const customerName = current!.customer_name || "고객";
 
       const attachmentUrls: string[] = [];
