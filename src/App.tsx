@@ -1355,7 +1355,6 @@ const addOption = (opt: any, isSpecial = false, price = 0, label = "", monthsPar
 const res = calculateOptionLine(opt, effectiveSpec.w, effectiveSpec.l, effectiveSpec.h);
 const rawName = String(opt.option_name || opt.optionName || "(이름없음)");
 const rent = opt._isCustomFreeText ? false : rawName.includes("임대");
-const isAircon = rawName.includes("냉난방");
 
 // ✅ 운송비(isSpecial)일 때 높이 배수 적용
 const adjustedPrice = isSpecial
