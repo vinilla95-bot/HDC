@@ -294,9 +294,19 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
   else if (e.key === "Tab" && !e.shiftKey) {
     e.preventDefault();
     e.stopPropagation();
+    
     const td = (e.target as HTMLElement).closest('td');
     const nextTd = td?.nextElementSibling as HTMLElement;
+    const table = (e.target as HTMLElement).closest('table') as HTMLElement;
+    
+    // input 사라지기 전에 테이블에 먼저 포커스 → 주소창으로 안 감
+    if (table) {
+      table.setAttribute('tabindex', '0');
+      table.focus();
+    }
+    
     handleBlur();
+    
     setTimeout(() => {
       if (nextTd) nextTd.click();
     }, 10);
@@ -2877,8 +2887,8 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
           )}
 
           {/* ✅ 품목 테이블 - 컬럼 순서 변경: 순번 | 규격 | 품목 | ... */}
-         // 변경
-<table className="a4Items" onKeyDown={(e) => { if (e.key === 'Tab') e.preventDefault(); }}>
+      
+<table className="a4Items">
             <colgroup>
               <col style={{ width: "7%" }} />
               <col style={{ width: "10%" }} />
