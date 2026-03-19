@@ -2300,6 +2300,7 @@ const displayName = hasMonthInName
 const customerUnitPrice = (rent && !isAircon)
   ? Number(opt.unit_price || calc.unitPrice || 0) * months
   : Number(calc.amount || calc.unitPrice || 0);
+              const newOptName = item.optionName || rawName;
 
   setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
     ...i,
