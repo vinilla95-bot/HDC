@@ -278,13 +278,22 @@ function EditableSpecCell({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => { 
-    if (e.key === "Enter") handleBlur(); 
-    else if (e.key === "Escape") { 
-      setTempValue(displayText); 
-      setIsEditing(false); 
-    } 
-  };
+ const handleKeyDown = (e: React.KeyboardEvent) => { 
+  if (e.key === "Enter") handleBlur(); 
+  else if (e.key === "Tab" && !e.shiftKey) {
+    e.preventDefault();
+    handleBlur();
+    setTimeout(() => {
+      const td = (e.target as HTMLElement).closest('td');
+      const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
+      const next = tds[tds.indexOf(td as any) + 1] as HTMLElement;
+      if (next) next.click();
+    }, 50);
+  } else if (e.key === "Escape") { 
+    setTempValue(displayText); 
+    setIsEditing(false); 
+  } 
+};
 
   if (isEditing) {
     return (
@@ -642,16 +651,30 @@ const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
                 } else {
                   commitFreeText();
                 }
-       } else if (e.key === "Tab" && !e.shiftKey) {
-                e.preventDefault();
-                commitFreeText();
-                setTimeout(() => {
-                  const td = (e.target as HTMLElement).closest('td');
-                  const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
-                 const next = tds[tds.indexOf(td as any) + 1] as HTMLElement;
-                  if (next) next.click();
-                }, 50);
-              } else if (e.key === "Escape") {
+    } else if (e.key === "Tab" && !e.shiftKey) {
+  e.preventDefault();
+  setIsEditing(false);
+  const n = Number(tempValue);
+  onChange(isNaN(n) ? 0 : n);
+  setTimeout(() => {
+    const td = (e.target as HTMLElement).closest('td');
+    const tr = td?.closest('tr');
+    const tds = Array.from(tr?.querySelectorAll('td') || []);
+    const currentIdx = tds.indexOf(td as any);
+    const next = tds[currentIdx + 1] as HTMLElement;
+    if (next) {
+      next.click();
+    } else {
+      // 마지막 셀 → 다음 행의 규격 셀(index 1)로
+      const nextTr = tr?.nextElementSibling as HTMLElement;
+      if (nextTr) {
+        const nextTds = Array.from(nextTr.querySelectorAll('td'));
+        const specTd = nextTds[1] as HTMLElement; // 규격 셀
+        if (specTd) specTd.click();
+      }
+    }
+  }, 50);
+} else if (e.key === "Escape") {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsEditing(false);
@@ -3008,11 +3031,19 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                           <input
                             value={item.memo || ''}
                             onChange={(e) => onUpdateMemo && onUpdateMemo(item.key, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Tab') {
-                                e.preventDefault();
-                              }
-                            }}
+                            // 변경
+onKeyDown={(e) => {
+  if (e.key === 'Tab' && !e.shiftKey) {
+    e.preventDefault();
+    const td = (e.target as HTMLElement).closest('td');
+    const tr = td?.closest('tr');
+    const nextTr = tr?.nextElementSibling as HTMLElement;
+    if (nextTr) {
+      const nextTds = Array.from(nextTr.querySelectorAll('td'));
+      (nextTds[1] as HTMLElement)?.click();
+    }
+  }
+}}
                             style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 11, outline: 'none', minWidth: 0 }}
                           />
                           <button
