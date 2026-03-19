@@ -1367,8 +1367,11 @@ const baseAmount = isSpecial ? adjustedPrice : Number(res.amount || 0);
   const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
   const displayQty = 1;
   const isAircon = rawName.includes("냉난방");
-const customerUnitPrice = (rent && !isAircon) ? baseUnitPrice * defaultMonths : baseAmount;
-
+const customerUnitPrice = (rent && !isAircon) 
+  ? baseUnitPrice * defaultMonths 
+  : isAircon 
+  ? Number(opt.unit_price || 0)
+  : baseAmount;
   let simplifiedLabel = label;
   if (label && form.siteQ) {
     const regions = label.split(',').map((r: string) => r.trim());
@@ -2299,6 +2302,8 @@ const displayName = hasMonthInName
   : (rent && !isAircon ? `${rawName} ${months}개월` : rawName);
 const customerUnitPrice = (rent && !isAircon)
   ? Number(opt.unit_price || calc.unitPrice || 0) * months
+  : isAircon
+  ? Number(opt.unit_price || 0)
   : Number(calc.amount || calc.unitPrice || 0);
               const newOptName = item.optionName || rawName;
 
