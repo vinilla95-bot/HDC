@@ -2272,7 +2272,7 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
             onSelectOption={(item, opt, calc) => {
   const rawName = String(opt.option_name || "");
   const rent = rawName.includes("임대") && !opt._isCustomFreeText;
-  const isAircon = rawName.includes("냉난방");
+
 
   if (opt._isDisplayNameOnly) {
     setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
@@ -2292,16 +2292,13 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
     ? item.lineSpec
     : (showSpecValue === 'y' ? inheritedSpec : { w: 0, l: 0, h: 0 });
 
-  const hasMonthInName = /\d+개월/.test(rawName);
-  const displayName = hasMonthInName
-    ? rawName
-    : (rent && !isAircon ? `${rawName} ${months}개월` : rawName);
-
- const isAircon = rawName.includes("냉난방");
+ const hasMonthInName = /\d+개월/.test(rawName);
+const displayName = hasMonthInName
+  ? rawName
+  : (rent && !isAircon ? `${rawName} ${months}개월` : rawName);
 const customerUnitPrice = (rent && !isAircon)
   ? Number(opt.unit_price || calc.unitPrice || 0) * months
   : Number(calc.amount || calc.unitPrice || 0);
-
   const newOptName = item.optionName || rawName;
 
   setSelectedItems(prev => prev.map(i => i.key !== item.key ? i : {
