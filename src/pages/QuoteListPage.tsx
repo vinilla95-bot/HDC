@@ -353,6 +353,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
   onGoLive?: () => void;
   onConfirmContract?: (quote: QuoteRow) => void;
 }) {
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+const [selectedQuoteIds, setSelectedQuoteIds] = useState<Set<string>>(new Set());
+const [multiSendOpen, setMultiSendOpen] = useState(false);
+const [multiSendTo, setMultiSendTo] = useState("");
+const [multiSendStatus, setMultiSendStatus] = useState("");
   const [q, setQ] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [list, setList] = useState<QuoteRow[]>([]);
@@ -1409,6 +1414,95 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
     [bizcards, selectedBizcardId]
   );
 
+
+  async function handleMultiSend() {
+  const to = multiSendTo.trim();
+  if (!to) { setMultiSendStatus("이메일을 입력해주세요."); return; }
+
+  const quoteIds = Array.from(selectedQuoteIds);
+  const images: { imgData: string; name: string }[] = [];
+
+  try {
+    for (let i = 0; i < quoteIds.length; i++) {
+      const quote = list.find(q => q.quote_id === quoteIds[i]);
+      if (!quote) continue;
+
+      setMultiSendStatus(`캡처 중... (${i + 1}/${quoteIds.length})`);
+
+      // 현재 견적으로 전환 후 렌더링 대기
+      setCurrent(quote);
+      setActiveTab('quote');
+      await new Promise(r => setTimeout(r, 600));
+
+      const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
+      if (!sheetEl) continue;
+
+      const captureContainer = document.createElement('div');
+      captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
+      document.body.appendChild(captureContainer);
+
+      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+      clonedSheet.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+      clonedSheet.querySelectorAll('.a4Items input').forEach(el => (el as HTMLElement).style.display = 'none');
+      const addBtn = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtn) (addBtn as HTMLElement).style.display = 'none';
+      captureContainer.appendChild(clonedSheet);
+
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(clonedSheet, {
+        scale: 2, backgroundColor: "#ffffff", useCORS: true,
+        width: 794, windowWidth: 794,
+      });
+      document.body.removeChild(captureContainer);
+
+      images.push({
+        imgData: canvas.toDataURL("image/jpeg", 0.92),
+        name: quote.customer_name || quote.quote_id,
+      });
+    }
+
+    setMultiSendStatus("메일 전송 중...");
+
+    const selectedBizcard = bizcards.find((b: any) => b.id === selectedBizcardId);
+    const bizcardRawUrl = selectedBizcard?.image_url || "";
+    let bizcardBase64 = "";
+    if (bizcardRawUrl) {
+      try {
+        const resp = await fetch(bizcardRawUrl);
+        const blob = await resp.blob();
+        bizcardBase64 = await new Promise<string>((res) => {
+          const reader = new FileReader();
+          reader.onload = () => res(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {}
+    }
+
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
+    const response = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        fn: "sendMultiQuoteEmail",
+        args: [to, images, bizcardBase64]
+      })
+    });
+
+    const result = await response.json();
+    if (result.ok === false) throw new Error(result.message || "전송 실패");
+
+    setMultiSendStatus("전송 완료!");
+    toast(`견적서 ${images.length}건 묶음 전송 완료`);
+    setMultiSendOpen(false);
+    setMultiSelectMode(false);
+    setSelectedQuoteIds(new Set());
+
+  } catch (e: any) {
+    setMultiSendStatus("전송 실패: " + (e?.message || String(e)));
+  }
+}
+
   // ============ 거래명세서 미리보기 ============
   const statementPreviewHtml = useMemo(() => {
   if (!current) return null;
@@ -2007,6 +2101,21 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
             <span className="badge" style={{ background: "#059669", color: "#fff", borderColor: "#059669" }}>
               확정 {confirmedCount}
             </span>
+            <button onClick={() => {
+  setMultiSelectMode(!multiSelectMode);
+  setSelectedQuoteIds(new Set());
+}}>
+  {multiSelectMode ? "선택 취소" : "다중선택"}
+</button>
+{multiSelectMode && selectedQuoteIds.size > 0 && (
+  <button className="primary" onClick={() => {
+    setMultiSendTo("");
+    setMultiSendStatus("");
+    setMultiSendOpen(true);
+  }}>
+    묶음전송 ({selectedQuoteIds.size}건)
+  </button>
+)}
           </div>
 
           <div className="search">
@@ -2021,29 +2130,46 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
             {!loading && list.length === 0 && (
               <div style={{ padding: 12 }} className="muted">검색 결과 없음</div>
             )}
-            {list.map((it) => (
-              <div
-                key={it.quote_id}
-                className={`item ${current?.quote_id === it.quote_id ? 'active' : ''}`}
-                onClick={() => {
-                  setCurrent(it);
-                  if (it.bizcard_id) setSelectedBizcardId(it.bizcard_id);
-                  if (isMobile) setMobileView('detail');
-                }}
-              >
-                <div className="top">
-                  <span className="muted">{formatKoDate(it.created_at || "")}</span>
-                  {(it as any).status === "confirmed" && (
-                    <span style={{ background: "#059669", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>✓확정</span>
-                  )}
-                </div>
-                <div className="mid">{it.customer_name || it.quote_title || it.quote_id || ""}</div>
-                <div className="bot">
-                  <span>{it.spec ? "· " + it.spec : ""}</span>
-                  <span><b>{money(it.total_amount)}</b>원</span>
-                </div>
-              </div>
-            ))}
+          {list.map((it) => (
+  <div
+    key={it.quote_id}
+    className={`item ${current?.quote_id === it.quote_id ? 'active' : ''}`}
+    onClick={() => {
+      if (multiSelectMode) {
+        setSelectedQuoteIds(prev => {
+          const next = new Set(prev);
+          next.has(it.quote_id) ? next.delete(it.quote_id) : next.add(it.quote_id);
+          return next;
+        });
+        return;
+      }
+      setCurrent(it);
+      if (it.bizcard_id) setSelectedBizcardId(it.bizcard_id);
+      if (isMobile) setMobileView('detail');
+    }}
+  >
+    {multiSelectMode && (
+      <input
+        type="checkbox"
+        checked={selectedQuoteIds.has(it.quote_id)}
+        onChange={() => {}}
+        onClick={(e) => e.stopPropagation()}
+        style={{ marginRight: 8 }}
+      />
+    )}
+    <div className="top">
+      <span className="muted">{formatKoDate(it.created_at || "")}</span>
+      {(it as any).status === "confirmed" && (
+        <span style={{ background: "#059669", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>✓확정</span>
+      )}
+    </div>
+    <div className="mid">{it.customer_name || it.quote_title || it.quote_id || ""}</div>
+    <div className="bot">
+      <span>{it.spec ? "· " + it.spec : ""}</span>
+      <span><b>{money(it.total_amount)}</b>원</span>
+    </div>
+  </div>
+))}
           </div>
         </div>
 
@@ -2291,6 +2417,42 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
     </div>
   );
 }
+
+{multiSendOpen && (
+  <div className="modal" onMouseDown={() => setMultiSendOpen(false)}>
+    <div className="modalCard" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="modalHdr">
+        <div style={{ fontWeight: 800 }}>견적서 묶음 전송 ({selectedQuoteIds.size}건)</div>
+        <span className="spacer" />
+        <button onClick={() => setMultiSendOpen(false)}>닫기</button>
+      </div>
+      <div className="modalBody">
+        <div className="muted" style={{ marginBottom: 8 }}>
+          {Array.from(selectedQuoteIds).map(id => {
+            const q = list.find(l => l.quote_id === id);
+            return <div key={id}>· {q?.customer_name || id}</div>;
+          })}
+        </div>
+        <input
+          value={multiSendTo}
+          onChange={(e) => setMultiSendTo(e.target.value)}
+          placeholder="수신 이메일"
+          style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10, marginBottom: 10 }}
+        />
+        <div className="row">
+          <span className="spacer" />
+          <button className="primary" onClick={handleMultiSend}>
+            {multiSendStatus || "전송"}
+          </button>
+        </div>
+        {multiSendStatus && (
+          <div className="muted" style={{ marginTop: 10 }}>{multiSendStatus}</div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
 
 const css = `
 input[type="number"]::-webkit-outer-spin-button,
