@@ -1114,7 +1114,18 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
       if (attachments.bizRegistration) attachmentUrls.push(ATTACHMENT_URLS.bizRegistration);
 
       setSendStatus("메일 전송 중...");
-      await gasCall("sendDocEmailWithPdf", [quoteId, to, imgData, bizcardImageUrl, customerName, getDocTitle(), attachmentUrls]);
+     const GAS_URL = "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
+
+const response = await fetch(GAS_URL, {
+  method: "POST",
+  body: JSON.stringify({
+    fn: "sendDocEmailWithPdf",
+    args: [quoteId, to, imgData, bizcardImageUrl, customerName, getDocTitle(), attachmentUrls]
+  })
+});
+
+const result = await response.json();
+if (result.ok === false) throw new Error(result.message || "전송 실패");
 
       setSendStatus("전송 완료!");
       toast(`${getDocTitle()} 메일 전송 완료`);
