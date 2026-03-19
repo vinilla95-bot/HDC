@@ -294,19 +294,11 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
   else if (e.key === "Tab" && !e.shiftKey) {
     e.preventDefault();
     e.stopPropagation();
-    
     const td = (e.target as HTMLElement).closest('td');
     const nextTd = td?.nextElementSibling as HTMLElement;
-    const table = (e.target as HTMLElement).closest('table') as HTMLElement;
-    
-    // input 사라지기 전에 테이블에 먼저 포커스 → 주소창으로 안 감
-    if (table) {
-      table.setAttribute('tabindex', '0');
-      table.focus();
-    }
-    
+    // input 사라지기 전에 먼저 focus 이동
+    if (nextTd) nextTd.focus();
     handleBlur();
-    
     setTimeout(() => {
       if (nextTd) nextTd.click();
     }, 10);
@@ -2960,6 +2952,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     
                     {/* ✅ 품목 셀 */}
                     <td 
+                      tabIndex={0}
                       onClick={(e) => {
                         if (editable && options && onSelectOption) {
                           e.stopPropagation();
