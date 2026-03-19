@@ -2087,7 +2087,7 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
     );
   }, [current, rentalForm, editItems, editMode, editForm, rentalConditions, handleUpdateQty, handleUpdatePrice, handleDeleteItem]);
 
-  // ============ 렌더 ============
+ // ============ 렌더 ============
   return (
     <div className="quoteListPage">
       <style>{css}</style>
@@ -2102,20 +2102,20 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
               확정 {confirmedCount}
             </span>
             <button onClick={() => {
-  setMultiSelectMode(!multiSelectMode);
-  setSelectedQuoteIds(new Set());
-}}>
-  {multiSelectMode ? "선택 취소" : "다중선택"}
-</button>
-{multiSelectMode && selectedQuoteIds.size > 0 && (
-  <button className="primary" onClick={() => {
-    setMultiSendTo("");
-    setMultiSendStatus("");
-    setMultiSendOpen(true);
-  }}>
-    묶음전송 ({selectedQuoteIds.size}건)
-  </button>
-)}
+              setMultiSelectMode(!multiSelectMode);
+              setSelectedQuoteIds(new Set());
+            }}>
+              {multiSelectMode ? "선택취소" : "다중선택"}
+            </button>
+            {multiSelectMode && selectedQuoteIds.size > 0 && (
+              <button className="primary" onClick={() => {
+                setMultiSendTo("");
+                setMultiSendStatus("");
+                setMultiSendOpen(true);
+              }}>
+                묶음전송 ({selectedQuoteIds.size}건)
+              </button>
+            )}
           </div>
 
           <div className="search">
@@ -2130,46 +2130,46 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
             {!loading && list.length === 0 && (
               <div style={{ padding: 12 }} className="muted">검색 결과 없음</div>
             )}
-          {list.map((it) => (
-  <div
-    key={it.quote_id}
-    className={`item ${current?.quote_id === it.quote_id ? 'active' : ''}`}
-    onClick={() => {
-      if (multiSelectMode) {
-        setSelectedQuoteIds(prev => {
-          const next = new Set(prev);
-          next.has(it.quote_id) ? next.delete(it.quote_id) : next.add(it.quote_id);
-          return next;
-        });
-        return;
-      }
-      setCurrent(it);
-      if (it.bizcard_id) setSelectedBizcardId(it.bizcard_id);
-      if (isMobile) setMobileView('detail');
-    }}
-  >
-    {multiSelectMode && (
-      <input
-        type="checkbox"
-        checked={selectedQuoteIds.has(it.quote_id)}
-        onChange={() => {}}
-        onClick={(e) => e.stopPropagation()}
-        style={{ marginRight: 8 }}
-      />
-    )}
-    <div className="top">
-      <span className="muted">{formatKoDate(it.created_at || "")}</span>
-      {(it as any).status === "confirmed" && (
-        <span style={{ background: "#059669", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>✓확정</span>
-      )}
-    </div>
-    <div className="mid">{it.customer_name || it.quote_title || it.quote_id || ""}</div>
-    <div className="bot">
-      <span>{it.spec ? "· " + it.spec : ""}</span>
-      <span><b>{money(it.total_amount)}</b>원</span>
-    </div>
-  </div>
-))}
+            {list.map((it) => (
+              <div
+                key={it.quote_id}
+                className={`item ${current?.quote_id === it.quote_id ? 'active' : ''}`}
+                onClick={() => {
+                  if (multiSelectMode) {
+                    setSelectedQuoteIds(prev => {
+                      const next = new Set(prev);
+                      next.has(it.quote_id) ? next.delete(it.quote_id) : next.add(it.quote_id);
+                      return next;
+                    });
+                    return;
+                  }
+                  setCurrent(it);
+                  if (it.bizcard_id) setSelectedBizcardId(it.bizcard_id);
+                  if (isMobile) setMobileView('detail');
+                }}
+              >
+                {multiSelectMode && (
+                  <input
+                    type="checkbox"
+                    checked={selectedQuoteIds.has(it.quote_id)}
+                    onChange={() => {}}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ marginRight: 8 }}
+                  />
+                )}
+                <div className="top">
+                  <span className="muted">{formatKoDate(it.created_at || "")}</span>
+                  {(it as any).status === "confirmed" && (
+                    <span style={{ background: "#059669", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4 }}>✓확정</span>
+                  )}
+                </div>
+                <div className="mid">{it.customer_name || it.quote_title || it.quote_id || ""}</div>
+                <div className="bot">
+                  <span>{it.spec ? "· " + it.spec : ""}</span>
+                  <span><b>{money(it.total_amount)}</b>원</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -2411,6 +2411,41 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
             </div>
           )}
 
+          {multiSendOpen && (
+            <div className="modal" onMouseDown={() => setMultiSendOpen(false)}>
+              <div className="modalCard" onMouseDown={(e) => e.stopPropagation()}>
+                <div className="modalHdr">
+                  <div style={{ fontWeight: 800 }}>견적서 묶음 전송 ({selectedQuoteIds.size}건)</div>
+                  <span className="spacer" />
+                  <button onClick={() => setMultiSendOpen(false)}>닫기</button>
+                </div>
+                <div className="modalBody">
+                  <div className="muted" style={{ marginBottom: 8 }}>
+                    {Array.from(selectedQuoteIds).map(id => {
+                      const found = list.find(l => l.quote_id === id);
+                      return <div key={id}>· {found?.customer_name || id}</div>;
+                    })}
+                  </div>
+                  <input
+                    value={multiSendTo}
+                    onChange={(e) => setMultiSendTo(e.target.value)}
+                    placeholder="수신 이메일"
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10, marginBottom: 10 }}
+                  />
+                  <div className="row">
+                    <span className="spacer" />
+                    <button className="primary" onClick={handleMultiSend}>
+                      {multiSendStatus || "전송"}
+                    </button>
+                  </div>
+                  {multiSendStatus && (
+                    <div className="muted" style={{ marginTop: 10 }}>{multiSendStatus}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="toast" ref={toastRef} />
         </div>
       </div>
@@ -2418,40 +2453,6 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
   );
 }
 
-{multiSendOpen && (
-  <div className="modal" onMouseDown={() => setMultiSendOpen(false)}>
-    <div className="modalCard" onMouseDown={(e) => e.stopPropagation()}>
-      <div className="modalHdr">
-        <div style={{ fontWeight: 800 }}>견적서 묶음 전송 ({selectedQuoteIds.size}건)</div>
-        <span className="spacer" />
-        <button onClick={() => setMultiSendOpen(false)}>닫기</button>
-      </div>
-      <div className="modalBody">
-        <div className="muted" style={{ marginBottom: 8 }}>
-          {Array.from(selectedQuoteIds).map(id => {
-            const q = list.find(l => l.quote_id === id);
-            return <div key={id}>· {q?.customer_name || id}</div>;
-          })}
-        </div>
-        <input
-          value={multiSendTo}
-          onChange={(e) => setMultiSendTo(e.target.value)}
-          placeholder="수신 이메일"
-          style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe2", borderRadius: 10, marginBottom: 10 }}
-        />
-        <div className="row">
-          <span className="spacer" />
-          <button className="primary" onClick={handleMultiSend}>
-            {multiSendStatus || "전송"}
-          </button>
-        </div>
-        {multiSendStatus && (
-          <div className="muted" style={{ marginTop: 10 }}>{multiSendStatus}</div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
 
 
 const css = `
