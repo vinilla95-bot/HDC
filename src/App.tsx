@@ -3129,13 +3129,13 @@ onKeyDown={(e) => {
               </tr>
               <tr>
   <th className="label">결제조건</th>
-  <td className="text" colSpan={7} contentEditable={editable} suppressContentEditableWarning>
+  <td className="text" colSpan={7} contentEditable={editable} suppressContentEditableWarning tabIndex={-1}>
     계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고
   </td>
 </tr>
              <tr>
   <th className="label">주의사항</th>
-  <td className="text" colSpan={7} contentEditable={editable} suppressContentEditableWarning>
+  <td className="text" colSpan={7} contentEditable={editable} suppressContentEditableWarning tabIndex={-1}>
     *견적서는 견적일로 부터 2주간 유효합니다.
     <br />
     1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
@@ -3149,7 +3149,7 @@ onKeyDown={(e) => {
 </tr>
 <tr>
   <th className="label">중요사항</th>
-  <td className="text" colSpan={7} contentEditable={editable} suppressContentEditableWarning>
+  <td className="text" colSpan={7} contentEditable={editable} suppressContentEditableWarning tabIndex={-1}>
     1. 인적사항 요구 현장시 운임비 3만원 추가금 발생합니다.
     <br />
     2. 기본 전기는 설치 되어 있으나 주택용도 전선관은 추가되어 있지 않습니다.
