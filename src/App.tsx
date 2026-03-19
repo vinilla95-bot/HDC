@@ -1367,7 +1367,8 @@ const baseUnitPrice = isSpecial ? adjustedPrice : Number(res.unitPrice || 0);
 const baseAmount = isSpecial ? adjustedPrice : Number(res.amount || 0);
   const defaultMonths = rent ? (monthsParam || opt._months || 3) : 3;
   const displayQty = 1;
-  const customerUnitPrice = rent ? baseUnitPrice * defaultMonths : baseAmount;
+  const isAircon = rawName.includes("냉난방");
+const customerUnitPrice = (rent && !isAircon) ? baseUnitPrice * defaultMonths : baseAmount;
 
   let simplifiedLabel = label;
   if (label && form.siteQ) {
@@ -2297,9 +2298,10 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
     ? rawName
     : (rent && !isAircon ? `${rawName} ${months}개월` : rawName);
 
-  const customerUnitPrice = rent
-    ? Number(opt.unit_price || calc.unitPrice || 0) * months
-    : Number(calc.amount || calc.unitPrice || 0);
+ const isAircon = rawName.includes("냉난방");
+const customerUnitPrice = (rent && !isAircon)
+  ? Number(opt.unit_price || calc.unitPrice || 0) * months
+  : Number(calc.amount || calc.unitPrice || 0);
 
   const newOptName = item.optionName || rawName;
 
