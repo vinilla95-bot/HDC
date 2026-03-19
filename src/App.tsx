@@ -169,25 +169,26 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   
   React.useEffect(() => { setTempValue(String(value)); }, [value]);
 
-const handleBlur = () => {
-  setIsEditing(false);
-  const n = Number(tempValue);
-  onChange(isNaN(n) ? 0 : n);  // ← Number(tempValue) || 0 → 이걸로 교체
-};
- const handleKeyDown = (e: React.KeyboardEvent) => {
-   if (e.key === "Enter") {
-  setIsEditing(false);
-  const n = Number(tempValue);
-  onChange(isNaN(n) ? 0 : n);  // ← handleBlur 호출 대신 직접
-}
-      handleBlur();
+  const handleBlur = () => {
+    setIsEditing(false);
+    const n = Number(tempValue);
+    onChange(isNaN(n) ? 0 : n);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      setIsEditing(false);
+      const n = Number(tempValue);
+      onChange(isNaN(n) ? 0 : n);
     } else if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
-      handleBlur();
+      setIsEditing(false);
+      const n = Number(tempValue);
+      onChange(isNaN(n) ? 0 : n);
       setTimeout(() => {
         const td = (e.target as HTMLElement).closest('td');
         const tds = Array.from(td?.closest('tr')?.querySelectorAll('td') || []);
-       const next = tds[tds.indexOf(td as any) + 1] as HTMLElement;
+        const next = tds[tds.indexOf(td as any) + 1] as HTMLElement;
         if (next) next.click();
       }, 50);
     } else if (e.key === "Escape") {
@@ -198,8 +199,26 @@ const handleBlur = () => {
 
   const fmtNum = (n: number) => (Number(n) || 0).toLocaleString("ko-KR");
   if (disabled) return <span>{fmtNum(value)}</span>;
-  if (isEditing) return <input ref={inputRef} type="number" value={tempValue} onChange={(e) => setTempValue(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown} style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }} />;
-  return <span onClick={() => { setTempValue(String(value)); setIsEditing(true); }} style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }} title="클릭하여 수정">{fmtNum(value)}</span>;
+  if (isEditing) return (
+    <input
+      ref={inputRef}
+      type="number"
+      value={tempValue}
+      onChange={(e) => setTempValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      style={{ width: "100%", padding: "2px 4px", textAlign: "right", border: "1px solid #ccc", fontSize: 12, boxSizing: "border-box", outline: "none" }}
+    />
+  );
+  return (
+    <span
+      onClick={() => { setTempValue(String(value)); setIsEditing(true); }}
+      style={{ cursor: "pointer", padding: 0, display: "block", textAlign: "right", width: "100%" }}
+      title="클릭하여 수정"
+    >
+      {fmtNum(value)}
+    </span>
+  );
 }
 
 
