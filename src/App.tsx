@@ -169,9 +169,17 @@ function EditableNumberCell({ value, onChange, disabled = false }: { value: numb
   
   React.useEffect(() => { setTempValue(String(value)); }, [value]);
 
-  const handleBlur = () => { setIsEditing(false); onChange(Number(tempValue) || 0); };
+const handleBlur = () => {
+  setIsEditing(false);
+  const n = Number(tempValue);
+  onChange(isNaN(n) ? 0 : n);  // ← Number(tempValue) || 0 → 이걸로 교체
+};
  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+   if (e.key === "Enter") {
+  setIsEditing(false);
+  const n = Number(tempValue);
+  onChange(isNaN(n) ? 0 : n);  // ← handleBlur 호출 대신 직접
+}
       handleBlur();
     } else if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
