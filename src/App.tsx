@@ -294,19 +294,12 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
   else if (e.key === "Tab" && !e.shiftKey) {
     e.preventDefault();
     e.stopPropagation();
-    
     const td = (e.target as HTMLElement).closest('td');
     const nextTd = td?.nextElementSibling as HTMLElement;
-    
-    if (nextTd) {
-      nextTd.setAttribute('tabindex', '0');
-      // setIsEditing(false) 직접 호출 X
-      // nextTd.focus()가 input의 onBlur를 트리거 → handleBlur() 자동 호출
-      nextTd.focus();
-      setTimeout(() => nextTd.click(), 10);
-    } else {
-      handleBlur();
-    }
+    handleBlur();
+    setTimeout(() => {
+      if (nextTd) nextTd.click();
+    }, 10);
   } else if (e.key === "Escape") { 
     setTempValue(displayText); 
     setIsEditing(false); 
@@ -2884,7 +2877,8 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
           )}
 
           {/* ✅ 품목 테이블 - 컬럼 순서 변경: 순번 | 규격 | 품목 | ... */}
-          <table className="a4Items">
+         // 변경
+<table className="a4Items" onKeyDown={(e) => { if (e.key === 'Tab') e.preventDefault(); }}>
             <colgroup>
               <col style={{ width: "7%" }} />
               <col style={{ width: "10%" }} />
