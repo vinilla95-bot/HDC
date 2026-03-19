@@ -636,10 +636,11 @@ export default function QuoteListPage({ onGoLive, onConfirmContract }: {
     const hasMonthInName = /\d+개월/.test(rawName);
     const displayName = hasMonthInName ? rawName : (rent ? `${rawName} ${months}개월` : rawName);
 
-    let customerUnitPrice = rent
-      ? Number(opt.unit_price || calculated.unitPrice || 0) * months
-      : Number(calculated.amount || calculated.unitPrice || 0);
-
+    const isAircon = rawName.includes("냉난방");
+let customerUnitPrice = (rent && !isAircon)
+  ? Number(opt.unit_price || calculated.unitPrice || 0) * months
+  : Number(calculated.amount || calculated.unitPrice || 0);
+    
     if (customerUnitPrice === 0 && showSpecValue === 'y') {
       const specW = existingLineSpec?.w > 0 ? existingLineSpec.w : (current?.w || 3);
       const specL = existingLineSpec?.l > 0 ? existingLineSpec.l : (current?.l || 6);
