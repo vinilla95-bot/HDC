@@ -889,8 +889,9 @@ let customerUnitPrice = (rent && !isAircon)
           site_name: editForm?.site_name ?? current.site_name,
           site_addr: rentalForm.siteAddr || current.site_addr,
           spec: editForm?.spec ?? current.spec,
-          memo: memoJson,
+      memo: memoJson,
           contract_start: contractStartISO,
+          bizcard_id: selectedBizcardId,
         })
         .eq("quote_id", current.quote_id)
         .select();
@@ -989,6 +990,7 @@ let customerUnitPrice = (rent && !isAircon)
           customer_phone: editForm?.customer_phone ?? current!.customer_phone,
           customer_email: editForm?.customer_email ?? current!.customer_email,
           site_name: editForm?.site_name ?? current!.site_name,
+          bizcard_id: selectedBizcardId,
         })
         .eq("quote_id", current!.quote_id)
         .select();
