@@ -901,7 +901,10 @@ let customerUnitPrice = (rent && !isAircon)
       setEditMode(false);
       if (isMobile) setMobileView('detail');
       await loadList(q);
-      if (data && data[0]) setCurrent(data[0] as QuoteRow);
+   if (data && data[0]) {
+        setCurrent(data[0] as QuoteRow);
+        if ((data[0] as any).bizcard_id) setSelectedBizcardId((data[0] as any).bizcard_id);
+      }
     } catch (e: any) {
       toast("저장 실패: " + (e?.message || String(e)));
     }
