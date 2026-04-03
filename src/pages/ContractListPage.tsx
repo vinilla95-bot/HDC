@@ -641,20 +641,37 @@ const handleDelete = async (quote_id: string, customer_name: string) => {
                       </button>
                     </td>
                     <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
-                      <button
-                        onClick={() => handleDelete(c.quote_id, c.customer_name)}
-                        style={{
-                          padding: "4px 8px",
-                          background: "#dc3545",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 4,
-                          fontSize: 11,
-                          cursor: "pointer",
-                        }}
-                      >
-                        삭제
-                      </button>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <button
+                          onClick={() => handleMoveToOptionInventory(c)}
+                          style={{
+                            padding: "4px 8px",
+                            background: "#7c3aed",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            fontSize: 10,
+                            cursor: "pointer",
+                            fontWeight: 600,
+                          }}
+                        >
+                          →옵션재고
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c.quote_id, c.customer_name)}
+                          style={{
+                            padding: "4px 8px",
+                            background: "#dc3545",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            fontSize: 11,
+                            cursor: "pointer",
+                          }}
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -666,6 +683,33 @@ const handleDelete = async (quote_id: string, customer_name: string) => {
     </>
   );
 
+  const handleMoveToOptionInventory = async (quote: any) => {
+  if (!confirm(`"${quote.customer_name} / ${quote.spec}" 을 옵션형 재고로 이동하시겠습니까?\n(계약 취소 처리 후 재고에 출고대기로 등록됩니다)`)) return;
+
+  const { error: insertError } = await supabase.from("inventory").insert({
+    quote_id: `OPT_${quote.quote_id}_${Date.now()}`,
+    contract_date: new Date().toISOString().slice(0, 10),
+    drawing_no: quote.drawing_no || "",
+    spec: quote.spec || "",
+    customer_name: quote.customer_name || "",
+    interior: quote.items?.map((i: any) => i.displayName || i.optionName || "").filter(Boolean).join(", ") || "",
+    delivery_date: "",
+    total_amount: quote.total_amount || 0,
+    items: quote.items || [],
+    deposit_status: "대기",
+    inventory_status: "출고대기",
+    container_type: "옵션형",   // ← 핵심
+    special_order: false,
+  });
+
+  if (insertError) { alert("이동 실패: " + insertError.message); return; }
+
+  // 원본 계약은 취소 상태로 변경 (원하면 삭제로 변경 가능)
+  await supabase.from("quotes").update({ status: "cancelled" }).eq("quote_id", quote.quote_id);
+
+ alert("옵션형 재고로 이동 완료!");
+  loadContracts();
+};
 
   // 통합 카운트 계산 (중복 제거)
 const allCount = useMemo(() => {
