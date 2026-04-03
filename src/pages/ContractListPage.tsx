@@ -323,7 +323,7 @@ drawing_no: newItem.drawing_no ? String(parseInt(newItem.drawing_no) + i) : Stri
       special_order: false,
       interior: "",
       depositor: "",
-      delivery_date: "",
+      delivery_date: null,
       qty: 1,
     });
     loadContracts();
@@ -693,7 +693,7 @@ const handleDelete = async (quote_id: string, customer_name: string) => {
     spec: quote.spec || "",
     customer_name: quote.customer_name || "",
     interior: quote.items?.map((i: any) => i.displayName || i.optionName || "").filter(Boolean).join(", ") || "",
-    delivery_date: "",
+  delivery_date: null,
     total_amount: quote.total_amount || 0,
     items: quote.items || [],
     deposit_status: "대기",
@@ -764,7 +764,7 @@ const allCount = useMemo(() => {
       special_order: false,
       interior: "",
       depositor: "",
-      delivery_date: "",
+      delivery_date: null,
       qty: 1,
     });
     setShowAddModal(true);
