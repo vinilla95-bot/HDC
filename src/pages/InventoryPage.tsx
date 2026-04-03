@@ -337,13 +337,6 @@ const waitingBySpec = useMemo(() => {
     return grouped;
   }, [optionWaitingItems]);
   
-    const grouped: { [key: string]: number } = {};
-    waitingItems.forEach(item => {
-      const spec = normalizeSpec(item.spec) || item.spec || "미정";
-      grouped[spec] = (grouped[spec] || 0) + 1;
-    });
-    return grouped;
-  }, [waitingItems]);
 
   const updateField = async (quote_id: string, field: string, value: any) => {
     const { error } = await supabase.from("inventory").update({ [field]: value }).eq("quote_id", quote_id);
@@ -543,7 +536,7 @@ const waitingBySpec = useMemo(() => {
                           </td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.container_type || "신품"} onChange={(e) => updateField(item.quote_id, "container_type", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}>
-                             <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option></div>
+                             <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option>
                             </select>
                           </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
@@ -750,7 +743,7 @@ const waitingBySpec = useMemo(() => {
               <input type="date" value={newItem.contract_date} onChange={(e) => setNewItem({ ...newItem, contract_date: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>상태</label><select value={newItem.inventory_status} onChange={(e) => setNewItem({ ...newItem, inventory_status: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="작업지시완료">작업지시완료</option><option value="출고대기">출고대기</option><option value="찜">찜</option><option value="출고완료">출고완료</option></select></div>
-            <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label><select value={newItem.container_type} onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option></select>
+            <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label><select value={newItem.container_type} onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option></select></div>
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>도면번호<span style={{ color: "#2e5b86", fontSize: 12, fontWeight: 600 }}> 이번달 시작번호: {nextDrawingNo}번 (매월 1번부터 시작)</span></label><input value={newItem.drawing_no} onChange={(e) => setNewItem({ ...newItem, drawing_no: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} placeholder={String(nextDrawingNo)} /></div>
               <div style={{ width: 80 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label><input type="number" min={1} value={newItem.qty} onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} /></div>
