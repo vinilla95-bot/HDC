@@ -370,7 +370,8 @@ const waitingBySpec = useMemo(() => {
     const inserts = [];
     for (let i = 0; i < qty; i++) {
       inserts.push({
-        quote_id: `INV_${Date.now()}_${i}`, contract_date: newItem.contract_date, drawing_no: String(startNo + i),
+       inserts.push({
+  quote_id: `INV_${Date.now()}_${i}`, contract_date: newItem.contract_date || null, drawing_no: String(startNo + i),
         customer_name: newItem.customer_name, spec: newItem.spec, inventory_status: newItem.inventory_status,
         container_type: newItem.container_type, total_amount: newItem.total_amount, deposit_status: newItem.deposit_status, items: [],
       });
