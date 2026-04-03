@@ -52,7 +52,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
     special_order: false,
     interior: "",
     depositor: "",
-    delivery_date: "",
+    delivery_date: null,
     qty: 1,
   });
 
