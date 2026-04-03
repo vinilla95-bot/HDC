@@ -314,7 +314,7 @@ const nextDrawingNo = useMemo(() => {
   const waitingItems = useMemo(() => allItems.filter(item => item.inventory_status === "출고대기"), [allItems]);
 const waitingBySpec = useMemo(() => {
     const grouped: { [key: string]: number } = {};
-    waitingItems.forEach(item => {
+    waitingItems.filter(item => item.container_type !== "옵션형").forEach(item => {
       const spec = normalizeSpec(item.spec) || item.spec || "미정";
       grouped[spec] = (grouped[spec] || 0) + 1;
     });
@@ -473,7 +473,7 @@ const waitingBySpec = useMemo(() => {
               </div>
             </div>
             <div style={{ background: "#fff", borderRadius: 12, padding: 20, border: "1px solid #e5e7eb" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#ffc107", marginBottom: 12 }}>출고대기 <span style={{ background: "#ffc107", color: "#000", padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>{waitingItems.length}대</span></div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#ffc107", marginBottom: 12 }}>출고대기 <span style={{ background: "#ffc107", color: "#000", padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>{waitingItems.filter(i => i.container_type !== "옵션형").length}대</span></div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 {["3x3", "3x4", "3x6", "3x9"].map(spec => (
                   <div key={spec} onClick={() => setSpecFilter(specFilter === spec ? null : spec)} style={{ background: specFilter === spec ? "#ffc107" : "#fffbeb", padding: "10px 16px", borderRadius: 8, textAlign: "center", minWidth: 60, cursor: "pointer", border: specFilter === spec ? "2px solid #e65100" : "2px solid transparent" }}>
