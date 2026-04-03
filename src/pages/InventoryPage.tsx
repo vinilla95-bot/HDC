@@ -369,7 +369,7 @@ const waitingBySpec = useMemo(() => {
     const startNo = newItem.drawing_no ? parseInt(newItem.drawing_no) || nextDrawingNo : nextDrawingNo;
     const inserts = [];
     for (let i = 0; i < qty; i++) {
-      inserts.push({
+     
        inserts.push({
   quote_id: `INV_${Date.now()}_${i}`, contract_date: newItem.contract_date || null, drawing_no: String(startNo + i),
         customer_name: newItem.customer_name, spec: newItem.spec, inventory_status: newItem.inventory_status,
