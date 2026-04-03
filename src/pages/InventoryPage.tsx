@@ -312,23 +312,31 @@ const nextDrawingNo = useMemo(() => {
 }, [allItems, allQuotes]);
 
   const waitingItems = useMemo(() => allItems.filter(item => item.inventory_status === "출고대기"), [allItems]);
-  const waitingBySpec = useMemo(() => {
-    // 기존 waitingBySpec useMemo 바로 아래에 추가
-const optionWaitingItems = useMemo(
-  () => allItems.filter(
-    item => item.container_type === "옵션형" && item.inventory_status === "출고대기"
-  ),
-  [allItems]
-);
+const waitingBySpec = useMemo(() => {
+    const grouped: { [key: string]: number } = {};
+    waitingItems.forEach(item => {
+      const spec = normalizeSpec(item.spec) || item.spec || "미정";
+      grouped[spec] = (grouped[spec] || 0) + 1;
+    });
+    return grouped;
+  }, [waitingItems]);
 
-const optionWaitingSpecs = useMemo(() => {
-  const grouped: { [key: string]: number } = {};
-  optionWaitingItems.forEach(item => {
-    const spec = normalizeSpec(item.spec) || item.spec || "미정";
-    grouped[spec] = (grouped[spec] || 0) + 1;
-  });
-  return grouped;
-}, [optionWaitingItems]);
+  const optionWaitingItems = useMemo(
+    () => allItems.filter(
+      item => item.container_type === "옵션형" && item.inventory_status === "출고대기"
+    ),
+    [allItems]
+  );
+
+  const optionWaitingSpecs = useMemo(() => {
+    const grouped: { [key: string]: number } = {};
+    optionWaitingItems.forEach(item => {
+      const spec = normalizeSpec(item.spec) || item.spec || "미정";
+      grouped[spec] = (grouped[spec] || 0) + 1;
+    });
+    return grouped;
+  }, [optionWaitingItems]);
+  
     const grouped: { [key: string]: number } = {};
     waitingItems.forEach(item => {
       const spec = normalizeSpec(item.spec) || item.spec || "미정";
@@ -535,7 +543,7 @@ const optionWaitingSpecs = useMemo(() => {
                           </td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.container_type || "신품"} onChange={(e) => updateField(item.quote_id, "container_type", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}>
-                             <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option>
+                             <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option></div>
                             </select>
                           </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
