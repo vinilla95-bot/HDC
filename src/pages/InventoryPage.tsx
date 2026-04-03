@@ -264,7 +264,9 @@ const [specFilter, setSpecFilter] = useState<string | null>(null);  // ← 이 �
 
 const filteredItems = useMemo(() => {
     let items = allItems;
-    if (specFilter) {
+    if (specFilter === "옵션형") {
+      items = items.filter(item => item.container_type === "옵션형" && item.inventory_status === "출고대기");
+    } else if (specFilter) {
       items = items.filter(item => normalizeSpec(item.spec) === specFilter && item.inventory_status === "출고대기");
     }
     if (depositTab === "all") return items;
@@ -311,6 +313,22 @@ const nextDrawingNo = useMemo(() => {
 
   const waitingItems = useMemo(() => allItems.filter(item => item.inventory_status === "출고대기"), [allItems]);
   const waitingBySpec = useMemo(() => {
+    // 기존 waitingBySpec useMemo 바로 아래에 추가
+const optionWaitingItems = useMemo(
+  () => allItems.filter(
+    item => item.container_type === "옵션형" && item.inventory_status === "출고대기"
+  ),
+  [allItems]
+);
+
+const optionWaitingSpecs = useMemo(() => {
+  const grouped: { [key: string]: number } = {};
+  optionWaitingItems.forEach(item => {
+    const spec = normalizeSpec(item.spec) || item.spec || "미정";
+    grouped[spec] = (grouped[spec] || 0) + 1;
+  });
+  return grouped;
+}, [optionWaitingItems]);
     const grouped: { [key: string]: number } = {};
     waitingItems.forEach(item => {
       const spec = normalizeSpec(item.spec) || item.spec || "미정";
@@ -461,6 +479,28 @@ const nextDrawingNo = useMemo(() => {
                     <div style={{ fontSize: 11, color: specFilter === spec ? "#000" : "#666", fontWeight: specFilter === spec ? 700 : 400 }}>{spec}</div>
                   </div>
                 ))}
+                {/* 옵션형 박스 */}
+<div
+  onClick={() => setSpecFilter(specFilter === "옵션형" ? null : "옵션형")}
+  style={{
+    background: specFilter === "옵션형" ? "#c084fc" : "#faf5ff",
+    padding: "10px 16px", borderRadius: 8, textAlign: "center", minWidth: 60,
+    cursor: "pointer",
+    border: specFilter === "옵션형" ? "2px solid #7c3aed" : "2px solid transparent"
+  }}
+>
+  <div style={{ fontSize: 20, fontWeight: 900, color: specFilter === "옵션형" ? "#fff" : "#7c3aed" }}>
+    {optionWaitingItems.length}
+  </div>
+  <div style={{ fontSize: 11, color: specFilter === "옵션형" ? "#fff" : "#7c3aed", fontWeight: 700 }}>
+    옵션형
+  </div>
+  {Object.entries(optionWaitingSpecs).length > 0 && (
+    <div style={{ fontSize: 9, color: specFilter === "옵션형" ? "#f3e8ff" : "#9ca3af", marginTop: 2, lineHeight: 1.4 }}>
+      {Object.entries(optionWaitingSpecs).map(([s, n]) => `${s}×${n}`).join(" ")}
+    </div>
+  )}
+</div>
               </div>
             
             </div>
@@ -495,7 +535,7 @@ const nextDrawingNo = useMemo(() => {
                           </td>
                           <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
                             <select value={item.container_type || "신품"} onChange={(e) => updateField(item.quote_id, "container_type", e.target.value)} style={{ padding: 4, border: "1px solid #ddd", borderRadius: 4, fontSize: 11 }}>
-                              <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option>
+                             <option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option>
                             </select>
                           </td>
                         <td style={{ padding: 8, border: "1px solid #eee", textAlign: "center" }}>
@@ -702,7 +742,7 @@ const nextDrawingNo = useMemo(() => {
               <input type="date" value={newItem.contract_date} onChange={(e) => setNewItem({ ...newItem, contract_date: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>상태</label><select value={newItem.inventory_status} onChange={(e) => setNewItem({ ...newItem, inventory_status: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="작업지시완료">작업지시완료</option><option value="출고대기">출고대기</option><option value="찜">찜</option><option value="출고완료">출고완료</option></select></div>
-            <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label><select value={newItem.container_type} onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option></select></div>
+            <div style={{ marginBottom: 12 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>타입</label><select value={newItem.container_type} onChange={(e) => setNewItem({ ...newItem, container_type: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8 }}><option value="신품">신품</option><option value="중고">중고</option><option value="리스">리스</option><option value="옵션형">옵션형</option></select>
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>도면번호<span style={{ color: "#2e5b86", fontSize: 12, fontWeight: 600 }}> 이번달 시작번호: {nextDrawingNo}번 (매월 1번부터 시작)</span></label><input value={newItem.drawing_no} onChange={(e) => setNewItem({ ...newItem, drawing_no: e.target.value })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} placeholder={String(nextDrawingNo)} /></div>
               <div style={{ width: 80 }}><label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>수량</label><input type="number" min={1} value={newItem.qty} onChange={(e) => setNewItem({ ...newItem, qty: Number(e.target.value) || 1 })} style={{ width: "100%", padding: 10, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }} /></div>
