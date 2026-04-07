@@ -16,8 +16,8 @@ export const roundToTenThousand = (val: number) => {
 const CONTAINER_FIXED_PRICES_W3: Record<number, number> = {
   3: 1650000,   // 3x3
   4: 1750000,   // 3x4
-  5: 2200000,   // 3x5
-  6: 2250000,   // 3x6
+  5: 2250000,   // 3x5
+  6: 2300000,   // 3x6
   7: 2600000,   // 3x7
   8: 3150000,   // 3x8
   9: 3250000,   // 3x9
