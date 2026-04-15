@@ -1028,26 +1028,33 @@ let customerUnitPrice = (rent && !isAircon)
         .or("source.is.null,source.eq.통화녹음")
         .not("quote_id", "like", "SCHEDULE_%")
         .not("quote_id", "like", "KAKAO_%")
-        .gte("created_at", oneMonthAgo.toISOString())
+
        .order("created_at", { ascending: false, nullsFirst: false })
         .limit(200);
 
-      const kw = (keyword || "").trim();
-      if (kw) {
-        const like = `%${kw}%`;
-        query = query.or([
-          `quote_id.ilike.${like}`,
-          `customer_name.ilike.${like}`,
-          `spec.ilike.${like}`,
-          `quote_title.ilike.${like}`,
-          `site_name.ilike.${like}`,
-        ].join(","));
-      }
-      if (dateFilter) {
-        const startOfDay = `${dateFilter}T00:00:00`;
-        const endOfDay = `${dateFilter}T23:59:59`;
-        query = query.gte("created_at", startOfDay).lte("created_at", endOfDay);
-      }
+  const kw = (keyword || "").trim();
+
+if (!kw && !dateFilter) {
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  query = query.gte("created_at", oneMonthAgo.toISOString());
+}
+
+if (kw) {
+  const like = `%${kw}%`;
+  query = query.or([
+    `quote_id.ilike.${like}`,
+    `customer_name.ilike.${like}`,
+    `spec.ilike.${like}`,
+    `quote_title.ilike.${like}`,
+    `site_name.ilike.${like}`,
+  ].join(","));
+}
+if (dateFilter) {
+  const startOfDay = `${dateFilter}T00:00:00`;
+  const endOfDay = `${dateFilter}T23:59:59`;
+  query = query.gte("created_at", startOfDay).lte("created_at", endOfDay);
+}
 
       const { data, error } = await query;
       if (error) throw error;
