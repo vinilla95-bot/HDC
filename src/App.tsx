@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import QuoteListPage from "./pages/QuoteListPage";
+import QuoteListPage, { QuoteErrorBoundary } from "./pages/QuoteListPage";
 import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
@@ -1970,15 +1970,17 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
   );
 
   // ✅ 전체견적 화면
-  const listScreen = (
-    <div style={{ minHeight: "100vh" }}>
-      <NavBar current="list" />
+ const listScreen = (
+  <div style={{ minHeight: "100vh" }}>
+    <NavBar current="list" />
+    <QuoteErrorBoundary>
       <QuoteListPage
         onGoLive={() => setView("rt")}
         onConfirmContract={() => setView("contract")}
       />
-    </div>
-  );
+    </QuoteErrorBoundary>
+  </div>
+);
 
   // ✅ 계약견적 화면
   const contractScreen = (
