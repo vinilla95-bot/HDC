@@ -5,7 +5,7 @@ import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine, searchSiteRates } from "../QuoteService";
 import { A4Quote } from "../App";
 
-export class QuoteErrorBoundary extends React.Component
+export class QuoteErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: string }
 > {
