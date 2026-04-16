@@ -617,40 +617,31 @@ if (item.contract_type === "memo") {
 
   // ✅ 삭제
   const handleDelete = async () => {
-    if (!selectedDelivery) return;
+  if (!selectedDelivery) return;
+
+  if (selectedDelivery.source === "inventory") {
+    if (!confirm("출고일정에서 제거하시겠습니까?\n(재고 목록에는 그대로 유지됩니다)")) return;
     
-    if (selectedDelivery.source === "inventory") {
-      if (!confirm("정말 삭제하시겠습니까?")) return;
-      
-      const { error } = await supabase
-        .from("inventory")
-        .delete()
-        .eq("id", selectedDelivery.inventory_id);
+    const { error } = await supabase
+      .from("inventory")
+      .update({ delivery_date: null, dispatch_status: null })
+      .eq("id", selectedDelivery.inventory_id);
 
-      if (error) {
-        alert("삭제 실패: " + error.message);
-        return;
-      }
-    } else {
-      if (!confirm("출고일정에서 제거하시겠습니까?\n(견적/계약 목록에는 그대로 유지됩니다)")) return;
-      
-      const { error } = await supabase
-        .from("quotes")
-        .update({ 
-          delivery_date: null,
-          dispatch_status: null,
-        })
-        .eq("quote_id", selectedDelivery.quote_id);
+    if (error) { alert("제거 실패: " + error.message); return; }
+  } else {
+    if (!confirm("출고일정에서 제거하시겠습니까?\n(견적/계약 목록에는 그대로 유지됩니다)")) return;
+    
+    const { error } = await supabase
+      .from("quotes")
+      .update({ delivery_date: null, dispatch_status: null })
+      .eq("quote_id", selectedDelivery.quote_id);
 
-      if (error) {
-        alert("제거 실패: " + error.message);
-        return;
-      }
-    }
+    if (error) { alert("제거 실패: " + error.message); return; }
+  }
 
-    setDeliveries(prev => prev.filter(d => d.quote_id !== selectedDelivery.quote_id));
-    setSelectedDelivery(null);
-  };
+  setDeliveries(prev => prev.filter(d => d.quote_id !== selectedDelivery.quote_id));
+  setSelectedDelivery(null);
+};
 
   // ✅ 날짜별 출고 그룹핑
   const deliveriesByDate = useMemo(() => {
