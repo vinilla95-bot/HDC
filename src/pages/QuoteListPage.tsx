@@ -5,11 +5,11 @@ import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine, searchSiteRates } from "../QuoteService";
 import { A4Quote } from "../App";
 
-class QuoteErrorBoundary extends React.Component
+export class QuoteErrorBoundary extends React.Component
   { children: React.ReactNode },
   { hasError: boolean; error: string }
 > {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false, error: "" };
   }
@@ -19,12 +19,12 @@ class QuoteErrorBoundary extends React.Component
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 40, textAlign: 'center', color: '#c00' }}>
+        <div style={{ padding: 40, textAlign: "center", color: "#c00" }}>
           <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 12 }}>⚠️ 화면 오류 발생</div>
-          <div style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>{this.state.error}</div>
+          <div style={{ fontSize: 13, color: "#666", marginBottom: 20 }}>{this.state.error}</div>
           <button
             onClick={() => { this.setState({ hasError: false, error: "" }); window.location.reload(); }}
-            style={{ padding: '10px 24px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
+            style={{ padding: "10px 24px", background: "#111", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}
           >
             새로고침
           </button>
