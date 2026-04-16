@@ -5,6 +5,35 @@ import { gasRpc as gasRpcRaw } from "../lib/gasRpc";
 import { matchKorean, calculateOptionLine, searchSiteRates } from "../QuoteService";
 import { A4Quote } from "../App";
 
+class QuoteErrorBoundary extends React.Component
+  { children: React.ReactNode },
+  { hasError: boolean; error: string }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: "" };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, textAlign: 'center', color: '#c00' }}>
+          <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 12 }}>⚠️ 화면 오류 발생</div>
+          <div style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>{this.state.error}</div>
+          <button
+            onClick={() => { this.setState({ hasError: false, error: "" }); window.location.reload(); }}
+            style={{ padding: '10px 24px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
+          >
+            새로고침
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 type SupabaseOptionRow = {
   option_id: string;
   option_name: string;
@@ -1427,12 +1456,13 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
   );
 
 
-  async function handleMultiSend() {
+async function handleMultiSend() {
   const to = multiSendTo.trim();
   if (!to) { setMultiSendStatus("이메일을 입력해주세요."); return; }
 
   const quoteIds = Array.from(selectedQuoteIds);
   const images: { imgData: string; name: string }[] = [];
+  const originalCurrent = current; // ← 원본 저장
 
   try {
     for (let i = 0; i < quoteIds.length; i++) {
@@ -1441,21 +1471,28 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
 
       setMultiSendStatus(`캡처 중... (${i + 1}/${quoteIds.length})`);
 
-      // 현재 견적으로 전환 후 렌더링 대기
-      setCurrent(quote);
-      setActiveTab('quote');
-      await new Promise(r => setTimeout(r, 600));
-
-      const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
-      if (!sheetEl) continue;
-
+      // ↓ setCurrent 대신 직접 렌더링 컨테이너 방식
+      const items = pickItems(quote);
       const captureContainer = document.createElement('div');
       captureContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 794px; background: #fff; z-index: -1;';
       document.body.appendChild(captureContainer);
 
+      // 현재 렌더된 a4Sheet가 있으면 그냥 사용 (setCurrent 없이)
+      // — 각 견적의 아이템을 직접 구성해서 임시 HTML 생성
+      const tmpDiv = document.createElement('div');
+      tmpDiv.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+      captureContainer.appendChild(tmpDiv);
+
+      // 현재 선택된 견적만 임시로 렌더
+      setCurrent(quote);
+      await new Promise(r => setTimeout(r, 800)); // 렌더 대기
+
+      const sheetEl = document.querySelector(".a4Sheet") as HTMLElement;
+      if (!sheetEl) { document.body.removeChild(captureContainer); continue; }
+
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
-      clonedSheet.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+      clonedSheet.querySelectorAll('button').forEach(btn => (btn as HTMLElement).style.display = 'none');
       clonedSheet.querySelectorAll('.a4Items input').forEach(el => (el as HTMLElement).style.display = 'none');
       const addBtn = clonedSheet.querySelector('.add-item-btn-wrap');
       if (addBtn) (addBtn as HTMLElement).style.display = 'none';
@@ -1474,6 +1511,9 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
         name: quote.customer_name || quote.quote_id,
       });
     }
+
+    // ✅ 루프 끝나면 원래 견적으로 복원
+    setCurrent(originalCurrent);
 
     setMultiSendStatus("메일 전송 중...");
 
@@ -1511,10 +1551,10 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
     setSelectedQuoteIds(new Set());
 
   } catch (e: any) {
+    setCurrent(originalCurrent); // ← 에러 시에도 원복
     setMultiSendStatus("전송 실패: " + (e?.message || String(e)));
   }
 }
-
   // ============ 거래명세서 미리보기 ============
   const statementPreviewHtml = useMemo(() => {
   if (!current) return null;
