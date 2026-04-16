@@ -339,11 +339,13 @@ const waitingBySpec = useMemo(() => {
   
 
   const updateField = async (quote_id: string, field: string, value: any) => {
-    const { error } = await supabase.from("inventory").update({ [field]: value }).eq("quote_id", quote_id);
-    if (error) { alert(`업데이트 실패: ${error.message}`); return; }
-    setAllItems(prev => prev.map(c => c.quote_id === quote_id ? { ...c, [field]: value } : c));
-  };
-
+  const dbValue = (field === "delivery_date" || field === "contract_date") && value === ""
+    ? null
+    : value;
+  const { error } = await supabase.from("inventory").update({ [field]: dbValue }).eq("quote_id", quote_id);
+  if (error) { alert(`업데이트 실패: ${error.message}`); return; }
+  setAllItems(prev => prev.map(c => c.quote_id === quote_id ? { ...c, [field]: value } : c));
+};
   const handleMoveToContract = async (item: InventoryItem, targetType: string) => {
     const typeName = targetType === "order" ? "수주" : "영업소";
     if (!confirm(`이 항목을 계약견적 "${typeName}"으로 이동하시겠습니까?`)) return;
