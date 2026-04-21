@@ -1111,6 +1111,14 @@ if (dateFilter) {
 
   async function handleSendEmail() {
     requireCurrent();
+    
+    // ✅ 편집모드면 먼저 저장하고 종료
+    if (editMode) {
+      setSendStatus("저장 중...");
+      await saveEditMode();
+      await new Promise(r => setTimeout(r, 500));
+    }
+    
     const quoteId = current!.quote_id;
     const to = sendTo.trim() || (current!.customer_email || "").trim();
     if (!to) { setSendStatus("수신 이메일이 비어있습니다."); return; }
@@ -1134,7 +1142,7 @@ if (dateFilter) {
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${captureHeight}px; background: #fff; padding: 16px; box-sizing: border-box;`;
 
-      const clonedSelects = clonedSheet.querySelectorAll('select');
+    const clonedSelects = clonedSheet.querySelectorAll('select');
       const originalSelects = sheetEl.querySelectorAll('select');
       clonedSelects.forEach((select, idx) => {
         const origSelect = originalSelects[idx] as HTMLSelectElement;
@@ -1143,6 +1151,39 @@ if (dateFilter) {
         span.textContent = selectedText;
         span.style.cssText = 'font-size: 13px;';
         select.parentNode?.replaceChild(span, select);
+      });
+
+      // ✅ 편집 UI 숨김
+      clonedSheet.querySelectorAll('button').forEach(btn => {
+        const txt = btn.textContent || '';
+        const color = (btn as HTMLElement).style.color;
+        if (txt === '✕' || txt === '삭제' || txt === '+ 품목 추가' || txt === '+ 조항 추가' || color === 'rgb(229, 57, 53)') {
+          (btn as HTMLElement).style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Items input').forEach(input => {
+        (input as HTMLElement).style.display = 'none';
+      });
+      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        const input = el as HTMLInputElement;
+        input.removeAttribute('placeholder');
+        if (!input.value) {
+          input.style.color = 'transparent';
+          input.style.caretColor = 'transparent';
+        }
+      });
+      clonedSheet.querySelectorAll('span').forEach((el) => {
+        const span = el as HTMLSpanElement;
+        const text = span.textContent || '';
+        if (text.includes('품목 검색') || text.includes('품목 선택') || text.includes('검색...')) {
+          span.style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+        const input = el as HTMLInputElement;
+        if (!input.value) input.style.display = 'none';
       });
 
       captureContainer.appendChild(clonedSheet);
@@ -1236,6 +1277,39 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
         select.parentNode?.replaceChild(span, select);
       });
 
+      // ✅ 편집 UI 숨김 (메일 전송용 클린업)
+      clonedSheet.querySelectorAll('button').forEach(btn => {
+        const txt = btn.textContent || '';
+        const color = (btn as HTMLElement).style.color;
+        if (txt === '✕' || txt === '삭제' || txt === '+ 품목 추가' || txt === '+ 조항 추가' || color === 'rgb(229, 57, 53)') {
+          (btn as HTMLElement).style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Items input').forEach(input => {
+        (input as HTMLElement).style.display = 'none';
+      });
+      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        const input = el as HTMLInputElement;
+        input.removeAttribute('placeholder');
+        if (!input.value) {
+          input.style.color = 'transparent';
+          input.style.caretColor = 'transparent';
+        }
+      });
+      clonedSheet.querySelectorAll('span').forEach((el) => {
+        const span = el as HTMLSpanElement;
+        const text = span.textContent || '';
+        if (text.includes('품목 검색') || text.includes('품목 선택') || text.includes('검색...')) {
+          span.style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+        const input = el as HTMLInputElement;
+        if (!input.value) input.style.display = 'none';
+      });
+
       captureContainer.appendChild(clonedSheet);
       await new Promise(r => setTimeout(r, 300));
 
@@ -1275,21 +1349,48 @@ if (result.ok === false) throw new Error(result.message || "전송 실패");
       const styleTag = document.querySelector('#docPreview style');
       if (styleTag) captureContainer.appendChild(styleTag.cloneNode(true));
 
-      const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
-      clonedSheet.style.cssText = `width: ${captureWidth}px; min-height: ${isStatement ? 600 : 1123}px; background: #fff; padding: 16px; box-sizing: border-box;`;
-
-      clonedSheet.querySelectorAll('select').forEach((select, idx) => {
-        const origSelect = sheetEl.querySelectorAll('select')[idx] as HTMLSelectElement;
+ const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
+      clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
+      
+      // select → span 변환
+      const clonedSelectsM = clonedSheet.querySelectorAll('select');
+      const originalSelectsM = sheetEl.querySelectorAll('select');
+      clonedSelectsM.forEach((select, idx) => {
+        const origSelect = originalSelectsM[idx] as HTMLSelectElement;
+        const selectedText = origSelect?.options[origSelect.selectedIndex]?.text || '';
         const span = document.createElement('span');
-        span.textContent = origSelect.options[origSelect.selectedIndex]?.text || '';
+        span.textContent = selectedText;
         span.style.cssText = 'font-size: 13px;';
         select.parentNode?.replaceChild(span, select);
       });
-      clonedSheet.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
-      clonedSheet.querySelectorAll('.a4Items input').forEach(input => (input as HTMLElement).style.display = 'none');
-      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
-      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
-
+      
+      // 버튼 숨김
+      clonedSheet.querySelectorAll('button').forEach(btn => (btn as HTMLElement).style.display = 'none');
+      clonedSheet.querySelectorAll('.a4Items input').forEach(el => (el as HTMLElement).style.display = 'none');
+      const addBtn = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtn) (addBtn as HTMLElement).style.display = 'none';
+      
+      // placeholder 제거
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        const input = el as HTMLInputElement;
+        input.removeAttribute('placeholder');
+        if (!input.value) {
+          input.style.color = 'transparent';
+          input.style.caretColor = 'transparent';
+        }
+      });
+      clonedSheet.querySelectorAll('span').forEach((el) => {
+        const span = el as HTMLSpanElement;
+        const text = span.textContent || '';
+        if (text.includes('품목 검색') || text.includes('품목 선택') || text.includes('검색...')) {
+          span.style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+        const input = el as HTMLInputElement;
+        if (!input.value) input.style.display = 'none';
+      });
+      
       captureContainer.appendChild(clonedSheet);
       await new Promise(r => setTimeout(r, 300));
 
@@ -1492,10 +1593,32 @@ async function handleMultiSend() {
 
       const clonedSheet = sheetEl.cloneNode(true) as HTMLElement;
       clonedSheet.style.cssText = 'width: 794px; min-height: 1123px; background: #fff; padding: 16px; box-sizing: border-box;';
-      clonedSheet.querySelectorAll('button').forEach(btn => (btn as HTMLElement).style.display = 'none');
-      clonedSheet.querySelectorAll('.a4Items input').forEach(el => (el as HTMLElement).style.display = 'none');
-      const addBtn = clonedSheet.querySelector('.add-item-btn-wrap');
-      if (addBtn) (addBtn as HTMLElement).style.display = 'none';
+     clonedSheet.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+      clonedSheet.querySelectorAll('.a4Items input').forEach(input => (input as HTMLElement).style.display = 'none');
+      const addBtnWrap = clonedSheet.querySelector('.add-item-btn-wrap');
+      if (addBtnWrap) (addBtnWrap as HTMLElement).style.display = 'none';
+
+      // ✅ placeholder 제거
+      clonedSheet.querySelectorAll('input, textarea').forEach((el) => {
+        const input = el as HTMLInputElement;
+        input.removeAttribute('placeholder');
+        if (!input.value) {
+          input.style.color = 'transparent';
+          input.style.caretColor = 'transparent';
+        }
+      });
+      clonedSheet.querySelectorAll('span').forEach((el) => {
+        const span = el as HTMLSpanElement;
+        const text = span.textContent || '';
+        if (text.includes('품목 검색') || text.includes('품목 선택') || text.includes('검색...')) {
+          span.style.display = 'none';
+        }
+      });
+      clonedSheet.querySelectorAll('.a4Info input').forEach((el) => {
+        const input = el as HTMLInputElement;
+        if (!input.value) input.style.display = 'none';
+      });
+
       captureContainer.appendChild(clonedSheet);
 
       await new Promise(r => setTimeout(r, 300));
