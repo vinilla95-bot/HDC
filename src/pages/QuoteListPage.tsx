@@ -905,13 +905,26 @@ let customerUnitPrice = (rent && !isAircon)
           vat_amount: vat,
           total_amount: total,
           updated_at: new Date().toISOString(),
-          created_at: (() => {
+        created_at: (() => {
             if (!editForm?.quoteDate) return current.created_at;
+            // ✅ 견적일자 기준으로 created_at 설정
+            // 시분초는 original의 값을 유지 (같은 날짜 내 상대순서 보존)
             const originalDate = current.created_at ? new Date(current.created_at) : new Date();
             const [y, m, d] = editForm.quoteDate.split('-').map(Number);
-            originalDate.setFullYear(y, m - 1, d);
-            return originalDate.toISOString();
+            
+            // 원본 날짜와 새 날짜가 같으면 그대로 유지
+            const origDateStr = originalDate.toISOString().slice(0, 10);
+            const newDateStr = editForm.quoteDate;
+            if (origDateStr === newDateStr) {
+              return current.created_at;
+            }
+            
+            // 날짜가 바뀌었다면 → 해당 날짜의 정오(12:00)로 설정
+            // (시분초 섞여서 정렬 혼란 방지)
+            const newDate = new Date(y, m - 1, d, 12, 0, 0);
+            return newDate.toISOString();
           })(),
+      
           customer_name: editForm?.customer_name ?? current.customer_name,
           customer_email: editForm?.customer_email ?? current.customer_email,
           customer_phone: editForm?.customer_phone ?? current.customer_phone,
@@ -1058,7 +1071,8 @@ let customerUnitPrice = (rent && !isAircon)
         .not("quote_id", "like", "SCHEDULE_%")
         .not("quote_id", "like", "KAKAO_%")
 
-       .order("created_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false, nullsFirst: false })
+       .order("updated_at", { ascending: false, nullsFirst: false })
         .limit(200);
 
   const kw = (keyword || "").trim();
