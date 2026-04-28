@@ -349,7 +349,7 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
 }
 
 // ============ 인라인 품목 편집 셀 ============
-function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex, onFocus, autoFocusOnMount, onSiteSearch, onAddDelivery }: { item: any; options: any[]; inheritedSpec: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void; autoFocusOnMount?: boolean; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void }) {
+function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex, onFocus, autoFocusOnMount, onSiteSearch, onAddDelivery }: { item: any; options: any[]; inheritedSpec: { w: number; l: number; h: number }; onSelectOption: (item: any, opt: any, calculated: any) => void; rowIndex?: number; onFocus?: (index: number) => void; autoFocusOnMount?: boolean; onSiteSearch?: (query: string, spec?: { w: number; l: number; h?: number }) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -856,7 +856,7 @@ const handleDeliverySelect = (site: any, type: 'delivery' | 'crane') => {
 }
 
 // ============ 빈 행 클릭 시 품목 추가 + 현장 검색 ============
-function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus, onSpecChange }: { options: any[]; inheritedSpec: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => void; onSiteSearch?: (query: string) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void; onSpecChange?: (spec: { w: number; l: number; h: number }) => void }) {
+function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDelivery, insertIndex, onFocus, onSpecChange }: { options: any[]; inheritedSpec: { w: number; l: number; h: number }; onAddItem: (opt: any, calculated: any, insertIndex?: number, specOverride?: { w: number; l: number; h: number }) => void; onSiteSearch?: (query: string, spec?: { w: number; l: number; h?: number }) => Promise<any[]>; onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void; insertIndex?: number; onFocus?: (index: number) => void; onSpecChange?: (spec: { w: number; l: number; h: number }) => void }) {
   const [isEditingSpec, setIsEditingSpec] = useState(false);
   const [specValue, setSpecValue] = useState("");
   const [currentSpec, setCurrentSpec] = useState<{ w: number; l: number; h: number } | null>(null);
