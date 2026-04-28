@@ -415,7 +415,7 @@ function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex
       }
       setIsSearchingSite(true);
       try {
-        const results = await onSiteSearch(searchQuery.trim());
+       const results = await onSiteSearch(searchQuery.trim(), effectiveSpec);
         setSites(results.slice(0, 5));
       } catch (e) {
         setSites([]);
@@ -424,8 +424,8 @@ function InlineItemCell({ item, options, inheritedSpec, onSelectOption, rowIndex
     };
 
     const timer = setTimeout(searchSites, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, onSiteSearch]);
+   return () => clearTimeout(timer);
+  }, [searchQuery, onSiteSearch, effectiveSpec]);
 const filteredOptions = React.useMemo(() => {
   const q = searchQuery.trim();
   if (!q) return [];
@@ -930,14 +930,14 @@ function EmptyRowCell({ options, inheritedSpec, onAddItem, onSiteSearch, onAddDe
       if (!searchQuery.trim() || !onSiteSearch) { setSites([]); return; }
       setIsSearchingSite(true);
       try {
-        const results = await onSiteSearch(searchQuery.trim());
+        const results = await onSiteSearch(searchQuery.trim(), effectiveSpec);
         setSites(results.slice(0, 5));
       } catch (e) { setSites([]); }
       setIsSearchingSite(false);
     };
     const timer = setTimeout(searchSites, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, onSiteSearch]);
+}, [searchQuery, onSiteSearch, effectiveSpec]);
 
   const handleSelect = (opt: any) => {
     setIsEditingItem(false);
@@ -2358,9 +2358,11 @@ onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
               onDeleteItem={(key) => deleteRow(key)}
               focusedRowIndex={focusedRowIndex}
               setFocusedRowIndex={setFocusedRowIndex}
-              onSiteSearch={async (q) => {
-                const inheritedSpec = getInheritedSpec(selectedItems, selectedItems.length);
-                const { list } = await searchSiteRates(q, inheritedSpec.w || 3, inheritedSpec.l || 6);
+             onSiteSearch={async (q, spec) => {
+                const useSpec = (spec && spec.w > 0 && spec.l > 0)
+                  ? spec
+                  : getInheritedSpec(selectedItems, selectedItems.length);
+                const { list } = await searchSiteRates(q, useSpec.w || 3, useSpec.l || 6);
                 return list.filter((s: any) => matchKoreanLocal(String(s.alias || ""), q));
               }}
               onAddDelivery={(site, type, insertIdx) => {
@@ -2670,7 +2672,7 @@ onUpdateSpecText?: (key: string, text: string) => void;
   onUpdateVat?: (key: string, vat: number) => void;
   onUpdateMemo?: (key: string, memo: string) => void;
   editable?: boolean;
-  onSiteSearch?: (query: string) => Promise<any[]>;
+ onSiteSearch?: (query: string, spec?: { w: number; l: number; h?: number }) => Promise<any[]>;
   onAddDelivery?: (site: any, type: 'delivery' | 'crane', insertIndex?: number) => void;
   focusedRowIndex?: number;
   setFocusedRowIndex?: (index: number) => void;
