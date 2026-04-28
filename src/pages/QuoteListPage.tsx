@@ -845,9 +845,12 @@ let customerUnitPrice = (rent && !isAircon)
     });
   }, [current, editItems, getInheritedSpec]);
 
-  const handleSiteSearch = useCallback(async (query: string) => {
+ const handleSiteSearch = useCallback(async (query: string, spec?: { w: number; l: number; h?: number }) => {
     if (!query.trim()) return [];
-    const { list } = await searchSiteRates(query.trim(), current?.w || 3, current?.l || 6);
+    const useSpec = (spec && spec.w > 0 && spec.l > 0)
+      ? spec
+      : { w: current?.w || 3, l: current?.l || 6 };
+    const { list } = await searchSiteRates(query.trim(), useSpec.w, useSpec.l);
     return list.filter((s: any) => {
       const alias = String(s.alias || "").toLowerCase();
       return alias.includes(query.toLowerCase()) || matchKorean(alias, query);
