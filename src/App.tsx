@@ -21,7 +21,7 @@ import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
 import InventoryPage from "./pages/InventoryPage";
 
-const DEFAULT_PAYMENT_TERMS = "계약금 50%입금 후 도면제작 및 확인/착수, 선 완불 후 출고";
+const DEFAULT_PAYMENT_TERMS = "신품 주문제작시 계약금 50%입금 후 도면제작 및 확인-착수, 선 완불 후 출고/ 임대의 경우 완불 후 출고";
 const DEFAULT_NOTICES = `*견적서는 견적일로 부터 2주간 유효합니다.
 1. 하차비 별도(당 지역 지게차 혹은 크레인 이용)
 2. '주문 제작'시 50퍼센트 입금 후 제작, 완불 후 출고. /임대의 경우 계약금 없이 완불 후 출고
