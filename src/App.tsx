@@ -2744,7 +2744,8 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     />
                   ) : ymd}
                 </td>
-              </tr>
+                </tr>
+              <tr>
                 <th className="k center">고객명</th>
                 <td className="v" colSpan={3}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
