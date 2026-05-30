@@ -2722,7 +2722,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
           </div>
 
           {/* ✅ 고객정보 테이블 - 규격 행 제거 */}
-          <table className="a4Info">
+         <table className="a4Info">
             <colgroup>
               <col style={{ width: "15%" }} />
               <col style={{ width: "18%" }} />
@@ -2732,26 +2732,26 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
               <col style={{ width: "19%" }} />
             </colgroup>
             <tbody>
-               <tr>
+              <tr>
                 <th className="k center">견적일자</th>
                 <td className="v" colSpan={5}>
                   {editable && setForm ? (
-                    <input 
-                      type="date" 
-                      value={ymd} 
+                    <input
+                      type="date"
+                      value={ymd}
                       onChange={(e) => setForm((p: any) => ({ ...p, quoteDate: e.target.value }))}
                       style={{ border: "none", background: "transparent", fontSize: 13, width: "100%" }}
                     />
                   ) : ymd}
                 </td>
-                </tr>
+              </tr>
               <tr>
                 <th className="k center">고객명</th>
                 <td className="v" colSpan={3}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     {editable && setForm ? (
-                      <input 
-                        value={form.name || ""} 
+                      <input
+                        value={form.name || ""}
                         onChange={(e) => setForm((p: any) => ({ ...p, name: e.target.value }))}
                         placeholder=" "
                         style={{ border: "none", background: "transparent", fontSize: 13, flex: 1 }}
@@ -2766,14 +2766,14 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
               <tr>
                 <th className="k center">이메일</th>
                 <td className="v" style={{ textAlign: "left", wordBreak: "break-all" }}>
-                  <input 
-                    value={form.email || ""} 
+                  <input
+                    value={form.email || ""}
                     onChange={(e) => setForm && setForm((p: any) => ({ ...p, email: e.target.value }))}
                     placeholder=" "
-                    style={{ 
-                      border: "none", 
-                      background: "transparent", 
-                      fontSize: 13, 
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      fontSize: 13,
                       width: "100%",
                       textAlign: "left",
                       marginLeft: 0,
@@ -2784,14 +2784,14 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                 <th className="k center">전화</th>
                 <td className="v">
                   {editable && setForm ? (
-                    <input 
-                      value={form.phone || ""} 
+                    <input
+                      value={form.phone || ""}
                       onChange={(e) => setForm((p: any) => ({ ...p, phone: e.target.value }))}
                       placeholder=" "
-                      style={{ 
-                        border: "none", 
-                        background: "transparent", 
-                        fontSize: 13, 
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        fontSize: 13,
                         width: "80%",
                         textAlign: "left",
                         marginLeft: 0,
@@ -2807,8 +2807,8 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                 <th className="k center">현장</th>
                 <td className="v" colSpan={3}>
                   {editable && setForm ? (
-                    <input 
-                      value={form.sitePickedLabel || form.siteQ || ""} 
+                    <input
+                      value={form.sitePickedLabel || form.siteQ || ""}
                       onChange={(e) => setForm((p: any) => ({ ...p, sitePickedLabel: e.target.value, siteQ: e.target.value }))}
                       placeholder=" "
                       style={{ border: "none", background: "transparent", fontSize: 13, width: "100%" }}
@@ -2818,12 +2818,12 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                 <th className="k center">주소</th>
                 <td className="v">경기도 화성시<br />향남읍 구문천안길16</td>
               </tr>
-             <tr>
+              <tr>
                 <th className="k center">담당자</th>
-                <td className="v" colSpan={5}>
+                <td className="v" colSpan={3}>
                   {editable && bizcards && setSelectedBizcardId ? (
-                    <select 
-                      value={selectedBizcardId || ""} 
+                    <select
+                      value={selectedBizcardId || ""}
                       onChange={(e) => setSelectedBizcardId(e.target.value)}
                       style={{ border: "none", background: "transparent", fontSize: 13, width: "100%", cursor: "pointer" }}
                     >
@@ -2831,25 +2831,25 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     </select>
                   ) : (bizcardName || "")}
                 </td>
-              </tr>
-              <tr>
-                <td className="msg" colSpan={4}>
-                  견적요청에 감사드리며 아래와 같이 견적합니다.
-                </td>
                 <th className="k center">대표전화</th>
                 <td className="v">1688-1447</td>
               </tr>
               <tr>
+                <td className="msg" colSpan={6}>
+                  견적요청에 감사드리며 아래와 같이 견적합니다.
+                </td>
+              </tr>
+              <tr>
                 <td className="sum" colSpan={6}>
-                  합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)} 
-                  (<select 
-                    value={form.vatIncluded !== false ? "included" : "excluded"} 
+                  합계금액 : ₩{fmt(form.vatIncluded !== false ? total_amount : supply_amount)}
+                  (<select
+                    value={form.vatIncluded !== false ? "included" : "excluded"}
                     onChange={(e) => setForm && setForm((p: any) => ({ ...p, vatIncluded: e.target.value === "included" }))}
-                    style={{ 
-                      border: "none", 
-                      background: "transparent", 
-                      fontSize: 14, 
-                      fontWeight: 900, 
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      fontSize: 14,
+                      fontWeight: 900,
                       cursor: "pointer",
                       width: "auto",
                       display: "inline"
@@ -2862,7 +2862,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
               </tr>
             </tbody>
           </table>
-
+          
           {/* ✅ +품목추가 버튼 */}
           {editable && onAddItem && (
             <div className="add-item-btn-wrap" style={{ display: 'flex', justifyContent: 'flex-end', margin: '8px 0 4px', gap: 8 }}>
