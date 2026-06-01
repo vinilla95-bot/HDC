@@ -5,7 +5,7 @@ import ContractListPage from "./pages/ContractListPage";
 import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
 import TodayTasksPage from "./pages/TodayTasksPage";
-
+import { jsPDF } from "jspdf";
 import {
   supabase,
   calculateOptionLine,
@@ -1224,6 +1224,7 @@ export default function App() {
 
   // 모바일 전체화면 미리보기
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const isMobileDevice = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   const getMobileScale = () => {
@@ -2243,7 +2244,7 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
         <button className="btn" onClick={handleSaveNew}>신규 저장</button>
         <button className="btn" onClick={handleSaveUpdate} disabled={!currentQuoteId}>수정 저장</button>
         <button className="btn" onClick={handleSend} disabled={!!sendStatus}>{sendStatus || "견적서 보내기"}</button>
-        <button className="btn" onClick={downloadJpg}>JPG저장</button>
+        <button className="btn" onClick={() => setSaveMenuOpen(true)}>파일저장</button>
         <button className="btn" onClick={handlePreview}>인쇄</button>
       </div>
     </div>
@@ -2280,7 +2281,7 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
               })}
               <button className="btn" onClick={handleSaveNew} style={{ background: "#2e5b86", color: "#fff", padding: "10px 20px", fontSize: 14 }}>저장</button>
               <button className="btn" onClick={handleSend} disabled={!!sendStatus} style={{ padding: "10px 20px", fontSize: 14 }}>{sendStatus || "전송"}</button>
-              <button className="btn" onClick={downloadJpg} style={{ padding: "10px 20px", fontSize: 14 }}>JPG</button>
+              <button className="btn" onClick={() => setSaveMenuOpen(true)} style={{ padding: "10px 20px", fontSize: 14 }}>파일저장</button>
               <button className="btn" onClick={handlePreview} style={{ padding: "10px 20px", fontSize: 14 }}>인쇄</button>
             </div>
           </div>
@@ -2411,8 +2412,8 @@ onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
             position: 'relative',
             flexShrink: 0,
           }}>
-            <button
-              onClick={() => { setMobilePreviewOpen(false); downloadJpg(); }}
+           <button
+              onClick={() => { setMobilePreviewOpen(false); setSaveMenuOpen(true); }}
               style={{
                 flex: 1,
                 padding: '12px',
@@ -2423,7 +2424,7 @@ onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
                 fontSize: 13,
               }}
             >
-              JPG 저장
+              파일저장
             </button>
             <div style={{ flex: 1, position: 'relative' }}>
               <button
@@ -2619,12 +2620,28 @@ onUpdatePrice={(key, price) => updateRow(key, "customerUnitPrice", price)}
                     <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{form.phone}</div>
                   </button>
                 )}
-                {!form.email && !form.phone && (
+       {!form.email && !form.phone && (
                   <div style={{ padding: '14px 16px', color: '#888', fontSize: 13 }}>
                     이메일 또는 전화번호를 입력해주세요
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ 파일 형식 선택 메뉴 */}
+      {saveMenuOpen && (
+        <div
+          onClick={() => setSaveMenuOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, padding: 20, width: 260, boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 14, textAlign: 'center' }}>파일 형식 선택</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => { setSaveMenuOpen(false); saveFile('jpg'); }} style={{ flex: 1, padding: '12px', background: '#e3f2fd', color: '#1565c0', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>JPG</button>
+              <button onClick={() => { setSaveMenuOpen(false); saveFile('pdf'); }} style={{ flex: 1, padding: '12px', background: '#ffebee', color: '#c62828', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>PDF</button>
             </div>
           </div>
         </div>
