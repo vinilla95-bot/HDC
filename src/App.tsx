@@ -82,7 +82,18 @@ function applyHeightMultiplier(basePrice: number, h: number): number {
   if (h >= 3) return Math.round(basePrice * 1.5);
   return basePrice;
 }
-
+// ✅ 캡처용: textarea → div (줄바꿈 유지)
+function unwrapTextareas(cloned: HTMLElement, original: HTMLElement) {
+  const cts = cloned.querySelectorAll('.a4Bottom textarea');
+  const ots = original.querySelectorAll('.a4Bottom textarea');
+  cts.forEach((el, idx) => {
+    const val = (ots[idx] as HTMLTextAreaElement)?.value ?? (el as HTMLTextAreaElement).value;
+    const div = document.createElement('div');
+    div.textContent = val;
+    div.style.cssText = 'white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; font-size: 12px; line-height: 1.55; font-family: inherit; width: 100%;';
+    el.parentNode?.replaceChild(div, el);
+  });
+}
 // ✅ GAS WebApp URL
 export const getWebAppUrl = () => {
   return "https://script.google.com/macros/s/AKfycbyTGGQnxlfFpqP5zS0kf7m9kzSK29MGZbeW8GUMlAja04mRJHRszuRdpraPdmOWxNNr/exec";
