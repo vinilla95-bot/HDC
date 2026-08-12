@@ -267,7 +267,7 @@ const filteredItems = useMemo(() => {
     if (specFilter === "옵션형") {
       items = items.filter(item => item.container_type === "옵션형" && item.inventory_status === "출고대기");
     } else if (specFilter) {
-      items = items.filter(item => normalizeSpec(item.spec) === specFilter && item.inventory_status === "출고대기");
+      items = items.filter(item => normalizeSpec(item.spec) === specFilter && item.inventory_status === "출고대기" && item.container_type !== "옵션형");
     }
     if (depositTab === "all") return items;
     if (depositTab === "paid") return items.filter(item => item.deposit_status === "완료");
