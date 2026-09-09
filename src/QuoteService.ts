@@ -360,13 +360,23 @@ export const saveQuoteToDb = async (payload: any) => {
 };
 
 export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
-  const { version, ...payloadWithoutVersion } = payload; // version 필드 제외 (pkey 충돌 방지)
+  const { data: rows } = await supabase
+    .from('quotes')
+    .select('version')
+    .eq('quote_id', quote_id)
+    .order('version', { ascending: false })
+    .limit(1);
+
+  const latest = rows && rows[0] ? Number((rows[0] as any).version || 1) : 1;
+  const nextVersion = latest + 1;
+
   const row = { 
-    ...payloadWithoutVersion, 
+    ...payload, 
     quote_id, 
+    version: nextVersion, 
     updated_at: new Date().toISOString(),
     items: sanitizeItems(payload.items || [])
   };
   
-  return await supabase.from('quotes').update(row).eq('quote_id', quote_id).select();
+  return await supabase.from('quotes').insert([row]).select();
 };
