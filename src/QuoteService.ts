@@ -360,8 +360,9 @@ export const saveQuoteToDb = async (payload: any) => {
 };
 
 export const insertNextVersionToDb = async (quote_id: string, payload: any) => {
+  const { version, ...payloadWithoutVersion } = payload; // version 필드 제외 (pkey 충돌 방지)
   const row = { 
-    ...payload, 
+    ...payloadWithoutVersion, 
     quote_id, 
     updated_at: new Date().toISOString(),
     items: sanitizeItems(payload.items || [])
