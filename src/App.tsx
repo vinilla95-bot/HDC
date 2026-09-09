@@ -2291,7 +2291,7 @@ const clonedSheet = originalSheet.cloneNode(true) as HTMLElement;
                   </div>
                 );
               })}
-              <button className="btn" onClick={handleSaveNew} style={{ background: "#2e5b86", color: "#fff", padding: "10px 20px", fontSize: 14 }}>저장</button>
+             <button className="btn" onClick={currentQuoteId ? handleSaveUpdate : handleSaveNew} style={{ background: "#2e5b86", color: "#fff", padding: "10px 20px", fontSize: 14 }}>{currentQuoteId ? "수정 저장" : "저장"}</button>
               <button className="btn" onClick={handleSend} disabled={!!sendStatus} style={{ padding: "10px 20px", fontSize: 14 }}>{sendStatus || "전송"}</button>
               <button className="btn" onClick={() => setSaveMenuOpen(true)} style={{ padding: "10px 20px", fontSize: 14 }}>파일저장</button>
               <button className="btn" onClick={handlePreview} style={{ padding: "10px 20px", fontSize: 14 }}>인쇄</button>
