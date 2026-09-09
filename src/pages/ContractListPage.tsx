@@ -179,6 +179,13 @@ filtered.sort((a, b) => {
       if (!c.contract_type) return false;
       return c.contract_type === activeTab;
     });
+    if (activeTab === "branch") {
+      filtered = [...filtered].sort((a, b) => {
+        const dateA = a.delivery_date || "9999-99-99";
+        const dateB = b.delivery_date || "9999-99-99";
+        return dateA.localeCompare(dateB); // 출고일 오름차순 (빠른 날짜 먼저), 미입력은 맨 뒤
+      });
+    }
   }
   
   if (depositFilter === "completed") {
