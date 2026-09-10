@@ -6,6 +6,7 @@ import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
 import html2canvas from "html2canvas";
 import TodayTasksPage from "./pages/TodayTasksPage";
 import { jsPDF } from "jspdf";
+
 import {
   supabase,
   calculateOptionLine,
@@ -20,6 +21,7 @@ import { gasRpc as gasRpcRaw } from "./lib/gasRpc";
 import type { SelectedRow, SupabaseOptionRow } from "./types";
 import "./index.css";
 import InventoryPage from "./pages/InventoryPage";
+import { STAMP_IMAGE } from "./stampImage";
 
 const DEFAULT_PAYMENT_TERMS = "신품 주문제작시 계약금 50%입금 후 도면제작 및 확인-착수, 선 완불 후 출고/ 임대의 경우 완불 후 출고";
 const DEFAULT_NOTICES = `*견적서는 견적일로 부터 2주간 유효합니다.
@@ -2791,6 +2793,7 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                 </td>
                 <th className="k center">공급자</th>
                 <td className="v">현대컨테이너</td>
+                <img src={STAMP_IMAGE} alt="직인" style={{ width: 30, height: 30, objectFit: "contain" }} />
               </tr>
               <tr>
                 <th className="k center">이메일</th>
