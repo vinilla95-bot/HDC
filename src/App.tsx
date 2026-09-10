@@ -2790,19 +2790,18 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                     ) : <span>{form.name || ""}</span>}
                     <span style={{ fontWeight: 900 }}>귀하</span>
                   </div>
-                </td>                            <th className="k center">공급자</th>
-                <td className="v" style={{ position: "relative", overflow: "visible" }}>
+                </td>                                           <th className="k center">공급자</th>
+                <td className="v" style={{ position: "relative", overflow: "visible", display: "flex", alignItems: "center" }}>
                   현대컨테이너
                   <img
                     src={STAMP_IMAGE}
                     alt="직인"
                     style={{
-                      position: "absolute",
-                      right: -14,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: 28,
-                      height: 28,
+                      position: "relative",
+                      top: -16,
+                      marginLeft: 4,
+                      width: 42,
+                      height: 42,
                       objectFit: "contain",
                       pointerEvents: "none",
                       zIndex: 5,
