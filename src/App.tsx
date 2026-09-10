@@ -2792,9 +2792,10 @@ function A4Quote({ form, setForm, computedItems, blankRows, fmt, supply_amount, 
                   </div>
                 </td>
                 <th className="k center">공급자</th>
-                <td className="v">현대컨테이너</td>
-                <img src={STAMP_IMAGE} alt="직인" style={{ width: 30, height: 30, objectFit: "contain" }} />
-              </tr>
+<td className="v" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+  현대컨테이너
+  <img src={STAMP_IMAGE} alt="직인" style={{ width: 30, height: 30, objectFit: "contain" }} />
+</td>
               <tr>
                 <th className="k center">이메일</th>
                 <td className="v" style={{ textAlign: "left", wordBreak: "break-all" }}>
