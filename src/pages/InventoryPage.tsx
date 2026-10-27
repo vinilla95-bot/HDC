@@ -184,7 +184,8 @@ export default function InventoryPage({
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [depositTab, setDepositTab] = useState<DepositTabType>("all");
-const [specFilter, setSpecFilter] = useState<string | null>(null);  // ← 이 줄 추가
+const [specFilter, setSpecFilter] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");// ← 이 줄 추가
   const [mainTab, setMainTab] = useState<MainTabType>("new");
   const [showPhotoModal, setShowPhotoModal] = useState<string[] | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -269,11 +270,19 @@ const filteredItems = useMemo(() => {
     } else if (specFilter) {
       items = items.filter(item => normalizeSpec(item.spec) === specFilter && item.inventory_status === "출고대기" && item.container_type !== "옵션형");
     }
-    if (depositTab === "all") return items;
+      if (depositTab === "all") {
+      const q = searchQuery.trim().toLowerCase();
+      if (!q) return items;
+      return items.filter(item =>
+        [item.customer_name, item.drawing_no, item.spec, item.interior, item.depositor,
+         item.contract_date, item.delivery_date, item.inventory_status, item.container_type]
+          .some(v => String(v ?? "").toLowerCase().includes(q))
+      );
+    }
     if (depositTab === "paid") return items.filter(item => item.deposit_status === "완료");
     if (depositTab === "unpaid") return items.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기");
     return items;
-  }, [allItems, depositTab, specFilter]);
+   }, [allItems, depositTab, specFilter, searchQuery]);
 
   const paidCount = useMemo(() => allItems.filter(item => item.deposit_status === "완료").length, [allItems]);
   const unpaidCount = useMemo(() => allItems.filter(item => item.deposit_status !== "완료" && item.deposit_status !== "대기").length, [allItems]);
@@ -514,6 +523,22 @@ const waitingBySpec = useMemo(() => {
             <button style={tabStyle(depositTab === "all")} onClick={() => setDepositTab("all")}>전체 ({allItems.length})</button>
             <button style={tabStyle(depositTab === "paid")} onClick={() => setDepositTab("paid")}>✅ 입금완료 ({paidCount})</button>
             <button style={{ ...tabStyle(depositTab === "unpaid"), color: depositTab === "unpaid" ? "#dc3545" : "#666" }} onClick={() => setDepositTab("unpaid")}>❌ 미입금 ({unpaidCount})</button>
+                        {depositTab === "all" && (
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "0 12px" }}>
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="발주처·도면번호·메모·날짜 검색"
+                  style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8, fontSize: 13, width: 240 }}
+                />
+                {searchQuery && (
+                  <>
+                    <span style={{ fontSize: 12, color: "#666", whiteSpace: "nowrap" }}>{filteredItems.length}건</span>
+                    <button onClick={() => setSearchQuery("")} style={{ padding: "6px 10px", background: "#eee", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>✕</button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e5e7eb", borderTop: "none", overflow: "hidden" }}>
