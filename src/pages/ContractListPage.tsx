@@ -38,6 +38,7 @@ export default function ContractListPage({ onBack }: { onBack: () => void }) {
   const [selectedQuote, setSelectedQuote] = useState<ContractQuote | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [depositFilter, setDepositFilter] = useState<"all" | "completed" | "pending">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [newItem, setNewItem] = useState({
     contract_type: "order" as TabType,
@@ -194,8 +195,18 @@ filtered.sort((a, b) => {
     filtered = filtered.filter(c => c.deposit_status !== "완료");
   }
   
+    const q = searchQuery.trim().toLowerCase();
+  if (q) {
+    filtered = filtered.filter(c => {
+      const optionText = (c.items || []).map((i: any) => i.displayName || i.optionName || "").join(" ");
+      return [c.customer_name, c.drawing_no, c.spec, c.interior, c.depositor,
+              c.contract_date, c.delivery_date, c.bank_account, optionText]
+        .some(v => String(v ?? "").toLowerCase().includes(q));
+    });
+  }
+
   return filtered;
-}, [allContracts, allInventory, activeTab, depositFilter]);
+}, [allContracts, allInventory, activeTab, depositFilter, searchQuery]);
 
   const getTabCounts = (tab: TabType) => {
     const tabData = allContracts.filter(c => (c.contract_type || "order") === tab);
@@ -884,7 +895,21 @@ const allCount = useMemo(() => {
         >
           ❌ 미입금 ({currentCounts.pending})
         </button>
-      </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="🔍 발주처·도면번호·옵션·입금자·날짜 검색"
+            style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: 8, fontSize: 13, width: 260 }}
+          />
+          {searchQuery && (
+            <>
+              <span style={{ fontSize: 12, color: "#666", whiteSpace: "nowrap" }}>{contracts.length}건</span>
+              <button onClick={() => setSearchQuery("")} style={{ padding: "6px 10px", background: "#eee", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12 }}>✕</button>
+            </>
+          )}
+        </div>
+      
 
       {renderTable()}
 
