@@ -527,6 +527,7 @@ const handleDelete = async (quote_id: string, customer_name: string) => {
                         <option value="현대">현대</option>
                         <option value="국민">국민</option>
                         <option value="기업">기업</option>
+                        <option value="에이스">에이스</option>
                         <option value="현금영수증">현금영수증</option>
                         <option value="현찰">현찰</option>
                       </select>
